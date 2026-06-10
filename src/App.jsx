@@ -184,8 +184,9 @@ function Modal({ title, onClose, wide, children }) {
       </div>
       {children}
     </div>
-  </div>;
+  </div></>
 }
+
 const iStyle = { width:"100%", padding:"8px 11px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13, color:"#1E293B", outline:"none", boxSizing:"border-box", fontFamily:"inherit", background:"#FAFBFC" };
 const lStyle = { fontSize:12, fontWeight:600, color:"#64748B", display:"block", marginBottom:4 };
 const Field = ({ label, children }) => <div style={{ marginBottom:13 }}><label style={lStyle}>{label}</label>{children}</div>;
@@ -806,6 +807,15 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
   </div>;
 }
 
+// Global style reset
+const GlobalStyle = () => (
+  <style>{`
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+    body { font-family: Inter, Segoe UI, sans-serif; }
+  `}</style>
+);
+
 export default function App() {
   const [state,setState]=useState(load);
   const [view,setView]=useState("projects");
@@ -897,7 +907,7 @@ export default function App() {
 
   const nav=[{id:"projects",icon:"P",label:"Projeler"},{id:"mytasks",icon:"T",label:"Gorevlerim"},{id:"people",icon:"E",label:"Ekip"},{id:"logs",icon:"L",label:"Aktivite"}];
 
-  return <div style={{ display:"flex", height:"100vh", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B" }}>
+  return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden" }}>
     {/* Sidebar */}
     <div style={{ width:220, background:"#1E293B", display:"flex", flexDirection:"column", flexShrink:0 }}>
       <div style={{ padding:"18px 16px 12px", borderBottom:"1px solid #334155" }}>
