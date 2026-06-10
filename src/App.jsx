@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from "./supabase";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
@@ -146,8 +147,29 @@ const DEMO = {
   currentUserId:null,
 };
 
-const load = () => { try { const s=window._appState; return s?JSON.parse(JSON.stringify(s)):JSON.parse(JSON.stringify(DEMO)); } catch { return JSON.parse(JSON.stringify(DEMO)); } };
-const save = (s) => { window._appState=JSON.parse(JSON.stringify(s)); };
+// ─── Supabase persistence ────────────────────────────────────────────────────
+// Tum uygulama durumu tek bir JSON satirinda tutulur (app_state tablosu)
+const load = () => JSON.parse(JSON.stringify(DEMO)); // baslangic — gercek veri useEffect ile yuklenir
+
+const loadFromSupabase = async () => {
+  try {
+    const { data, error } = await supabase.from("app_state").select("data").eq("id", 1).single();
+    if (error || !data) return null;
+    return data.data;
+  } catch { return null; }
+};
+
+let saveTimer = null;
+const saveToSupabase = (state) => {
+  // currentUserId her cihazda farkli olmali, paylasilmaz
+  const { currentUserId, ...shared } = state;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await supabase.from("app_state").upsert({ id: 1, data: shared, updated_at: new Date().toISOString() });
+    } catch (e) { console.error("Supabase save error:", e); }
+  }, 800);
+};
 
 // ─── Log action types ───────────────────────────────────────────────────────
 const LOG_META = {
@@ -184,7 +206,7 @@ function Modal({ title, onClose, wide, children }) {
       </div>
       {children}
     </div>
-  </div></>
+  </div>;
 }
 
 const iStyle = { width:"100%", padding:"8px 11px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:13, color:"#1E293B", outline:"none", boxSizing:"border-box", fontFamily:"inherit", background:"#FAFBFC" };
@@ -556,7 +578,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
       </div>}
     </div>
 
-    <div style={{ display:"flex", flex:1, overflow:"hidden", gap:0 }}>
+    <div style={{ display:"flex", flex:1, overflow:window.innerWidth<768?"auto":"hidden", gap:0, flexDirection:window.innerWidth<768?"column":"row" }}>
       {/* Tasks column */}
       <div style={{ flex:1, overflow:"auto", padding:"12px 28px" }}>
         {active.length>0&&<div style={{ marginBottom:16 }}>
@@ -593,7 +615,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
       </div>
 
       {/* Notes & Todo sidebar */}
-      <div style={{ width:280, borderLeft:"1px solid #E2E8F0", background:"#FAFBFC", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <div style={{ width:window.innerWidth<768?"100%":280, borderLeft:window.innerWidth<768?"none":"1px solid #E2E8F0", borderTop:window.innerWidth<768?"1px solid #E2E8F0":"none", background:"#FAFBFC", display:"flex", flexDirection:"column", overflow:window.innerWidth<768?"visible":"hidden", flexShrink:0 }}>
         <div style={{ padding:"16px 18px", borderBottom:"1px solid #E2E8F0" }}>
           <div style={{ fontWeight:700, fontSize:13, marginBottom:10 }}>Notlarim</div>
           <textarea value={noteText} onChange={e=>updateNotes(e.target.value)} placeholder="Serbest notlar, hatirlatmalar..." style={{ width:"100%", height:120, padding:"9px", borderRadius:8, border:"1.5px solid #E2E8F0", fontSize:12, fontFamily:"inherit", resize:"vertical", boxSizing:"border-box", background:"#fff", outline:"none", lineHeight:1.6 }} />
@@ -824,8 +846,53 @@ export default function App() {
   const [projectTab,setProjectTab]=useState("tasks");
   const [modal,setModal]=useState(null);
   const [showDoneTasks,setShowDoneTasks]=useState(false);
+  const [dataLoaded,setDataLoaded]=useState(false);
+  const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
+  const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<768);
   const fileRef=useRef();
-  useEffect(()=>{ save(state); },[state]);
+  const skipNextSave=useRef(true);
+
+  // Mobil algilama
+  useEffect(()=>{
+    const onResize=()=>setIsMobile(window.innerWidth<768);
+    window.addEventListener("resize",onResize);
+    return ()=>window.removeEventListener("resize",onResize);
+  },[]);
+
+  // Ilk yukleme: Supabase'den veri cek
+  useEffect(()=>{
+    (async()=>{
+      const remote=await loadFromSupabase();
+      if(remote){
+        skipNextSave.current=true;
+        setState(s=>({ ...remote, currentUserId:s.currentUserId }));
+      } else {
+        // Ilk kurulum: DEMO veriyi Supabase'e yaz
+        saveToSupabase(state);
+      }
+      setDataLoaded(true);
+    })();
+  },[]);
+
+  // Degisiklikleri Supabase'e kaydet (ilk yuklemede atla)
+  useEffect(()=>{
+    if(!dataLoaded) return;
+    if(skipNextSave.current){ skipNextSave.current=false; return; }
+    saveToSupabase(state);
+  },[state, dataLoaded]);
+
+  // Periyodik senkronizasyon: 30 sn'de bir baskalarinin degisikliklerini cek
+  useEffect(()=>{
+    if(!dataLoaded) return;
+    const interval=setInterval(async()=>{
+      const remote=await loadFromSupabase();
+      if(remote){
+        skipNextSave.current=true;
+        setState(s=>({ ...remote, currentUserId:s.currentUserId }));
+      }
+    }, 30000);
+    return ()=>clearInterval(interval);
+  },[dataLoaded]);
 
   const currentUser=state.people.find(p=>p.id===state.currentUserId);
   const isAdmin=currentUser?.isAdmin||false;
@@ -836,6 +903,10 @@ export default function App() {
   const login=(id)=>setState(s=>({...s,currentUserId:id}));
   const logout=()=>{ setState(s=>({...s,currentUserId:null})); setView("projects"); setSelProject(null); };
 
+  if(!dataLoaded) return <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,sans-serif", background:"#1E293B", color:"#94A3B8", flexDirection:"column", gap:12 }}>
+    <div style={{ fontSize:14, fontWeight:800, color:"#4A6CF7", letterSpacing:3 }}>IS TAKIP</div>
+    <div style={{ fontSize:13 }}>Veriler yukleniyor...</div>
+  </div>;
   if(!currentUser) return <LoginScreen people={state.people} onLogin={login} />;
 
   // Project visibility filter
@@ -907,9 +978,20 @@ export default function App() {
 
   const nav=[{id:"projects",icon:"P",label:"Projeler"},{id:"mytasks",icon:"T",label:"Gorevlerim"},{id:"people",icon:"E",label:"Ekip"},{id:"logs",icon:"L",label:"Aktivite"}];
 
-  return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden" }}>
+  return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
+    {/* Mobil ust bar */}
+    {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:50, background:"#1E293B", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
+      <button onClick={()=>setMobileMenuOpen(v=>!v)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", padding:4 }}>☰</button>
+      <span style={{ fontSize:13, fontWeight:800, color:"#4A6CF7", letterSpacing:2 }}>IS TAKIP</span>
+      <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
+        <Avatar initials={currentUser.avatar} size={26} color={isAdmin?"#E11D48":"#4A6CF7"} />
+      </div>
+    </div>}
+    {/* Mobil overlay arka plan */}
+    {isMobile&&mobileMenuOpen&&<div onClick={()=>setMobileMenuOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:950 }} />}
     {/* Sidebar */}
-    <div style={{ width:220, background:"#1E293B", display:"flex", flexDirection:"column", flexShrink:0 }}>
+    <div style={{ width:220, background:"#1E293B", display:"flex", flexDirection:"column", flexShrink:0,
+      ...(isMobile?{ position:"fixed", top:0, left:mobileMenuOpen?0:-240, bottom:0, zIndex:960, transition:"left .25s ease", boxShadow:mobileMenuOpen?"4px 0 20px rgba(0,0,0,0.3)":"none" }:{}) }}>
       <div style={{ padding:"18px 16px 12px", borderBottom:"1px solid #334155" }}>
         <div style={{ fontSize:11, fontWeight:800, color:"#4A6CF7", letterSpacing:2, textTransform:"uppercase" }}>IS TAKIP</div>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
@@ -922,13 +1004,13 @@ export default function App() {
         </div>
       </div>
       <nav style={{ padding:"8px 7px", flex:1, overflowY:"auto" }}>
-        {nav.map(n=><button key={n.id} onClick={()=>{ setView(n.id); setSelProject(null); setSelMilestone(null); }}
+        {nav.map(n=><button key={n.id} onClick={()=>{ setView(n.id); setSelProject(null); setSelMilestone(null); setMobileMenuOpen(false); }}
           style={{ display:"flex", alignItems:"center", gap:9, width:"100%", padding:"9px 10px", borderRadius:8, border:"none", cursor:"pointer", background:view===n.id&&!selProject?"#4A6CF7":"transparent", color:view===n.id&&!selProject?"#fff":"#94A3B8", fontSize:13, fontWeight:600, textAlign:"left", marginBottom:2 }}>
           <span style={{ fontSize:11 }}>{n.icon}</span> {n.label}
         </button>)}
         {visibleProjects.length>0&&<div style={{ marginTop:12 }}>
           <div style={{ fontSize:9, fontWeight:700, color:"#475569", letterSpacing:1.5, textTransform:"uppercase", padding:"0 10px", marginBottom:4 }}>PROJELER</div>
-          {visibleProjects.map(p=><button key={p.id} onClick={()=>{ setSelProject(p.id); setSelMilestone(null); setView("projects"); setProjectTab("tasks"); }}
+          {visibleProjects.map(p=><button key={p.id} onClick={()=>{ setSelProject(p.id); setSelMilestone(null); setView("projects"); setProjectTab("tasks"); setMobileMenuOpen(false); }}
             style={{ display:"flex", alignItems:"center", gap:7, width:"100%", padding:"7px 10px", borderRadius:8, border:"none", cursor:"pointer", background:selProject===p.id?p.color+"33":"transparent", color:selProject===p.id?"#fff":"#94A3B8", fontSize:11, fontWeight:600, textAlign:"left", marginBottom:1 }}>
             <span style={{ width:7, height:7, borderRadius:"50%", background:p.color, flexShrink:0 }} />
             <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
@@ -941,7 +1023,7 @@ export default function App() {
     </div>
 
     {/* Main */}
-    <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column" }}>
+    <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?50:0 }}>
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
@@ -972,8 +1054,8 @@ export default function App() {
           </div>
         </div>
 
-        {projectTab==="tasks"&&<div style={{ display:"flex", flex:1, overflow:"hidden" }}>
-          <div style={{ width:225, borderRight:"1px solid #E2E8F0", background:"#F8FAFC", overflow:"auto", padding:"11px 8px" }}>
+        {projectTab==="tasks"&&<div style={{ display:"flex", flex:1, overflow:"hidden", flexDirection:isMobile?"column":"row" }}>
+          <div style={{ width:isMobile?"100%":225, maxHeight:isMobile?180:"none", borderRight:isMobile?"none":"1px solid #E2E8F0", borderBottom:isMobile?"1px solid #E2E8F0":"none", background:"#F8FAFC", overflow:"auto", padding:"11px 8px", flexShrink:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7, padding:"0 3px" }}>
               <span style={{ fontSize:10, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:1 }}>Milestonlar</span>
               {isAdmin&&<Btn small variant="secondary" onClick={()=>setModal({type:"addMilestone"})}>+ Ekle</Btn>}
@@ -1121,7 +1203,7 @@ export default function App() {
     {modal?.type==="addPerson"&&<PersonModal onClose={()=>setModal(null)} onSave={addPerson} />}
     {modal?.type==="personDetail"&&<PersonDetailModal person={modal.data} projects={state.projects} personalTasks={state.personalTasks} onClose={()=>setModal(null)} />}
     {modal?.type==="addRisk"&&<RiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
-  </div>;
+  </div></>;
 }
 
 // ─── Modals ──────────────────────────────────────────────────────────────────
