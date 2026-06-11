@@ -231,30 +231,53 @@ const Btn = ({ children, onClick, variant="primary", small, style:s, disabled })
 // ─── Login ──────────────────────────────────────────────────────────────────
 function LoginScreen({ people, onLogin }) {
   const [sel, setSel] = useState(null);
-  return <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#1E293B 0%,#0F172A 100%)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,Segoe UI,sans-serif" }}>
-    <div style={{ background:"#fff", borderRadius:20, padding:"40px 44px", width:"100%", maxWidth:420, boxShadow:"0 30px 80px rgba(0,0,0,0.3)" }}>
-      <div style={{ textAlign:"center", marginBottom:32 }}>
-        <div style={{ fontSize:14, fontWeight:800, color:"#4A6CF7", letterSpacing:3, textTransform:"uppercase", marginBottom:6 }}>CORJECT</div>
-        <div style={{ fontSize:22, fontWeight:800, color:"#1E293B" }}>Giriş Yap</div>
-        <div style={{ color:"#94A3B8", fontSize:13, marginTop:4 }}>Kim olduğunuzu seçin</div>
-      </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:24 }}>
-        {people.map(p => <div key={p.id} onClick={() => setSel(p.id)} style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:12, border:`2px solid ${sel===p.id?"#4A6CF7":"#E2E8F0"}`, cursor:"pointer", background:sel===p.id?"#F1F5FF":"#fff" }}>
-          <Avatar initials={p.avatar} size={40} color={p.isAdmin?"#E11D48":"#4A6CF7"} />
-          <div style={{ flex:1 }}>
-            <div style={{ fontWeight:700, fontSize:14 }}>{p.name}</div>
-            <div style={{ fontSize:12, color:"#64748B" }}>{p.role}</div>
+  const [hoveredId, setHoveredId] = useState(null);
+  return (
+    <div style={{ minHeight:"100vh", width:"100vw", background:"linear-gradient(145deg,#0F172A 0%,#1E293B 50%,#0F172A 100%)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,Segoe UI,sans-serif", padding:0, margin:0, boxSizing:"border-box" }}>
+      <div style={{ width:"100%", maxWidth:440, padding:"0 20px", boxSizing:"border-box" }}>
+        {/* Logo */}
+        <div style={{ textAlign:"center", marginBottom:36 }}>
+          <div style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:56, height:56, background:"linear-gradient(135deg,#4A6CF7,#7C3AED)", borderRadius:16, marginBottom:14, boxShadow:"0 8px 24px rgba(74,108,247,0.4)" }}>
+            <span style={{ fontSize:24, fontWeight:800, color:"#fff" }}>C</span>
           </div>
-          {p.isAdmin && <span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:8, padding:"1px 8px", fontSize:10, fontWeight:700 }}>YÖN</span>}
-          {sel===p.id && <span style={{ color:"#4A6CF7", fontSize:18 }}>ok</span>}
-        </div>)}
+          <div style={{ fontSize:22, fontWeight:800, color:"#fff", letterSpacing:3, textTransform:"uppercase" }}>CORJECT</div>
+          <div style={{ fontSize:13, color:"#64748B", marginTop:6 }}>Proje Yönetim Sistemi</div>
+        </div>
+        {/* Card */}
+        <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:"28px 24px", backdropFilter:"blur(10px)" }}>
+          <div style={{ fontSize:14, fontWeight:600, color:"#94A3B8", marginBottom:16, textAlign:"center" }}>Hesabınızı seçin</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:22 }}>
+            {people.map(p => (
+              <div key={p.id} onClick={() => setSel(p.id)}
+                onMouseEnter={() => setHoveredId(p.id)} onMouseLeave={() => setHoveredId(null)}
+                style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:12,
+                  border:`1.5px solid ${sel===p.id?"#4A6CF7":hoveredId===p.id?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`,
+                  cursor:"pointer", background:sel===p.id?"rgba(74,108,247,0.15)":"rgba(255,255,255,0.03)",
+                  transition:"all .15s" }}>
+                <div style={{ width:38, height:38, borderRadius:10, background:p.isAdmin?"rgba(225,29,72,0.2)":"rgba(74,108,247,0.2)", border:`1.5px solid ${p.isAdmin?"rgba(225,29,72,0.4)":"rgba(74,108,247,0.4)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:p.isAdmin?"#FCA5A5":"#93C5FD", flexShrink:0 }}>{p.avatar}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#F1F5F9" }}>{p.name}</div>
+                  <div style={{ fontSize:11, color:"#64748B" }}>{p.role}</div>
+                </div>
+                {p.isAdmin && <span style={{ background:"rgba(225,29,72,0.2)", color:"#FCA5A5", borderRadius:6, padding:"2px 8px", fontSize:10, fontWeight:700 }}>YÖN</span>}
+                {sel===p.id && <span style={{ color:"#4A6CF7", fontSize:16 }}>✓</span>}
+              </div>
+            ))}
+          </div>
+          <button disabled={!sel} onClick={() => sel && onLogin(sel)}
+            style={{ width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:sel?"pointer":"default",
+              background:sel?"linear-gradient(135deg,#4A6CF7,#7C3AED)":"rgba(255,255,255,0.05)",
+              color:sel?"#fff":"#475569", fontSize:14, fontWeight:700, fontFamily:"inherit",
+              transition:"all .2s", boxShadow:sel?"0 4px 16px rgba(74,108,247,0.4)":"none" }}>
+            {sel ? "Giriş Yap →" : "Hesap Seçin"}
+          </button>
+        </div>
+        <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:"#334155" }}>CORJECT v1.0 · Proje Yönetimi</div>
       </div>
-      <Btn style={{ width:"100%", justifyContent:"center", padding:"11px", fontSize:14 }} disabled={!sel} onClick={() => sel&&onLogin(sel)}>Giriş Yap</Btn>
     </div>
-  </div>;
+  );
 }
 
-// ─── Template Picker ────────────────────────────────────────────────────────
 function TemplatePicker({ onSelect, onSkip }) {
   const [sel, setSel] = useState(null);
   return <div>
@@ -290,20 +313,22 @@ function GanttChart({ project, compact }) {
   if (!ms.length) return <div style={{ padding:40, textAlign:"center", color:"#94A3B8" }}>Milestone yok.</div>;
 
   const allDates = [
-    ...ms.map(m => m.startDate || project.startDate),
-    ...ms.map(m => m.dueDate),
-    ...ms.flatMap(m => m.tasks.map(t => t.dueDate)),
+    ...ms.map(m => m.startDate || project.startDate).filter(Boolean),
+    ...ms.map(m => m.dueDate).filter(Boolean),
   ].filter(Boolean);
   if (!allDates.length) return <div style={{ padding:40, textAlign:"center", color:"#94A3B8" }}>Tarih bilgisi eksik.</div>;
 
   const minDate = new Date(Math.min(...allDates.map(d => new Date(d))));
   const maxDate = new Date(Math.max(...allDates.map(d => new Date(d))));
-  const total = Math.max(1, (maxDate - minDate) / 86400000) + 4;
-  const todayOff = Math.max(0, (new Date() - minDate) / 86400000);
+  // Add padding so bars don't touch edges
+  minDate.setDate(minDate.getDate() - 3);
+  maxDate.setDate(maxDate.getDate() + 3);
+  const total = Math.max(1, (maxDate - minDate) / 86400000);
+  const todayOff = (new Date() - minDate) / 86400000;
 
   const pct = (d) => {
     if (!d) return 0;
-    return Math.max(0, Math.min(98, ((new Date(d) - minDate) / 86400000) / total * 100));
+    return Math.max(0, Math.min(99, (new Date(d) - minDate) / 86400000 / total * 100));
   };
   const wPct = (s, e) => {
     if (!s || !e) return 2;
@@ -318,109 +343,212 @@ function GanttChart({ project, compact }) {
     cur.setMonth(cur.getMonth() + 1);
   }
 
-  const labelW = compact ? 120 : 160;
-  const rowH = compact ? 22 : 28;
-  const bgs = ["#FAFBFF", "#F5F9FF"];
+  const labelW = compact ? 110 : 150;
+  const rowH = 28;
+  const bgs = ["#FFFFFF", "#F8FAFF"];
+
+  const barColor = (m) => {
+    const dl = delayLvl(m.dueDate, m.status);
+    if (m.status === "Tamamland\u0131") return "#059669";
+    if (dl === "critical") return "#E11D48";
+    if (dl === "normal") return "#EA6C00";
+    return project.color;
+  };
 
   return (
     <div style={{ overflowX:"auto" }}>
-      <div style={{ minWidth: compact ? 500 : 650 }}>
-        <div style={{ fontSize:10, color:"#94A3B8", marginBottom:6 }}>
-          Milestone tıklayın: hedeflenen (kesik) / gerçekleşen (dolu) + görev satırları
+      <div style={{ minWidth: 520 }}>
+        <div style={{ fontSize:10, color:"#94A3B8", marginBottom:8 }}>
+          Milestone tıklayın → hedeflenen/gerçekleşen + görev satırları
         </div>
-        <div style={{ display:"flex", marginLeft:labelW, marginBottom:5, position:"relative", height:16 }}>
+        {/* Month labels */}
+        <div style={{ display:"flex", marginLeft:labelW, marginBottom:4, position:"relative", height:16 }}>
           {months.map((m, i) => (
             <div key={i} style={{ position:"absolute", left:`${m.pct}%`, fontSize:9, color:"#94A3B8", fontWeight:600, whiteSpace:"nowrap" }}>{m.label}</div>
           ))}
+        </div>
+        {/* Today line header */}
+        <div style={{ display:"flex", marginLeft:labelW, marginBottom:2, position:"relative", height:2 }}>
+          <div style={{ flex:1, position:"relative", height:2, background:"#F1F5FF", borderRadius:1 }}>
+            {todayOff >= 0 && todayOff <= total && (
+              <div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:-2, bottom:-2, width:2, background:"#E11D48", opacity:0.5 }} />
+            )}
+          </div>
         </div>
 
         {ms.map((m, mi) => {
           const s = m.startDate || project.startDate;
           const e = m.dueDate;
           if (!s || !e) return null;
-          const dl = delayLvl(e, m.status);
-          const barC = m.status === "Tamamland\u0131" ? "#059669" : dl === "critical" ? "#E11D48" : dl === "normal" ? "#EA6C00" : project.color;
+          const bc = barColor(m);
           const done = m.tasks.filter(t => t.status === "Tamamland\u0131").length;
           const isExp = expanded === m.id;
 
           return (
-            <div key={m.id} style={{ background: bgs[mi % 2], borderRadius:8, marginBottom: isExp ? 0 : 4, border:`1.5px solid ${isExp ? "#4A6CF7" : "#E8EDF5"}` }}>
+            <div key={m.id} style={{ marginBottom: isExp ? 2 : 3 }}>
               {/* Milestone row */}
               <div onClick={() => setExpanded(isExp ? null : m.id)}
-                style={{ display:"flex", alignItems:"center", padding:"4px 6px", cursor:"pointer", borderBottom: isExp ? "1px solid #E2E8F0" : "none" }}>
-                <div style={{ width:labelW, flexShrink:0, fontSize: compact ? 10 : 12, fontWeight:700, paddingRight:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#1E293B" }} title={m.name}>
-                  {isExp ? "\u25BE " : "\u25B8 "}{m.name}
+                style={{ display:"flex", alignItems:"center", padding:"2px 0", cursor:"pointer" }}>
+                <div style={{ width:labelW, flexShrink:0, fontSize:compact ? 10 : 11, fontWeight:700, paddingRight:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#1E293B" }} title={m.name}>
+                  {isExp ? "▾" : "▸"} {m.name}
                 </div>
-                <div style={{ flex:1, position:"relative", height:rowH, background:"#EEF2FF", borderRadius:6 }}>
-                  {todayOff <= total && (
-                    <div style={{ position:"absolute", left:`${todayOff / total * 100}%`, top:0, bottom:0, width:2, background:"#E11D48", zIndex:3 }} />
+                <div style={{ flex:1, position:"relative", height:rowH, background: bgs[mi % 2], borderRadius:6, border:`1px solid #E8EDF5` }}>
+                  {/* Today line */}
+                  {todayOff >= 0 && todayOff <= total && (
+                    <div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:0, bottom:0, width:1.5, background:"#E11D48", zIndex:4, opacity:0.7 }} />
                   )}
-                  {/* Planned dashed */}
-                  <div style={{ position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`, top:3, height:rowH-6, background:barC+"33", border:`1.5px dashed ${barC}`, borderRadius:4, zIndex:1 }}
-                    title={`Hedeflenen: ${fmt(s)} \u2192 ${fmt(e)}`} />
-                  {/* Actual or fallback */}
-                  <div style={{ position:"absolute", left:`${pct(m.actualStart || s)}%`, width:`${wPct(m.actualStart || s, m.actualEnd || e)}%`, top:3, height:rowH-6, background:barC, borderRadius:4, zIndex:2, display:"flex", alignItems:"center", justifyContent:"center", minWidth:20 }}>
-                    <span style={{ fontSize:9, color:"#fff", fontWeight:700, padding:"0 4px", whiteSpace:"nowrap" }}>
-                      {m.status === "Tamamland\u0131" ? "\u2713 " : ""}{fmt(e)}
-                    </span>
-                  </div>
+                  {/* Planned bar (dashed outline) */}
+                  <div style={{
+                    position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`,
+                    top:4, height:rowH-8, background:bc+"22",
+                    border:`1.5px dashed ${bc}`, borderRadius:4, zIndex:1
+                  }} />
+                  {/* Actual bar (solid) - only if actual dates exist */}
+                  {m.actualStart && (
+                    <div style={{
+                      position:"absolute",
+                      left:`${pct(m.actualStart)}%`,
+                      width:`${wPct(m.actualStart, m.actualEnd || new Date().toISOString().slice(0,10))}%`,
+                      top:4, height:rowH-8, background:bc, borderRadius:4, zIndex:2,
+                      display:"flex", alignItems:"center", justifyContent:"center"
+                    }}>
+                      <span style={{ fontSize:9, color:"#fff", fontWeight:700, padding:"0 4px", whiteSpace:"nowrap" }}>
+                        {m.status === "Tamamland\u0131" ? "✓ " : ""}{fmt(e)}
+                      </span>
+                    </div>
+                  )}
+                  {/* If no actual, show solid planned bar with label */}
+                  {!m.actualStart && (
+                    <div style={{
+                      position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`,
+                      top:4, height:rowH-8, background:bc, borderRadius:4, zIndex:2,
+                      display:"flex", alignItems:"center", justifyContent:"center"
+                    }}>
+                      <span style={{ fontSize:9, color:"#fff", fontWeight:700, padding:"0 4px", whiteSpace:"nowrap" }}>
+                        {m.status === "Tamamland\u0131" ? "✓ " : ""}{fmt(s)} → {fmt(e)}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div style={{ width:64, textAlign:"right", paddingLeft:6, fontSize:10, color:"#64748B" }}>{done}/{m.tasks.length}</div>
+                <div style={{ width:50, textAlign:"right", paddingLeft:6, fontSize:10, color:"#94A3B8" }}>{done}/{m.tasks.length}</div>
               </div>
 
-              {/* Expanded detail */}
+              {/* Expanded: comparison + tasks */}
               {isExp && (
-                <div style={{ padding:"8px 6px 10px", background:"#F0F4FF", borderRadius:"0 0 6px 6px" }}>
-                  {/* Planned vs actual */}
-                  <div style={{ display:"flex", alignItems:"center", marginBottom:4 }}>
-                    <div style={{ width:labelW, flexShrink:0, fontSize:9, color:"#94A3B8", textAlign:"right", paddingRight:8 }}>Hedeflenen</div>
-                    <div style={{ flex:1, position:"relative", height:14, background:"#fff", borderRadius:4 }}>
-                      <div style={{ position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`, height:10, top:2, background:project.color+"44", border:`1.5px dashed ${project.color}`, borderRadius:3 }} />
-                    </div>
-                    <div style={{ width:64, fontSize:9, color:"#94A3B8", paddingLeft:6 }}>{fmt(s)}\u2192{fmt(e)}</div>
+                <div style={{ marginLeft:labelW, background:"#F0F6FF", borderRadius:"0 0 6px 6px", padding:"8px 8px 10px", border:"1px solid #D0E0FF", borderTop:"none", marginBottom:4 }}>
+                  <div style={{ fontSize:10, fontWeight:600, color:"#4A6CF7", marginBottom:8 }}>
+                    Hedef: {fmt(s)} → {fmt(e)} &nbsp;|&nbsp; {m.actualStart ? `Gerçekleşen: ${fmt(m.actualStart)} → ${fmt(m.actualEnd)||"devam"}` : "Gerçekleşen tarih girilmemiş (Milestone Düzenle)"}
                   </div>
-                  <div style={{ display:"flex", alignItems:"center", marginBottom:10 }}>
-                    <div style={{ width:labelW, flexShrink:0, fontSize:9, color:"#94A3B8", textAlign:"right", paddingRight:8 }}>Ger\u00e7ekle\u015fen</div>
-                    <div style={{ flex:1, position:"relative", height:14, background:"#fff", borderRadius:4 }}>
-                      {m.actualStart
-                        ? <div style={{ position:"absolute", left:`${pct(m.actualStart)}%`, width:`${wPct(m.actualStart, m.actualEnd || new Date().toISOString().slice(0,10))}%`, height:10, top:2, background:barC, borderRadius:3 }} />
-                        : <div style={{ position:"absolute", left:6, top:1, fontSize:9, color:"#CBD5E1" }}>Tarih girilmemi\u015f</div>
-                      }
+                  {/* Task Gantt rows */}
+                  {m.tasks.filter(t => t.dueDate).length > 0 ? (
+                    <div>
+                      <div style={{ fontSize:9, fontWeight:600, color:"#4A6CF7", marginBottom:6, textTransform:"uppercase", letterSpacing:1 }}>Görev Planı</div>
+                      {m.tasks.filter(t => t.dueDate).map(t => {
+                        const tdl = delayLvl(t.dueDate, t.status);
+                        const tc = t.status === "Tamamland\u0131" ? "#059669" : tdl === "critical" ? "#E11D48" : tdl === "normal" ? "#EA6C00" : project.color;
+                        const hasRange = t.startDate && t.dueDate && new Date(t.startDate) < new Date(t.dueDate);
+                        const barLeft = hasRange ? pct(t.startDate) : Math.max(0, pct(t.dueDate) - 1);
+                        const barWidth = hasRange ? wPct(t.startDate, t.dueDate) : 2;
+                        const donePct = t.status === "Tamamland\u0131" ? 100 : 0;
+                        return (
+                          <div key={t.id} style={{ display:"flex", alignItems:"center", marginBottom:5 }}>
+                            <div style={{ width:140, flexShrink:0, fontSize:9, color:"#475569", paddingRight:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight: t.status==="Tamamland\u0131"?400:500 }} title={t.title}>
+                              {t.status==="Tamamland\u0131" ? "✓ " : ""}{t.title}
+                            </div>
+                            <div style={{ flex:1, position:"relative", height:20, background:"#fff", borderRadius:4, border:"1px solid #E8EDF5", overflow:"hidden" }}>
+                              {/* Today line */}
+                              {todayOff >= 0 && todayOff <= total && (
+                                <div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:0, bottom:0, width:1, background:"#E11D48", opacity:0.4, zIndex:3 }} />
+                              )}
+                              {/* Task bar background */}
+                              <div style={{
+                                position:"absolute",
+                                left:`${barLeft}%`,
+                                width:`${barWidth}%`,
+                                top:3, height:14,
+                                background: tc + "33",
+                                border:`1px solid ${tc}66`,
+                                borderRadius:4,
+                                zIndex:1,
+                                minWidth:4
+                              }} />
+                              {/* Progress fill */}
+                              {hasRange && donePct > 0 && (
+                                <div style={{
+                                  position:"absolute",
+                                  left:`${barLeft}%`,
+                                  width:`${barWidth * donePct / 100}%`,
+                                  top:3, height:14,
+                                  background: tc,
+                                  borderRadius:4,
+                                  zIndex:2
+                                }} />
+                              )}
+                              {/* If no range: diamond marker at due date */}
+                              {!hasRange && (
+                                <div style={{
+                                  position:"absolute",
+                                  left:`${pct(t.dueDate)}%`,
+                                  top:4, width:12, height:12,
+                                  background:tc,
+                                  transform:"translateX(-50%) rotate(45deg)",
+                                  zIndex:2,
+                                  borderRadius:2
+                                }} title={`${t.title}: ${fmt(t.dueDate)}`} />
+                              )}
+                              {/* Date label inside bar if wide enough */}
+                              {hasRange && barWidth > 8 && (
+                                <div style={{
+                                  position:"absolute",
+                                  left:`${barLeft}%`,
+                                  width:`${barWidth}%`,
+                                  top:3, height:14,
+                                  display:"flex", alignItems:"center", justifyContent:"center",
+                                  zIndex:3, pointerEvents:"none"
+                                }}>
+                                  <span style={{ fontSize:8, color: donePct>50?"#fff":tc, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden" }}>
+                                    {fmt(t.startDate)}→{fmt(t.dueDate)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ width:56, fontSize:8, color: tdl ? "#E11D48" : "#94A3B8", paddingLeft:5, whiteSpace:"nowrap", textAlign:"right" }}>
+                              {hasRange ? fmt(t.dueDate) : fmt(t.dueDate)}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div style={{ width:64, fontSize:9, color:"#94A3B8", paddingLeft:6 }}>
-                      {m.actualStart ? `${fmt(m.actualStart)}\u2192${fmt(m.actualEnd) || "devam"}` : ""}
-                    </div>
-                  </div>
-
-                  {/* Task rows */}
-                  {m.tasks.filter(t => t.dueDate).map(t => {
-                    const tdl = delayLvl(t.dueDate, t.status);
-                    const tc = t.status === "Tamamland\u0131" ? "#059669" : tdl === "critical" ? "#E11D48" : tdl === "normal" ? "#EA6C00" : "#94A3B8";
-                    const taskPct = pct(t.dueDate);
-                    return (
-                      <div key={t.id} style={{ display:"flex", alignItems:"center", marginBottom:3 }}>
-                        <div style={{ width:labelW, flexShrink:0, fontSize:9, paddingRight:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#64748B", paddingLeft:12 }} title={t.title}>
-                          {t.title}
-                        </div>
-                        <div style={{ flex:1, position:"relative", height:20, background:"#fff", borderRadius:4 }}>
-                          {todayOff <= total && (
-                            <div style={{ position:"absolute", left:`${todayOff / total * 100}%`, top:0, bottom:0, width:1, background:"#E11D48", zIndex:2 }} />
-                          )}
-                          <div style={{ position:"absolute", left:`${Math.max(0, taskPct - 1.5)}%`, width:"3%", top:3, height:14, background:tc, borderRadius:3, minWidth:8, zIndex:1 }}
-                            title={`${t.title}: ${fmt(t.dueDate)}`} />
-                        </div>
-                        <div style={{ width:64, fontSize:9, color: tdl ? "#E11D48" : "#94A3B8", paddingLeft:6 }}>{fmt(t.dueDate)}</div>
-                      </div>
-                    );
-                  })}
+                  ) : (
+                    <div style={{ fontSize:11, color:"#94A3B8" }}>Bu milestone'da tarihli görev yok.</div>
+                  )}
                 </div>
               )}
             </div>
           );
         })}
 
-        <div style={{ position:"relative", height:14, marginLeft:labelW, marginTop:4 }}>
-          <div style={{ position:"absolute", left:`${Math.min(99, todayOff / total * 100)}%`, fontSize:9, color:"#E11D48", fontWeight:700, transform:"translateX(-50%)" }}>BUG\u00dcN</div>
+        {/* Today label */}
+        {todayOff >= 0 && todayOff <= total && (
+          <div style={{ position:"relative", height:14, marginLeft:labelW }}>
+            <div style={{ position:"absolute", left:`${todayOff/total*100}%`, fontSize:9, color:"#E11D48", fontWeight:700, transform:"translateX(-50%)", whiteSpace:"nowrap" }}>▲ BUGÜN</div>
+          </div>
+        )}
+
+        {/* Legend */}
+        <div style={{ display:"flex", gap:14, marginTop:10, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <div style={{ width:24, height:8, borderRadius:3, border:`1.5px dashed ${project.color}`, background:project.color+"22" }} />
+            <span style={{ fontSize:10, color:"#64748B" }}>Hedeflenen</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <div style={{ width:24, height:8, borderRadius:3, background:project.color }} />
+            <span style={{ fontSize:10, color:"#64748B" }}>Gerçekleşen</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <div style={{ width:2, height:16, background:"#E11D48", borderRadius:2 }} />
+            <span style={{ fontSize:10, color:"#64748B" }}>Bugün</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1123,8 +1251,28 @@ export default function App() {
   };
 
   const excelDateToStr=(v)=>{
-    if(typeof v==="number"){ const d=new Date(Math.round((v-25569)*86400*1000)); return d.toISOString().slice(0,10); }
-    return String(v||"").trim();
+    if(!v&&v!==0)return "";
+    if(typeof v==="number"){
+      // Excel serial date
+      const d=new Date(Math.round((v-25569)*86400*1000));
+      return isNaN(d)?"":d.toISOString().slice(0,10);
+    }
+    const s=String(v).trim();
+    if(!s)return "";
+    // Already ISO: 2026-07-01
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+    // DD.MM.YYYY
+    const dm=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if(dm)return `${dm[3]}-${dm[2].padStart(2,"0")}-${dm[1].padStart(2,"0")}`;
+    // DD/MM/YYYY or MM/DD/YYYY - assume DD/MM if day<=12 ambiguous, try parse
+    const sl=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(sl){
+      const d=new Date(`${sl[3]}-${sl[2].padStart(2,"0")}-${sl[1].padStart(2,"0")}`);
+      if(!isNaN(d))return d.toISOString().slice(0,10);
+    }
+    // Try generic parse
+    const gd=new Date(s);
+    return isNaN(gd)?"":gd.toISOString().slice(0,10);
   };
 
   const parseRows=(rows)=>{
@@ -1135,27 +1283,62 @@ export default function App() {
       const c=(rows[i]||[]).map(x=>typeof x==="string"?x.trim():x);
       if(!c[0])continue;
       const n=String(c[0]);
-      if(!mm[n])mm[n]={id:uid(),name:n,startDate:excelDateToStr(c[1]),dueDate:excelDateToStr(c[2]),status:STATUSES.includes(c[3])?c[3]:"Bekliyor",waitSource:String(c[4]||""),tasks:[]};
-      if(c[5])mm[n].tasks.push({id:uid(),title:String(c[5]),status:STATUSES.includes(c[6])?c[6]:"Bekliyor",priority:PRIORITIES.includes(c[7])?c[7]:"Orta",assignee:String(c[8]||""),dueDate:excelDateToStr(c[9]),waitSource:String(c[10]||""),notes:String(c[11]||""),tags:String(c[12]||""),link:String(c[13]||""),timeEntries:[]});
+      // cols: 0=ms_name,1=ms_start,2=ms_due,3=ms_status,4=ms_wait,
+      //       5=task_title,6=task_start,7=task_status,8=priority,9=assignee,
+      //       10=task_due,11=task_wait,12=notes,13=tags,14=link
+      if(!mm[n])mm[n]={id:uid(),name:n,startDate:excelDateToStr(c[1]),dueDate:excelDateToStr(c[2]),status:STATUSES.includes(String(c[3]||""))?String(c[3]):"Bekliyor",waitSource:String(c[4]||""),tasks:[]};
+      if(c[5])mm[n].tasks.push({
+        id:uid(),
+        title:String(c[5]),
+        startDate:excelDateToStr(c[6]),
+        status:STATUSES.includes(String(c[7]||""))?String(c[7]):"Bekliyor",
+        priority:PRIORITIES.includes(String(c[8]||""))?String(c[8]):"Orta",
+        assignee:String(c[9]||""),
+        dueDate:excelDateToStr(c[10]),
+        waitSource:String(c[11]||""),
+        notes:String(c[12]||""),
+        tags:String(c[13]||""),
+        link:String(c[14]||""),
+        timeEntries:[]
+      });
     }
+    // Recalculate milestone dates from task dates
+    Object.values(mm).forEach(ms=>{
+      const taskDues=ms.tasks.map(t=>t.dueDate).filter(Boolean);
+      const taskStarts=ms.tasks.map(t=>t.startDate||t.dueDate).filter(Boolean);
+      if(taskDues.length>0){
+        ms.dueDate=taskDues.reduce((a,b)=>new Date(a)>new Date(b)?a:b);
+      }
+      if(taskStarts.length>0){
+        ms.startDate=taskStarts.reduce((a,b)=>new Date(a)<new Date(b)?a:b);
+      }
+    });
     return Object.values(mm);
   };
 
   const downloadTemplate=()=>{
     const rows=[
-      ["Milestone Adı","Başlangıç (YYYY-AA-GG)","Termin (YYYY-AA-GG)","Milestone Durumu","Bekleme Kaynağı","Görev Adı","Görev Durumu","Öncelik","Sorumlu","Görev Termin","Görev Bekleme","Notlar","Etiketler","Baglanti"],
-      ["Kapsam ve Fizibilite","2026-07-01","2026-07-21","Bekliyor","","Surec analizi","Bekliyor","Yüksek","Hakan B.","2026-07-10","","Akis diyagrami","analiz",""],
-      ["Kapsam ve Fizibilite","2026-07-01","2026-07-21","Bekliyor","","ROI hesaplama","Bekliyor","Orta","Ayse K.","2026-07-15","","","analiz",""],
-      ["Altyapi Hazirlik","2026-07-21","2026-08-18","Bekliyor","","Sunucu kurulumu","Bekliyor","Yüksek","Ayse K.","2026-07-28","","","altyapi",""],
-      ["Altyapi Hazirlik","2026-07-21","2026-08-18","Bekliyor","Tedarikci","OPC-UA altyapi","Bekliyor","Yüksek","Ayse K.","2026-08-10","Teknik","Port 4840","altyapi",""],
-      ["Makine Entegrasyonu","2026-08-18","2026-09-22","Bekliyor","","CNC baglanti","Bekliyor","Yüksek","Hakan B.","2026-09-01","","","makine",""],
-      ["Test ve Validasyon","2026-09-22","2026-10-13","Bekliyor","","Fonksiyonel testler","Bekliyor","Yüksek","Hakan B.","2026-10-01","","","test",""],
-      ["Canlia Alis","2026-10-13","2026-10-27","Bekliyor","","Operator egitimi","Bekliyor","Orta","Hakan B.","2026-10-20","","","egitim",""]
+      ["Milestone Adı","Başlangıç (YYYY-AA-GG)","Termin (YYYY-AA-GG)","Milestone Durumu","Bekleme Kaynağı",
+       "Görev Adı","Görev Başlangıç","Görev Durumu","Öncelik","Sorumlu","Görev Termin","Görev Bekleme","Notlar","Etiketler","Bağlantı"],
+      ["Kapsam ve Fizibilite","2026-07-01","2026-07-21","Bekliyor","",
+       "Süreç analizi","2026-07-01","Bekliyor","Yüksek","Hakan B.","2026-07-10","","Akış diyagramı","analiz",""],
+      ["Kapsam ve Fizibilite","2026-07-01","2026-07-21","Bekliyor","",
+       "ROI hesaplama","2026-07-08","Bekliyor","Orta","Ayşe K.","2026-07-15","","","analiz",""],
+      ["Altyapı Hazırlık","2026-07-21","2026-08-18","Bekliyor","",
+       "Sunucu kurulumu","2026-07-21","Bekliyor","Yüksek","Ayşe K.","2026-07-28","","","altyapı",""],
+      ["Altyapı Hazırlık","2026-07-21","2026-08-18","Bekliyor","Tedarikçi",
+       "OPC-UA altyapı","2026-07-28","Bekliyor","Yüksek","Ayşe K.","2026-08-10","Teknik","Port 4840","altyapı",""],
+      ["Makine Entegrasyonu","2026-08-18","2026-09-22","Bekliyor","",
+       "CNC bağlantı","2026-08-18","Bekliyor","Yüksek","Hakan B.","2026-09-01","","","makine",""],
+      ["Test ve Validasyon","2026-09-22","2026-10-13","Bekliyor","",
+       "Fonksiyonel testler","2026-09-22","Bekliyor","Yüksek","Hakan B.","2026-10-01","","","test",""],
+      ["Canlıya Alış","2026-10-13","2026-10-27","Bekliyor","",
+       "Operatör eğitimi","2026-10-13","Bekliyor","Orta","Hakan B.","2026-10-20","","","eğitim",""]
     ];
     const ws=XLSX.utils.aoa_to_sheet(rows);
-    ws["!cols"]=[{wch:22},{wch:18},{wch:18},{wch:16},{wch:16},{wch:26},{wch:14},{wch:10},{wch:16},{wch:14},{wch:14},{wch:24},{wch:14},{wch:20}];
+    ws["!cols"]=[{wch:22},{wch:18},{wch:18},{wch:16},{wch:16},{wch:26},{wch:16},{wch:14},{wch:10},{wch:16},{wch:14},{wch:14},{wch:24},{wch:14},{wch:20}];
     const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,"Proje Planı");
+    XLSX.utils.book_append_sheet(wb,ws,"Proje Plani");
     XLSX.writeFile(wb,"proje-plani-sablonu.xlsx");
   };
 
@@ -1182,7 +1365,21 @@ export default function App() {
         ms=parseRows(rows);
       }
       if(!ms||!ms.length){alert("Dosyada veri bulunamadı.");return;}
-      mutProject(p=>({...p,milestones:[...p.milestones,...ms]}));
+      mutProject(p=>{
+        const updated=p.milestones.map(existing=>{
+          const match=ms.find(m=>m.name.trim().toLowerCase()===existing.name.trim().toLowerCase());
+          if(!match)return existing;
+          // Merge: update dates/status, merge tasks (add new ones, update existing by title)
+          const mergedTasks=existing.tasks.map(et=>{
+            const mt=match.tasks.find(t=>t.title.trim().toLowerCase()===et.title.trim().toLowerCase());
+            return mt?{...et,...mt,id:et.id}:et;
+          });
+          const newTasks=match.tasks.filter(mt=>!existing.tasks.some(et=>et.title.trim().toLowerCase()===mt.title.trim().toLowerCase()));
+          return {...existing,startDate:match.startDate||existing.startDate,dueDate:match.dueDate||existing.dueDate,status:match.status||existing.status,waitSource:match.waitSource||existing.waitSource,tasks:[...mergedTasks,...newTasks]};
+        });
+        const newMs=ms.filter(m=>!p.milestones.some(e=>e.name.trim().toLowerCase()===m.name.trim().toLowerCase()));
+        return {...p,milestones:[...updated,...newMs]};
+      });
       addLog(currentUser.name,"import",`${ms.length} milestone aktarıldı`,project?.name);
       alert(`${ms.length} milestone aktarıldı.`);
     };
@@ -1393,40 +1590,51 @@ export default function App() {
           <div><h2 style={{ margin:0, fontSize:20, fontWeight:800 }}>Ekip</h2></div>
           {isAdmin&&<Btn onClick={()=>setModal({type:"addPerson"})}>+ Kişi Ekle</Btn>}
         </div>
-        {(()=>{ const ot=state.projects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectName:proj.name,personName:state.people.find(p=>p.id===t.assignee)?.name,dl:delayLvl(t.dueDate,t.status)})))); if(!ot.length)return null;
-          return <div style={{ background:"#FFF1F2", border:"1.5px solid #FCA5A5", borderRadius:12, padding:"13px 17px", marginBottom:18 }}>
-            <div style={{ fontWeight:700, fontSize:12, color:"#E11D48", marginBottom:7 }}>Termin Uyarıları</div>
-            {ot.slice(0,8).map(t=><div key={t.id} style={{ display:"flex", gap:8, alignItems:"center", fontSize:12, marginBottom:3 }}>
-              <span style={{ background:t.dl==="critical"?"#E11D48":"#EA6C00", color:"#fff", borderRadius:8, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{t.dl==="critical"?"KRİTİK":"GECİKMİŞ"}</span>
-              <span style={{ fontWeight:600 }}>{t.title}</span>
-              <span style={{ color:"#94A3B8" }}>— {t.personName||"?"} | {t.projectName} | {fmt(t.dueDate)}</span>
-            </div>)}
-          </div>;
+        {(()=>{
+          const ot=state.projects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectName:proj.name,personName:state.people.find(p=>p.id===t.assignee)?.name,dl:delayLvl(t.dueDate,t.status)}))));
+          if(!ot.length)return null;
+          return (
+            <div style={{ background:"#FFF1F2", border:"1.5px solid #FCA5A5", borderRadius:12, padding:"13px 17px", marginBottom:18 }}>
+              <div style={{ fontWeight:700, fontSize:12, color:"#E11D48", marginBottom:7 }}>Termin Uyarıları</div>
+              {ot.slice(0,8).map(t=>(
+                <div key={t.id} style={{ display:"flex", gap:8, alignItems:"center", fontSize:12, marginBottom:3 }}>
+                  <span style={{ background:t.dl==="critical"?"#E11D48":"#EA6C00", color:"#fff", borderRadius:8, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{t.dl==="critical"?"KRİTİK":"GECİKMİŞ"}</span>
+                  <span style={{ fontWeight:600 }}>{t.title}</span>
+                  <span style={{ color:"#94A3B8" }}>— {t.personName||"?"} | {t.projectName} | {fmt(t.dueDate)}</span>
+                </div>
+              ))}
+            </div>
+          );
         })()}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(210px,1fr))", gap:12 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {state.people.map(p=>{
             const allT=[...state.projects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>t.assignee===p.id))),...(state.personalTasks||[]).filter(t=>t.assignee===p.id)];
             const active=allT.filter(t=>t.status==="Devam Ediyor").length;
             const waiting=allT.filter(t=>t.status==="Bekliyor").length;
             const delayed=allT.filter(t=>delayLvl(t.dueDate,t.status)==="normal").length;
             const crit=allT.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length;
-            const comp=allT.filter(t=>t.status==="Tamamland\u0131").length;
+            const comp=allT.filter(t=>t.status==="Tamamlandı").length;
             const projC=[...new Set(state.projects.filter(proj=>proj.milestones.some(ms=>ms.tasks.some(t=>t.assignee===p.id))).map(pr=>pr.id))].length;
-            return <div key={p.id} style={{ background:"#fff", borderRadius:13, padding:"16px", border:"1.5px solid #E2E8F0" }}>
-              <div style={{ display:"flex", justifyContent:"center", marginBottom:8 }}><Avatar initials={p.avatar} size={40} color={p.isAdmin?"#E11D48":"#4A6CF7"} /></div>
-              <div style={{ fontWeight:700, fontSize:13, textAlign:"center" }}>{p.name}</div>
-              <div style={{ color:"#64748B", fontSize:11, textAlign:"center", marginTop:2 }}>{p.role}</div>
-              {p.isAdmin&&<div style={{ textAlign:"center", marginTop:3 }}><span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:8, padding:"1px 7px", fontSize:10, fontWeight:700 }}>YÖN</span></div>}
-              <div style={{ fontSize:10, color:"#94A3B8", textAlign:"center", marginTop:2 }}>{projC} proje</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, marginTop:10 }}>
-                {[["Aktif",active,"#4A6CF7"],["Beklem.",waiting,"#94A3B8"],["Gecikmiş",delayed,"#EA6C00"],["Kritik",crit,"#E11D48"]].map(([l,c,col])=><div key={l} style={{ background:col+"15", borderRadius:8, padding:"5px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:800, color:col }}>{c}</div><div style={{ fontSize:9, color:"#64748B", marginTop:1 }}>{l}</div></div>)}
+            const stats=[["Aktif",active,"#4A6CF7"],["Bekl.",waiting,"#94A3B8"],["Gec.",delayed,"#EA6C00"],["Krit.",crit,"#E11D48"],["Bitti",comp,"#059669"]].filter(([,c])=>c>0);
+            return (
+              <div key={p.id} style={{ background:"#fff", borderRadius:12, padding:"11px 14px", border:"1.5px solid #E2E8F0", display:"flex", alignItems:"center", gap:12 }}>
+                <Avatar initials={p.avatar} size={36} color={p.isAdmin?"#E11D48":"#4A6CF7"} />
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                    <span style={{ fontWeight:700, fontSize:13 }}>{p.name}</span>
+                    {p.isAdmin&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:6, padding:"1px 6px", fontSize:9, fontWeight:700 }}>YÖN</span>}
+                  </div>
+                  <div style={{ color:"#94A3B8", fontSize:11, marginTop:1 }}>{p.role}{projC>0?` · ${projC} proje`:""}</div>
+                  {stats.length>0&&<div style={{ display:"flex", gap:8, marginTop:4, flexWrap:"wrap" }}>
+                    {stats.map(([l,c,col])=><span key={l} style={{ fontSize:11, fontWeight:700, color:col }}>{l} {c}</span>)}
+                  </div>}
+                </div>
+                <div style={{ display:"flex", gap:5, flexShrink:0 }}>
+                  <Btn small variant="secondary" onClick={()=>setModal({type:"personDetail",data:p})}>Detay</Btn>
+                  {isAdmin&&p.id!==currentUser.id&&<Btn small variant="danger" onClick={()=>{if(confirm("Kaldırılsın mı?"))deletePerson(p.id);}}>×</Btn>}
+                </div>
               </div>
-              {comp>0&&<div style={{ textAlign:"center", fontSize:11, color:"#059669", marginTop:6, fontWeight:600 }}>Tamamlandı: {comp}</div>}
-              <div style={{ display:"flex", gap:5, marginTop:8 }}>
-                <Btn small variant="secondary" style={{ flex:1 }} onClick={()=>setModal({type:"personDetail",data:p})}>Detay</Btn>
-                {isAdmin&&p.id!==currentUser.id&&<Btn small variant="danger" onClick={()=>{if(confirm("Kaldırılsın mı?"))deletePerson(p.id);}}>x</Btn>}
-              </div>
-            </div>;
+            );
           })}
         </div>
       </div>}
