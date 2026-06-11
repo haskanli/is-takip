@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sendEmail, userTaskUrl } from "../server/services/email.js";
+import { sendEmail, userTaskUrl, userTicketUrl } from "../server/services/email.js";
 
 process.env.RESEND_API_KEY = "resend-test-key";
 process.env.EMAIL_FROM = "Corject <test@example.com>";
@@ -10,6 +10,13 @@ test("userTaskUrl creates a direct My Tasks link", () => {
   assert.equal(
     userTaskUrl("person-1"),
     "https://corject.example.com/?user=person-1&view=mytasks",
+  );
+});
+
+test("userTicketUrl creates a direct ticket link", () => {
+  assert.equal(
+    userTicketUrl("person-1", "project-1", "ticket-1"),
+    "https://corject.example.com/?user=person-1&view=tickets&project=project-1&ticket=ticket-1",
   );
 });
 

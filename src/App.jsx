@@ -218,6 +218,8 @@ function Icon({ name, size=16 }) {
     ticket:<><path d="M4 6h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4z"/><path d="M12 7v10"/></>,
     notes:<><path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/></>,
     edit:<><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></>,
+    trash:<><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></>,
+    download:<><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]||paths.projects}</svg>;
 }
@@ -1269,9 +1271,13 @@ function generateTicketStatusReport(state,people){
 }
 
 function TicketsPage({state,setState,currentUser,isAdmin}){
-  const [projectFilter,setProjectFilter]=useState("all");
+  const ticketLink=typeof window!=="undefined"?new URLSearchParams(window.location.search):null;
+  const linkedProject=ticketLink?.get("project")||"";
+  const linkedTicket=ticketLink?.get("ticket")||"";
+  const linkedTicketData=linkedProject&&linkedTicket?((state.projectTickets||{})[linkedProject]||[]).find(ticket=>ticket.id===linkedTicket):null;
+  const [projectFilter,setProjectFilter]=useState(linkedProject||"all");
   const [statusFilter,setStatusFilter]=useState("all");
-  const [modal,setModal]=useState(null);
+  const [modal,setModal]=useState(linkedTicketData?{type:"detail",projectId:linkedProject,data:linkedTicketData}:null);
   const TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
   const PRIOS=["Düşük","Orta","Yüksek","Kritik"];
   const all=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>{
@@ -1690,9 +1696,10 @@ export default function App() {
             <Badge label={project.status} />
             {overdueC>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Gecikmiş: {overdueC}</span>}
             {criticalC>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Kritik: {criticalC}</span>}
-            <div style={{ marginLeft:"auto", display:"flex", gap:7, flexWrap:"wrap" }}>
-              {isAdmin&&<><Btn small variant="secondary" onClick={()=>setModal({type:"editProject",data:project})}>Duzenle</Btn><Btn small variant="danger" onClick={()=>{if(confirm("Projeyi sil?"))deleteProject(project.id);}}>Sil</Btn></>}
-              {isAdmin&&<Btn small variant="success" onClick={()=>generateHTMLReport(project,state.people,state.logs)}>HTML Rapor</Btn>}
+            <div style={{ marginLeft:"auto", display:"flex", gap:5, padding:"3px", border:"1px solid #E2E8F0", background:"#F8FAFC", borderRadius:10, flexShrink:0 }}>
+              {isAdmin&&<button title="Projeyi düzenle" aria-label="Projeyi düzenle" onClick={()=>setModal({type:"editProject",data:project})} style={{width:31,height:31,border:"none",borderRadius:8,background:"#EEF2FF",color:"#4A6CF7",display:"grid",placeItems:"center",cursor:"pointer"}}><Icon name="edit" size={15}/></button>}
+              {isAdmin&&<button title="HTML rapor indir" aria-label="HTML rapor indir" onClick={()=>generateHTMLReport(project,state.people,state.logs)} style={{width:31,height:31,border:"none",borderRadius:8,background:"#ECFDF5",color:"#059669",display:"grid",placeItems:"center",cursor:"pointer"}}><Icon name="download" size={15}/></button>}
+              {isAdmin&&<button title="Projeyi sil" aria-label="Projeyi sil" onClick={()=>{if(confirm("Projeyi sil?"))deleteProject(project.id);}} style={{width:31,height:31,border:"none",borderRadius:8,background:"#FFF1F2",color:"#E11D48",display:"grid",placeItems:"center",cursor:"pointer"}}><Icon name="trash" size={15}/></button>}
             </div>
           </div>
           <div style={{ display:"flex", gap:16, fontSize:12, color:"#64748B", flexWrap:"wrap", alignItems:"center" }}>

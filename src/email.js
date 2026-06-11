@@ -10,6 +10,7 @@ const readError = async (response) => {
 export const notifyTicketAssignment = async (projectId, ticket) => {
   const response = await fetch("/email/ticket-assigned", {
     method: "POST",
+    keepalive: true,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ projectId, ticket }),
   });
