@@ -10,3 +10,11 @@ services:
     envVars:
       - key: JIRA_WEBHOOK_SECRET
         generateValue: true
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: REMINDER_CRON_SECRET
+        generateValue: true

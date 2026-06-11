@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 import { getJiraIssue } from "./jira";
+import { notifyTicketAssignment } from "./email";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
@@ -98,9 +99,9 @@ const buildFromTemplate = (tpl, startDate) => ({
 // ─── Demo Data ──────────────────────────────────────────────────────────────
 const DEMO = {
   people:[
-    { id:"p1", name:"Hakan", role:"Y\u00f6netici", avatar:"H", isAdmin:true },
-    { id:"p2", name:"Ay\u015fe K.", role:"Geli\u015ftirici", avatar:"AK", isAdmin:false },
-    { id:"p3", name:"Mert D.", role:"Tasar\u0131mc\u0131", avatar:"MD", isAdmin:false },
+    { id:"p1", name:"Hakan", email:"", role:"Y\u00f6netici", avatar:"H", isAdmin:true },
+    { id:"p2", name:"Ay\u015fe K.", email:"", role:"Geli\u015ftirici", avatar:"AK", isAdmin:false },
+    { id:"p3", name:"Mert D.", email:"", role:"Tasar\u0131mc\u0131", avatar:"MD", isAdmin:false },
   ],
   projects:[{
     id:"proj1", name:"CNC Dashboard MES", color:"#4A6CF7",
@@ -865,7 +866,7 @@ function PersonDetailModal({ person, projects, personalTasks, onClose }) {
   return <Modal title={`${person.name} Detay`} onClose={onClose} wide>
     <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:18 }}>
       <Avatar initials={person.avatar} size={44} color={person.isAdmin?"#E11D48":"#4A6CF7"} />
-      <div><div style={{ fontWeight:800, fontSize:15 }}>{person.name}</div><div style={{ color:"#64748B", fontSize:12 }}>{person.role}</div></div>
+      <div><div style={{ fontWeight:800, fontSize:15 }}>{person.name}</div><div style={{ color:"#64748B", fontSize:12 }}>{person.role}</div>{person.email&&<div style={{color:"#4A6CF7",fontSize:11,marginTop:2}}>{person.email}</div>}</div>
     </div>
     <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginBottom:18 }}>
       <Stat label="Aktif" count={active.filter(t=>t.status==="Devam Ediyor").length} color="#4A6CF7" />
@@ -1242,11 +1243,72 @@ function ReportsPage({ state, people, isAdmin }) {
     {title:"İç Operasyon Raporu",desc:"Grafikler, efor, gecikme, sorumlu, görev ve makine detaylarını içeren yönetim raporu.",color:"#0369A1",action:()=>project&&generateVisualReport(project,people),label:"HTML / PDF"},
     {title:"Müşteri İlerleme Raporu",desc:"Renkli ilerleme grafikleri, teslim tarihleri ve makine durumunu sade müşteri görünümünde sunar.",color:"#EA6C00",action:()=>project&&generateVisualReport(project,people,{customer:true}),label:"HTML / PDF"},
     ...(isAdmin?[{title:"Genel Durum Raporu",desc:"Tüm projeleri ilerleme, gecikme, makine ve efor göstergeleriyle karşılaştırır.",color:"#4338CA",action:()=>generatePortfolioReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{title:"Ticket Durum Raporu",desc:"Ticket yaşı, son aksiyon, sorumlu, proje ve Jira durumlarını tüm portföyde gösterir.",color:"#BE123C",action:()=>generateTicketStatusReport(state,people),label:"HTML / PDF"}]:[]),
   ];
   return <div style={{padding:"clamp(16px, 4vw, 28px)",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,marginBottom:20,flexWrap:"wrap"}}><div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="reports" size={21}/>Raporlar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>İç operasyon ve müşteri paylaşımı için güncel proje çıktıları.</p></div><div style={{minWidth:"min(240px,100%)",flex:"0 1 280px"}}><label style={lStyle}>Rapor Projesi</label><select style={iStyle} value={projectId} onChange={e=>setProjectId(e.target.value)}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:10,marginBottom:20}}>{[["Geciken Görev",delayed.length,"#E11D48"],["Toplam Efor",`${hours} sa`,"#7C3AED"],["Makine",machines.length,"#0369A1"],["Devrede",machines.filter(m=>m.commissioned).length,"#059669"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:14}}><div style={{fontSize:11,color:"#64748B"}}>{label}</div><div style={{fontSize:24,fontWeight:800,color,marginTop:3}}>{value}</div></div>)}</div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12}}>{cards.map(card=><div key={card.title} style={{background:"#fff",borderRadius:14,padding:18,border:"1.5px solid #E2E8F0",borderTop:`4px solid ${card.color}`,boxShadow:"0 2px 6px rgba(0,0,0,.04)"}}><div style={{fontWeight:800,fontSize:14,marginBottom:6}}>{card.title}</div><div style={{fontSize:12,color:"#64748B",lineHeight:1.5,minHeight:54}}>{card.desc}</div><Btn style={{marginTop:12,background:card.color}} disabled={!project&&card.title.includes("Raporu")} onClick={card.action}>{card.label}</Btn></div>)}</div>
+  </div>;
+}
+
+function generateTicketStatusReport(state,people){
+  const tickets=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>{
+    const project=state.projects.find(p=>p.id===projectId);
+    return (list||[]).map(ticket=>({ticket,project}));
+  });
+  const open=tickets.filter(({ticket})=>!["Çözüldü","Kapatıldı"].includes(ticket.status)).length;
+  const acted=tickets.filter(({ticket})=>(ticket.updatedAt&&ticket.updatedAt!==ticket.ts)||ticket.jiraStatus).length;
+  const rows=tickets.map(({ticket,project})=>{
+    const age=Math.max(0,daysDiff(ticket.ts));
+    const assignee=people.find(p=>p.id===ticket.assignedTo);
+    return `<tr><td><b>${ticket.title}</b></td><td>${project?.name||"Silinmiş proje"}</td><td>${ticket.status||"Açık"}</td><td>${ticket.priority||"-"}</td><td>${assignee?.name||"Atanmamış"}</td><td>${new Date(ticket.ts).toLocaleDateString("tr-TR")}</td><td class="${age>=7?"danger":""}">${age} gün</td><td>${ticket.updatedAt?new Date(ticket.updatedAt).toLocaleString("tr-TR"):"Aksiyon yok"}</td><td>${ticket.jiraStatus||"-"}</td></tr>`;
+  }).join("");
+  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Ticket Durum Raporu</title><style>*{box-sizing:border-box}body{margin:0;padding:32px;background:#f1f5f9;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1250px;margin:auto}.hero{background:linear-gradient(125deg,#172554,#4338ca,#7c3aed);color:#fff;padding:28px;border-radius:22px}.hero h1{margin:0}.hero p{color:#c7d2fe}.print{float:right;border:0;border-radius:10px;background:#fff;color:#4338ca;padding:9px 15px;font-weight:800}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat{color:#fff;border-radius:15px;padding:17px}.stat b{font-size:27px;display:block}.blue{background:linear-gradient(135deg,#2563eb,#4f46e5)}.orange{background:linear-gradient(135deg,#ea580c,#f59e0b)}.green{background:linear-gradient(135deg,#059669,#10b981)}.purple{background:linear-gradient(135deg,#7c3aed,#a855f7)}.card{background:#fff;border:1px solid #e2e8f0;border-radius:17px;padding:20px}.table{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left;font-size:12px}th{background:#f8fafc;color:#64748b}.danger{color:#dc2626;font-weight:800}@media(max-width:760px){body{padding:14px}.stats{grid-template-columns:1fr 1fr}}@media print{body{padding:0;background:#fff}.print{display:none}}</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>Ticket Durum Raporu</h1><p>${new Date().toLocaleDateString("tr-TR")} · Tüm projeler</p></div><div class="stats"><div class="stat blue"><b>${tickets.length}</b>Toplam Ticket</div><div class="stat orange"><b>${open}</b>Açık Ticket</div><div class="stat green"><b>${tickets.length-open}</b>Kapanan Ticket</div><div class="stat purple"><b>${acted}</b>Aksiyon Alınan</div></div><div class="card"><div class="table"><table><thead><tr><th>Ticket</th><th>Proje</th><th>Durum</th><th>Öncelik</th><th>Sorumlu</th><th>Açılış</th><th>Geçen Süre</th><th>Son Aksiyon</th><th>Jira</th></tr></thead><tbody>${rows||"<tr><td colspan='9'>Ticket yok.</td></tr>"}</tbody></table></div></div></div></body></html>`;
+  downloadTextFile(html,`ticket-durum-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
+}
+
+function TicketsPage({state,setState,currentUser,isAdmin}){
+  const [projectFilter,setProjectFilter]=useState("all");
+  const [statusFilter,setStatusFilter]=useState("all");
+  const [modal,setModal]=useState(null);
+  const TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
+  const PRIOS=["Düşük","Orta","Yüksek","Kritik"];
+  const all=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>{
+    const project=state.projects.find(p=>p.id===projectId);
+    return (list||[]).map(ticket=>({ticket,projectId,project}));
+  });
+  const filtered=all.filter(({ticket,projectId})=>(projectFilter==="all"||projectId===projectFilter)&&(statusFilter==="all"||ticket.status===statusFilter));
+  const save=(projectId,tickets)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[projectId]:tickets}}));
+  const add=(projectId,data)=>{
+    const createdAt=now();
+    const ticket={id:uid(),ts:createdAt,updatedAt:createdAt,author:currentUser.name,...data};
+    save(projectId,[...((state.projectTickets||{})[projectId]||[]),ticket]);
+    if(ticket.assignedTo)notifyTicketAssignment(projectId,ticket).catch(error=>console.warn("Ticket maili gönderilemedi",error));
+  };
+  const update=(projectId,id,data)=>{
+    const tickets=(state.projectTickets||{})[projectId]||[];
+    const old=tickets.find(t=>t.id===id);
+    const ticket={...old,...data,updatedAt:now()};
+    save(projectId,tickets.map(t=>t.id===id?ticket:t));
+    if(data.assignedTo&&data.assignedTo!==old?.assignedTo)notifyTicketAssignment(projectId,ticket).catch(error=>console.warn("Ticket maili gönderilemedi",error));
+  };
+  return <div style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
+    <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:18}}>
+      <div><h2 style={{margin:0,fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#1E293B"}}><Icon name="ticket" size={20}/>Ticketlar</h2><p style={{margin:"3px 0 0",fontSize:12,color:"#64748B"}}>{filtered.length} kayıt gösteriliyor</p></div>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{isAdmin&&<Btn variant="secondary" onClick={()=>generateTicketStatusReport(state,state.people)}>Durum Raporu</Btn>}<Btn onClick={()=>setModal({type:"add",projectId:state.projects[0]?.id||""})}>+ Ticket Ekle</Btn></div>
+    </div>
+    <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
+      <select style={{...iStyle,width:"auto",minWidth:210}} value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="all">Tüm Projeler</option>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+      <select style={{...iStyle,width:"auto",minWidth:160}} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">Tüm Durumlar</option>{["Açık","İnceleniyor","Çözüldü","Kapatıldı"].map(s=><option key={s}>{s}</option>)}</select>
+    </div>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>{filtered.map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderLeft:`4px solid ${project?.color||"#4A6CF7"}`,borderRadius:12,padding:"13px 15px",cursor:"pointer"}}>
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><b style={{fontSize:13}}>{ticket.title}</b><Badge label={ticket.status||"Açık"}/><span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span><span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
+      <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"#64748B"}}><span>Sorumlu: <b>{assignee?.name||"Atanmamış"}</b></span><span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span></div>
+    </div>})}</div>
+    {!filtered.length&&<div style={{padding:40,textAlign:"center",background:"#fff",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Filtreye uygun ticket yok.</div>}
+    {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}><Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><TicketForm types={TYPES} prios={PRIOS} people={state.people} onClose={()=>setModal(null)} onSave={data=>{if(!modal.projectId)return;add(modal.projectId,data);setModal(null);}}/></Modal>}
+    {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} canEdit={isAdmin||modal.data.author===currentUser.name} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)}/>}
   </div>;
 }
 
@@ -1256,13 +1318,15 @@ const GlobalStyle = () => (
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body, #root { height: 100%; width: 100%; overflow: hidden; margin: 0; padding: 0; }
     body { font-family: Inter, Segoe UI, sans-serif; background: #0F172A; }
+    h1, h2, h3 { color: #1E293B; }
     input, select, textarea, button { font-family: inherit; }
   `}</style>
 );
 
 export default function App() {
+  const deepLink=typeof window!=="undefined"?new URLSearchParams(window.location.search):null;
   const [state,setState]=useState(load);
-  const [view,setView]=useState("projects");
+  const [view,setView]=useState(deepLink?.get("view")||"projects");
   const [selProject,setSelProject]=useState(null);
   const [selMilestone,setSelMilestone]=useState(null);
   const [projectTab,setProjectTab]=useState("tasks");
@@ -1286,8 +1350,9 @@ export default function App() {
   useEffect(()=>{
     // Once localStorage'dan kullanici kimligini geri yukle
     try{
-      const savedUid=localStorage.getItem("corject_uid");
+      const savedUid=deepLink?.get("user")||localStorage.getItem("corject_uid");
       if(savedUid) setState(s=>({...s,currentUserId:savedUid}));
+      if(deepLink?.get("user"))localStorage.setItem("corject_uid",deepLink.get("user"));
     }catch(e){}
     (async()=>{
       const remote=await loadFromSupabase();
@@ -1295,7 +1360,7 @@ export default function App() {
         skipNextSave.current=true;
         // currentUserId'yi localStorage'dan koru, Supabase'den geleni kullanma
         let savedUid="";
-        try{ savedUid=localStorage.getItem("corject_uid")||""; }catch(e){}
+        try{ savedUid=deepLink?.get("user")||localStorage.getItem("corject_uid")||""; }catch(e){}
         setState(s=>({ ...remote, currentUserId:savedUid||s.currentUserId }));
       } else {
         saveToSupabase(state, (s,msg)=>setSyncStatus({s,msg:msg||""}));
@@ -1552,7 +1617,7 @@ export default function App() {
   const overdueC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,0)||0;
   const criticalC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length,0)||0;
 
-  const nav=[{id:"projects",icon:"projects",label:"Projeler"},{id:"mytasks",icon:"tasks",label:"Görevlerim"},{id:"reports",icon:"reports",label:"Raporlar"},{id:"people",icon:"people",label:"Ekip"},{id:"logs",icon:"activity",label:"Aktivite"}];
+  const nav=[{id:"projects",icon:"projects",label:"Projeler"},{id:"mytasks",icon:"tasks",label:"Görevlerim"},{id:"tickets",icon:"ticket",label:"Ticketlar"},{id:"reports",icon:"reports",label:"Raporlar"},{id:"people",icon:"people",label:"Ekip"},{id:"logs",icon:"activity",label:"Aktivite"}];
 
   return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
@@ -1728,6 +1793,7 @@ export default function App() {
       </div>}
 
       {view==="mytasks"&&<MyTasksPage currentUser={currentUser} state={state} setState={setState} addLog={addLog} isAdmin={isAdmin} />}
+      {view==="tickets"&&<TicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} />}
       {view==="reports"&&<ReportsPage state={state} people={state.people} isAdmin={isAdmin} />}
 
       {view==="people"&&<div style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>
@@ -1788,7 +1854,7 @@ export default function App() {
                     <span style={{ fontWeight:700, fontSize:13 }}>{p.name}</span>
                     {p.isAdmin&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:6, padding:"1px 6px", fontSize:9, fontWeight:700 }}>YÖN</span>}
                   </div>
-                  <div style={{ color:"#94A3B8", fontSize:11, marginTop:1 }}>{p.role}{projC>0?` · ${projC} proje`:""}</div>
+                  <div style={{ color:"#94A3B8", fontSize:11, marginTop:1 }}>{p.role}{p.email?` · ${p.email}`:""}{projC>0?` · ${projC} proje`:""}</div>
                   {stats.length>0&&<div style={{ display:"flex", gap:8, marginTop:4, flexWrap:"wrap" }}>
                     {stats.map(([l,c,col])=><span key={l} style={{ fontSize:11, fontWeight:700, color:col }}>{l} {c}</span>)}
                   </div>}
@@ -1952,8 +2018,18 @@ function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
   const [modal,setModal]=useState(null);
   const tickets=((state.projectTickets||{})[project.id])||[];
   const saveTickets=(t)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[project.id]:t}}));
-  const addTicket=(data)=>saveTickets([...tickets,{id:uid(),ts:now(),author:currentUser.name,...data}]);
-  const updateTicket=(id,data)=>saveTickets(tickets.map(t=>t.id===id?{...t,...data}:t));
+  const addTicket=(data)=>{
+    const createdAt=now();
+    const ticket={id:uid(),ts:createdAt,updatedAt:createdAt,author:currentUser.name,...data};
+    saveTickets([...tickets,ticket]);
+    if(ticket.assignedTo)notifyTicketAssignment(project.id,ticket).catch(error=>console.warn("Ticket maili gönderilemedi",error));
+  };
+  const updateTicket=(id,data)=>{
+    const old=tickets.find(t=>t.id===id);
+    const updated={...old,...data,updatedAt:now()};
+    saveTickets(tickets.map(t=>t.id===id?updated:t));
+    if(data.assignedTo&&data.assignedTo!==old?.assignedTo)notifyTicketAssignment(project.id,updated).catch(error=>console.warn("Ticket maili gönderilemedi",error));
+  };
   const deleteTicket=(id)=>saveTickets(tickets.filter(t=>t.id!==id));
   const TICKET_TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
   const TICKET_PRIOS=["Düşük","Orta","Yüksek","Kritik"];
@@ -1981,18 +2057,19 @@ function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
           </div>
           {t.description&&<div style={{ fontSize:12, color:"#64748B", marginBottom:4 }}>{t.description}</div>}
           <div style={{ fontSize:11, color:"#94A3B8" }}>{t.author} · {new Date(t.ts).toLocaleDateString("tr-TR")}</div>
+          {t.assignedTo&&<div style={{fontSize:11,color:"#4A6CF7",marginTop:3}}>Sorumlu: {state.people.find(p=>p.id===t.assignedTo)?.name||"Atanmamış"}</div>}
         </div>
         {(isAdmin||t.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();deleteTicket(t.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:16 }}>×</button>}
       </div>)}
     </div>
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>
-      <TicketForm onSave={(d)=>{addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} />
+      <TicketForm onSave={(d)=>{addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />
     </Modal>}
-    {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} canEdit={isAdmin||modal.data.author===currentUser.name} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} types={TICKET_TYPES} prios={TICKET_PRIOS} />}
+    {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} canEdit={isAdmin||modal.data.author===currentUser.name} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />}
   </div>;
 }
-function TicketForm({ onSave, onClose, types, prios }) {
-  const [f,setF]=useState({ title:"", type:"Görev", priority:"Orta", description:"", status:"Açık", jiraKey:"" });
+function TicketForm({ onSave, onClose, types, prios, people }) {
+  const [f,setF]=useState({ title:"", type:"Görev", priority:"Orta", description:"", status:"Açık", jiraKey:"", assignedTo:"" });
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   const submit=()=>{
     if(!f.title.trim())return;
@@ -2006,13 +2083,14 @@ function TicketForm({ onSave, onClose, types, prios }) {
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{prios.map(p=><option key={p}>{p}</option>)}</select></Field>
     </div>
     <Field label="Açıklama"><textarea style={{ ...iStyle, height:80, resize:"vertical" }} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
+    <Field label="Atanan Kullanıcı"><select style={iStyle} value={f.assignedTo} onChange={e=>upd("assignedTo",e.target.value)}><option value="">- Atanmamış -</option>{people.map(person=><option key={person.id} value={person.id}>{person.name}{person.email?` · ${person.email}`:""}</option>)}</select></Field>
     <Field label="Jira Task Key"><input style={iStyle} value={f.jiraKey} onChange={e=>upd("jiraKey",e.target.value)} placeholder="PROJ-123" /></Field>
     <div style={{ fontSize:11, color:"#64748B", marginBottom:11 }}>Mevcut bir Jira taskıyla ilişkilendirmek için issue key girin.</div>
     <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={submit}>Kaydet</Btn></div>
   </div>;
 }
 
-function TicketDetail({ ticket, canEdit, onClose, onUpdate, types, prios }) {
+function TicketDetail({ ticket, canEdit, onClose, onUpdate, types, prios, people=[] }) {
   const [editing,setEditing]=useState(false);
   const [form,setForm]=useState(ticket);
   const [jira,setJira]=useState(null);
@@ -2059,11 +2137,13 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, types, prios }) {
         <Field label="Öncelik"><select style={iStyle} value={form.priority||"Orta"} onChange={e=>upd("priority",e.target.value)}>{prios.map(p=><option key={p}>{p}</option>)}</select></Field>
       </div>
       <Field label="Açıklama"><textarea style={{...iStyle,height:90,resize:"vertical"}} value={form.description||""} onChange={e=>upd("description",e.target.value)} /></Field>
+      <Field label="Atanan Kullanıcı"><select style={iStyle} value={form.assignedTo||""} onChange={e=>upd("assignedTo",e.target.value)}><option value="">- Atanmamış -</option>{people.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}</select></Field>
       <Field label="Jira Task Key"><input style={iStyle} value={form.jiraKey||form.jiraId||""} onChange={e=>upd("jiraKey",e.target.value)} placeholder="PROJ-123" /></Field>
       <div style={{display:"flex",justifyContent:"flex-end",gap:7}}><Btn variant="ghost" onClick={()=>setEditing(false)}>İptal</Btn><Btn onClick={save}>Kaydet</Btn></div>
     </div>:<div>
       {ticket.description&&<div style={{fontSize:13,color:"#475569",lineHeight:1.6,marginBottom:16}}>{ticket.description}</div>}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}><span style={{background:"#F1F5FF",color:"#4A6CF7",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.type}</span><span style={{background:"#FFF7ED",color:"#EA6C00",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.priority}</span><span style={{background:"#F8FAFC",color:"#64748B",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.status}</span></div>
+      {ticket.assignedTo&&<div style={{fontSize:12,color:"#4A6CF7",marginBottom:14}}>Atanan: <b>{people.find(person=>person.id===ticket.assignedTo)?.name||"Bilinmiyor"}</b></div>}
       <div style={{border:"1.5px solid #DDE7F5",borderRadius:12,padding:14,background:"#F8FBFF",marginBottom:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:jiraKey?10:0}}><div style={{fontWeight:800,fontSize:13,color:"#0052CC"}}>Jira Task</div>{jiraKey&&<button onClick={refreshJira} disabled={loading} style={{border:"none",background:"none",color:"#4A6CF7",fontSize:11,cursor:"pointer"}}>{loading?"Güncelleniyor...":"Yenile"}</button>}</div>
         {!jiraKey&&<div style={{fontSize:12,color:"#64748B"}}>Bu ticket henüz bir Jira taskıyla ilişkilendirilmemiş.</div>}
@@ -2083,13 +2163,15 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, types, prios }) {
 // ─── User Edit Modal ──────────────────────────────────────────────────────────
 function UserEditModal({ person, onClose, onSave, title="Profilimi Düzenle", allowAdmin=false }) {
   const [name, setName] = useState(person.name);
+  const [email,setEmail]=useState(person.email||"");
   const [role, setRole] = useState(person.role||"");
   const [isAdmin,setIsAdmin]=useState(Boolean(person.isAdmin));
   return <Modal title={title} onClose={onClose}>
     <Field label="Ad Soyad *"><input style={iStyle} value={name} onChange={e=>setName(e.target.value)} /></Field>
+    <Field label="E-posta"><input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" /></Field>
     <Field label="Rol / Unvan"><input style={iStyle} value={role} onChange={e=>setRole(e.target.value)} /></Field>
     {allowAdmin&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={isAdmin} onChange={e=>setIsAdmin(e.target.checked)}/> Yönetici yetkisi</label>}
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),role:role.trim(),...(allowAdmin?{isAdmin}:{})}); onClose(); }}>Kaydet</Btn></div>
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),role:role.trim(),...(allowAdmin?{isAdmin}:{})}); onClose(); }}>Kaydet</Btn></div>
   </Modal>;
 }
 
@@ -2230,6 +2312,7 @@ function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, c
 }
 function PersonModal({ onClose, onSave }) {
   const [name, setName] = useState("");
+  const [email,setEmail]=useState("");
   const [role, setRole] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   return (
@@ -2239,6 +2322,9 @@ function PersonModal({ onClose, onSave }) {
       </Field>
       <Field label="Rol / Unvan">
         <input style={iStyle} value={role} onChange={e=>setRole(e.target.value)} placeholder="Geliştirici, Tasarımcı..." />
+      </Field>
+      <Field label="E-posta">
+        <input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" />
       </Field>
       <Field label="Yetki">
         <div style={{ display:"flex", gap:10 }}>
@@ -2252,7 +2338,7 @@ function PersonModal({ onClose, onSave }) {
       </Field>
       <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}>
         <Btn variant="ghost" onClick={onClose}>İptal</Btn>
-        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,role,isAdmin}); onClose(); }}>Kaydet</Btn>
+        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,email:email.trim(),role,isAdmin}); onClose(); }}>Kaydet</Btn>
       </div>
     </Modal>
   );

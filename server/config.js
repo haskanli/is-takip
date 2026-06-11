@@ -29,3 +29,10 @@ export const getServerConfig = () => ({
   retryCount: Number(process.env.JIRA_RETRY_COUNT || 3),
   allowedOrigin: optional("APP_ORIGIN"),
 });
+
+export const getEmailConfig = () => ({
+  apiKey: optional("RESEND_API_KEY"),
+  from: optional("EMAIL_FROM"),
+  appBaseUrl: optional("APP_BASE_URL").replace(/\/+$/, ""),
+  reminderSecret: optional("REMINDER_CRON_SECRET"),
+});

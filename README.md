@@ -44,6 +44,20 @@ Repo kökündeki `render.yaml`, frontend ve API'yi tek Render web service olarak
 yayınlar. Jira bilgileri daha sonra Render Environment ekranından eklenebilir.
 `JIRA_WEBHOOK_SECRET` deployment sırasında otomatik üretilir.
 
+## E-posta bildirimleri
+
+Ticket atama ve geciken görev mailleri Resend HTTP API üzerinden gönderilir.
+Render web service üzerinde `RESEND_API_KEY`, `EMAIL_FROM`, `APP_BASE_URL` ve
+`REMINDER_CRON_SECRET` değişkenleri tanımlanmalıdır.
+
+Günlük gecikme hatırlatıcısı için aynı repodan bir Render Cron Job oluşturun:
+
+- Build command: `npm install`
+- Start command: `npm run reminders`
+- Schedule: günde bir kez, örneğin `0 6 * * *`
+- Cron Job'a web service ile aynı `APP_BASE_URL` ve `REMINDER_CRON_SECRET`
+  değerlerini ekleyin.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

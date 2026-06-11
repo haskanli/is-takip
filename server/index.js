@@ -2,12 +2,17 @@ import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getServerConfig } from "./config.js";
+import { getEmailConfig, getServerConfig } from "./config.js";
 import { logger } from "./logger.js";
 import {
   saveJiraIssueToTicket,
+  loadState,
   updateTicketStatusByJiraKey,
 } from "./repositories/appState.js";
+import {
+  sendOverdueReminderEmail,
+  sendTicketAssignedEmail,
+} from "./services/email.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
 
@@ -114,6 +119,73 @@ const handleWebhook = async (request, response) => {
   json(response, 200, { received: true, ...result });
 };
 
+const handleTicketAssignedEmail = async (request, response) => {
+  const body = parseJson(await readBody(request));
+  if (!body?.projectId || !body?.ticket?.assignedTo) {
+    throw Object.assign(new Error("projectId and ticket.assignedTo are required"), { status: 400 });
+  }
+  const state = await loadState();
+  const project = state.projects?.find((item) => item.id === body.projectId);
+  const assignee = state.people?.find((item) => item.id === body.ticket.assignedTo);
+  if (!project || !assignee) {
+    throw Object.assign(new Error("Project or assignee not found"), { status: 404 });
+  }
+  if (!assignee.email) {
+    json(response, 202, { sent: false, reason: "Assignee has no email address" });
+    return;
+  }
+  const result = await sendTicketAssignedEmail({ assignee, ticket: body.ticket, project });
+  json(response, 200, { sent: !result.skipped, skipped: Boolean(result.skipped) });
+};
+
+const dateOnly = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+};
+
+const handleOverdueReminders = async (request, response) => {
+  const config = getEmailConfig();
+  const token = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!config.reminderSecret || token !== config.reminderSecret) {
+    json(response, 401, { error: "Invalid reminder secret" });
+    return;
+  }
+  const state = await loadState();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const grouped = new Map();
+  const addTask = (task, projectName) => {
+    if (!task.assignee || !task.dueDate || task.status === "Tamamlandı") return;
+    const due = new Date(task.dueDate);
+    due.setHours(0, 0, 0, 0);
+    const days = Math.floor((today - due) / 86400000);
+    if (days <= 0) return;
+    const tasks = grouped.get(task.assignee) || [];
+    tasks.push({ title: task.title, projectName, dueDate: dateOnly(task.dueDate), days });
+    grouped.set(task.assignee, tasks);
+  };
+  for (const project of state.projects || []) {
+    for (const milestone of project.milestones || []) {
+      for (const task of milestone.tasks || []) addTask(task, project.name);
+    }
+  }
+  for (const task of state.personalTasks || []) addTask(task, "Genel Görev");
+
+  let sent = 0;
+  let skipped = 0;
+  for (const [userId, tasks] of grouped) {
+    const assignee = state.people?.find((person) => person.id === userId);
+    if (!assignee?.email) {
+      skipped += 1;
+      continue;
+    }
+    const result = await sendOverdueReminderEmail({ assignee, tasks });
+    if (result.skipped) skipped += 1;
+    else sent += 1;
+  }
+  json(response, 200, { sent, skipped, usersWithOverdueTasks: grouped.size });
+};
+
 const sendFile = async (response, path) => {
   const file = await readFile(path);
   response.writeHead(200, {
@@ -167,6 +239,10 @@ const server = createServer(async (request, response) => {
       await handleCreateIssue(request, response);
     } else if (request.method === "POST" && url.pathname === "/jira/webhook") {
       await handleWebhook(request, response);
+    } else if (request.method === "POST" && url.pathname === "/email/ticket-assigned") {
+      await handleTicketAssignedEmail(request, response);
+    } else if (request.method === "POST" && url.pathname === "/email/reminders") {
+      await handleOverdueReminders(request, response);
     } else if (request.method === "GET") {
       await handleStatic(url, response);
     } else {

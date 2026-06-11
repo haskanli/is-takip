@@ -31,7 +31,7 @@ const runSupabase = (operation, event) =>
       }),
   });
 
-const loadState = async () =>
+export const loadState = async () =>
   runSupabase(async () => {
     const { data, error } = await getClient()
       .from("app_state")
