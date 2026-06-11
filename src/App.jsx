@@ -95,7 +95,7 @@ const buildFromTemplate = (tpl, startDate) => ({
 // ─── Demo Data ──────────────────────────────────────────────────────────────
 const DEMO = {
   people:[
-    { id:"p1", name:"Hakan B.", role:"Y\u00f6netici", avatar:"HB", isAdmin:true },
+    { id:"p1", name:"Hakan", role:"Y\u00f6netici", avatar:"H", isAdmin:true },
     { id:"p2", name:"Ay\u015fe K.", role:"Geli\u015ftirici", avatar:"AK", isAdmin:false },
     { id:"p3", name:"Mert D.", role:"Tasar\u0131mc\u0131", avatar:"MD", isAdmin:false },
   ],
@@ -142,9 +142,9 @@ const DEMO = {
     "p3":{ notes:"", todos:[] },
   },
   logs:[
-    { id:"l1", ts:"2026-06-08T10:30:00Z", user:"Hakan B.", userId:"p1", action:"task_done", detail:"Mevcut süreç analizi tamamland\u0131", project:"CNC Dashboard MES", milestone:"Kapsam & Fizibilite" },
+    { id:"l1", ts:"2026-06-08T10:30:00Z", user:"Hakan", userId:"p1", action:"task_done", detail:"Mevcut süreç analizi tamamland\u0131", project:"CNC Dashboard MES", milestone:"Kapsam & Fizibilite" },
     { id:"l2", ts:"2026-06-09T14:15:00Z", user:"Ay\u015fe K.", userId:"p2", action:"status_change", detail:"OPC-UA altyap\u0131 → Devam Ediyor", project:"CNC Dashboard MES", milestone:"Altyap\u0131 Haz\u0131rl\u0131k" },
-    { id:"l3", ts:"2026-06-10T09:00:00Z", user:"Hakan B.", userId:"p1", action:"project_create", detail:"CNC Dashboard MES projesi olu\u015fturuldu", project:"CNC Dashboard MES", milestone:"" },
+    { id:"l3", ts:"2026-06-10T09:00:00Z", user:"Hakan", userId:"p1", action:"project_create", detail:"CNC Dashboard MES projesi olu\u015fturuldu", project:"CNC Dashboard MES", milestone:"" },
   ],
   currentUserId:null,
 };
@@ -233,7 +233,7 @@ function LoginScreen({ people, onLogin }) {
   const [sel, setSel] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   return (
-    <div style={{ minHeight:"100vh", width:"100vw", background:"linear-gradient(145deg,#0F172A 0%,#1E293B 50%,#0F172A 100%)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,Segoe UI,sans-serif", padding:0, margin:0, boxSizing:"border-box" }}>
+    <div style={{ position:"fixed", inset:0, background:"linear-gradient(145deg,#0F172A 0%,#1E293B 50%,#0F172A 100%)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,Segoe UI,sans-serif", overflow:"auto" }}>
       <div style={{ width:"100%", maxWidth:440, padding:"0 20px", boxSizing:"border-box" }}>
         {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:36 }}>
@@ -717,7 +717,8 @@ function TaskCard({ task, people, projectColor, onCheck, onEdit, onDelete, onTim
       </div>
       <div style={{ display:"flex", gap:10, marginTop:5, alignItems:"center", flexWrap:"wrap" }}>
         {assignee&&<div style={{ display:"flex", alignItems:"center", gap:4 }}><Avatar initials={assignee.avatar} size={17} color={projectColor||"#4A6CF7"} /><span style={{ fontSize:11, color:"#64748B" }}>{assignee.name}</span></div>}
-        {task.dueDate&&<span style={{ fontSize:11, color:dl?"#E11D48":"#94A3B8" }}>Termin: {fmt(task.dueDate)}</span>}
+        {task.startDate&&<span style={{ fontSize:11, color:"#94A3B8" }}>Başl: {fmt(task.startDate)}</span>}
+        {task.dueDate&&<span style={{ fontSize:11, color:dl?"#E11D48":"#94A3B8" }}>{task.startDate?"Bit:":"Termin:"} {fmt(task.dueDate)}</span>}
         {(task.timeEntries||[]).length>0&&<span style={{ fontSize:11, color:"#7C3AED", fontWeight:600, background:"#F5F3FF", borderRadius:6, padding:"1px 6px" }}>{(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0)} saat</span>}
         {task.waitSource&&<span style={{ fontSize:11, color:"#EA6C00", fontWeight:600 }}>Bekliyor: {task.waitSource}</span>}
         {task.link&&(()=>{const jm=String(task.link).match(/([A-Z][A-Z0-9]+-[0-9]+)/);return <a href={task.link} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ fontSize:11, color:"#0052CC", background:"#DEEBFF", borderRadius:6, padding:"1px 7px", fontWeight:700, textDecoration:"none" }}>{jm?jm[1]:"Jira"}</a>;})()}
@@ -1113,8 +1114,9 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
 const GlobalStyle = () => (
   <style>{`
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body, #root { height: 100%; width: 100%; overflow: hidden; }
-    body { font-family: Inter, Segoe UI, sans-serif; }
+    html, body, #root { height: 100%; width: 100%; overflow: hidden; margin: 0; padding: 0; }
+    body { font-family: Inter, Segoe UI, sans-serif; background: #0F172A; }
+    input, select, textarea, button { font-family: inherit; }
   `}</style>
 );
 
@@ -1321,7 +1323,7 @@ export default function App() {
       ["Milestone Adı","Başlangıç (YYYY-AA-GG)","Termin (YYYY-AA-GG)","Milestone Durumu","Bekleme Kaynağı",
        "Görev Adı","Görev Başlangıç","Görev Durumu","Öncelik","Sorumlu","Görev Termin","Görev Bekleme","Notlar","Etiketler","Bağlantı"],
       ["Kapsam ve Fizibilite","2026-07-01","2026-07-21","Bekliyor","",
-       "Süreç analizi","2026-07-01","Bekliyor","Yüksek","Hakan B.","2026-07-10","","Akış diyagramı","analiz",""],
+       "Süreç analizi","2026-07-01","Bekliyor","Yüksek","Hakan","2026-07-10","","Akış diyagramı","analiz",""],
       ["Kapsam ve Fizibilite","2026-07-01","2026-07-21","Bekliyor","",
        "ROI hesaplama","2026-07-08","Bekliyor","Orta","Ayşe K.","2026-07-15","","","analiz",""],
       ["Altyapı Hazırlık","2026-07-21","2026-08-18","Bekliyor","",
@@ -1329,11 +1331,11 @@ export default function App() {
       ["Altyapı Hazırlık","2026-07-21","2026-08-18","Bekliyor","Tedarikçi",
        "OPC-UA altyapı","2026-07-28","Bekliyor","Yüksek","Ayşe K.","2026-08-10","Teknik","Port 4840","altyapı",""],
       ["Makine Entegrasyonu","2026-08-18","2026-09-22","Bekliyor","",
-       "CNC bağlantı","2026-08-18","Bekliyor","Yüksek","Hakan B.","2026-09-01","","","makine",""],
+       "CNC bağlantı","2026-08-18","Bekliyor","Yüksek","Hakan","2026-09-01","","","makine",""],
       ["Test ve Validasyon","2026-09-22","2026-10-13","Bekliyor","",
-       "Fonksiyonel testler","2026-09-22","Bekliyor","Yüksek","Hakan B.","2026-10-01","","","test",""],
+       "Fonksiyonel testler","2026-09-22","Bekliyor","Yüksek","Hakan","2026-10-01","","","test",""],
       ["Canlıya Alış","2026-10-13","2026-10-27","Bekliyor","",
-       "Operatör eğitimi","2026-10-13","Bekliyor","Orta","Hakan B.","2026-10-20","","","eğitim",""]
+       "Operatör eğitimi","2026-10-13","Bekliyor","Orta","Hakan","2026-10-20","","","eğitim",""]
     ];
     const ws=XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"]=[{wch:22},{wch:18},{wch:18},{wch:16},{wch:16},{wch:26},{wch:16},{wch:14},{wch:10},{wch:16},{wch:14},{wch:14},{wch:24},{wch:14},{wch:20}];
@@ -1591,18 +1593,37 @@ export default function App() {
           {isAdmin&&<Btn onClick={()=>setModal({type:"addPerson"})}>+ Kişi Ekle</Btn>}
         </div>
         {(()=>{
-          const ot=state.projects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectName:proj.name,personName:state.people.find(p=>p.id===t.assignee)?.name,dl:delayLvl(t.dueDate,t.status)}))));
+          const ot=state.projects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectName:proj.name,projectColor:proj.color,personName:state.people.find(p=>p.id===t.assignee)?.name,dl:delayLvl(t.dueDate,t.status),days:daysDiff(t.dueDate)}))));
           if(!ot.length)return null;
+          const criticals=ot.filter(t=>t.dl==="critical");
+          const normals=ot.filter(t=>t.dl==="normal");
           return (
-            <div style={{ background:"#FFF1F2", border:"1.5px solid #FCA5A5", borderRadius:12, padding:"13px 17px", marginBottom:18 }}>
-              <div style={{ fontWeight:700, fontSize:12, color:"#E11D48", marginBottom:7 }}>Termin Uyarıları</div>
-              {ot.slice(0,8).map(t=>(
-                <div key={t.id} style={{ display:"flex", gap:8, alignItems:"center", fontSize:12, marginBottom:3 }}>
-                  <span style={{ background:t.dl==="critical"?"#E11D48":"#EA6C00", color:"#fff", borderRadius:8, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{t.dl==="critical"?"KRİTİK":"GECİKMİŞ"}</span>
-                  <span style={{ fontWeight:600 }}>{t.title}</span>
-                  <span style={{ color:"#94A3B8" }}>— {t.personName||"?"} | {t.projectName} | {fmt(t.dueDate)}</span>
-                </div>
-              ))}
+            <div style={{ marginBottom:18 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>
+                Termin Uyarıları — {criticals.length>0&&<span style={{ color:"#E11D48" }}>{criticals.length} kritik</span>}{criticals.length>0&&normals.length>0&&" · "}{normals.length>0&&<span style={{ color:"#EA6C00" }}>{normals.length} gecikmiş</span>}
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {ot.slice(0,10).map(t=>(
+                  <div key={t.id} style={{ display:"flex", alignItems:"center", gap:10, background:"#fff", borderRadius:10, padding:"10px 14px", border:`1.5px solid ${t.dl==="critical"?"#FCA5A5":"#FED7AA"}`, boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+                    <div style={{ width:36, height:36, borderRadius:8, background:t.dl==="critical"?"#FFF1F2":"#FFF7ED", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <span style={{ fontSize:14, fontWeight:800, color:t.dl==="critical"?"#E11D48":"#EA6C00", lineHeight:1 }}>{t.days}</span>
+                      <span style={{ fontSize:8, color:t.dl==="critical"?"#E11D48":"#EA6C00", fontWeight:600 }}>GÜN</span>
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:"#1E293B", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{t.title}</div>
+                      <div style={{ display:"flex", gap:6, alignItems:"center", marginTop:2, flexWrap:"wrap" }}>
+                        <span style={{ width:7, height:7, borderRadius:"50%", background:t.projectColor, flexShrink:0 }} />
+                        <span style={{ fontSize:11, color:"#64748B" }}>{t.projectName}</span>
+                        {t.personName&&<span style={{ fontSize:11, color:"#94A3B8" }}>· {t.personName}</span>}
+                        <span style={{ fontSize:11, color:"#94A3B8" }}>· Termin: {fmt(t.dueDate)}</span>
+                      </div>
+                    </div>
+                    <span style={{ background:t.dl==="critical"?"#FFF1F2":"#FFF7ED", color:t.dl==="critical"?"#E11D48":"#EA6C00", borderRadius:8, padding:"3px 9px", fontSize:10, fontWeight:700, flexShrink:0 }}>
+                      {t.dl==="critical"?"KRİTİK":"GECİKTİ"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })()}
@@ -1945,7 +1966,7 @@ function MilestoneModal({ title, initial, onClose, onSave }) {
   </Modal>;
 }
 function TaskModal({ title, initial, onClose, onSave, people }) {
-  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:"", dueDate:"", notes:"", waitSource:"", link:"", ...initial });
+  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:"", startDate:"", dueDate:"", notes:"", waitSource:"", link:"", ...initial });
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   return <Modal title={title} onClose={onClose}>
     <Field label="Görev Başlığı *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
@@ -1954,7 +1975,10 @@ function TaskModal({ title, initial, onClose, onSave, people }) {
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></Field>
     </div>
     <Field label="Sorumlu"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
-    <Field label="Termin"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+      <Field label="Başlangıç Tarihi"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
+      <Field label="Termin Tarihi"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
+    </div>
     <Field label="Bekleme Kaynağı"><select style={iStyle} value={f.waitSource} onChange={e=>upd("waitSource",e.target.value)}><option value="">- Yok -</option>{WAIT.map(s=><option key={s}>{s}</option>)}</select></Field>
     <Field label="Notlar"><input style={iStyle} value={f.notes} onChange={e=>upd("notes",e.target.value)} /></Field>
     <Field label="Jira Linki"><input style={iStyle} value={f.link||""} onChange={e=>upd("link",e.target.value)} placeholder="https://sirket.atlassian.net/browse/PROJ-123" /></Field>
@@ -1971,24 +1995,43 @@ function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, c
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></Field>
     </div>
     {isAdmin?<Field label="Atanacak Kisi"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>:<div style={{ background:"#F1F5FF", borderRadius:8, padding:"8px 12px", marginBottom:13, fontSize:12, color:"#4A6CF7" }}>Görev size atanacak: <b>{currentUser.name}</b></div>}
-    <Field label="Termin"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+      <Field label="Başlangıç Tarihi"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
+      <Field label="Termin Tarihi"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
+    </div>
     <Field label="Bekleme Kaynağı"><select style={iStyle} value={f.waitSource} onChange={e=>upd("waitSource",e.target.value)}><option value="">- Yok -</option>{WAIT.map(s=><option key={s}>{s}</option>)}</select></Field>
     <Field label="Notlar"><input style={iStyle} value={f.notes} onChange={e=>upd("notes",e.target.value)} /></Field>
     <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.title.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>
   </Modal>;
 }
 function PersonModal({ onClose, onSave }) {
-  const [f,setF]=useState({ name:"", role:"", isAdmin:false });
-  return <Modal title="Ekip Üyesi Ekle" onClose={onClose}>
-    <Field label="Ad Soyad *"><input style={iStyle} value={f.name} onChange={e=>setF(s=>({...s,name:e.target.value}))} /></Field>
-    <Field label="Rol"><input style={iStyle} value={f.role} onChange={e=>setF(s=>({...s,role:e.target.value}))} placeholder="Geliştirici, Tasarımcı..." /></Field>
-    <Field label="Yetki">
-      <div style={{ display:"flex", gap:10 }}>
-        {[["Ekip Üyesi",false],["Yönetici",true]].map(([l,v])=><div key={l} onClick={()=>setF(s=>({...s,isAdmin:v}))} style={{ flex:1, padding:"9px", borderRadius:8, border:`1.5px solid ${f.isAdmin===v?"#4A6CF7":"#E2E8F0"}`, cursor:"pointer", textAlign:"center", background:f.isAdmin===v?"#F1F5FF":"#fff", fontSize:12, fontWeight:600, color:f.isAdmin===v?"#4A6CF7":"#64748B" }}>{l}</div>)}
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  return (
+    <Modal title="Ekip Üyesi Ekle" onClose={onClose}>
+      <Field label="Ad Soyad *">
+        <input style={iStyle} value={name} onChange={e=>setName(e.target.value)} placeholder="Ad soyad" />
+      </Field>
+      <Field label="Rol / Unvan">
+        <input style={iStyle} value={role} onChange={e=>setRole(e.target.value)} placeholder="Geliştirici, Tasarımcı..." />
+      </Field>
+      <Field label="Yetki">
+        <div style={{ display:"flex", gap:10 }}>
+          <div onClick={()=>setIsAdmin(false)} style={{ flex:1, padding:"10px", borderRadius:8, border:`1.5px solid ${!isAdmin?"#4A6CF7":"#E2E8F0"}`, cursor:"pointer", textAlign:"center", background:!isAdmin?"#F1F5FF":"#fff", fontSize:12, fontWeight:600, color:!isAdmin?"#4A6CF7":"#64748B" }}>
+            Ekip Üyesi
+          </div>
+          <div onClick={()=>setIsAdmin(true)} style={{ flex:1, padding:"10px", borderRadius:8, border:`1.5px solid ${isAdmin?"#4A6CF7":"#E2E8F0"}`, cursor:"pointer", textAlign:"center", background:isAdmin?"#F1F5FF":"#fff", fontSize:12, fontWeight:600, color:isAdmin?"#4A6CF7":"#64748B" }}>
+            Yönetici
+          </div>
+        </div>
+      </Field>
+      <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}>
+        <Btn variant="ghost" onClick={onClose}>İptal</Btn>
+        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,role,isAdmin}); onClose(); }}>Kaydet</Btn>
       </div>
-    </Field>
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.name.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>
-  </Modal>;
+    </Modal>
+  );
 }
 function RiskModal({ onClose, onSave }) {
   const [f,setF]=useState({ title:"", level:"Orta", status:"Açık", note:"" });
