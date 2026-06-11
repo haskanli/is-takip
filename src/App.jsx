@@ -5,7 +5,7 @@ import { notifyTicketAssignment } from "./email";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.3.0";
+const APP_VERSION = "v1.4.0";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -219,6 +219,8 @@ function Icon({ name, size=16 }) {
     ticket:<><path d="M4 6h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4z"/><path d="M12 7v10"/></>,
     notes:<><path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/></>,
     calendar:<><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></>,
+    home:<><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></>,
+    clock:<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
     edit:<><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></>,
     trash:<><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></>,
     download:<><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></>,
@@ -257,6 +259,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const [scope,setScope]=useState(isAdmin?"team":"mine");
   const [weekOffset,setWeekOffset]=useState(0);
   const [showForm,setShowForm]=useState(false);
+  const [editingId,setEditingId]=useState(null);
   const [form,setForm]=useState({userId:currentUser.id,projectId:"",date:todayStr(),startTime:"09:00",endTime:"17:00",note:""});
   const plans=state.fieldPlans||[];
   const monday=new Date();
@@ -267,10 +270,15 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const dateKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const weekEnd=days[6];
   const visible=plans.filter(p=>(scope==="team"&&isAdmin)||p.userId===currentUser.id);
+  const openForm=(date=todayStr(),plan=null)=>{
+    setEditingId(plan?.id||null);
+    setForm(plan?{userId:plan.userId,projectId:plan.projectId,date:plan.date,startTime:plan.startTime||"09:00",endTime:plan.endTime||"17:00",note:plan.note||""}:{userId:currentUser.id,projectId:"",date,startTime:"09:00",endTime:"17:00",note:""});
+    setShowForm(true);
+  };
   const save=()=>{
     if(!form.projectId||!form.date)return;
-    setState(s=>({...s,fieldPlans:[...(s.fieldPlans||[]),{id:uid(),...form,createdAt:now()}]}));
-    setForm(f=>({...f,projectId:"",note:""}));
+    setState(s=>({...s,fieldPlans:editingId?(s.fieldPlans||[]).map(p=>p.id===editingId?{...p,...form,updatedAt:now()}:p):[...(s.fieldPlans||[]),{id:uid(),...form,createdAt:now()}]}));
+    setEditingId(null);
     setShowForm(false);
   };
   const remove=id=>setState(s=>({...s,fieldPlans:(s.fieldPlans||[]).filter(p=>p.id!==id)}));
@@ -278,7 +286,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   return <div style={{padding:"22px clamp(14px,4vw,28px)",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:18}}>
       <div><h2 style={{margin:0,fontSize:20,fontWeight:800,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>Saha Planım</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Müşteri ziyaretlerini haftalık olarak planlayın.</p></div>
-      <Btn onClick={()=>setShowForm(v=>!v)}>{showForm?"Kapat":"+ Plan Ekle"}</Btn>
+      <Btn onClick={()=>showForm?(setShowForm(false),setEditingId(null)):openForm()}>{showForm?"Kapat":"+ Plan Ekle"}</Btn>
     </div>
     {showForm&&<div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:16,marginBottom:16,boxShadow:"0 8px 24px rgba(15,23,42,.05)"}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,alignItems:"end"}}>
@@ -289,7 +297,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
         <Field label="Bitiş"><input type="time" style={iStyle} value={form.endTime} onChange={e=>setForm({...form,endTime:e.target.value})}/></Field>
       </div>
       <Field label="Plan Notu"><textarea style={{...iStyle,minHeight:70,resize:"vertical"}} value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder="Ziyaret amacı, görüşülecek kişiler veya hazırlık notu..."/></Field>
-      <div style={{display:"flex",justifyContent:"flex-end"}}><Btn disabled={!form.projectId||!form.date} onClick={save}>Planı Kaydet</Btn></div>
+      <div style={{display:"flex",justifyContent:"flex-end"}}><Btn disabled={!form.projectId||!form.date} onClick={save}>{editingId?"Değişiklikleri Kaydet":"Planı Kaydet"}</Btn></div>
     </div>}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
       {isAdmin?<div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>{[["mine","Benim Planım"],["team","Tüm Ekip"]].map(([id,label])=><button key={id} onClick={()=>setScope(id)} style={{border:0,borderRadius:8,padding:"7px 12px",cursor:"pointer",fontWeight:700,fontSize:12,background:scope===id?"#fff":"transparent",color:scope===id?"#4A6CF7":"#64748B",boxShadow:scope===id?"0 2px 6px #0f172a14":"none"}}>{label}</button>)}</div>:<span style={{fontSize:12,fontWeight:700,color:"#4A6CF7"}}>Benim Planım</span>}
@@ -297,16 +305,53 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(165px,1fr))",gap:9}}>
       {days.map(d=>{const key=dateKey(d);const dayPlans=visible.filter(p=>p.date===key).sort((a,b)=>(a.startTime||"").localeCompare(b.startTime||""));const today=key===todayStr();return <div key={key} style={{background:today?"#F1F5FF":"#fff",border:`1.5px solid ${today?"#A5B4FC":"#E2E8F0"}`,borderRadius:13,minHeight:190,padding:11}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><div style={{fontSize:11,fontWeight:800,color:today?"#4A6CF7":"#64748B",textTransform:"uppercase"}}>{d.toLocaleDateString("tr-TR",{weekday:"short"})}</div><div style={{width:28,height:28,borderRadius:9,display:"grid",placeItems:"center",fontWeight:800,fontSize:12,background:today?"#4A6CF7":"#F8FAFC",color:today?"#fff":"#1E293B"}}>{d.getDate()}</div></div>
-        {dayPlans.map(plan=>{const project=state.projects.find(p=>p.id===plan.projectId);const person=state.people.find(p=>p.id===plan.userId);return <div key={plan.id} style={{background:"#fff",border:`1px solid ${project?.color||"#CBD5E1"}55`,borderLeft:`4px solid ${project?.color||"#4A6CF7"}`,borderRadius:9,padding:"9px 8px",marginBottom:7,boxShadow:"0 2px 8px #0f172a0c"}}>
+        <button title="Bu güne plan ekle" onClick={()=>openForm(key)} style={{width:"100%",border:0,background:"transparent",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,cursor:"pointer",padding:0}}><div style={{fontSize:11,fontWeight:800,color:today?"#4A6CF7":"#64748B",textTransform:"uppercase"}}>{d.toLocaleDateString("tr-TR",{weekday:"short"})}<span style={{display:"block",fontSize:9,fontWeight:600,color:"#94A3B8",textTransform:"none",marginTop:2}}>+ plan ekle</span></div><div style={{width:28,height:28,borderRadius:9,display:"grid",placeItems:"center",fontWeight:800,fontSize:12,background:today?"#4A6CF7":"#F8FAFC",color:today?"#fff":"#1E293B"}}>{d.getDate()}</div></button>
+        {dayPlans.map(plan=>{const project=state.projects.find(p=>p.id===plan.projectId);const person=state.people.find(p=>p.id===plan.userId);return <div key={plan.id} onClick={()=>openForm(key,plan)} style={{background:"#fff",border:`1px solid ${project?.color||"#CBD5E1"}55`,borderLeft:`4px solid ${project?.color||"#4A6CF7"}`,borderRadius:9,padding:"9px 8px",marginBottom:7,boxShadow:"0 2px 8px #0f172a0c",cursor:"pointer"}}>
           <div style={{fontSize:11,fontWeight:800,lineHeight:1.35}}>{project?.name||"Silinmiş proje"}</div><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{plan.startTime} - {plan.endTime}</div>
           {scope==="team"&&person&&<div style={{display:"flex",alignItems:"center",gap:5,marginTop:6}}><Avatar initials={person.avatar} size={20}/><span style={{fontSize:10,fontWeight:700,color:"#475569"}}>{person.name}</span></div>}
           {plan.note&&<div style={{fontSize:10,color:"#64748B",lineHeight:1.4,marginTop:6,wordBreak:"break-word"}}>{plan.note}</div>}
-          {(isAdmin||plan.userId===currentUser.id)&&<button onClick={()=>confirm("Plan silinsin mi?")&&remove(plan.id)} style={{border:0,background:"transparent",color:"#CBD5E1",fontSize:10,cursor:"pointer",padding:"5px 0 0"}}>Sil</button>}
+          {(isAdmin||plan.userId===currentUser.id)&&<div style={{display:"flex",gap:8,marginTop:6}}><button onClick={e=>{e.stopPropagation();openForm(key,plan);}} style={{border:0,background:"transparent",color:"#4A6CF7",fontSize:10,cursor:"pointer",padding:0}}>Düzenle</button><button onClick={e=>{e.stopPropagation();if(confirm("Plan silinsin mi?"))remove(plan.id);}} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,cursor:"pointer",padding:0}}>Sil</button></div>}
         </div>})}
         {!dayPlans.length&&<div style={{fontSize:10,color:"#CBD5E1",textAlign:"center",paddingTop:38}}>Plan yok</div>}
       </div>})}
     </div>
+  </div>;
+}
+
+function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
+  const myTasks=state.projects.flatMap(p=>p.milestones.flatMap(m=>m.tasks.filter(t=>t.assignee===currentUser.id&&t.status!=="Tamamlandı")));
+  const personal=(state.personalTasks||[]).filter(t=>t.assignee===currentUser.id&&t.status!=="Tamamlandı");
+  const tickets=Object.values(state.projectTickets||{}).flat().filter(t=>t.assignedTo===currentUser.id||t.author===currentUser.name);
+  const plans=(state.fieldPlans||[]).filter(p=>p.userId===currentUser.id&&p.date>=todayStr()).sort((a,b)=>a.date.localeCompare(b.date));
+  const cards=[
+    {label:"Projelerim",value:myProjects.length,desc:"Dahil olduğum projeler",icon:"projects",color:"#4A6CF7",view:"projects"},
+    {label:"Görevlerim",value:myTasks.length+personal.length,desc:"Aktif görevler",icon:"tasks",color:"#7C3AED",view:"mytasks"},
+    {label:"Saha Planım",value:plans.length,desc:"Yaklaşan ziyaretler",icon:"calendar",color:"#059669",view:"fieldplan"},
+    {label:"Ticketlarım",value:tickets.length,desc:"İlgili ticketlar",icon:"ticket",color:"#EA6C00",view:"tickets"},
+    {label:"Termin Uyarıları",value:deadlineWarnings.length,desc:"Geciken görevler",icon:"clock",color:"#E11D48",view:"deadlines"},
+    {label:"Raporlar",value:"",desc:"Proje çıktılarını görüntüle",icon:"reports",color:"#0369A1",view:"reports"},
+  ];
+  return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}>
+    <div style={{marginBottom:22}}><h2 style={{margin:0,fontSize:22}}>Merhaba, {currentUser.name}</h2><p style={{margin:"5px 0 0",color:"#64748B",fontSize:13}}>Bugün neye odaklanmak istersiniz?</p></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:13,marginBottom:24}}>
+      {cards.map(card=><button key={card.view} onClick={()=>onNavigate(card.view)} style={{aspectRatio:"1.15/1",minHeight:145,border:"1.5px solid #E2E8F0",borderRadius:17,background:"#fff",padding:17,textAlign:"left",cursor:"pointer",boxShadow:"0 5px 18px rgba(15,23,42,.05)",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
+        <span style={{width:38,height:38,borderRadius:12,display:"grid",placeItems:"center",background:card.color+"15",color:card.color}}><Icon name={card.icon} size={20}/></span>
+        <span><span style={{display:"block",fontSize:card.value===""?15:25,fontWeight:850,color:card.color}}>{card.value===""?card.label:card.value}</span><span style={{display:"block",fontSize:12,fontWeight:800,color:"#1E293B",marginTop:2}}>{card.value===""?"":card.label}</span><span style={{display:"block",fontSize:10,color:"#94A3B8",marginTop:3}}>{card.desc}</span></span>
+      </button>)}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:14}}>
+      <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{fontWeight:800,fontSize:13,marginBottom:10}}>Yaklaşan Saha Planları</div>{plans.slice(0,4).map(plan=>{const p=state.projects.find(x=>x.id===plan.projectId);return <div key={plan.id} style={{display:"flex",gap:9,alignItems:"center",padding:"8px 0",borderBottom:"1px solid #F1F5F9"}}><span style={{width:8,height:8,borderRadius:"50%",background:p?.color||"#4A6CF7"}}/><div style={{flex:1}}><div style={{fontSize:11,fontWeight:700}}>{p?.name||"Proje"}</div><div style={{fontSize:10,color:"#94A3B8"}}>{fmt(plan.date)} · {plan.startTime}</div></div></div>})}{!plans.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Yaklaşan saha planı yok.</div>}</div>
+      <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{fontWeight:800,fontSize:13,marginBottom:10}}>Projelerim</div>{myProjects.slice(0,4).map(p=><button key={p.id} onClick={()=>onOpenProject(p.id)} style={{width:"100%",display:"flex",gap:9,alignItems:"center",padding:"9px 0",border:0,borderBottom:"1px solid #F1F5F9",background:"transparent",cursor:"pointer",textAlign:"left"}}><span style={{width:8,height:8,borderRadius:"50%",background:p.color}}/><span style={{fontSize:11,fontWeight:700}}>{p.name}</span></button>)}{!myProjects.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Atanmış proje yok.</div>}</div>
+    </div>
+  </div>;
+}
+
+function DeadlinePage({warnings,people,onOpenProject}) {
+  const [filter,setFilter]=useState("all");
+  const shown=filter==="all"?warnings:warnings.filter(w=>w.level===filter);
+  return <div style={{padding:"clamp(18px,4vw,28px)",flex:1,overflow:"auto"}}>
+    <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:18}}><div><h2 style={{margin:0,fontSize:20,display:"flex",alignItems:"center",gap:8}}><Icon name="clock" size={21}/>Termin Uyarıları</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>{warnings.length} geciken görev</p></div><div style={{display:"flex",gap:5}}>{[["all","Tümü"],["critical","Kritik"],["normal","Geciken"]].map(([id,label])=><button key={id} onClick={()=>setFilter(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontSize:11,fontWeight:700,background:filter===id?"#4A6CF7":"#F1F5FF",color:filter===id?"#fff":"#64748B"}}>{label}</button>)}</div></div>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>{shown.map(t=>{const person=people.find(p=>p.id===t.assignee);return <button key={`${t.projectId}-${t.id}`} onClick={()=>onOpenProject(t.projectId)} style={{border:`1.5px solid ${t.level==="critical"?"#FCA5A5":"#FED7AA"}`,borderRadius:12,background:"#fff",padding:13,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}><div style={{width:42,height:42,borderRadius:11,background:t.level==="critical"?"#FFF1F2":"#FFF7ED",display:"grid",placeItems:"center",color:t.level==="critical"?"#E11D48":"#EA6C00",fontWeight:850,fontSize:12}}>{t.days}g</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:800}}>{t.title}</div><div style={{fontSize:11,color:"#64748B",marginTop:3}}><span style={{color:t.projectColor,fontWeight:700}}>{t.projectName}</span>{person?` · ${person.name}`:""} · Termin {fmt(t.dueDate)}</div></div><Badge label={t.status}/></button>})}{!shown.length&&<div style={{padding:40,textAlign:"center",color:"#94A3B8",border:"1.5px dashed #CBD5E1",borderRadius:13}}>Bu filtrede termin uyarısı yok.</div>}</div>
   </div>;
 }
 
@@ -1293,10 +1338,10 @@ function MachinePanel({ project, canEdit, onChange }) {
 function ReportsPage({ state, people, isAdmin }) {
   const [projectId,setProjectId]=useState(state.projects[0]?.id||"");
   const project=state.projects.find(p=>p.id===projectId);
-  const tasks=allProjectTasks(state);
+  const tasks=project?project.milestones.flatMap(m=>m.tasks.map(task=>({task,project,milestone:m}))):[];
   const delayed=tasks.filter(({task})=>delayLvl(task.dueDate,task.status));
   const hours=tasks.reduce((sum,{task})=>sum+(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0);
-  const machines=state.projects.flatMap(p=>p.machines||[]);
+  const machines=project?.machines||[];
   const cards=[
     {title:"Gecikme Raporu",desc:"Geciken görevler, gecikme günleri, sorumlu ve bekleme nedeni.",color:"#E11D48",action:()=>downloadDelayReport(state,people),label:"XLSX İndir"},
     {title:"Efor Raporu",desc:"Planlanan ve gerçekleşen saatler; kişi, görev ve tarih kırılımı.",color:"#7C3AED",action:()=>downloadEffortReport(state,people),label:"XLSX İndir"},
@@ -1329,13 +1374,14 @@ function generateTicketStatusReport(state,people){
   downloadTextFile(html,`ticket-durum-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
 }
 
-function TicketsPage({state,setState,currentUser,isAdmin}){
+function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false}){
   const ticketLink=typeof window!=="undefined"?new URLSearchParams(window.location.search):null;
   const linkedProject=ticketLink?.get("project")||"";
   const linkedTicket=ticketLink?.get("ticket")||"";
   const linkedTicketData=linkedProject&&linkedTicket?((state.projectTickets||{})[linkedProject]||[]).find(ticket=>ticket.id===linkedTicket):null;
   const [projectFilter,setProjectFilter]=useState(linkedProject||"all");
   const [statusFilter,setStatusFilter]=useState("all");
+  const [mineOnly,setMineOnly]=useState(initialMine);
   const [modal,setModal]=useState(linkedTicketData?{type:"detail",projectId:linkedProject,data:linkedTicketData}:null);
   const TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
   const PRIOS=["Düşük","Orta","Yüksek","Kritik"];
@@ -1343,7 +1389,7 @@ function TicketsPage({state,setState,currentUser,isAdmin}){
     const project=state.projects.find(p=>p.id===projectId);
     return (list||[]).map(ticket=>({ticket,projectId,project}));
   });
-  const filtered=all.filter(({ticket,projectId})=>(projectFilter==="all"||projectId===projectFilter)&&(statusFilter==="all"||ticket.status===statusFilter));
+  const filtered=all.filter(({ticket,projectId})=>(projectFilter==="all"||projectId===projectFilter)&&(statusFilter==="all"||ticket.status===statusFilter)&&(!mineOnly||ticket.assignedTo===currentUser.id||ticket.author===currentUser.name));
   const save=(projectId,tickets)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[projectId]:tickets}}));
   const add=(projectId,data)=>{
     const createdAt=now();
@@ -1364,6 +1410,7 @@ function TicketsPage({state,setState,currentUser,isAdmin}){
       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{isAdmin&&<Btn variant="secondary" onClick={()=>generateTicketStatusReport(state,state.people)}>Durum Raporu</Btn>}<Btn onClick={()=>setModal({type:"add",projectId:state.projects[0]?.id||""})}>+ Ticket Ekle</Btn></div>
     </div>
     <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
+      <button onClick={()=>setMineOnly(v=>!v)} style={{border:0,borderRadius:8,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:700,background:mineOnly?"#4A6CF7":"#F1F5FF",color:mineOnly?"#fff":"#64748B"}}>Ticketlarım</button>
       <select style={{...iStyle,width:"auto",minWidth:210}} value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="all">Tüm Projeler</option>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
       <select style={{...iStyle,width:"auto",minWidth:160}} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">Tüm Durumlar</option>{["Açık","İnceleniyor","Çözüldü","Kapatıldı"].map(s=><option key={s}>{s}</option>)}</select>
     </div>
@@ -1391,7 +1438,7 @@ const GlobalStyle = () => (
 export default function App() {
   const deepLink=typeof window!=="undefined"?new URLSearchParams(window.location.search):null;
   const [state,setState]=useState(load);
-  const [view,setView]=useState(deepLink?.get("view")||"projects");
+  const [view,setView]=useState(deepLink?.get("view")||"dashboard");
   const [selProject,setSelProject]=useState(null);
   const [selMilestone,setSelMilestone]=useState(null);
   const [projectTab,setProjectTab]=useState("tasks");
@@ -1401,6 +1448,7 @@ export default function App() {
   const [syncStatus,setSyncStatus]=useState({ s:"idle", msg:"" });
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
   const [projectScope,setProjectScope]=useState("all");
+  const [ticketMineOnly,setTicketMineOnly]=useState(false);
   const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<768);
   const fileRef=useRef();
   const skipNextSave=useRef(true);
@@ -1467,8 +1515,8 @@ export default function App() {
     setState(s=>({...s,notifications:[{id:uid(),ts:now(),userId,msg,projectName,read:false},...(s.notifications||[])]}));
   };
   const markAllRead=()=>setState(s=>({...s,notifications:(s.notifications||[]).map(n=>n.userId===currentUser?.id?{...n,read:true}:n)}));
-  const login=(id)=>{ setState(s=>({...s,currentUserId:id})); try{localStorage.setItem("corject_uid",id);}catch(e){} };
-  const logout=()=>{ setState(s=>({...s,currentUserId:null})); try{localStorage.removeItem("corject_uid");}catch(e){} setView("projects"); setSelProject(null); };
+  const login=(id)=>{ setState(s=>({...s,currentUserId:id})); setView("dashboard"); try{localStorage.setItem("corject_uid",id);}catch(e){} };
+  const logout=()=>{ setState(s=>({...s,currentUserId:null})); try{localStorage.removeItem("corject_uid");}catch(e){} setView("dashboard"); setSelProject(null); };
 
   if(!dataLoaded) return <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,sans-serif", background:"#1E293B", color:"#94A3B8", flexDirection:"column", gap:12 }}>
     <div style={{ fontSize:14, fontWeight:800, color:"#4A6CF7", letterSpacing:3 }}>CORJECT</div>
@@ -1509,7 +1557,7 @@ export default function App() {
     personalTasks:(s.personalTasks||[]).map(t=>t.assignee===id?{...t,assignee:""}:t)
   }));
   const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>p.id===id?{...p,...data}:p)}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
-  const deleteProject=(id)=>{ const name=state.projects.find(p=>p.id===id)?.name; setState(s=>({...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id)})); setSelProject(null); setSelMilestone(null); addLog(currentUser.name,"general","Proje silindi: "+name); };
+  const deleteProject=(id)=>{ if(!isAdmin)return; const name=state.projects.find(p=>p.id===id)?.name; setState(s=>({...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id)})); setSelProject(null); setSelMilestone(null); addLog(currentUser.name,"general","Proje silindi: "+name); };
   const addRisk=(data)=>{ mutProject(p=>({...p,risks:[...(p.risks||[]),{id:uid(),...data}]})); addLog(currentUser.name,"risk_add",data.title,project?.name); };
   const updateRisk=(rId,data)=>mutProject(p=>({...p,risks:(p.risks||[]).map(r=>r.id===rId?{...r,...data}:r)}));
   const deleteRisk=(rId)=>mutProject(p=>({...p,risks:(p.risks||[]).filter(r=>r.id!==rId)}));
@@ -1686,7 +1734,7 @@ export default function App() {
   const overdueC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,0)||0;
   const criticalC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length,0)||0;
 
-  const nav=[{id:"projects",icon:"projects",label:"Projeler"},{id:"mytasks",icon:"tasks",label:"Görevlerim"},{id:"fieldplan",icon:"calendar",label:"Saha Planım"},{id:"tickets",icon:"ticket",label:"Ticketlar"},{id:"reports",icon:"reports",label:"Raporlar"},{id:"people",icon:"people",label:"Ekip"},{id:"logs",icon:"activity",label:"Aktivite"}];
+  const nav=[{id:"dashboard",icon:"home",label:"Dashboard"},{id:"projects",icon:"projects",label:"Projeler"},{id:"mytasks",icon:"tasks",label:"Görevlerim"},{id:"fieldplan",icon:"calendar",label:"Saha Planım"},{id:"deadlines",icon:"clock",label:`Termin Uyarıları${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},{id:"tickets",icon:"ticket",label:"Ticketlar"},{id:"reports",icon:"reports",label:"Raporlar"},{id:"people",icon:"people",label:"Ekip"},{id:"logs",icon:"activity",label:"Aktivite"}];
 
   return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
@@ -1720,7 +1768,7 @@ export default function App() {
         </div>
       </div>
       <nav style={{ padding:"8px 7px", flex:1, overflowY:"auto" }}>
-        {nav.map(n=><button key={n.id} onClick={()=>{ setView(n.id); setSelProject(null); setSelMilestone(null); setMobileMenuOpen(false); }}
+        {nav.map(n=><button key={n.id} onClick={()=>{ setView(n.id); setSelProject(null); setSelMilestone(null); setMobileMenuOpen(false); if(n.id==="tickets")setTicketMineOnly(false); }}
           style={{ display:"flex", alignItems:"center", gap:9, width:"100%", padding:"9px 10px", borderRadius:8, border:"none", cursor:"pointer", background:view===n.id&&!selProject?"#4A6CF7":"transparent", color:view===n.id&&!selProject?"#fff":"#94A3B8", fontSize:13, fontWeight:600, textAlign:"left", marginBottom:2 }}>
           <span style={{ display:"flex", flexShrink:0 }}><Icon name={n.icon} size={15} /></span> {n.label}
         </button>)}
@@ -1731,13 +1779,6 @@ export default function App() {
             <span style={{ width:7, height:7, borderRadius:"50%", background:p.color, flexShrink:0 }} />
             <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
           </button>)}
-        </div>}
-        {deadlineWarnings.length>0&&<div style={{margin:"14px 5px 4px",padding:"10px 8px",borderRadius:11,background:"#0F172A",border:"1px solid #334155"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7,padding:"0 2px"}}><span style={{fontSize:9,fontWeight:800,color:"#94A3B8",letterSpacing:1,textTransform:"uppercase"}}>Termin Uyarıları</span><span style={{fontSize:9,fontWeight:800,color:"#FCA5A5"}}>{deadlineWarnings.length}</span></div>
-          {deadlineWarnings.slice(0,4).map(t=><button key={`${t.projectId}-${t.id}`} onClick={()=>{setSelProject(t.projectId);setSelMilestone(null);setView("projects");setProjectTab("tasks");setMobileMenuOpen(false);}} style={{width:"100%",border:0,borderRadius:8,background:"transparent",padding:"6px 5px",display:"flex",gap:7,alignItems:"center",cursor:"pointer",textAlign:"left"}}>
-            <span style={{width:7,height:7,borderRadius:"50%",background:t.level==="critical"?"#E11D48":"#EA6C00",flexShrink:0}}/><span style={{flex:1,minWidth:0}}><span style={{display:"block",fontSize:10,color:"#E2E8F0",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.title}</span><span style={{display:"block",fontSize:9,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.projectName}</span></span><span style={{fontSize:9,fontWeight:800,color:t.level==="critical"?"#FCA5A5":"#FDBA74"}}>{t.days}g</span>
-          </button>)}
-          {deadlineWarnings.length>4&&<div style={{fontSize:9,color:"#64748B",padding:"4px 5px 0"}}>+{deadlineWarnings.length-4} uyarı daha</div>}
         </div>}
       </nav>
       <div style={{ padding:"8px 12px", borderTop:"1px solid #334155", fontSize:10 }}>
@@ -1756,6 +1797,7 @@ export default function App() {
 
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?50:0 }}>
+      {view==="dashboard"&&!selProject&&<DashboardPage state={state} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("mine");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
@@ -1877,7 +1919,8 @@ export default function App() {
 
       {view==="mytasks"&&<MyTasksPage currentUser={currentUser} state={state} setState={setState} addLog={addLog} isAdmin={isAdmin} />}
       {view==="fieldplan"&&<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>}
-      {view==="tickets"&&<TicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} />}
+      {view==="deadlines"&&<DeadlinePage warnings={deadlineWarnings} people={state.people} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
+      {view==="tickets"&&<TicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} initialMine={ticketMineOnly}/>}
       {view==="reports"&&<ReportsPage state={state} people={state.people} isAdmin={isAdmin} />}
 
       {view==="people"&&<div style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>
