@@ -9,9 +9,10 @@ const now = () => new Date().toISOString();
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const S = {
+  "Başlamadı":    { bg:"#F8FAFC", text:"#94A3B8", dot:"#94A3B8" },
   "Bekliyor":     { bg:"#F1F5FF", text:"#4A6CF7", dot:"#4A6CF7" },
   "Devam Ediyor": { bg:"#FFF7ED", text:"#EA6C00", dot:"#EA6C00" },
-  "Tamamland\u0131":  { bg:"#ECFDF5", text:"#059669", dot:"#059669" },
+  "Tamamlandı":   { bg:"#ECFDF5", text:"#059669", dot:"#059669" },
   "Engellendi":   { bg:"#FFF1F2", text:"#E11D48", dot:"#E11D48" },
 };
 const PCOL = { "D\u00fc\u015f\u00fck":"#94A3B8", "Orta":"#EA6C00", "Y\u00fcksek":"#E11D48" };
@@ -286,73 +287,100 @@ function TemplatePicker({ onSelect, onSkip }) {
 function GanttChart({ project, compact }) {
   const [expanded,setExpanded]=useState(null);
   const ms=project.milestones;
-  if(!ms.length) return <div style={{ padding:40, textAlign:"center", color:"#94A3B8" }}>Milestone yok.</div>;
-  const starts=ms.flatMap(m=>[m.startDate||project.startDate, m.actualStart].filter(Boolean));
-  const ends=ms.flatMap(m=>[m.dueDate, m.actualEnd].filter(Boolean));
-  if(!starts.length||!ends.length) return <div style={{ padding:40, textAlign:"center", color:"#94A3B8" }}>Tarih bilgisi eksik.</div>;
-  const minDate=new Date(Math.min(...starts.map(d=>new Date(d))));
-  const maxDate=new Date(Math.max(...ends.map(d=>new Date(d))));
+  if(!ms.length)return <div style={{ padding:40,textAlign:"center",color:"#94A3B8" }}>Milestone yok.</div>;
+  const allDates=[
+    ...ms.map(m=>m.startDate||project.startDate),
+    ...ms.map(m=>m.dueDate),
+    ...ms.flatMap(m=>m.tasks.map(t=>t.dueDate)),
+  ].filter(Boolean);
+  if(!allDates.length)return <div style={{ padding:40,textAlign:"center",color:"#94A3B8" }}>Tarih bilgisi eksik.</div>;
+  const minDate=new Date(Math.min(...allDates.map(d=>new Date(d))));
+  const maxDate=new Date(Math.max(...allDates.map(d=>new Date(d))));
   const total=Math.max(1,(maxDate-minDate)/86400000)+4;
   const todayOff=Math.max(0,(new Date()-minDate)/86400000);
   const pct=(d)=>Math.max(0,Math.min(100,((new Date(d)-minDate)/86400000)/total*100));
-  const wPct=(s,e)=>Math.max(1,(new Date(e)-new Date(s))/86400000/total*100);
+  const wPct=(s,e)=>Math.max(0.5,(new Date(e)-new Date(s))/86400000/total*100);
   const months=[];
   let cur=new Date(minDate); cur.setDate(1);
-  while(cur<=maxDate){ months.push({ label:cur.toLocaleDateString("tr-TR",{month:"short",year:"2-digit"}), pct:pct(cur.toISOString().slice(0,10)) }); cur.setMonth(cur.getMonth()+1); }
-  const rowH=compact?24:30;
+  while(cur<=maxDate){ months.push({label:cur.toLocaleDateString("tr-TR",{month:"short",year:"2-digit"}),pct:pct(cur.toISOString().slice(0,10))}); cur.setMonth(cur.getMonth()+1); }
   const labelW=compact?120:160;
+  const rowH=compact?22:28;
+  const taskRowH=20;
+  const isExp=(id)=>expanded===id;
   return <div style={{ overflowX:"auto" }}>
-    <div style={{ minWidth:compact?500:600 }}>
-      <div style={{ fontSize:11, color:"#94A3B8", marginBottom:8 }}>Satıra tıklayın: hedeflenen / gerçekleşen karşılaştırması</div>
+    <div style={{ minWidth:compact?500:650 }}>
+      <div style={{ fontSize:10, color:"#94A3B8", marginBottom:6 }}>Milestone tıklayın → görevler + hedeflenen/gerçekleşen</div>
       <div style={{ display:"flex", marginLeft:labelW, marginBottom:5, position:"relative", height:16 }}>
-        {months.map((m,i)=><div key={i} style={{ position:"absolute", left:`${m.pct}%`, fontSize:10, color:"#94A3B8", fontWeight:600, whiteSpace:"nowrap" }}>{m.label}</div>)}
+        {months.map((m,i)=><div key={i} style={{ position:"absolute", left:`${m.pct}%`, fontSize:9, color:"#94A3B8", fontWeight:600, whiteSpace:"nowrap" }}>{m.label}</div>)}
       </div>
-      {ms.map(m=>{
+      {ms.map((m,mi)=>{
         const s=m.startDate||project.startDate, e=m.dueDate;
         if(!s||!e)return null;
         const dl=delayLvl(e,m.status);
         const barC=m.status==="Tamamlandı"?"#059669":dl==="critical"?"#E11D48":dl==="normal"?"#EA6C00":project.color;
         const done=m.tasks.filter(t=>t.status==="Tamamlandı").length;
-        const isExp=expanded===m.id;
-        const hasActual=m.actualStart||m.actualEnd;
-        return <div key={m.id}>
-          <div onClick={()=>setExpanded(isExp?null:m.id)} style={{ display:"flex", alignItems:"center", marginBottom:isExp?2:6, cursor:"pointer" }}>
-            <div style={{ width:labelW, flexShrink:0, fontSize:compact?10:12, fontWeight:600, paddingRight:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={m.name}>{isExp?"▾ ":"▸ "}{m.name}</div>
-            <div style={{ flex:1, position:"relative", height:rowH, background:"#F1F5FF", borderRadius:6 }}>
-              {todayOff<=total&&<div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:0, bottom:0, width:2, background:"#E11D48", zIndex:2 }} />}
-              <div style={{ position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`, top:3, height:rowH-6, background:barC, borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center", minWidth:20, zIndex:1 }}>
-                <span style={{ fontSize:9, color:"#fff", fontWeight:700, padding:"0 4px", whiteSpace:"nowrap" }}>{m.status==="Tamamlandı"?"\u2713 ":""}{fmt(e)}</span>
-              </div>
+        const exp=isExp(m.id);
+        const bgs=["#FAFBFF","#F5F9FF"];
+        return <div key={m.id} style={{ background:bgs[mi%2], borderRadius:8, marginBottom:exp?0:4, border:`1.5px solid ${exp?"#4A6CF7":"#E8EDF5"}` }}>
+          {/* Milestone row */}
+          <div onClick={()=>setExpanded(exp?null:m.id)} style={{ display:"flex", alignItems:"center", padding:"4px 6px", cursor:"pointer", borderBottom:exp?"1px solid #E2E8F0":"none" }}>
+            <div style={{ width:labelW, flexShrink:0, fontSize:compact?10:12, fontWeight:700, paddingRight:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#1E293B" }} title={m.name}>{exp?"▾ ":"▸ "}{m.name}</div>
+            <div style={{ flex:1, position:"relative", height:rowH, background:"#EEF2FF", borderRadius:6 }}>
+              {todayOff<=total&&<div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:0, bottom:0, width:2, background:"#E11D48", zIndex:3 }} />}
+              {/* Planned bar (dashed) */}
+              <div style={{ position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`, top:3, height:rowH-6, background:barC+"33", border:`1.5px dashed ${barC}`, borderRadius:4, zIndex:1 }} title={`Hedeflenen: ${fmt(s)} → ${fmt(e)}`} />
+              {/* Actual bar */}
+              {(m.actualStart||m.actualEnd)&&<div style={{ position:"absolute", left:`${pct(m.actualStart||s)}%`, width:`${wPct(m.actualStart||s,m.actualEnd||new Date().toISOString().slice(0,10))}%`, top:3, height:rowH-6, background:barC, borderRadius:4, zIndex:2, display:"flex", alignItems:"center", justifyContent:"center" }} title={`Gerçekleşen: ${fmt(m.actualStart)} → ${fmt(m.actualEnd||"devam")}`}>
+                <span style={{ fontSize:8, color:"#fff", fontWeight:700, padding:"0 3px", whiteSpace:"nowrap" }}>G</span>
+              </div>}
+              {/* If no actual, show planned filled */}
+              {!(m.actualStart||m.actualEnd)&&<div style={{ position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`, top:3, height:rowH-6, background:barC, borderRadius:4, zIndex:2, display:"flex", alignItems:"center", justifyContent:"center", minWidth:20 }}>
+                <span style={{ fontSize:9, color:"#fff", fontWeight:700, padding:"0 4px", whiteSpace:"nowrap" }}>{m.status==="Tamamlandı"?"✓ ":""}{fmt(e)}</span>
+              </div>}
             </div>
-            <div style={{ width:compact?60:90, textAlign:"right", paddingLeft:6, fontSize:10, color:"#94A3B8" }}>{done}/{m.tasks.length}</div>
+            <div style={{ width:64, textAlign:"right", paddingLeft:6, fontSize:10, color:"#64748B" }}>{done}/{m.tasks.length}</div>
           </div>
-          {isExp&&<div style={{ marginBottom:8 }}>
-            <div style={{ display:"flex", alignItems:"center", marginBottom:2 }}>
-              <div style={{ width:labelW, flexShrink:0, fontSize:10, color:"#94A3B8", textAlign:"right", paddingRight:10 }}>Hedeflenen</div>
-              <div style={{ flex:1, position:"relative", height:18, background:"#F8FAFC", borderRadius:4 }}>
-                <div style={{ position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`, top:2, height:14, background:project.color+"66", border:`1.5px dashed ${project.color}`, borderRadius:3 }} />
+          {/* Expanded: planned vs actual + task rows */}
+          {exp&&<div style={{ padding:"8px 6px 8px", background:"#F0F4FF", borderRadius:"0 0 6px 6px" }}>
+            <div style={{ display:"flex", alignItems:"center", marginBottom:4 }}>
+              <div style={{ width:labelW, flexShrink:0, fontSize:9, color:"#94A3B8", textAlign:"right", paddingRight:8 }}>Hedeflenen</div>
+              <div style={{ flex:1, position:"relative", height:14, background:"#fff", borderRadius:4 }}>
+                <div style={{ position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`, height:10, top:2, background:project.color+"44", border:`1.5px dashed ${project.color}`, borderRadius:3 }} />
               </div>
-              <div style={{ width:compact?60:90, fontSize:9, color:"#94A3B8", paddingLeft:6 }}>{fmt(s)} → {fmt(e)}</div>
+              <div style={{ width:64, fontSize:9, color:"#94A3B8", paddingLeft:6 }}>{fmt(s)}→{fmt(e)}</div>
             </div>
-            <div style={{ display:"flex", alignItems:"center" }}>
-              <div style={{ width:labelW, flexShrink:0, fontSize:10, color:"#94A3B8", textAlign:"right", paddingRight:10 }}>Gerçekleşen</div>
-              <div style={{ flex:1, position:"relative", height:18, background:"#F8FAFC", borderRadius:4 }}>
-                {hasActual?<div style={{ position:"absolute", left:`${pct(m.actualStart||s)}%`, width:`${wPct(m.actualStart||s, m.actualEnd||new Date().toISOString().slice(0,10))}%`, top:2, height:14, background:barC, borderRadius:3 }} />:<div style={{ position:"absolute", left:8, top:2, fontSize:9, color:"#CBD5E1" }}>Gerçekleşen tarih girilmemiş</div>}
+            <div style={{ display:"flex", alignItems:"center", marginBottom:8 }}>
+              <div style={{ width:labelW, flexShrink:0, fontSize:9, color:"#94A3B8", textAlign:"right", paddingRight:8 }}>Gerçekleşen</div>
+              <div style={{ flex:1, position:"relative", height:14, background:"#fff", borderRadius:4 }}>
+                {m.actualStart?<div style={{ position:"absolute", left:`${pct(m.actualStart)}%`, width:`${wPct(m.actualStart,m.actualEnd||new Date().toISOString().slice(0,10))}%`, height:10, top:2, background:barC, borderRadius:3 }} />:<div style={{ position:"absolute", left:6, top:1, fontSize:9, color:"#CBD5E1" }}>Tarih girilmemiş</div>}
               </div>
-              <div style={{ width:compact?60:90, fontSize:9, color:"#94A3B8", paddingLeft:6 }}>{hasActual?`${fmt(m.actualStart)} → ${fmt(m.actualEnd)||"devam"}`:""}</div>
+              <div style={{ width:64, fontSize:9, color:"#94A3B8", paddingLeft:6 }}>{m.actualStart?`${fmt(m.actualStart)}→${fmt(m.actualEnd)||"devam"}`:""}</div>
             </div>
+            {/* Task bars */}
+            {m.tasks.map(t=>{
+              if(!t.dueDate)return null;
+              const ts2=t.dueDate, te=t.dueDate;
+              const tdl=delayLvl(t.dueDate,t.status);
+              const tc=t.status==="Tamamlandı"?"#059669":tdl==="critical"?"#E11D48":tdl==="normal"?"#EA6C00":"#94A3B8";
+              return <div key={t.id} style={{ display:"flex", alignItems:"center", marginBottom:3 }}>
+                <div style={{ width:labelW, flexShrink:0, fontSize:9, paddingRight:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#64748B" }} title={t.title}>  {t.title}</div>
+                <div style={{ flex:1, position:"relative", height:taskRowH, background:"#fff", borderRadius:4 }}>
+                  {todayOff<=total&&<div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:0, bottom:0, width:1, background:"#E11D48", zIndex:2 }} />}
+                  <div style={{ position:"absolute", left:`${Math.max(0,pct(te)-2)}%`, width:`${Math.max(1,wPct(te,te)||2}%`, top:3, height:taskRowH-6, background:tc, borderRadius:3, minWidth:6, zIndex:1 }} title={`${t.title}: ${fmt(t.dueDate)}`} />
+                </div>
+                <div style={{ width:64, fontSize:9, color:tdl?"#E11D48":"#94A3B8", paddingLeft:6 }}>{fmt(t.dueDate)}</div>
+              </div>;
+            })}
           </div>}
         </div>;
       })}
-      <div style={{ position:"relative", height:14, marginLeft:labelW }}>
-        <div style={{ position:"absolute", left:`${todayOff/total*100}%`, fontSize:9, color:"#E11D48", fontWeight:700, transform:"translateX(-50%)" }}>BUGÜN</div>
+      <div style={{ position:"relative", height:14, marginLeft:labelW, marginTop:4 }}>
+        <div style={{ position:"absolute", left:`${Math.min(99,todayOff/total*100)}%`, fontSize:9, color:"#E11D48", fontWeight:700, transform:"translateX(-50%)" }}>BUGÜN</div>
       </div>
     </div>
   </div>;
 }
 
-
-// ─── CSV export helper ───────────────────────────────────────────────────────
 function downloadCSVReport(project, people) {
   const findName=(id)=>people.find(p=>p.id===id)?.name||"Atanmamış";
   let rows=["Proje,Milestone,Milestone Başlangıç,Milestone Termin,Milestone Durum,Görev,Görev Durumu,Öncelik,Sorumlu,Görev Termin,Gecikme,Bekleme Kaynağı,Notlar,Harcanan Saat"];
@@ -940,13 +968,20 @@ export default function App() {
 
   // Ilk yukleme: Supabase'den veri cek
   useEffect(()=>{
+    // Once localStorage'dan kullanici kimligini geri yukle
+    try{
+      const savedUid=localStorage.getItem("corject_uid");
+      if(savedUid) setState(s=>({...s,currentUserId:savedUid}));
+    }catch(e){}
     (async()=>{
       const remote=await loadFromSupabase();
       if(remote){
         skipNextSave.current=true;
-        setState(s=>({ ...remote, currentUserId:s.currentUserId }));
+        // currentUserId'yi localStorage'dan koru, Supabase'den geleni kullanma
+        let savedUid="";
+        try{ savedUid=localStorage.getItem("corject_uid")||""; }catch(e){}
+        setState(s=>({ ...remote, currentUserId:savedUid||s.currentUserId }));
       } else {
-        // Ilk kurulum: DEMO veriyi Supabase'e yaz
         saveToSupabase(state, (s,msg)=>setSyncStatus({s,msg:msg||""}));
       }
       setDataLoaded(true);
@@ -967,7 +1002,9 @@ export default function App() {
       const remote=await loadFromSupabase();
       if(remote){
         skipNextSave.current=true;
-        setState(s=>({ ...remote, currentUserId:s.currentUserId }));
+        let savedUid="";
+        try{ savedUid=localStorage.getItem("corject_uid")||""; }catch(e){}
+        setState(s=>({ ...remote, currentUserId:savedUid||s.currentUserId }));
       }
     }, 30000);
     return ()=>clearInterval(interval);
@@ -979,8 +1016,12 @@ export default function App() {
   const addLog=(user,action,detail,project,milestone)=>{
     setState(s=>({...s,logs:[{id:uid(),ts:now(),user,userId:s.currentUserId,action,detail,project:project||"",milestone:milestone||""},...s.logs]}));
   };
-  const login=(id)=>setState(s=>({...s,currentUserId:id}));
-  const logout=()=>{ setState(s=>({...s,currentUserId:null})); setView("projects"); setSelProject(null); };
+  const addNotification=(userId,msg,projectName)=>{
+    setState(s=>({...s,notifications:[{id:uid(),ts:now(),userId,msg,projectName,read:false},...(s.notifications||[])]}));
+  };
+  const markAllRead=()=>setState(s=>({...s,notifications:(s.notifications||[]).map(n=>n.userId===currentUser?.id?{...n,read:true}:n)}));
+  const login=(id)=>{ setState(s=>({...s,currentUserId:id})); try{localStorage.setItem("corject_uid",id);}catch(e){} };
+  const logout=()=>{ setState(s=>({...s,currentUserId:null})); try{localStorage.removeItem("corject_uid");}catch(e){} setView("projects"); setSelProject(null); };
 
   if(!dataLoaded) return <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,sans-serif", background:"#1E293B", color:"#94A3B8", flexDirection:"column", gap:12 }}>
     <div style={{ fontSize:14, fontWeight:800, color:"#4A6CF7", letterSpacing:3 }}>CORJECT</div>
@@ -1010,40 +1051,29 @@ export default function App() {
   const addMilestone=(data)=>{ const ms={id:uid(),tasks:[],waitSource:"",...data}; mutProject(p=>({...p,milestones:[...p.milestones,ms]})); addLog(currentUser.name,"milestone_add",ms.name,project?.name); };
   const updateMilestone=(msId,data)=>{ const old=project?.milestones.find(m=>m.id===msId); mutProject(p=>({...p,milestones:p.milestones.map(m=>m.id===msId?{...m,...data}:m)})); if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.name}: ${old?.status} → ${data.status}`,project?.name); else addLog(currentUser.name,"general","Milestone güncellendi: "+(data.name||old?.name),project?.name); };
   const deleteMilestone=(msId)=>{ mutProject(p=>({...p,milestones:p.milestones.filter(m=>m.id!==msId)})); setSelMilestone(null); addLog(currentUser.name,"general","Milestone silindi",project?.name); };
-  const addTask=(msId,data)=>{ const task={id:uid(),waitSource:"",...data}; mutProject(p=>({...p,milestones:p.milestones.map(m=>m.id===msId?{...m,tasks:[...m.tasks,task]}:m)})); addLog(currentUser.name,"task_add",task.title,project?.name,project?.milestones.find(m=>m.id===msId)?.name); };
-  const updateTask=(msId,taskId,data)=>{ const old=project?.milestones.find(m=>m.id===msId)?.tasks.find(t=>t.id===taskId); mutProject(p=>({...p,milestones:p.milestones.map(m=>m.id===msId?{...m,tasks:m.tasks.map(t=>t.id===taskId?{...t,...data}:t)}:m)})); if(data.status&&old?.status!==data.status){ if(data.status==="Tamamland\u0131")addLog(currentUser.name,"task_done",`${old?.title} tamamlandı`,project?.name,project?.milestones.find(m=>m.id===msId)?.name); else addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`,project?.name,project?.milestones.find(m=>m.id===msId)?.name); } else addLog(currentUser.name,"general","Görev güncellendi: "+(data.title||old?.title),project?.name); };
-  const deleteTask=(msId,taskId)=>{ const task=project?.milestones.find(m=>m.id===msId)?.tasks.find(t=>t.id===taskId); mutProject(p=>({...p,milestones:p.milestones.map(m=>m.id===msId?{...m,tasks:m.tasks.filter(t=>t.id!==taskId)}:m)})); addLog(currentUser.name,"task_delete",task?.title||"",project?.name); };
-  const addPerson=(data)=>{ const p={id:uid(),avatar:data.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),...data}; setState(s=>({...s,people:[...s.people,p]})); addLog(currentUser.name,"person_add",p.name); };
-  const deletePerson=(id)=>{ const name=state.people.find(p=>p.id===id)?.name; setState(s=>({...s,people:s.people.filter(p=>p.id!==id)})); addLog(currentUser.name,"general","Kişi silindi: "+name); };
-  const handleImport=(e)=>{
-    const file=e.target.files[0]; if(!file)return;
-    const isXlsx=file.name.toLowerCase().endsWith(".xlsx")||file.name.toLowerCase().endsWith(".xls");
-    const reader=new FileReader();
-    reader.onload=(ev)=>{
-      let ms=null;
-      if(isXlsx){
-        try{
-          const wb=XLSX.read(ev.target.result,{type:"array"});
-          const sheet=wb.Sheets[wb.SheetNames[0]];
-          const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:""});
-          ms=parseRows(rows);
-        }catch(err){ alert("Excel okunamadı: "+err.message); return; }
-      } else {
-        const text=ev.target.result;
-        const rows=text.split("\n").filter(l=>l.trim()).map(line=>{
-          const cols=[];let cur="",inQ=false;
-          for(const ch of line){if(ch==='"'){inQ=!inQ;}else if(ch===","&&!inQ){cols.push(cur.trim());cur="";}else cur+=ch;}
-          cols.push(cur.trim());return cols;
-        });
-        ms=parseRows(rows);
-      }
-      if(!ms||!ms.length){alert("Dosyada veri bulunamadı.");return;}
-      mutProject(p=>({...p,milestones:[...p.milestones,...ms]}));
-      addLog(currentUser.name,"import",`${ms.length} milestone aktarıldı`,project?.name);
-      alert(`${ms.length} milestone aktarıldı.`);
-    };
-    if(isXlsx) reader.readAsArrayBuffer(file); else reader.readAsText(file,"UTF-8");
-    e.target.value="";
+  const addTask=(msId,data)=>{
+    const task={id:uid(),waitSource:"",...data};
+    mutProject(p=>({...p,milestones:p.milestones.map(m=>m.id===msId?{...m,tasks:[...m.tasks,task]}:m)}));
+    addLog(currentUser.name,"task_add",task.title,project?.name,project?.milestones.find(m=>m.id===msId)?.name);
+    if(task.assignee&&task.assignee!==currentUser.id){
+      addNotification(task.assignee,`"${task.title}" görevi size atandı`,project?.name);
+    }
+  };
+  const updateTask=(msId,taskId,data)=>{
+    const old=project?.milestones.find(m=>m.id===msId)?.tasks.find(t=>t.id===taskId);
+    mutProject(p=>{
+      const newMs=p.milestones.map(m=>{
+        if(m.id!==msId)return m;
+        const newTasks=m.tasks.map(t=>t.id===taskId?{...t,...data}:t);
+        const allDone=newTasks.length>0&&newTasks.every(t=>t.status==="Tamamlandı");
+        return {...m,tasks:newTasks,...(allDone&&m.status!=="Tamamlandı"?{status:"Tamamlandı",actualEnd:new Date().toISOString().slice(0,10)}:{})};
+      });
+      return {...p,milestones:newMs};
+    });
+    if(data.status&&old?.status!==data.status){
+      if(data.status==="Tamamlandı")addLog(currentUser.name,"task_done",`${old?.title} tamamlandı`,project?.name,project?.milestones.find(m=>m.id===msId)?.name);
+      else addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`,project?.name,project?.milestones.find(m=>m.id===msId)?.name);
+    } else addLog(currentUser.name,"general","Görev güncellendi: "+(data.title||old?.title),project?.name);
   };
 
   const excelDateToStr=(v)=>{
@@ -1106,7 +1136,13 @@ export default function App() {
     <div style={{ width:220, background:"#1E293B", display:"flex", flexDirection:"column", flexShrink:0,
       ...(isMobile?{ position:"fixed", top:0, left:mobileMenuOpen?0:-240, bottom:0, zIndex:960, transition:"left .25s ease", boxShadow:mobileMenuOpen?"4px 0 20px rgba(0,0,0,0.3)":"none" }:{}) }}>
       <div style={{ padding:"18px 16px 12px", borderBottom:"1px solid #334155" }}>
-        <div style={{ fontSize:11, fontWeight:800, color:"#4A6CF7", letterSpacing:2, textTransform:"uppercase" }}>CORJECT</div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div style={{ fontSize:11, fontWeight:800, color:"#4A6CF7", letterSpacing:2, textTransform:"uppercase" }}>CORJECT</div>
+            <button onClick={()=>{ setView("notifications"); setSelProject(null); setMobileMenuOpen(false); markAllRead(); }} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
+              <span style={{ fontSize:16 }}>B</span>
+              {(state.notifications||[]).filter(n=>n.userId===currentUser?.id&&!n.read).length>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
+            </button>
+          </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
           <Avatar initials={currentUser.avatar} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} />
           <div style={{ flex:1, minWidth:0 }}>
@@ -1169,7 +1205,7 @@ export default function App() {
             <span style={{ fontSize:12, fontWeight:700, color:project.color }}>{progress}%</span>
           </div>}
           <div style={{ display:"flex", gap:4, marginTop:10 }}>
-            {[["tasks","Görevler"],["gantt","Proje Planı"],["risks","Riskler"],["notlar","Notlar"],["projlogs","Log"]].map(([id,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"5px 13px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit" }}>{label}</button>)}
+            {[["tasks","Görevler"],["gantt","Proje Planı"],["risks","Riskler"],["tickets","Ticketlar"],["notlar","Notlar"],["projlogs","Log"]].map(([id,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"5px 13px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit" }}>{label}</button>)}
           </div>
         </div>
 
@@ -1181,7 +1217,12 @@ export default function App() {
             </div>
             {project.milestones.map(ms=>{const dl=delayLvl(ms.dueDate,ms.status);const isC=currentMs?.id===ms.id;return <div key={ms.id} onClick={()=>{ setSelMilestone(ms.id); setShowDoneTasks(false); }} style={{ padding:"9px 10px", borderRadius:10, marginBottom:4, background:selMilestone===ms.id?"#fff":"transparent", border:selMilestone===ms.id?`1.5px solid ${project.color}`:"1.5px solid transparent", cursor:"pointer" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}><span style={{ fontWeight:700, fontSize:11 }}>{ms.name}</span>{isC&&<span style={{ fontSize:9, background:project.color, color:"#fff", borderRadius:6, padding:"1px 5px", fontWeight:700 }}>AKTİF</span>}</div>
-              <div style={{ marginTop:3, display:"flex", gap:3, flexWrap:"wrap" }}><Badge label={ms.status} />{dl&&<DelayBadge dateStr={ms.dueDate} status={ms.status} />}</div>
+              <div style={{ marginTop:3, display:"flex", gap:3, flexWrap:"wrap", alignItems:"center" }}>
+          <select value={ms.status} onClick={e=>e.stopPropagation()} onChange={e=>{e.stopPropagation();isAdmin&&updateMilestone(ms.id,{status:e.target.value});}} style={{ fontSize:10, borderRadius:8, border:`1.5px solid ${(S[ms.status]||{}).dot||"#E2E8F0"}`, padding:"2px 5px", background:(S[ms.status]||{}).bg||"#F8FAFC", color:(S[ms.status]||{}).text||"#64748B", fontWeight:600, cursor:isAdmin?"pointer":"default", fontFamily:"inherit" }} disabled={!isAdmin}>
+            {Object.keys(S).map(s=><option key={s}>{s}</option>)}
+          </select>
+          {dl&&<DelayBadge dateStr={ms.dueDate} status={ms.status} />}
+        </div>
               <div style={{ marginTop:2, fontSize:10, color:"#94A3B8" }}>{fmt(ms.dueDate)} · {ms.tasks.filter(t=>t.status==="Tamamland\u0131").length}/{ms.tasks.length}</div>
               {ms.waitSource&&<div style={{ marginTop:1, fontSize:10, color:"#EA6C00", fontWeight:600 }}>Bek: {ms.waitSource}</div>}
             </div>;})}
@@ -1209,28 +1250,8 @@ export default function App() {
             </div>
           </div>
           <GanttChart project={project} />
-          {/* Milestone listesi */}
-          <div style={{ marginTop:24, background:"#fff", borderRadius:12, border:"1.5px solid #E2E8F0", overflow:"hidden" }}>
-            <div style={{ padding:"12px 16px", borderBottom:"1.5px solid #E2E8F0", fontWeight:700, fontSize:13 }}>Plan Listesi</div>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, minWidth:600 }}>
-                <thead><tr style={{ background:"#F8FAFC" }}>
-                  {["Milestone","Hedef Başlangıç","Hedef Bitiş","Gerçekleşen Başl.","Gerçekleşen Bitiş","Durum","Görev"].map(h=><th key={h} style={{ padding:"8px 12px", textAlign:"left", fontWeight:600, color:"#64748B", borderBottom:"1px solid #E2E8F0" }}>{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {project.milestones.map(m=><tr key={m.id}>
-                    <td style={{ padding:"8px 12px", fontWeight:600, borderBottom:"1px solid #F1F5FF" }}>{m.name}</td>
-                    <td style={{ padding:"8px 12px", borderBottom:"1px solid #F1F5FF", color:"#64748B" }}>{fmt(m.startDate)}</td>
-                    <td style={{ padding:"8px 12px", borderBottom:"1px solid #F1F5FF", color:"#64748B" }}>{fmt(m.dueDate)}</td>
-                    <td style={{ padding:"8px 12px", borderBottom:"1px solid #F1F5FF", color:m.actualStart?"#1E293B":"#CBD5E1" }}>{fmt(m.actualStart)}</td>
-                    <td style={{ padding:"8px 12px", borderBottom:"1px solid #F1F5FF", color:m.actualEnd?"#1E293B":"#CBD5E1" }}>{fmt(m.actualEnd)}</td>
-                    <td style={{ padding:"8px 12px", borderBottom:"1px solid #F1F5FF" }}><Badge label={m.status} /></td>
-                    <td style={{ padding:"8px 12px", borderBottom:"1px solid #F1F5FF", color:"#64748B" }}>{m.tasks.filter(t=>t.status==="Tamamlandı").length}/{m.tasks.length}</td>
-                  </tr>)}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* Plan listesi - expandable */}
+          <PlanListTable project={project} people={state.people} />
           <div style={{ display:"flex", gap:12, marginTop:16, flexWrap:"wrap" }}>
             {[[project.color,"Devam Ediyor"],["#059669","Tamamlandı"],["#EA6C00","Gecikmiş"],["#E11D48","Kritik"]].map(([c,l])=><div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:12, height:8, borderRadius:3, background:c }} /><span style={{ fontSize:11, color:"#64748B" }}>{l}</span></div>)}
           </div>
@@ -1240,6 +1261,7 @@ export default function App() {
           <RiskPanel risks={project.risks||[]} onAdd={()=>setModal({type:"addRisk"})} onUpdate={updateRisk} onDelete={deleteRisk} canEdit={isAdmin} />
         </div>}
 
+        {projectTab==="tickets"&&<TicketsPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} />}
         {projectTab==="notlar"&&<ProjectNotesPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} />}
 
         {projectTab==="projlogs"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
@@ -1333,6 +1355,7 @@ export default function App() {
       </div>}
 
       {view==="logs"&&<LogPage logs={state.logs} projects={state.projects} />}
+      {view==="notifications"&&<NotificationsPage notifications={state.notifications||[]} currentUser={currentUser} setState={setState} />}
     </div>
 
     {/* MODALS */}
@@ -1345,6 +1368,7 @@ export default function App() {
     {modal?.type==="addPerson"&&<PersonModal onClose={()=>setModal(null)} onSave={addPerson} />}
     {modal?.type==="personDetail"&&<PersonDetailModal person={modal.data} projects={state.projects} personalTasks={state.personalTasks} onClose={()=>setModal(null)} />}
     {modal?.type==="addRisk"&&<RiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
+    {modal?.type==="editProfile"&&<UserEditModal person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>{ setState(s=>({...s,people:s.people.map(p=>p.id===currentUser.id?{...p,...d}:p)})); }} />}
     {modal?.type==="timeLog"&&<TimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
   </div></>;
 }
@@ -1387,6 +1411,172 @@ function TimeLogModal({ task, currentUser, onClose, onSave }) {
       </div>)}
     </div>}
   </Modal>;
+}
+
+
+
+// ─── Plan List Table ─────────────────────────────────────────────────────────
+function PlanListTable({ project, people }) {
+  const [expandedMs, setExpandedMs] = useState({});
+  const toggle = (id) => setExpandedMs(s=>({...s,[id]:!s[id]}));
+  const findName=(id)=>people.find(p=>p.id===id)?.name||"—";
+  const thStyle = { padding:"8px 12px", textAlign:"left", fontWeight:600, color:"#64748B", borderBottom:"1px solid #E2E8F0", fontSize:11 };
+  const tdStyle = (extra={}) => ({ padding:"8px 12px", borderBottom:"1px solid #F1F5FF", fontSize:12, ...extra });
+  return <div style={{ marginTop:24, background:"#fff", borderRadius:12, border:"1.5px solid #E2E8F0", overflow:"hidden" }}>
+    <div style={{ padding:"12px 16px", borderBottom:"1.5px solid #E2E8F0", fontWeight:700, fontSize:13 }}>Plan Listesi</div>
+    <div style={{ overflowX:"auto" }}>
+      <table style={{ width:"100%", borderCollapse:"collapse", minWidth:600 }}>
+        <thead><tr style={{ background:"#F8FAFC" }}>
+          {["","Milestone / Görev","Hedef Başl.","Hedef Bitiş","Gerç. Başl.","Gerç. Bitiş","Durum","İlerleme"].map(h=><th key={h} style={thStyle}>{h}</th>)}
+        </tr></thead>
+        <tbody>
+          {project.milestones.map((m,mi)=>{
+            const done=m.tasks.filter(t=>t.status==="Tamamlandı").length;
+            const pct=m.tasks.length?Math.round(done/m.tasks.length*100):0;
+            const isExp=expandedMs[m.id];
+            const bgs=["#FAFBFF","#F5F9FF"];
+            return [
+              <tr key={m.id} style={{ background:bgs[mi%2], cursor:"pointer" }} onClick={()=>toggle(m.id)}>
+                <td style={{ ...tdStyle(), width:28, color:"#94A3B8", fontWeight:700 }}>{isExp?"▾":"▸"}</td>
+                <td style={{ ...tdStyle(), fontWeight:700 }}>{m.name}</td>
+                <td style={tdStyle({ color:"#64748B" })}>{fmt(m.startDate)}</td>
+                <td style={tdStyle({ color:"#64748B" })}>{fmt(m.dueDate)}</td>
+                <td style={tdStyle({ color:m.actualStart?"#1E293B":"#CBD5E1" })}>{fmt(m.actualStart)||"—"}</td>
+                <td style={tdStyle({ color:m.actualEnd?"#1E293B":"#CBD5E1" })}>{fmt(m.actualEnd)||"—"}</td>
+                <td style={tdStyle()}><Badge label={m.status} /></td>
+                <td style={tdStyle()}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <div style={{ width:60, height:6, background:"#E2E8F0", borderRadius:4 }}><div style={{ width:`${pct}%`, height:"100%", background:project.color, borderRadius:4 }} /></div>
+                    <span style={{ fontSize:11, color:"#64748B" }}>{done}/{m.tasks.length}</span>
+                  </div>
+                </td>
+              </tr>,
+              ...(isExp?m.tasks.map(t=>{
+                const dl=delayLvl(t.dueDate,t.status);
+                return <tr key={t.id} style={{ background:"#F8FAFC" }}>
+                  <td style={{ ...tdStyle(), color:"#CBD5E1" }}></td>
+                  <td style={{ ...tdStyle(), paddingLeft:28, color:"#1E293B" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ fontSize:11 }}>{t.title}</span>
+                      {t.link&&(()=>{const jm=String(t.link).match(/([A-Z][A-Z0-9]+-[0-9]+)/);return <a href={t.link} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ fontSize:10, color:"#0052CC", background:"#DEEBFF", borderRadius:4, padding:"1px 5px", fontWeight:700, textDecoration:"none" }}>{jm?jm[1]:"Jira"}</a>;})()}
+                    </div>
+                  </td>
+                  <td style={tdStyle({ color:"#94A3B8" })}>—</td>
+                  <td style={tdStyle({ color:dl?"#E11D48":"#64748B" })}>{fmt(t.dueDate)}</td>
+                  <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
+                  <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
+                  <td style={tdStyle()}><Badge label={t.status} /></td>
+                  <td style={tdStyle({ color:"#64748B", fontSize:11 })}>{findName(t.assignee)}</td>
+                </tr>;
+              }):[])
+            ];
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>;
+}
+
+
+// ─── Tickets Panel ────────────────────────────────────────────────────────────
+function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
+  const [modal,setModal]=useState(null);
+  const tickets=((state.projectTickets||{})[project.id])||[];
+  const saveTickets=(t)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[project.id]:t}}));
+  const addTicket=(data)=>saveTickets([...tickets,{id:uid(),ts:now(),author:currentUser.name,...data}]);
+  const updateTicket=(id,data)=>saveTickets(tickets.map(t=>t.id===id?{...t,...data}:t));
+  const deleteTicket=(id)=>saveTickets(tickets.filter(t=>t.id!==id));
+  const TICKET_TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
+  const TICKET_PRIOS=["Düşük","Orta","Yüksek","Kritik"];
+  const TYPE_COLORS={"Bug":"#E11D48","Görev":"#4A6CF7","İyileştirme":"#059669","Soru":"#EA6C00","Bilgi":"#94A3B8"};
+  return <div style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+      <h3 style={{ margin:0, fontSize:15, fontWeight:800 }}>Ticketlar ({tickets.length})</h3>
+      <Btn small onClick={()=>setModal({type:"add"})}>+ Ticket Ekle</Btn>
+    </div>
+    {tickets.length===0&&<div style={{ textAlign:"center", padding:"40px", background:"#fff", borderRadius:12, border:"1.5px dashed #E2E8F0", color:"#94A3B8" }}>Henüz ticket yok.</div>}
+    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+      {tickets.map(t=><div key={t.id} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:"1.5px solid #E2E8F0", display:"flex", gap:12, alignItems:"flex-start", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
+        <div style={{ width:8, height:8, borderRadius:"50%", background:TYPE_COLORS[t.type]||"#94A3B8", marginTop:4, flexShrink:0 }} />
+        <div style={{ flex:1 }}>
+          <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
+            <span style={{ fontWeight:700, fontSize:13 }}>{t.title}</span>
+            <span style={{ background:(TYPE_COLORS[t.type]||"#94A3B8")+"22", color:TYPE_COLORS[t.type]||"#94A3B8", borderRadius:8, padding:"1px 8px", fontSize:11, fontWeight:600 }}>{t.type}</span>
+            <span style={{ background:"#F1F5FF", color:"#4A6CF7", borderRadius:8, padding:"1px 8px", fontSize:11 }}>{t.priority}</span>
+            {t.jiraId&&<a href={t.jiraLink||"#"} target="_blank" rel="noreferrer" style={{ background:"#DEEBFF", color:"#0052CC", borderRadius:6, padding:"1px 7px", fontSize:11, fontWeight:700, textDecoration:"none" }}>{t.jiraId}</a>}
+            <select value={t.status||"Açık"} onChange={e=>updateTicket(t.id,{status:e.target.value})} style={{ fontSize:11, borderRadius:6, border:"1px solid #E2E8F0", padding:"2px 6px", fontFamily:"inherit" }}>
+              {["Açık","İnceleniyor","Çözüldü","Kapatıldı"].map(s=><option key={s}>{s}</option>)}
+            </select>
+          </div>
+          {t.description&&<div style={{ fontSize:12, color:"#64748B", marginBottom:4 }}>{t.description}</div>}
+          <div style={{ fontSize:11, color:"#94A3B8" }}>{t.author} · {new Date(t.ts).toLocaleDateString("tr-TR")}</div>
+        </div>
+        {(isAdmin||t.author===currentUser.name)&&<button onClick={()=>deleteTicket(t.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:16 }}>×</button>}
+      </div>)}
+    </div>
+    {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>
+      <TicketForm onSave={(d)=>{addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} />
+    </Modal>}
+  </div>;
+}
+function TicketForm({ onSave, onClose, types, prios }) {
+  const [f,setF]=useState({ title:"", type:"Görev", priority:"Orta", description:"", jiraId:"", jiraLink:"", status:"Açık" });
+  const upd=(k,v)=>setF(s=>({...s,[k]:v}));
+  return <div>
+    <Field label="Başlık *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+      <Field label="Tip"><select style={iStyle} value={f.type} onChange={e=>upd("type",e.target.value)}>{types.map(t=><option key={t}>{t}</option>)}</select></Field>
+      <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{prios.map(p=><option key={p}>{p}</option>)}</select></Field>
+    </div>
+    <Field label="Açıklama"><textarea style={{ ...iStyle, height:80, resize:"vertical" }} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+      <Field label="Jira ID"><input style={iStyle} value={f.jiraId} onChange={e=>upd("jiraId",e.target.value)} placeholder="PROJ-123" /></Field>
+      <Field label="Jira Link"><input style={iStyle} value={f.jiraLink} onChange={e=>upd("jiraLink",e.target.value)} placeholder="https://..." /></Field>
+    </div>
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.title.trim())return; onSave(f); }}>Kaydet</Btn></div>
+  </div>;
+}
+
+// ─── User Edit Modal ──────────────────────────────────────────────────────────
+function UserEditModal({ person, onClose, onSave }) {
+  const [name, setName] = useState(person.name);
+  const [role, setRole] = useState(person.role||"");
+  return <Modal title="Profilimi Düzenle" onClose={onClose}>
+    <Field label="Ad Soyad *"><input style={iStyle} value={name} onChange={e=>setName(e.target.value)} /></Field>
+    <Field label="Rol / Unvan"><input style={iStyle} value={role} onChange={e=>setRole(e.target.value)} /></Field>
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name,role}); onClose(); }}>Kaydet</Btn></div>
+  </Modal>;
+}
+
+// ─── Notifications Page ──────────────────────────────────────────────────────
+function NotificationsPage({ notifications, currentUser, setState }) {
+  const mine=(notifications||[]).filter(n=>n.userId===currentUser.id);
+  const markRead=(id)=>setState(s=>({...s,notifications:(s.notifications||[]).map(n=>n.id===id?{...n,read:true}:n)}));
+  const deleteNotif=(id)=>setState(s=>({...s,notifications:(s.notifications||[]).filter(n=>n.id!==id)}));
+  return <div style={{ padding:"24px 28px", flex:1, overflow:"auto" }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+      <div><h2 style={{ margin:0, fontSize:20, fontWeight:800 }}>Bildirimler</h2>
+        <p style={{ margin:"3px 0 0", color:"#64748B", fontSize:13 }}>{mine.filter(n=>!n.read).length} okunmamış</p>
+      </div>
+      {mine.length>0&&<button onClick={()=>setState(s=>({...s,notifications:(s.notifications||[]).filter(n=>n.userId!==currentUser.id)}))} style={{ background:"none", border:"none", cursor:"pointer", color:"#94A3B8", fontSize:12 }}>Tümünü Temizle</button>}
+    </div>
+    {mine.length===0&&<div style={{ textAlign:"center", padding:"50px", background:"#fff", borderRadius:16, border:"1.5px dashed #E2E8F0" }}>
+      <div style={{ fontSize:32, marginBottom:10 }}>🔔</div>
+      <div style={{ color:"#94A3B8" }}>Bildirim yok</div>
+    </div>}
+    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+      {mine.map(n=><div key={n.id} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:`1.5px solid ${n.read?"#E2E8F0":"#4A6CF7"}`, display:"flex", gap:12, alignItems:"flex-start", boxShadow:n.read?"none":"0 2px 8px rgba(74,108,247,0.1)" }} onClick={()=>markRead(n.id)}>
+        <div style={{ width:36, height:36, borderRadius:"50%", background:n.read?"#F1F5FF":"#EEF2FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>📋</div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:13, fontWeight:n.read?400:600, color:"#1E293B" }}>{n.msg}</div>
+          {n.projectName&&<div style={{ fontSize:11, color:"#4A6CF7", marginTop:3 }}>{n.projectName}</div>}
+          <div style={{ fontSize:11, color:"#94A3B8", marginTop:3 }}>{new Date(n.ts).toLocaleString("tr-TR",{dateStyle:"short",timeStyle:"short"})}</div>
+        </div>
+        {!n.read&&<span style={{ width:8,height:8,borderRadius:"50%",background:"#4A6CF7",flexShrink:0,marginTop:4 }} />}
+        <button onClick={e=>{e.stopPropagation();deleteNotif(n.id);}} style={{ background:"none",border:"none",cursor:"pointer",color:"#CBD5E1",fontSize:16,padding:0 }}>×</button>
+      </div>)}
+    </div>
+  </div>;
 }
 
 // ─── Modals ──────────────────────────────────────────────────────────────────
