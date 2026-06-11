@@ -8,7 +8,5 @@ services:
     healthCheckPath: /health
     autoDeploy: true
     envVars:
-      - key: NODE_VERSION
-        value: 24
       - key: JIRA_WEBHOOK_SECRET
         generateValue: true
