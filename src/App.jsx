@@ -579,6 +579,55 @@ function downloadCSVReport(project, people) {
   document.body.removeChild(a);
 }
 
+const csvCell=(value)=>`"${String(value??"").replace(/"/g,'""')}"`;
+const downloadTextFile=(content,fileName,type="text/csv;charset=utf-8")=>{
+  const blob=new Blob(["\uFEFF",content],{type});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=fileName;document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+const safeFileName=(value)=>String(value||"rapor").replace(/[^a-zA-Z0-9_-]/g,"_");
+const allProjectTasks=(state)=>state.projects.flatMap(project=>project.milestones.flatMap(milestone=>milestone.tasks.map(task=>({project,milestone,task}))));
+
+function downloadDelayReport(state,people){
+  const rows=[["Proje","Milestone","Görev","Sorumlu","Durum","Öncelik","Termin","Gecikme Günü","Seviye","Bekleme Kaynağı"]];
+  allProjectTasks(state).filter(({task})=>delayLvl(task.dueDate,task.status)).forEach(({project,milestone,task})=>{
+    rows.push([project.name,milestone.name,task.title,people.find(p=>p.id===task.assignee)?.name||"Atanmamış",task.status,task.priority,task.dueDate,daysDiff(task.dueDate),delayLvl(task.dueDate,task.status)==="critical"?"Kritik":"Gecikmiş",task.waitSource||""]);
+  });
+  downloadTextFile(rows.map(r=>r.map(csvCell).join(",")).join("\n"),`gecikme-raporu-${todayStr()}.csv`);
+}
+
+function downloadEffortReport(state,people){
+  const rows=[["Proje","Milestone","Görev","Sorumlu","Planlanan Saat","Gerçekleşen Saat","Fark","Kayıt Tarihi","Girişi Yapan","Açıklama"]];
+  allProjectTasks(state).forEach(({project,milestone,task})=>{
+    const entries=task.timeEntries||[];
+    const actual=entries.reduce((a,e)=>a+(parseFloat(e.hours)||0),0);
+    if(!entries.length)rows.push([project.name,milestone.name,task.title,people.find(p=>p.id===task.assignee)?.name||"Atanmamış",task.estimatedHours||0,actual,actual-(parseFloat(task.estimatedHours)||0),"","",""]);
+    entries.forEach(entry=>rows.push([project.name,milestone.name,task.title,people.find(p=>p.id===task.assignee)?.name||"Atanmamış",task.estimatedHours||0,actual,actual-(parseFloat(task.estimatedHours)||0),entry.date||"",entry.user||"",entry.note||""]));
+  });
+  downloadTextFile(rows.map(r=>r.map(csvCell).join(",")).join("\n"),`efor-raporu-${todayStr()}.csv`);
+}
+
+function downloadMachineReport(state){
+  const rows=[["Proje","Makine Kodu","Makine Adı","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"]];
+  state.projects.forEach(project=>(project.machines||[]).forEach(machine=>rows.push([project.name,machine.code||"",machine.name,machine.type==="virtual"?"Sanal":"Fiziksel",machine.commissioned?"Evet":"Hayır",machine.commissionedAt||"",machine.note||""])));
+  downloadTextFile(rows.map(r=>r.map(csvCell).join(",")).join("\n"),`makine-devreye-alma-${todayStr()}.csv`);
+}
+
+function generateSummaryReport(project,people,{customer=false}={}){
+  const tasks=project.milestones.flatMap(ms=>ms.tasks.map(task=>({...task,milestone:ms.name})));
+  const done=tasks.filter(t=>t.status==="Tamamlandı").length;
+  const delayed=tasks.filter(t=>delayLvl(t.dueDate,t.status));
+  const machines=project.machines||[];
+  const commissioned=machines.filter(m=>m.commissioned).length;
+  const hours=tasks.reduce((sum,t)=>sum+(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0);
+  const rows=tasks.map(t=>`<tr><td>${t.milestone}</td><td>${t.title}</td><td>${t.status}</td><td>${fmt(t.dueDate)}</td>${customer?"":`<td>${people.find(p=>p.id===t.assignee)?.name||"Atanmamış"}</td><td>${(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0)} sa</td>`}</tr>`).join("");
+  const machineRows=machines.map(m=>`<tr><td>${m.code||"-"}</td><td>${m.name}</td><td>${m.type==="virtual"?"Sanal":"Fiziksel"}</td><td>${m.commissioned?"Devrede":"Bekliyor"}</td><td>${m.commissioned?fmt(m.commissionedAt):(customer?"Planlanıyor":m.note||"-")}</td></tr>`).join("");
+  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>${project.name} - ${customer?"Müşteri":"İç"} Rapor</title><style>body{font-family:Arial,sans-serif;color:#1e293b;padding:32px}h1{margin-bottom:4px}.meta{color:#64748b;margin-bottom:24px}.stats{display:flex;gap:12px;margin:20px 0}.stat{border:1px solid #e2e8f0;border-radius:10px;padding:14px 20px}.stat b{display:block;font-size:24px}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border-bottom:1px solid #e2e8f0;padding:8px;text-align:left;font-size:12px}th{background:#f8fafc}button{float:right;padding:8px 14px}@media print{button{display:none}}</style></head><body><button onclick="window.print()">Yazdır / PDF</button><h1>${project.name}</h1><div class="meta">${customer?"Müşteri İlerleme Raporu":"İç Operasyon Raporu"} · ${new Date().toLocaleDateString("tr-TR")}</div><div class="stats"><div class="stat"><b>${tasks.length?Math.round(done/tasks.length*100):0}%</b>İlerleme</div><div class="stat"><b>${done}/${tasks.length}</b>Görev</div><div class="stat"><b>${commissioned}/${machines.length}</b>Makine</div><div class="stat"><b>${delayed.length}</b>Gecikme</div>${customer?"":`<div class="stat"><b>${hours}</b>Saat</div>`}</div><h2>Görev Durumu</h2><table><thead><tr><th>Milestone</th><th>Görev</th><th>Durum</th><th>Termin</th>${customer?"":"<th>Sorumlu</th><th>Efor</th>"}</tr></thead><tbody>${rows}</tbody></table><h2>Makine Devreye Alma</h2><table><thead><tr><th>Kod</th><th>Makine</th><th>Tip</th><th>Durum</th><th>${customer?"Plan":"Açıklama"}</th></tr></thead><tbody>${machineRows||"<tr><td colspan='5'>Makine kaydı yok.</td></tr>"}</tbody></table>${!customer&&delayed.length?`<h2>Gecikmeler</h2><ul>${delayed.map(t=>`<li>${t.title} · ${daysDiff(t.dueDate)} gün · ${t.waitSource||"Neden belirtilmedi"}</li>`).join("")}</ul>`:""}</body></html>`;
+  downloadTextFile(html,`${safeFileName(project.name)}-${customer?"musteri":"ic"}-rapor.html`,"text/html;charset=utf-8");
+}
+
 // ─── HTML Report ─────────────────────────────────────────────────────────────
 function generateHTMLReport(project, people, logs) {
   const findName=(id)=>people.find(p=>p.id===id)?.name||"Atanmamış";
@@ -721,6 +770,7 @@ function TaskCard({ task, people, projectColor, onCheck, onEdit, onDelete, onTim
         {task.startDate&&<span style={{ fontSize:11, color:"#94A3B8" }}>Başl: {fmt(task.startDate)}</span>}
         {task.dueDate&&<span style={{ fontSize:11, color:dl?"#E11D48":"#94A3B8" }}>{task.startDate?"Bit:":"Termin:"} {fmt(task.dueDate)}</span>}
         {(task.timeEntries||[]).length>0&&<span style={{ fontSize:11, color:"#7C3AED", fontWeight:600, background:"#F5F3FF", borderRadius:6, padding:"1px 6px" }}>{(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0)} saat</span>}
+        {task.estimatedHours&&<span style={{ fontSize:11, color:"#0369A1", fontWeight:600, background:"#F0F9FF", borderRadius:6, padding:"1px 6px" }}>Plan: {task.estimatedHours} sa</span>}
         {task.waitSource&&<span style={{ fontSize:11, color:"#EA6C00", fontWeight:600 }}>Bekliyor: {task.waitSource}</span>}
         {task.link&&(()=>{const jm=String(task.link).match(/([A-Z][A-Z0-9]+-[0-9]+)/);return <a href={task.link} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ fontSize:11, color:"#0052CC", background:"#DEEBFF", borderRadius:6, padding:"1px 7px", fontWeight:700, textDecoration:"none" }}>{jm?jm[1]:"Jira"}</a>;})()}
         {showProject&&projectName&&<span style={{ fontSize:11, color:"#4A6CF7", background:"#F1F5FF", borderRadius:6, padding:"1px 6px" }}>{projectName}</span>}
@@ -851,6 +901,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
+              onTime={()=>setModal({type:"time",data:t})}
             />)}
           </div>
         </div>}
@@ -861,6 +912,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
+              onTime={()=>setModal({type:"time",data:t})}
             />)}
           </div>}
         </div>}
@@ -872,6 +924,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
               onCheck={(c)=>updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"})}
               onEdit={()=>setModal({type:"editPersonal",data:t})}
               onDelete={()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}}
+              onTime={()=>setModal({type:"time",data:{...t,source:"personal"}})}
             />)}
           </div>
         </div>}
@@ -932,6 +985,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
 
     {modal?.type==="addPersonal"&&<PersonalTaskModal title="Genel Görev Ekle" people={state.people} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={addPersonal} />}
     {modal?.type==="editPersonal"&&<PersonalTaskModal title="Görevi Düzenle" initial={modal.data} people={state.people} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(d)=>{updatePersonal(modal.data.id,d);setModal(null);}} />}
+    {modal?.type==="time"&&<TimeLogModal task={modal.data} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(entries)=>{const t=modal.data;if(t.source==="personal")updatePersonal(t.id,{timeEntries:entries});else updateProjTask(t.projId,t.msId,t.id,{timeEntries:entries});}} />}
   </div>;
 }
 
@@ -1111,6 +1165,64 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
   </div>;
 }
 
+function MachinePanel({ project, canEdit, onChange }) {
+  const machines=project.machines||[];
+  const [showForm,setShowForm]=useState(false);
+  const [form,setForm]=useState({name:"",code:"",type:"physical",commissioned:false,commissionedAt:"",note:""});
+  const commissioned=machines.filter(m=>m.commissioned).length;
+  const save=()=>{
+    if(!form.name.trim())return;
+    onChange([...machines,{...form,id:uid(),name:form.name.trim(),code:form.code.trim(),commissionedAt:form.commissioned?(form.commissionedAt||todayStr()):""}]);
+    setForm({name:"",code:"",type:"physical",commissioned:false,commissionedAt:"",note:""});
+    setShowForm(false);
+  };
+  const update=(id,data)=>onChange(machines.map(m=>m.id===id?{...m,...data}:m));
+  return <div style={{flex:1,overflow:"auto",padding:"20px 24px"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+      <div><h3 style={{margin:0,fontSize:16}}>Makine Devreye Alma</h3><div style={{fontSize:12,color:"#64748B",marginTop:3}}>{commissioned}/{machines.length} makine devrede</div></div>
+      {canEdit&&<Btn onClick={()=>setShowForm(v=>!v)}>{showForm?"Formu Kapat":"+ Makine Ekle"}</Btn>}
+    </div>
+    <div style={{height:8,background:"#E2E8F0",borderRadius:8,marginBottom:16,overflow:"hidden"}}><div style={{height:"100%",width:`${machines.length?commissioned/machines.length*100:0}%`,background:"#059669"}} /></div>
+    {showForm&&<div style={{background:"#fff",border:"1.5px solid #DCE6F2",borderRadius:12,padding:16,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Makine Adı *"><input style={iStyle} value={form.name} onChange={e=>setForm(s=>({...s,name:e.target.value}))} /></Field><Field label="Kod / Hat No"><input style={iStyle} value={form.code} onChange={e=>setForm(s=>({...s,code:e.target.value}))} /></Field></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Makine Tipi"><select style={iStyle} value={form.type} onChange={e=>setForm(s=>({...s,type:e.target.value}))}><option value="physical">Fiziksel</option><option value="virtual">Sanal</option></select></Field><Field label="Devreye Alma Tarihi"><input type="date" style={iStyle} value={form.commissionedAt} onChange={e=>setForm(s=>({...s,commissionedAt:e.target.value}))} /></Field></div>
+      <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:13}}><input type="checkbox" checked={form.commissioned} onChange={e=>setForm(s=>({...s,commissioned:e.target.checked}))} /> Devreye alındı</label>
+      <Field label="Devreye Alınamama Açıklaması / Not"><textarea style={{...iStyle,height:70,resize:"vertical"}} value={form.note} onChange={e=>setForm(s=>({...s,note:e.target.value}))} /></Field>
+      <div style={{display:"flex",justifyContent:"flex-end"}}><Btn onClick={save}>Makineyi Kaydet</Btn></div>
+    </div>}
+    {!machines.length&&<div style={{padding:40,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Henüz makine eklenmedi.</div>}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:10}}>
+      {machines.map(machine=><div key={machine.id} style={{background:"#fff",borderRadius:12,padding:14,border:`1.5px solid ${machine.commissioned?"#A7F3D0":"#FED7AA"}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}><div><div style={{fontWeight:800,fontSize:13}}>{machine.name}</div><div style={{fontSize:11,color:"#64748B",marginTop:2}}>{machine.code||"Kod yok"} · {machine.type==="virtual"?"Sanal":"Fiziksel"}</div></div><span style={{background:machine.commissioned?"#ECFDF5":"#FFF7ED",color:machine.commissioned?"#059669":"#EA6C00",padding:"3px 8px",borderRadius:8,fontSize:10,fontWeight:800}}>{machine.commissioned?"DEVREDE":"BEKLİYOR"}</span></div>
+        {machine.commissionedAt&&<div style={{fontSize:11,color:"#64748B",marginTop:9}}>Devreye alma: {fmt(machine.commissionedAt)}</div>}
+        {!machine.commissioned&&<textarea disabled={!canEdit} value={machine.note||""} onChange={e=>update(machine.id,{note:e.target.value})} placeholder="Neden devreye alınamadı?" style={{...iStyle,height:58,resize:"vertical",marginTop:9,fontSize:11}} />}
+        {canEdit&&<div style={{display:"flex",justifyContent:"space-between",marginTop:10,gap:6}}><Btn small variant={machine.commissioned?"warning":"success"} onClick={()=>update(machine.id,{commissioned:!machine.commissioned,commissionedAt:!machine.commissioned?todayStr():""})}>{machine.commissioned?"Devreden Çıkar":"Devreye Al"}</Btn><Btn small variant="danger" onClick={()=>onChange(machines.filter(m=>m.id!==machine.id))}>Sil</Btn></div>}
+      </div>)}
+    </div>
+  </div>;
+}
+
+function ReportsPage({ state, people }) {
+  const [projectId,setProjectId]=useState(state.projects[0]?.id||"");
+  const project=state.projects.find(p=>p.id===projectId);
+  const tasks=allProjectTasks(state);
+  const delayed=tasks.filter(({task})=>delayLvl(task.dueDate,task.status));
+  const hours=tasks.reduce((sum,{task})=>sum+(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0);
+  const machines=state.projects.flatMap(p=>p.machines||[]);
+  const cards=[
+    {title:"Gecikme Raporu",desc:"Geciken görevler, gecikme günleri, sorumlu ve bekleme nedeni.",color:"#E11D48",action:()=>downloadDelayReport(state,people),label:"CSV İndir"},
+    {title:"Efor Raporu",desc:"Planlanan ve gerçekleşen saatler; kişi, görev ve tarih kırılımı.",color:"#7C3AED",action:()=>downloadEffortReport(state,people),label:"CSV İndir"},
+    {title:"Makine Devreye Alma",desc:"Fiziksel/sanal makineler, devre durumu ve devreye alınamama açıklamaları.",color:"#059669",action:()=>downloadMachineReport(state),label:"CSV İndir"},
+    {title:"İç Operasyon Raporu",desc:"Efor, gecikme, sorumlu, görev ve makine detaylarını içeren yönetim raporu.",color:"#0369A1",action:()=>project&&generateSummaryReport(project,people),label:"HTML / PDF"},
+    {title:"Müşteri İlerleme Raporu",desc:"İlerleme, teslim tarihleri ve makine durumunu sade müşteri görünümünde sunar.",color:"#EA6C00",action:()=>project&&generateSummaryReport(project,people,{customer:true}),label:"HTML / PDF"},
+  ];
+  return <div style={{padding:"24px 28px",flex:1,overflow:"auto"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,marginBottom:20,flexWrap:"wrap"}}><div><h2 style={{margin:0,fontSize:21}}>Raporlar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>İç operasyon ve müşteri paylaşımı için güncel proje çıktıları.</p></div><div style={{minWidth:240}}><label style={lStyle}>Rapor Projesi</label><select style={iStyle} value={projectId} onChange={e=>setProjectId(e.target.value)}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:10,marginBottom:20}}>{[["Geciken Görev",delayed.length,"#E11D48"],["Toplam Efor",`${hours} sa`,"#7C3AED"],["Makine",machines.length,"#0369A1"],["Devrede",machines.filter(m=>m.commissioned).length,"#059669"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:14}}><div style={{fontSize:11,color:"#64748B"}}>{label}</div><div style={{fontSize:24,fontWeight:800,color,marginTop:3}}>{value}</div></div>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12}}>{cards.map(card=><div key={card.title} style={{background:"#fff",borderRadius:14,padding:18,border:"1.5px solid #E2E8F0",borderTop:`4px solid ${card.color}`,boxShadow:"0 2px 6px rgba(0,0,0,.04)"}}><div style={{fontWeight:800,fontSize:14,marginBottom:6}}>{card.title}</div><div style={{fontSize:12,color:"#64748B",lineHeight:1.5,minHeight:54}}>{card.desc}</div><Btn style={{marginTop:12,background:card.color}} disabled={!project&&card.title.includes("Raporu")} onClick={card.action}>{card.label}</Btn></div>)}</div>
+  </div>;
+}
+
 // Global style reset
 const GlobalStyle = () => (
   <style>{`
@@ -1219,7 +1331,7 @@ export default function App() {
   const activePM=project?state.people.find(p=>p.id===project.pm):null;
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
 
-  const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],members:[],...data}; setState(s=>({...s,projects:[...s.projects,p]})); addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
+  const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],machines:[],members:[],...data}; setState(s=>({...s,projects:[...s.projects,p]})); addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
   const updateProject=(data)=>{ mutProject(p=>({...p,...data})); addLog(currentUser.name,"general","Proje güncellendi",data.name||project?.name); };
   const deleteProject=(id)=>{ const name=state.projects.find(p=>p.id===id)?.name; setState(s=>({...s,projects:s.projects.filter(p=>p.id!==id)})); setSelProject(null); setSelMilestone(null); addLog(currentUser.name,"general","Proje silindi: "+name); };
   const addRisk=(data)=>{ mutProject(p=>({...p,risks:[...(p.risks||[]),{id:uid(),...data}]})); addLog(currentUser.name,"risk_add",data.title,project?.name); };
@@ -1396,7 +1508,7 @@ export default function App() {
   const overdueC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,0)||0;
   const criticalC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length,0)||0;
 
-  const nav=[{id:"projects",icon:"P",label:"Projeler"},{id:"mytasks",icon:"T",label:"Görevlerim"},{id:"people",icon:"E",label:"Ekip"},{id:"logs",icon:"L",label:"Aktivite"}];
+  const nav=[{id:"projects",icon:"P",label:"Projeler"},{id:"mytasks",icon:"T",label:"Görevlerim"},{id:"reports",icon:"R",label:"Raporlar"},{id:"people",icon:"E",label:"Ekip"},{id:"logs",icon:"L",label:"Aktivite"}];
 
   return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
@@ -1482,7 +1594,7 @@ export default function App() {
             <span style={{ fontSize:12, fontWeight:700, color:project.color }}>{progress}%</span>
           </div>}
           <div style={{ display:"flex", gap:4, marginTop:10 }}>
-            {[["tasks","Görevler"],["gantt","Proje Planı"],["risks","Riskler"],["tickets","Ticketlar"],["notlar","Notlar"],["projlogs","Log"]].map(([id,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"5px 13px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit" }}>{label}</button>)}
+            {[["tasks","Görevler"],["gantt","Proje Planı"],["machines","Makineler"],["risks","Riskler"],["tickets","Ticketlar"],["notlar","Notlar"],["projlogs","Log"]].map(([id,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"5px 13px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit" }}>{label}</button>)}
           </div>
         </div>
 
@@ -1533,6 +1645,8 @@ export default function App() {
             {[[project.color,"Devam Ediyor"],["#059669","Tamamlandı"],["#EA6C00","Gecikmiş"],["#E11D48","Kritik"]].map(([c,l])=><div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:12, height:8, borderRadius:3, background:c }} /><span style={{ fontSize:11, color:"#64748B" }}>{l}</span></div>)}
           </div>
         </div>}
+
+        {projectTab==="machines"&&<MachinePanel project={project} canEdit={isAdmin} onChange={(machines)=>mutProject(p=>({...p,machines}))} />}
 
         {projectTab==="risks"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px", maxWidth:680 }}>
           <RiskPanel risks={project.risks||[]} onAdd={()=>setModal({type:"addRisk"})} onUpdate={updateRisk} onDelete={deleteRisk} canEdit={isAdmin} />
@@ -1587,6 +1701,7 @@ export default function App() {
       </div>}
 
       {view==="mytasks"&&<MyTasksPage currentUser={currentUser} state={state} setState={setState} addLog={addLog} isAdmin={isAdmin} />}
+      {view==="reports"&&<ReportsPage state={state} people={state.people} />}
 
       {view==="people"&&<div style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
@@ -1688,6 +1803,7 @@ function TimeLogModal({ task, currentUser, onClose, onSave }) {
   const [date,setDate]=useState(new Date().toISOString().slice(0,10));
   const [note,setNote]=useState("");
   const total=entries.reduce((a,e)=>a+(parseFloat(e.hours)||0),0);
+  const planned=parseFloat(task.estimatedHours)||0;
   const add=()=>{
     const h=parseFloat(hours);
     if(!h||h<=0){alert("Geçerli saat girin.");return;}
@@ -1697,8 +1813,8 @@ function TimeLogModal({ task, currentUser, onClose, onSave }) {
   const remove=(id)=>onSave(entries.filter(e=>e.id!==id));
   return <Modal title={`Süre Girişi — ${task.title}`} onClose={onClose} wide>
     <div style={{ background:"#F5F3FF", borderRadius:10, padding:"12px 16px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-      <span style={{ fontSize:13, fontWeight:700, color:"#7C3AED" }}>Toplam Harcanan</span>
-      <span style={{ fontSize:20, fontWeight:800, color:"#7C3AED" }}>{total} saat</span>
+      <span style={{ fontSize:13, fontWeight:700, color:"#7C3AED" }}>Toplam Harcanan{planned?` / Planlanan ${planned} saat`:""}</span>
+      <span style={{ fontSize:20, fontWeight:800, color:planned&&total>planned?"#E11D48":"#7C3AED" }}>{total} saat</span>
     </div>
     <div style={{ display:"grid", gridTemplateColumns:"100px 1fr", gap:10, marginBottom:10 }}>
       <Field label="Saat *"><input type="number" step="0.5" min="0" style={iStyle} value={hours} onChange={e=>setHours(e.target.value)} placeholder="2.5" /></Field>
@@ -2041,7 +2157,7 @@ function MilestoneModal({ title, initial, onClose, onSave }) {
   </Modal>;
 }
 function TaskModal({ title, initial, onClose, onSave, people }) {
-  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:"", startDate:"", dueDate:"", notes:"", waitSource:"", link:"", ...initial });
+  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:"", startDate:"", dueDate:"", estimatedHours:"", notes:"", waitSource:"", link:"", ...initial });
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   return <Modal title={title} onClose={onClose}>
     <Field label="Görev Başlığı *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
@@ -2050,6 +2166,7 @@ function TaskModal({ title, initial, onClose, onSave, people }) {
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></Field>
     </div>
     <Field label="Sorumlu"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
+    <Field label="Planlanan Efor (Saat)"><input type="number" min="0" step="0.5" style={iStyle} value={f.estimatedHours||""} onChange={e=>upd("estimatedHours",e.target.value)} placeholder="Örn. 8" /></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Başlangıç Tarihi"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
       <Field label="Termin Tarihi"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
@@ -2061,7 +2178,7 @@ function TaskModal({ title, initial, onClose, onSave, people }) {
   </Modal>;
 }
 function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, currentUser }) {
-  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:isAdmin?"":currentUser.id, dueDate:"", notes:"", waitSource:"", ...initial });
+  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:isAdmin?"":currentUser.id, dueDate:"", estimatedHours:"", notes:"", waitSource:"", ...initial });
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   return <Modal title={title} onClose={onClose}>
     <Field label="Görev Başlığı *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
@@ -2070,6 +2187,7 @@ function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, c
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></Field>
     </div>
     {isAdmin?<Field label="Atanacak Kisi"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>:<div style={{ background:"#F1F5FF", borderRadius:8, padding:"8px 12px", marginBottom:13, fontSize:12, color:"#4A6CF7" }}>Görev size atanacak: <b>{currentUser.name}</b></div>}
+    <Field label="Planlanan Efor (Saat)"><input type="number" min="0" step="0.5" style={iStyle} value={f.estimatedHours||""} onChange={e=>upd("estimatedHours",e.target.value)} placeholder="Örn. 4" /></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Başlangıç Tarihi"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
       <Field label="Termin Tarihi"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
