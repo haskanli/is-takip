@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
+import { getJiraIssue } from "./jira";
 import * as XLSX from "xlsx";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -1819,32 +1820,40 @@ function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
     </div>
     {tickets.length===0&&<div style={{ textAlign:"center", padding:"40px", background:"#fff", borderRadius:12, border:"1.5px dashed #E2E8F0", color:"#94A3B8" }}>Henüz ticket yok.</div>}
     <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-      {tickets.map(t=><div key={t.id} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:"1.5px solid #E2E8F0", display:"flex", gap:12, alignItems:"flex-start", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
+      {tickets.map(t=><div key={t.id} onClick={()=>setModal({type:"detail",data:t})} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:"1.5px solid #E2E8F0", display:"flex", gap:12, alignItems:"flex-start", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", cursor:"pointer" }}>
         <div style={{ width:8, height:8, borderRadius:"50%", background:TYPE_COLORS[t.type]||"#94A3B8", marginTop:4, flexShrink:0 }} />
         <div style={{ flex:1 }}>
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
             <span style={{ fontWeight:700, fontSize:13 }}>{t.title}</span>
             <span style={{ background:(TYPE_COLORS[t.type]||"#94A3B8")+"22", color:TYPE_COLORS[t.type]||"#94A3B8", borderRadius:8, padding:"1px 8px", fontSize:11, fontWeight:600 }}>{t.type}</span>
             <span style={{ background:"#F1F5FF", color:"#4A6CF7", borderRadius:8, padding:"1px 8px", fontSize:11 }}>{t.priority}</span>
-            {t.jiraId&&<a href={t.jiraLink||"#"} target="_blank" rel="noreferrer" style={{ background:"#DEEBFF", color:"#0052CC", borderRadius:6, padding:"1px 7px", fontSize:11, fontWeight:700, textDecoration:"none" }}>{t.jiraId}</a>}
-            <select value={t.status||"Açık"} onChange={e=>updateTicket(t.id,{status:e.target.value})} style={{ fontSize:11, borderRadius:6, border:"1px solid #E2E8F0", padding:"2px 6px", fontFamily:"inherit" }}>
+            {(t.jiraKey||t.jiraId)&&<a href={t.jiraLink||"#"} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ background:"#DEEBFF", color:"#0052CC", borderRadius:6, padding:"1px 7px", fontSize:11, fontWeight:700, textDecoration:"none" }}>{t.jiraKey||t.jiraId}</a>}
+            {t.jiraStatus&&<span style={{ background:"#E8F5E9", color:"#16794A", borderRadius:6, padding:"1px 7px", fontSize:11, fontWeight:700 }}>Jira: {t.jiraStatus}</span>}
+            <select value={t.status||"Açık"} onClick={e=>e.stopPropagation()} onChange={e=>updateTicket(t.id,{status:e.target.value})} style={{ fontSize:11, borderRadius:6, border:"1px solid #E2E8F0", padding:"2px 6px", fontFamily:"inherit" }}>
+              {!["Açık","İnceleniyor","Çözüldü","Kapatıldı"].includes(t.status)&&t.status&&<option>{t.status}</option>}
               {["Açık","İnceleniyor","Çözüldü","Kapatıldı"].map(s=><option key={s}>{s}</option>)}
             </select>
           </div>
           {t.description&&<div style={{ fontSize:12, color:"#64748B", marginBottom:4 }}>{t.description}</div>}
           <div style={{ fontSize:11, color:"#94A3B8" }}>{t.author} · {new Date(t.ts).toLocaleDateString("tr-TR")}</div>
         </div>
-        {(isAdmin||t.author===currentUser.name)&&<button onClick={()=>deleteTicket(t.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:16 }}>×</button>}
+        {(isAdmin||t.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();deleteTicket(t.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:16 }}>×</button>}
       </div>)}
     </div>
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>
       <TicketForm onSave={(d)=>{addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} />
     </Modal>}
+    {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} canEdit={isAdmin||modal.data.author===currentUser.name} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} types={TICKET_TYPES} prios={TICKET_PRIOS} />}
   </div>;
 }
 function TicketForm({ onSave, onClose, types, prios }) {
-  const [f,setF]=useState({ title:"", type:"Görev", priority:"Orta", description:"", jiraId:"", jiraLink:"", status:"Açık" });
+  const [f,setF]=useState({ title:"", type:"Görev", priority:"Orta", description:"", status:"Açık", jiraKey:"" });
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
+  const submit=()=>{
+    if(!f.title.trim())return;
+    const jiraKey=f.jiraKey.trim().toUpperCase();
+    onSave({...f,jiraKey,jiraId:jiraKey});
+  };
   return <div>
     <Field label="Başlık *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
@@ -1852,12 +1861,78 @@ function TicketForm({ onSave, onClose, types, prios }) {
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{prios.map(p=><option key={p}>{p}</option>)}</select></Field>
     </div>
     <Field label="Açıklama"><textarea style={{ ...iStyle, height:80, resize:"vertical" }} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Jira ID"><input style={iStyle} value={f.jiraId} onChange={e=>upd("jiraId",e.target.value)} placeholder="PROJ-123" /></Field>
-      <Field label="Jira Link"><input style={iStyle} value={f.jiraLink} onChange={e=>upd("jiraLink",e.target.value)} placeholder="https://..." /></Field>
-    </div>
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.title.trim())return; onSave(f); }}>Kaydet</Btn></div>
+    <Field label="Jira Task Key"><input style={iStyle} value={f.jiraKey} onChange={e=>upd("jiraKey",e.target.value)} placeholder="PROJ-123" /></Field>
+    <div style={{ fontSize:11, color:"#64748B", marginBottom:11 }}>Mevcut bir Jira taskıyla ilişkilendirmek için issue key girin.</div>
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={submit}>Kaydet</Btn></div>
   </div>;
+}
+
+function TicketDetail({ ticket, canEdit, onClose, onUpdate, types, prios }) {
+  const [editing,setEditing]=useState(false);
+  const [form,setForm]=useState(ticket);
+  const [jira,setJira]=useState(null);
+  const [loading,setLoading]=useState(Boolean(ticket.jiraKey||ticket.jiraId));
+  const [error,setError]=useState("");
+  const jiraKey=(ticket.jiraKey||ticket.jiraId||"").trim().toUpperCase();
+  const upd=(k,v)=>setForm(s=>({...s,[k]:v}));
+  const refreshJira=async()=>{
+    if(!jiraKey)return;
+    setLoading(true);
+    setError("");
+    try{
+      const issue=await getJiraIssue(jiraKey);
+      setJira(issue);
+      onUpdate({jiraKey:issue.key,jiraId:issue.key,jiraIssueId:issue.id,jiraLink:issue.url,jiraStatus:issue.status,jiraUpdatedAt:now()});
+    }catch(e){setError(e?.message||"Jira bilgisi alınamadı.");}
+    finally{setLoading(false);}
+  };
+  useEffect(()=>{
+    if(!jiraKey)return;
+    let active=true;
+    getJiraIssue(jiraKey).then(issue=>{
+      if(!active)return;
+      setJira(issue);
+      setError("");
+      onUpdate({jiraKey:issue.key,jiraId:issue.key,jiraIssueId:issue.id,jiraLink:issue.url,jiraStatus:issue.status,jiraUpdatedAt:now()});
+    }).catch(e=>{if(active)setError(e?.message||"Jira bilgisi alınamadı.");})
+      .finally(()=>{if(active)setLoading(false);});
+    return()=>{active=false;};
+    // onUpdate changes with parent renders; Jira should refresh only when its key changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[jiraKey]);
+  const save=()=>{
+    const key=(form.jiraKey||form.jiraId||"").trim().toUpperCase();
+    if(key!==jiraKey){setJira(null);setError("");setLoading(Boolean(key));}
+    onUpdate({...form,jiraKey:key,jiraId:key,...(key!==jiraKey?{jiraStatus:"",jiraLink:"",jiraIssueId:""}:{})});
+    setEditing(false);
+  };
+  return <Modal title={ticket.title} onClose={onClose} wide>
+    {editing?<div>
+      <Field label="Başlık"><input style={iStyle} value={form.title||""} onChange={e=>upd("title",e.target.value)} /></Field>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+        <Field label="Tip"><select style={iStyle} value={form.type||"Görev"} onChange={e=>upd("type",e.target.value)}>{types.map(t=><option key={t}>{t}</option>)}</select></Field>
+        <Field label="Öncelik"><select style={iStyle} value={form.priority||"Orta"} onChange={e=>upd("priority",e.target.value)}>{prios.map(p=><option key={p}>{p}</option>)}</select></Field>
+      </div>
+      <Field label="Açıklama"><textarea style={{...iStyle,height:90,resize:"vertical"}} value={form.description||""} onChange={e=>upd("description",e.target.value)} /></Field>
+      <Field label="Jira Task Key"><input style={iStyle} value={form.jiraKey||form.jiraId||""} onChange={e=>upd("jiraKey",e.target.value)} placeholder="PROJ-123" /></Field>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:7}}><Btn variant="ghost" onClick={()=>setEditing(false)}>İptal</Btn><Btn onClick={save}>Kaydet</Btn></div>
+    </div>:<div>
+      {ticket.description&&<div style={{fontSize:13,color:"#475569",lineHeight:1.6,marginBottom:16}}>{ticket.description}</div>}
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}><span style={{background:"#F1F5FF",color:"#4A6CF7",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.type}</span><span style={{background:"#FFF7ED",color:"#EA6C00",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.priority}</span><span style={{background:"#F8FAFC",color:"#64748B",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.status}</span></div>
+      <div style={{border:"1.5px solid #DDE7F5",borderRadius:12,padding:14,background:"#F8FBFF",marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:jiraKey?10:0}}><div style={{fontWeight:800,fontSize:13,color:"#0052CC"}}>Jira Task</div>{jiraKey&&<button onClick={refreshJira} disabled={loading} style={{border:"none",background:"none",color:"#4A6CF7",fontSize:11,cursor:"pointer"}}>{loading?"Güncelleniyor...":"Yenile"}</button>}</div>
+        {!jiraKey&&<div style={{fontSize:12,color:"#64748B"}}>Bu ticket henüz bir Jira taskıyla ilişkilendirilmemiş.</div>}
+        {jiraKey&&error&&<div style={{fontSize:12,color:"#BE123C"}}>{error}</div>}
+        {jiraKey&&!error&&<div>
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:8}}><strong style={{fontSize:13}}>{jiraKey}</strong><span style={{background:"#E8F5E9",color:"#16794A",borderRadius:7,padding:"2px 8px",fontSize:11,fontWeight:700}}>{jira?.status||ticket.jiraStatus||"Durum alınıyor..."}</span></div>
+          {(jira?.summary)&&<div style={{fontSize:12,color:"#475569",marginBottom:9}}>{jira.summary}</div>}
+          {(jira?.assignee)&&<div style={{fontSize:11,color:"#64748B",marginBottom:9}}>Sorumlu: {jira.assignee}</div>}
+          {(jira?.url||ticket.jiraLink)&&<a href={jira?.url||ticket.jiraLink} target="_blank" rel="noreferrer" style={{display:"inline-block",background:"#0052CC",color:"#fff",borderRadius:8,padding:"6px 11px",fontSize:12,fontWeight:700,textDecoration:"none"}}>Jira'da Aç</a>}
+        </div>}
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:7}}>{canEdit&&<Btn variant="secondary" onClick={()=>{setForm(ticket);setEditing(true);}}>Düzenle / Jira İlişkilendir</Btn>}<Btn variant="ghost" onClick={onClose}>Kapat</Btn></div>
+    </div>}
+  </Modal>;
 }
 
 // ─── User Edit Modal ──────────────────────────────────────────────────────────

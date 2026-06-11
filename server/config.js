@@ -1,0 +1,31 @@
+const required = (name) => {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+};
+
+const optional = (name) => process.env[name]?.trim() || "";
+
+export const getJiraConfig = () => ({
+  baseUrl: required("JIRA_BASE_URL").replace(/\/+$/, ""),
+  email: required("JIRA_EMAIL"),
+  apiToken: required("JIRA_API_TOKEN"),
+  projectKey: optional("JIRA_PROJECT_KEY"),
+  webhookSecret: optional("JIRA_WEBHOOK_SECRET"),
+});
+
+export const getSupabaseConfig = () => ({
+  url: optional("SUPABASE_URL") || required("VITE_SUPABASE_URL"),
+  key:
+    optional("SUPABASE_SERVICE_ROLE_KEY") ||
+    required("VITE_SUPABASE_ANON_KEY"),
+});
+
+export const getServerConfig = () => ({
+  port: Number(process.env.PORT || 3001),
+  requestTimeoutMs: Number(process.env.JIRA_REQUEST_TIMEOUT_MS || 10000),
+  retryCount: Number(process.env.JIRA_RETRY_COUNT || 3),
+  allowedOrigin: optional("APP_ORIGIN"),
+});
