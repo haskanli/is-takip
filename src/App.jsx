@@ -1159,6 +1159,37 @@ export default function App() {
     XLSX.writeFile(wb,"proje-plani-sablonu.xlsx");
   };
 
+  const handleImport=(e)=>{
+    const file=e.target.files[0]; if(!file)return;
+    const isXlsx=file.name.toLowerCase().endsWith(".xlsx")||file.name.toLowerCase().endsWith(".xls");
+    const reader=new FileReader();
+    reader.onload=(ev)=>{
+      let ms=null;
+      if(isXlsx){
+        try{
+          const wb=XLSX.read(ev.target.result,{type:"array"});
+          const sheet=wb.Sheets[wb.SheetNames[0]];
+          const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:""});
+          ms=parseRows(rows);
+        }catch(err){ alert("Excel okunamadı: "+err.message); return; }
+      } else {
+        const text=ev.target.result;
+        const rows=text.split("\n").filter(l=>l.trim()).map(line=>{
+          const cols=[];let cur="",inQ=false;
+          for(const ch of line){if(ch==='"'){inQ=!inQ;}else if(ch===","&&!inQ){cols.push(cur.trim());cur="";}else cur+=ch;}
+          cols.push(cur.trim());return cols;
+        });
+        ms=parseRows(rows);
+      }
+      if(!ms||!ms.length){alert("Dosyada veri bulunamadı.");return;}
+      mutProject(p=>({...p,milestones:[...p.milestones,...ms]}));
+      addLog(currentUser.name,"import",`${ms.length} milestone aktarıldı`,project?.name);
+      alert(`${ms.length} milestone aktarıldı.`);
+    };
+    if(isXlsx) reader.readAsArrayBuffer(file); else reader.readAsText(file,"UTF-8");
+    e.target.value="";
+  };
+
   const totalT=project?.milestones.reduce((a,m)=>a+m.tasks.length,0)||0;
   const doneT=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>t.status==="Tamamland\u0131").length,0)||0;
   const progress=totalT?Math.round((doneT/totalT)*100):0;
@@ -1464,67 +1495,84 @@ function TimeLogModal({ task, currentUser, onClose, onSave }) {
 // ─── Plan List Table ─────────────────────────────────────────────────────────
 function PlanListTable({ project, people }) {
   const [expandedMs, setExpandedMs] = useState({});
-  const toggle = (id) => setExpandedMs(s=>({...s,[id]:!s[id]}));
-  const findName=(id)=>people.find(p=>p.id===id)?.name||"—";
+  const toggle = (id) => setExpandedMs(s => ({ ...s, [id]: !s[id] }));
+  const findName = (id) => people.find(p => p.id === id)?.name || "—";
   const thStyle = { padding:"8px 12px", textAlign:"left", fontWeight:600, color:"#64748B", borderBottom:"1px solid #E2E8F0", fontSize:11 };
   const tdStyle = (extra={}) => ({ padding:"8px 12px", borderBottom:"1px solid #F1F5FF", fontSize:12, ...extra });
-  return <div style={{ marginTop:24, background:"#fff", borderRadius:12, border:"1.5px solid #E2E8F0", overflow:"hidden" }}>
-    <div style={{ padding:"12px 16px", borderBottom:"1.5px solid #E2E8F0", fontWeight:700, fontSize:13 }}>Plan Listesi</div>
-    <div style={{ overflowX:"auto" }}>
-      <table style={{ width:"100%", borderCollapse:"collapse", minWidth:600 }}>
-        <thead><tr style={{ background:"#F8FAFC" }}>
-          {["","Milestone / Görev","Hedef Başl.","Hedef Bitiş","Gerç. Başl.","Gerç. Bitiş","Durum","İlerleme"].map(h=><th key={h} style={thStyle}>{h}</th>)}
-        </tr></thead>
-        <tbody>
-          {project.milestones.map((m,mi)=>{
-            const done=m.tasks.filter(t=>t.status==="Tamamlandı").length;
-            const pct=m.tasks.length?Math.round(done/m.tasks.length*100):0;
-            const isExp=expandedMs[m.id];
-            const bgs=["#FAFBFF","#F5F9FF"];
-            return [
-              <tr key={m.id} style={{ background:bgs[mi%2], cursor:"pointer" }} onClick={()=>toggle(m.id)}>
-                <td style={{ ...tdStyle(), width:28, color:"#94A3B8", fontWeight:700 }}>{isExp?"▾":"▸"}</td>
-                <td style={{ ...tdStyle(), fontWeight:700 }}>{m.name}</td>
-                <td style={tdStyle({ color:"#64748B" })}>{fmt(m.startDate)}</td>
-                <td style={tdStyle({ color:"#64748B" })}>{fmt(m.dueDate)}</td>
-                <td style={tdStyle({ color:m.actualStart?"#1E293B":"#CBD5E1" })}>{fmt(m.actualStart)||"—"}</td>
-                <td style={tdStyle({ color:m.actualEnd?"#1E293B":"#CBD5E1" })}>{fmt(m.actualEnd)||"—"}</td>
-                <td style={tdStyle()}><Badge label={m.status} /></td>
-                <td style={tdStyle()}>
-                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    <div style={{ width:60, height:6, background:"#E2E8F0", borderRadius:4 }}><div style={{ width:`${pct}%`, height:"100%", background:project.color, borderRadius:4 }} /></div>
-                    <span style={{ fontSize:11, color:"#64748B" }}>{done}/{m.tasks.length}</span>
-                  </div>
-                </td>
-              </tr>,
-              ...(isExp?m.tasks.map(t=>{
-                const dl=delayLvl(t.dueDate,t.status);
-                return <tr key={t.id} style={{ background:"#F8FAFC" }}>
-                  <td style={{ ...tdStyle(), color:"#CBD5E1" }}></td>
-                  <td style={{ ...tdStyle(), paddingLeft:28, color:"#1E293B" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <span style={{ fontSize:11 }}>{t.title}</span>
-                      {t.link&&(()=>{const jm=String(t.link).match(/([A-Z][A-Z0-9]+-[0-9]+)/);return <a href={t.link} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ fontSize:10, color:"#0052CC", background:"#DEEBFF", borderRadius:4, padding:"1px 5px", fontWeight:700, textDecoration:"none" }}>{jm?jm[1]:"Jira"}</a>;})()}
-                    </div>
-                  </td>
-                  <td style={tdStyle({ color:"#94A3B8" })}>—</td>
-                  <td style={tdStyle({ color:dl?"#E11D48":"#64748B" })}>{fmt(t.dueDate)}</td>
-                  <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
-                  <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
-                  <td style={tdStyle()}><Badge label={t.status} /></td>
-                  <td style={tdStyle({ color:"#64748B", fontSize:11 })}>{findName(t.assignee)}</td>
-                </tr>;
-              }):[])
-            ];
-          })}
-        </tbody>
-      </table>
+  const bgs = ["#FAFBFF", "#F5F9FF"];
+
+  // Flatten rows: milestone rows + optional task rows
+  const rows = [];
+  project.milestones.forEach((m, mi) => {
+    const done = m.tasks.filter(t => t.status === "Tamamlandı").length;
+    const pct = m.tasks.length ? Math.round(done / m.tasks.length * 100) : 0;
+    const isExp = !!expandedMs[m.id];
+    const bg = bgs[mi % 2];
+    rows.push(
+      <tr key={m.id} style={{ background: bg, cursor:"pointer" }} onClick={() => toggle(m.id)}>
+        <td style={{ ...tdStyle(), width:28, color:"#94A3B8", fontWeight:700 }}>{isExp ? "▾" : "▸"}</td>
+        <td style={{ ...tdStyle(), fontWeight:700 }}>{m.name}</td>
+        <td style={tdStyle({ color:"#64748B" })}>{fmt(m.startDate)}</td>
+        <td style={tdStyle({ color:"#64748B" })}>{fmt(m.dueDate)}</td>
+        <td style={tdStyle({ color: m.actualStart ? "#1E293B" : "#CBD5E1" })}>{fmt(m.actualStart) || "—"}</td>
+        <td style={tdStyle({ color: m.actualEnd ? "#1E293B" : "#CBD5E1" })}>{fmt(m.actualEnd) || "—"}</td>
+        <td style={tdStyle()}><Badge label={m.status} /></td>
+        <td style={tdStyle()}>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <div style={{ width:60, height:6, background:"#E2E8F0", borderRadius:4 }}>
+              <div style={{ width:`${pct}%`, height:"100%", background: project.color, borderRadius:4 }} />
+            </div>
+            <span style={{ fontSize:11, color:"#64748B" }}>{done}/{m.tasks.length}</span>
+          </div>
+        </td>
+      </tr>
+    );
+    if (isExp) {
+      m.tasks.forEach(t => {
+        const dl = delayLvl(t.dueDate, t.status);
+        rows.push(
+          <tr key={t.id} style={{ background:"#F8FAFC" }}>
+            <td style={{ ...tdStyle(), color:"#CBD5E1" }}></td>
+            <td style={{ ...tdStyle(), paddingLeft:28 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ fontSize:11, color:"#1E293B" }}>{t.title}</span>
+                {t.link && (() => {
+                  const jm = String(t.link).match(/([A-Z][A-Z0-9]+-[0-9]+)/);
+                  return <a href={t.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize:10, color:"#0052CC", background:"#DEEBFF", borderRadius:4, padding:"1px 5px", fontWeight:700, textDecoration:"none" }}>{jm ? jm[1] : "Jira"}</a>;
+                })()}
+              </div>
+            </td>
+            <td style={tdStyle({ color:"#94A3B8" })}>—</td>
+            <td style={tdStyle({ color: dl ? "#E11D48" : "#64748B" })}>{fmt(t.dueDate)}</td>
+            <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
+            <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
+            <td style={tdStyle()}><Badge label={t.status} /></td>
+            <td style={tdStyle({ color:"#64748B", fontSize:11 })}>{findName(t.assignee)}</td>
+          </tr>
+        );
+      });
+    }
+  });
+
+  return (
+    <div style={{ marginTop:24, background:"#fff", borderRadius:12, border:"1.5px solid #E2E8F0", overflow:"hidden" }}>
+      <div style={{ padding:"12px 16px", borderBottom:"1.5px solid #E2E8F0", fontWeight:700, fontSize:13 }}>Plan Listesi</div>
+      <div style={{ overflowX:"auto" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:600 }}>
+          <thead>
+            <tr style={{ background:"#F8FAFC" }}>
+              {["","Milestone / Görev","Hedef Başl.","Hedef Bitiş","Gerç. Başl.","Gerç. Bitiş","Durum","İlerleme"].map(h => (
+                <th key={h} style={thStyle}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>{rows}</tbody>
+        </table>
+      </div>
     </div>
-  </div>;
+  );
 }
 
-
-// ─── Tickets Panel ────────────────────────────────────────────────────────────
 function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
   const [modal,setModal]=useState(null);
   const tickets=((state.projectTickets||{})[project.id])||[];
