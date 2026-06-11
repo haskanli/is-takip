@@ -366,7 +366,7 @@ function GanttChart({ project, compact }) {
                 <div style={{ width:labelW, flexShrink:0, fontSize:9, paddingRight:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#64748B" }} title={t.title}>  {t.title}</div>
                 <div style={{ flex:1, position:"relative", height:taskRowH, background:"#fff", borderRadius:4 }}>
                   {todayOff<=total&&<div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:0, bottom:0, width:1, background:"#E11D48", zIndex:2 }} />}
-                  <div style={{ position:"absolute", left:`${Math.max(0,pct(te)-2)}%`, width:`${Math.max(1,wPct(te,te)||2}%`, top:3, height:taskRowH-6, background:tc, borderRadius:3, minWidth:6, zIndex:1 }} title={`${t.title}: ${fmt(t.dueDate)}`} />
+                  <div style={{ position:"absolute", left:`${Math.max(0,pct(te)-2)}%`, width:`${Math.max(1,wPct(te,te)||2)}%`, top:3, height:taskRowH-6, background:tc, borderRadius:3, minWidth:6, zIndex:1 }} title={`${t.title}: ${fmt(t.dueDate)}`} />
                 </div>
                 <div style={{ width:64, fontSize:9, color:tdl?"#E11D48":"#94A3B8", paddingLeft:6 }}>{fmt(t.dueDate)}</div>
               </div>;
