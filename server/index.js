@@ -10,6 +10,9 @@ import {
   generateRecurringTasks,
   saveJiraIssueToTicket,
   loadState,
+  loadStateRecord,
+  saveStateRecord,
+  checkDatabase,
   updateTicketStatusByJiraKey,
 } from "./repositories/appState.js";
 import {
@@ -20,6 +23,7 @@ import {
 import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
+import { authenticateRequest } from "./auth.js";
 
 const MAX_BODY_BYTES = 1024 * 1024;
 const DIST_DIRECTORY = fileURLToPath(new URL("../dist/", import.meta.url));
@@ -39,6 +43,21 @@ const json = (response, status, body) => {
     "Content-Type": "application/json; charset=utf-8",
   });
   response.end(JSON.stringify(body));
+};
+
+const rateBuckets = new Map();
+const enforceRateLimit = (request) => {
+  const key = request.socket.remoteAddress || "unknown";
+  const now = Date.now();
+  const bucket = rateBuckets.get(key);
+  if (!bucket || now - bucket.startedAt >= 60_000) {
+    rateBuckets.set(key, { startedAt: now, count: 1 });
+    return;
+  }
+  bucket.count += 1;
+  if (bucket.count > 180) {
+    throw Object.assign(new Error("Too many requests"), { status: 429 });
+  }
 };
 
 const readBody = (request) =>
@@ -76,9 +95,54 @@ const validateTicketRequest = (body) => {
   }
 };
 
-const handleCreateIssue = async (request, response) => {
+const canAccessProject = (state, profile, projectId) => {
+  if (!profile || profile.is_admin) return true;
+  const project = state.projects?.find((item) => item.id === projectId);
+  if (!project) return false;
+  if ([...(project.pmIds || []), project.pm].filter(Boolean).includes(profile.legacy_id)) return true;
+  if ((project.members || []).includes(profile.legacy_id)) return true;
+  if ((project.stakeholders || []).some((item) => item.userId === profile.legacy_id)) return true;
+  return (project.milestones || []).some((milestone) =>
+    (milestone.tasks || []).some((task) => task.assignee === profile.legacy_id),
+  );
+};
+
+const assertProjectAccess = (state, auth, projectId) => {
+  if (!canAccessProject(state, auth?.profile, projectId)) {
+    throw Object.assign(new Error("Project access denied"), { status: 403 });
+  }
+};
+
+const handleGetApplicationState = async (auth, response) => {
+  const record = await loadStateRecord();
+  json(response, 200, {
+    ...record,
+    currentProfile: auth?.profile || null,
+  });
+};
+
+const handleSaveApplicationState = async (request, auth, response) => {
+  const body = parseJson(await readBody(request));
+  if (!body?.state || !Number.isFinite(Number(body.version))) {
+    throw Object.assign(new Error("state and version are required"), { status: 400 });
+  }
+  const shared = { ...body.state };
+  delete shared.currentUserId;
+  const saved = await saveStateRecord({
+    state: shared,
+    expectedVersion: Number(body.version),
+  });
+  logger.info("application.state.saved", {
+    actorId: auth?.profile?.id || null,
+    version: saved.version,
+  });
+  json(response, 200, saved);
+};
+
+const handleCreateIssue = async (request, response, auth) => {
   const body = parseJson(await readBody(request));
   validateTicketRequest(body);
+  assertProjectAccess(await loadState(), auth, body.projectId);
 
   const issue = await createJiraIssue({
     title: body.ticket.title,
@@ -124,12 +188,13 @@ const handleWebhook = async (request, response) => {
   json(response, 200, { received: true, ...result });
 };
 
-const handleTicketAssignedEmail = async (request, response) => {
+const handleTicketAssignedEmail = async (request, response, auth) => {
   const body = parseJson(await readBody(request));
   if (!body?.projectId || !body?.ticket?.assignedTo) {
     throw Object.assign(new Error("projectId and ticket.assignedTo are required"), { status: 400 });
   }
   const state = await loadState();
+  assertProjectAccess(state, auth, body.projectId);
   const project = state.projects?.find((item) => item.id === body.projectId);
   const assignee = state.people?.find((item) => item.id === body.ticket.assignedTo);
   if (!project || !assignee) {
@@ -158,17 +223,20 @@ const handleTicketAssignedEmail = async (request, response) => {
   });
 };
 
-const handleCreateTicket = async (request, response) => {
+const handleCreateTicket = async (request, response, auth) => {
   const body = parseJson(await readBody(request));
   validateTicketRequest(body);
   const state = await loadState();
+  assertProjectAccess(state, auth, body.projectId);
   const project = state.projects?.find((item) => item.id === body.projectId);
   if (!project) {
     throw Object.assign(new Error("Project not found"), { status: 404 });
   }
   const ticket = await createTicket({
     projectId: body.projectId,
-    ticket: body.ticket,
+    ticket: auth?.profile
+      ? { ...body.ticket, author: auth.profile.name, authorId: auth.profile.legacy_id }
+      : body.ticket,
   });
   let notification = { sent: false, reason: "Ticket is not assigned" };
   if (ticket.assignedTo) {
@@ -224,13 +292,14 @@ const notifyTaskAssignee = async ({ assignee, task, assigner }) => {
   }
 };
 
-const handleAssignTasks = async (request, response) => {
+const handleAssignTasks = async (request, response, auth) => {
   const body = parseJson(await readBody(request));
-  if (!body?.task?.title?.trim() || !body?.assignerId || !body.assigneeIds?.length) {
+  const assignerId = auth?.profile?.legacy_id || body?.assignerId;
+  if (!body?.task?.title?.trim() || !assignerId || !body.assigneeIds?.length) {
     throw Object.assign(new Error("task.title, assignerId and assigneeIds are required"), { status: 400 });
   }
   const state = await loadState();
-  const assigner = state.people?.find((person) => person.id === body.assignerId);
+  const assigner = state.people?.find((person) => person.id === assignerId);
   if (!assigner?.isAdmin) {
     throw Object.assign(new Error("Only administrators can assign tasks"), { status: 403 });
   }
@@ -374,10 +443,41 @@ const handleStatic = async (url, response) => {
 const server = createServer(async (request, response) => {
   const startedAt = Date.now();
   const url = new URL(request.url, "http://localhost");
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("X-Frame-Options", "DENY");
+  response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
   try {
+    enforceRateLimit(request);
+    const config = getServerConfig();
+    const protectedPath =
+      url.pathname.startsWith("/api/") ||
+      url.pathname === "/tickets" ||
+      url.pathname === "/tasks/assign" ||
+      url.pathname === "/email/ticket-assigned" ||
+      url.pathname === "/jira/issues" ||
+      url.pathname.startsWith("/jira/issues/");
+    const auth = config.requireAuth && protectedPath
+      ? await authenticateRequest(request)
+      : null;
     if (request.method === "GET" && url.pathname === "/health") {
-      json(response, 200, { status: "ok" });
+      const database = await checkDatabase();
+      json(response, 200, {
+        status: "ok",
+        database,
+        dataModel: config.dataModel,
+        authenticationRequired: config.requireAuth,
+      });
+    } else if (request.method === "GET" && url.pathname === "/api/session") {
+      if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
+      json(response, 200, { profile: auth?.profile || null });
+    } else if (request.method === "GET" && url.pathname === "/api/state") {
+      if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
+      await handleGetApplicationState(auth, response);
+    } else if (request.method === "PUT" && url.pathname === "/api/state") {
+      if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
+      await handleSaveApplicationState(request, auth, response);
     } else if (
       request.method === "GET" &&
       url.pathname.startsWith("/jira/issues/")
@@ -387,15 +487,15 @@ const server = createServer(async (request, response) => {
         response,
       );
     } else if (request.method === "POST" && url.pathname === "/jira/issues") {
-      await handleCreateIssue(request, response);
+      await handleCreateIssue(request, response, auth);
     } else if (request.method === "POST" && url.pathname === "/jira/webhook") {
       await handleWebhook(request, response);
     } else if (request.method === "POST" && url.pathname === "/email/ticket-assigned") {
-      await handleTicketAssignedEmail(request, response);
+      await handleTicketAssignedEmail(request, response, auth);
     } else if (request.method === "POST" && url.pathname === "/tickets") {
-      await handleCreateTicket(request, response);
+      await handleCreateTicket(request, response, auth);
     } else if (request.method === "POST" && url.pathname === "/tasks/assign") {
-      await handleAssignTasks(request, response);
+      await handleAssignTasks(request, response, auth);
     } else if (request.method === "POST" && url.pathname === "/tasks/recurring/run") {
       await handleRecurringTasks(request, response);
     } else if (request.method === "POST" && url.pathname === "/email/reminders") {

@@ -36,7 +36,12 @@ key üzerinden bulunur ve `jiraStatus` alanı güncellenir.
 npm run lint
 npm test
 npm run build
+npm run db:backup
+npm run db:migrate
 ```
+
+Veritabanı geçişi için [production migration](docs/production-migration.md),
+canlı işletim için [operations](docs/operations.md) dokümanlarını izleyin.
 
 ## Canlı ortam
 

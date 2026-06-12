@@ -15,6 +15,9 @@
     "preview": "vite preview",
     "start": "node server/index.js",
     "reminders": "node server/reminderJob.js",
+    "db:backup": "node --env-file=.env --env-file-if-exists=.env.local scripts/backup-app-state.mjs",
+    "db:migrate": "node --env-file=.env --env-file-if-exists=.env.local scripts/migrate-app-state.mjs",
+    "db:verify": "node --env-file=.env --env-file-if-exists=.env.local scripts/verify-normalized.mjs",
     "test": "node --test"
   },
   "dependencies": {

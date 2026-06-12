@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     proxy: {
       '/jira': 'http://localhost:3001',
+      '/api': 'http://localhost:3001',
+      '/tasks': 'http://localhost:3001',
+      '/tickets': 'http://localhost:3001',
+      '/email': 'http://localhost:3001',
     },
   },
 })

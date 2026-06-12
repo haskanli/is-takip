@@ -28,6 +28,8 @@ export const getServerConfig = () => ({
   requestTimeoutMs: Number(process.env.JIRA_REQUEST_TIMEOUT_MS || 10000),
   retryCount: Number(process.env.JIRA_RETRY_COUNT || 3),
   allowedOrigin: optional("APP_ORIGIN"),
+  requireAuth: optional("REQUIRE_AUTH").toLowerCase() === "true",
+  dataModel: optional("DATA_MODEL") || "legacy",
 });
 
 export const getEmailConfig = () => ({

@@ -5,7 +5,9 @@ import { assignTasksWithNotification, createTicketWithNotification, notifyTicket
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.11.0";
+const APP_VERSION = "v1.12.0";
+const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true";
+const USE_DATA_API = import.meta.env.VITE_DATA_API === "true";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -159,8 +161,20 @@ const DEMO = {
 // Tum uygulama durumu tek bir JSON satirinda tutulur (app_state tablosu)
 const load = () => JSON.parse(JSON.stringify(DEMO)); // baslangic — gercek veri useEffect ile yuklenir
 
+let apiStateVersion = 0;
+const authHeaders = async () => {
+  const {data}=await supabase.auth.getSession();
+  return data.session?.access_token?{Authorization:`Bearer ${data.session.access_token}`}:{};
+};
 const loadFromSupabase = async () => {
   try {
+    if(USE_DATA_API){
+      const response=await fetch("/api/state",{headers:await authHeaders()});
+      if(!response.ok)throw new Error(await response.text());
+      const result=await response.json();
+      apiStateVersion=Number(result.version||1);
+      return result.state;
+    }
     const { data, error } = await supabase.from("app_state").select("data").eq("id", 1).single();
     if (error || !data) return null;
     return data.data;
@@ -174,7 +188,15 @@ const saveToSupabase = (state, onStatus) => {
   if (onStatus) onStatus("saving");
   saveTimer = setTimeout(async () => {
     try {
-      const { error } = await supabase.from("app_state").upsert({ id: 1, data: shared, updated_at: new Date().toISOString() });
+      let error=null;
+      if(USE_DATA_API){
+        const response=await fetch("/api/state",{method:"PUT",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({state:shared,version:apiStateVersion})});
+        if(response.ok){const result=await response.json();apiStateVersion=Number(result.version);}
+        else error=new Error(response.status===409?"Başka bir kullanıcı veriyi güncelledi. Sayfa yenilenerek son veri alınmalı.":await response.text());
+      }else{
+        const result=await supabase.from("app_state").upsert({ id: 1, data: shared, updated_at: new Date().toISOString() });
+        error=result.error;
+      }
       if (error) {
         console.error("Supabase kayit hatasi:", error);
         if (onStatus) onStatus("error", error.message);
@@ -443,6 +465,37 @@ function LoginScreen({ people, onLogin }) {
       </div>
     </div>
   );
+}
+
+function AuthLoginScreen() {
+  const [email,setEmail]=useState("");
+  const [status,setStatus]=useState({loading:false,message:"",error:false});
+  const submit=async()=>{
+    const value=email.trim().toLowerCase();
+    if(!value)return;
+    setStatus({loading:true,message:"",error:false});
+    const {error}=await supabase.auth.signInWithOtp({
+      email:value,
+      options:{emailRedirectTo:window.location.origin},
+    });
+    setStatus(error
+      ?{loading:false,message:error.message,error:true}
+      :{loading:false,message:"Giriş bağlantısı e-posta adresinize gönderildi.",error:false});
+  };
+  return <div className="login-screen" style={{position:"fixed",inset:0,background:"linear-gradient(145deg,#0F172A,#1E293B 55%,#0F172A)",display:"grid",placeItems:"center",padding:20,fontFamily:"Inter,Segoe UI,sans-serif"}}>
+    <div style={{width:"100%",maxWidth:430,textAlign:"center"}}>
+      <img src={corjectLogo} alt="Corject" style={{width:74,height:74,objectFit:"contain",filter:"drop-shadow(0 10px 22px rgba(74,108,247,.35))"}}/>
+      <h1 style={{color:"#fff",fontSize:22,letterSpacing:3,margin:"8px 0 4px"}}>CORJECT</h1>
+      <p style={{color:"#64748B",fontSize:12,margin:"0 0 22px"}}>Güvenli ekip girişi</p>
+      <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.12)",borderRadius:18,padding:24,textAlign:"left"}}>
+        <label style={{display:"block",fontSize:12,fontWeight:700,color:"#CBD5E1",marginBottom:6}}>Kurumsal e-posta adresiniz</label>
+        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="ad@firma.com" style={{...iStyle,padding:12,background:"#fff",marginBottom:10}}/>
+        <button disabled={status.loading} onClick={submit} style={{width:"100%",border:0,borderRadius:10,padding:12,background:"#4A6CF7",color:"#fff",fontWeight:800,cursor:"pointer"}}>{status.loading?"Gönderiliyor...":"Giriş Bağlantısı Gönder"}</button>
+        {status.message&&<div style={{fontSize:11,lineHeight:1.5,marginTop:11,color:status.error?"#FCA5A5":"#A7F3D0"}}>{status.message}</div>}
+      </div>
+      <div style={{fontSize:10,color:"#475569",marginTop:14}}>CORJECT {APP_VERSION}</div>
+    </div>
+  </div>;
 }
 
 function TemplatePicker({ onSelect, onSkip }) {
@@ -1058,6 +1111,8 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
   const updatePersonal=(id,data)=>setState(s=>{const old=(s.personalTasks||[]).find(t=>t.id===id);const upd={...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...data}:t)};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
   const updateProjTask=(pId,mId,tId,data)=>setState(s=>{const old=s.projects.find(p=>p.id===pId)?.milestones.find(m=>m.id===mId)?.tasks.find(t=>t.id===tId);const upd={...s,projects:s.projects.map(p=>p.id!==pId?p:{...p,milestones:p.milestones.map(m=>m.id!==mId?m:{...m,tasks:m.tasks.map(t=>t.id!==tId?t:{...t,...data})})})};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
   useEffect(()=>{
+    if(REQUIRE_AUTH&&(!authReady||!authSession))return;
+    if(dataLoaded)return;
     if(!linkedTaskId)return;
     const personal=(state.personalTasks||[]).find(t=>t.id===linkedTaskId);
     if(personal){setModal({type:"taskDetail",data:{...personal,source:"personal"}});return;}
@@ -1652,6 +1707,8 @@ export default function App() {
   const [projectScope,setProjectScope]=useState("all");
   const [ticketMineOnly,setTicketMineOnly]=useState(false);
   const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<768);
+  const [authSession,setAuthSession]=useState(null);
+  const [authReady,setAuthReady]=useState(!REQUIRE_AUTH);
   const fileRef=useRef();
   const skipNextSave=useRef(true);
 
@@ -1660,15 +1717,25 @@ export default function App() {
     const onResize=()=>setIsMobile(window.innerWidth<768);
     window.addEventListener("resize",onResize);
     return ()=>window.removeEventListener("resize",onResize);
+  },[authReady,authSession,dataLoaded]);
+
+  useEffect(()=>{
+    if(!REQUIRE_AUTH)return;
+    supabase.auth.getSession().then(({data})=>{setAuthSession(data.session||null);setAuthReady(true);});
+    const {data:listener}=supabase.auth.onAuthStateChange((_event,session)=>{
+      setAuthSession(session||null);
+      setAuthReady(true);
+    });
+    return ()=>listener.subscription.unsubscribe();
   },[]);
 
   // Ilk yukleme: Supabase'den veri cek
   useEffect(()=>{
     // Once localStorage'dan kullanici kimligini geri yukle
     try{
-      const savedUid=deepLink?.get("user")||localStorage.getItem("corject_uid");
+      const savedUid=REQUIRE_AUTH?"":deepLink?.get("user")||localStorage.getItem("corject_uid");
       if(savedUid) setState(s=>({...s,currentUserId:savedUid}));
-      if(deepLink?.get("user"))localStorage.setItem("corject_uid",deepLink.get("user"));
+      if(!REQUIRE_AUTH&&deepLink?.get("user"))localStorage.setItem("corject_uid",deepLink.get("user"));
     }catch(e){}
     (async()=>{
       const remote=await loadFromSupabase();
@@ -1676,7 +1743,7 @@ export default function App() {
         skipNextSave.current=true;
         // currentUserId'yi localStorage'dan koru, Supabase'den geleni kullanma
         let savedUid="";
-        try{ savedUid=deepLink?.get("user")||localStorage.getItem("corject_uid")||""; }catch(e){}
+        try{ savedUid=REQUIRE_AUTH?"":deepLink?.get("user")||localStorage.getItem("corject_uid")||""; }catch(e){}
         setState(s=>({ ...remote, currentUserId:savedUid||s.currentUserId }));
       } else {
         saveToSupabase(state, (s,msg)=>setSyncStatus({s,msg:msg||""}));
@@ -1685,6 +1752,13 @@ export default function App() {
     })();
   },[]);
 
+  useEffect(()=>{
+    if(!REQUIRE_AUTH||!dataLoaded||!authSession?.user?.email)return;
+    const email=authSession.user.email.trim().toLowerCase();
+    const person=state.people.find(item=>item.email?.trim().toLowerCase()===email);
+    if(person&&state.currentUserId!==person.id)setState(s=>({...s,currentUserId:person.id}));
+  },[authSession,dataLoaded,state.people,state.currentUserId]);
+
   // Degisiklikleri Supabase'e kaydet (ilk yuklemede atla)
   useEffect(()=>{
     if(!dataLoaded) return;
@@ -1692,19 +1766,31 @@ export default function App() {
     saveToSupabase(state, (s,msg)=>setSyncStatus({s,msg:msg||""}));
   },[state, dataLoaded]);
 
-  // Periyodik senkronizasyon: 30 sn'de bir baskalarinin degisikliklerini cek
+  // Realtime version signal; periodic refresh remains as a recovery fallback.
   useEffect(()=>{
     if(!dataLoaded) return;
-    const interval=setInterval(async()=>{
+    let refreshTimer=null;
+    let channel=null;
+    const refresh=async()=>{
       const remote=await loadFromSupabase();
       if(remote){
         skipNextSave.current=true;
         let savedUid="";
-        try{ savedUid=localStorage.getItem("corject_uid")||""; }catch(e){}
+        try{ savedUid=REQUIRE_AUTH?(state.currentUserId||""):localStorage.getItem("corject_uid")||""; }catch(e){}
         setState(s=>({ ...remote, currentUserId:savedUid||s.currentUserId }));
       }
-    }, 30000);
-    return ()=>clearInterval(interval);
+    };
+    if(USE_DATA_API&&REQUIRE_AUTH){
+      channel=supabase.channel("corject-state-version")
+        .on("postgres_changes",{event:"UPDATE",schema:"public",table:"app_meta",filter:"id=eq.1"},payload=>{
+          if(Number(payload.new?.state_version||0)>apiStateVersion)refresh();
+        })
+        .subscribe();
+    }
+    const interval=setInterval(async()=>{
+      if(!refreshTimer)refreshTimer=setTimeout(()=>{refreshTimer=null;refresh();},50);
+    }, USE_DATA_API?120000:30000);
+    return ()=>{clearInterval(interval);if(refreshTimer)clearTimeout(refreshTimer);if(channel)supabase.removeChannel(channel);};
   },[dataLoaded]);
 
   const currentUser=state.people.find(p=>p.id===state.currentUserId);
@@ -1718,13 +1804,15 @@ export default function App() {
   };
   const markAllRead=()=>setState(s=>({...s,notifications:(s.notifications||[]).map(n=>n.userId===currentUser?.id?{...n,read:true}:n)}));
   const login=(id)=>{ setState(s=>({...s,currentUserId:id})); setView("dashboard"); try{localStorage.setItem("corject_uid",id);}catch(e){} };
-  const logout=()=>{ setState(s=>({...s,currentUserId:null})); try{localStorage.removeItem("corject_uid");}catch(e){} setView("dashboard"); setSelProject(null); };
+  const logout=()=>{ if(REQUIRE_AUTH)supabase.auth.signOut();setState(s=>({...s,currentUserId:null})); try{localStorage.removeItem("corject_uid");}catch(e){} setView("dashboard"); setSelProject(null); };
 
+  if(REQUIRE_AUTH&&!authReady)return <div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#94A3B8"}}>Oturum kontrol ediliyor...</div>;
+  if(REQUIRE_AUTH&&!authSession)return <AuthLoginScreen/>;
   if(!dataLoaded) return <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,sans-serif", background:"#1E293B", color:"#94A3B8", flexDirection:"column", gap:12 }}>
     <div style={{ fontSize:14, fontWeight:800, color:"#4A6CF7", letterSpacing:3 }}>CORJECT</div>
     <div style={{ fontSize:13 }}>Veriler yükleniyor...</div>
   </div>;
-  if(!currentUser) return <LoginScreen people={state.people} onLogin={login} />;
+  if(!currentUser)return REQUIRE_AUTH?<div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#FCA5A5",padding:20,textAlign:"center"}}>Bu e-posta için aktif Corject profili bulunamadı.</div>:<LoginScreen people={state.people} onLogin={login} />;
 
   // Project visibility filter
   const visibleProjects=isAdmin?state.projects:state.projects.filter(p=>{

@@ -42,6 +42,56 @@ export const loadState = async () =>
     return data?.data || {};
   }, "database.app_state.load");
 
+export const loadStateRecord = async () =>
+  runSupabase(async () => {
+    const { data, error } = await getClient()
+      .from("app_state")
+      .select("data,version,updated_at")
+      .eq("id", 1)
+      .single();
+    if (error) throw error;
+    return {
+      state: data?.data || {},
+      version: Number(data?.version || 1),
+      updatedAt: data?.updated_at || null,
+    };
+  }, "database.app_state.record-load");
+
+export const saveStateRecord = async ({ state, expectedVersion }) =>
+  runSupabase(async () => {
+    const nextVersion = Number(expectedVersion) + 1;
+    const { data, error } = await getClient()
+      .from("app_state")
+      .update({
+        data: state,
+        version: nextVersion,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", 1)
+      .eq("version", Number(expectedVersion))
+      .select("version,updated_at")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      throw Object.assign(new Error("State changed by another user"), { status: 409 });
+    }
+    const { error: metaError } = await getClient().from("app_meta").upsert({
+      id: 1,
+      state_version: nextVersion,
+      updated_at: new Date().toISOString(),
+    });
+    if (metaError) throw metaError;
+    return { version: Number(data.version), updatedAt: data.updated_at };
+  }, "database.app_state.record-save");
+
+export const checkDatabase = async () =>
+  runSupabase(async () => {
+    const startedAt = Date.now();
+    const { error } = await getClient().from("app_state").select("id", { head: true }).eq("id", 1);
+    if (error) throw error;
+    return { ok: true, latencyMs: Date.now() - startedAt };
+  }, "database.health");
+
 export const createTicket = async ({ projectId, ticket }) =>
   mutateState((state) => {
     state.projectTickets ||= {};
