@@ -5,7 +5,7 @@ import { notifyTicketAssignment } from "./email";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.5.1";
+const APP_VERSION = "v1.6.0";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -255,6 +255,21 @@ const Btn = ({ children, onClick, variant="primary", small, style:s, disabled })
   return <button disabled={disabled} style={{ borderRadius:8, border:"none", cursor:disabled?"default":"pointer", fontWeight:600, fontSize:small?12:13, padding:small?"5px 11px":"8px 16px", fontFamily:"inherit", opacity:disabled?0.5:1, ...v[variant], ...s }} onClick={onClick}>{children}</button>;
 };
 
+const projectPmIds = (project) => [...new Set([...(project.pmIds||[]),project.pm].filter(Boolean))];
+const projectStakeholders = (project) => project.stakeholders||[];
+
+function PeopleMultiSelect({people,value,onChange}) {
+  return <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:6,padding:9,border:"1.5px solid #E2E8F0",borderRadius:9,background:"#FAFBFC"}}>
+    {people.map(person=><label key={person.id} style={{display:"flex",alignItems:"center",gap:7,fontSize:11,fontWeight:600,color:"#475569",cursor:"pointer"}}><input type="checkbox" checked={value.includes(person.id)} onChange={e=>onChange(e.target.checked?[...value,person.id]:value.filter(id=>id!==person.id))}/>{person.name}</label>)}
+  </div>;
+}
+
+function StakeholderEditor({people,value,onChange}) {
+  const add=()=>onChange([...value,{id:uid(),userId:"",role:"Ürün Yöneticisi"}]);
+  const update=(id,data)=>onChange(value.map(item=>item.id===id?{...item,...data}:item));
+  return <div><div style={{display:"flex",flexDirection:"column",gap:7}}>{value.map(item=><div key={item.id} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:7}}><select style={iStyle} value={item.userId} onChange={e=>update(item.id,{userId:e.target.value})}><option value="">Kişi seçin</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><input style={iStyle} value={item.role} onChange={e=>update(item.id,{role:e.target.value})} placeholder="Rol: Ürün Yöneticisi"/><button type="button" onClick={()=>onChange(value.filter(x=>x.id!==item.id))} style={{border:0,borderRadius:8,background:"#FFF1F2",color:"#E11D48",padding:"0 10px",cursor:"pointer"}}>×</button></div>)}</div><Btn small variant="secondary" style={{marginTop:7}} onClick={add}>+ Bilgi Amaçlı Rol</Btn></div>;
+}
+
 function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const [scope,setScope]=useState(isAdmin?"team":"mine");
   const [personFilter,setPersonFilter]=useState("");
@@ -386,22 +401,22 @@ function LoginScreen({ people, onLogin }) {
   const [sel, setSel] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   return (
-    <div style={{ position:"fixed", inset:0, background:"linear-gradient(145deg,#0F172A 0%,#1E293B 50%,#0F172A 100%)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,Segoe UI,sans-serif", overflow:"auto" }}>
-      <div style={{ width:"100%", maxWidth:640, padding:"24px 20px", boxSizing:"border-box" }}>
+    <div className="login-screen" style={{ position:"fixed", inset:0, background:"linear-gradient(145deg,#0F172A 0%,#1E293B 50%,#0F172A 100%)", display:"flex", alignItems:"flex-start", justifyContent:"center", fontFamily:"Inter,Segoe UI,sans-serif", overflowY:"auto", padding:"clamp(10px,3vh,28px) 0" }}>
+      <div className="login-shell" style={{ width:"100%", maxWidth:640, padding:"0 20px 14px", boxSizing:"border-box", margin:"auto 0" }}>
         {/* Logo */}
-        <div style={{ textAlign:"center", marginBottom:36 }}>
-          <img src={corjectLogo} alt="Corject" style={{ width:76, height:76, objectFit:"contain", marginBottom:10, filter:"drop-shadow(0 10px 22px rgba(74,108,247,.35))" }} />
-          <div style={{ fontSize:22, fontWeight:800, color:"#fff", letterSpacing:3, textTransform:"uppercase" }}>CORJECT</div>
-          <div style={{ fontSize:13, color:"#64748B", marginTop:6 }}>Proje Yönetim Sistemi</div>
+        <div className="login-brand" style={{ textAlign:"center", marginBottom:"clamp(12px,3vh,30px)" }}>
+          <img className="login-logo" src={corjectLogo} alt="Corject" style={{ width:"clamp(48px,8vh,76px)", height:"clamp(48px,8vh,76px)", objectFit:"contain", marginBottom:6, filter:"drop-shadow(0 10px 22px rgba(74,108,247,.35))" }} />
+          <div style={{ fontSize:"clamp(17px,2.5vh,22px)", fontWeight:800, color:"#fff", letterSpacing:3, textTransform:"uppercase" }}>CORJECT</div>
+          <div style={{ fontSize:12, color:"#64748B", marginTop:3 }}>Proje Yönetim Sistemi</div>
         </div>
         {/* Card */}
-        <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:"28px 24px", backdropFilter:"blur(10px)" }}>
-          <div style={{ fontSize:14, fontWeight:600, color:"#94A3B8", marginBottom:16, textAlign:"center" }}>Hesabınızı seçin</div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(145px,1fr))", gap:9, marginBottom:22, maxHeight:"48vh", overflowY:"auto", paddingRight:2 }}>
+        <div className="login-card" style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:"clamp(14px,3vh,26px) 24px", backdropFilter:"blur(10px)" }}>
+          <div style={{ fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:"clamp(8px,2vh,15px)", textAlign:"center" }}>Hesabınızı seçin</div>
+          <div className="login-users" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(145px,1fr))", gap:8, marginBottom:"clamp(10px,2vh,20px)", maxHeight:"min(44vh,390px)", overflowY:"auto", paddingRight:2 }}>
             {people.map(p => (
               <div key={p.id} onClick={() => setSel(p.id)}
                 onMouseEnter={() => setHoveredId(p.id)} onMouseLeave={() => setHoveredId(null)}
-                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:7, padding:"13px 10px", borderRadius:12, textAlign:"center",
+                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5, padding:"clamp(8px,1.5vh,12px) 10px", borderRadius:12, textAlign:"center",
                   border:`1.5px solid ${sel===p.id?"#4A6CF7":hoveredId===p.id?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.08)"}`,
                   cursor:"pointer", background:sel===p.id?"rgba(74,108,247,0.15)":"rgba(255,255,255,0.03)",
                   transition:"all .15s" }}>
@@ -423,7 +438,7 @@ function LoginScreen({ people, onLogin }) {
             {sel ? "Giriş Yap →" : "Hesap Seçin"}
           </button>
         </div>
-        <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:"#334155" }}>CORJECT {APP_VERSION} · Proje Yönetimi</div>
+        <div className="login-version" style={{ textAlign:"center", marginTop:"clamp(8px,2vh,18px)", fontSize:10, color:"#475569" }}>CORJECT {APP_VERSION} · Proje Yönetimi</div>
       </div>
     </div>
   );
@@ -789,7 +804,7 @@ function generatePortfolioReport(state,people){
     return {project,tasks,done,progress:tasks.length?Math.round(done/tasks.length*100):0,delayed:tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,hours:tasks.reduce((sum,t)=>sum+(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0),machines:project.machines||[]};
   });
   const totalTasks=data.reduce((a,r)=>a+r.tasks.length,0), totalDone=data.reduce((a,r)=>a+r.done,0), totalDelayed=data.reduce((a,r)=>a+r.delayed,0), totalHours=data.reduce((a,r)=>a+r.hours,0);
-  const tableRows=data.map(r=>`<tr><td><b>${r.project.name}</b></td><td>${people.find(p=>p.id===r.project.pm)?.name||"Atanmamış"}</td><td>${r.project.status}</td><td><span class="track"><i style="width:${r.progress}%;background:${r.project.color}"></i></span><b>${r.progress}%</b></td><td>${r.done}/${r.tasks.length}</td><td class="${r.delayed?"danger":""}">${r.delayed}</td><td>${r.machines.filter(m=>m.commissioned).length}/${r.machines.length}</td><td>${r.hours} sa</td></tr>`).join("");
+  const tableRows=data.map(r=>`<tr><td><b>${r.project.name}</b></td><td>${projectPmIds(r.project).map(id=>people.find(p=>p.id===id)?.name).filter(Boolean).join(", ")||"Atanmamış"}</td><td>${r.project.status}</td><td><span class="track"><i style="width:${r.progress}%;background:${r.project.color}"></i></span><b>${r.progress}%</b></td><td>${r.done}/${r.tasks.length}</td><td class="${r.delayed?"danger":""}">${r.delayed}</td><td>${r.machines.filter(m=>m.commissioned).length}/${r.machines.length}</td><td>${r.hours} sa</td></tr>`).join("");
   const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Corject Genel Durum Raporu</title><style>*{box-sizing:border-box}body{margin:0;padding:32px;background:#f1f5f9;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1250px;margin:auto}.hero{background:linear-gradient(120deg,#172554,#4338ca,#7c3aed);color:#fff;border-radius:24px;padding:30px;box-shadow:0 20px 45px #312e8130}.hero h1{margin:0}.hero p{color:#c7d2fe}.print{float:right;border:0;border-radius:10px;background:#fff;color:#4338ca;padding:9px 15px;font-weight:800}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat{padding:18px;border-radius:16px;color:#fff}.stat b{font-size:28px;display:block}.blue{background:linear-gradient(135deg,#2563eb,#4f46e5)}.green{background:linear-gradient(135deg,#059669,#10b981)}.red{background:linear-gradient(135deg,#dc2626,#f43f5e)}.purple{background:linear-gradient(135deg,#7c3aed,#a855f7)}.portfolio{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:18px}.project,.card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:17px}.project h3{margin:0 0 10px}.ring,.track{display:inline-block;background:#e2e8f0;border-radius:8px;overflow:hidden}.ring{display:block;height:8px}.ring i,.track i{display:block;height:100%;border-radius:8px}.track{width:80px;height:7px;margin-right:7px}.card{box-shadow:0 8px 24px #33415510}.table{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;text-align:left;border-bottom:1px solid #eef2f7;font-size:12px}th{background:#f8fafc;color:#64748b}.danger{color:#dc2626;font-weight:800}@media(max-width:760px){body{padding:14px}.stats{grid-template-columns:1fr 1fr}.hero{padding:20px}}@media print{body{padding:0;background:#fff}.print{display:none}.hero,.card{box-shadow:none}}</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>Corject Genel Durum Raporu</h1><p>${new Date().toLocaleDateString("tr-TR")} · ${state.projects.length} proje portföyü</p></div><div class="stats"><div class="stat blue"><b>${state.projects.length}</b>Toplam Proje</div><div class="stat green"><b>${totalDone}/${totalTasks}</b>Tamamlanan Görev</div><div class="stat red"><b>${totalDelayed}</b>Geciken Görev</div><div class="stat purple"><b>${totalHours}</b>Toplam Efor</div></div><div class="portfolio">${data.map(r=>`<div class="project" style="border-top:4px solid ${r.project.color}"><h3>${r.project.name}</h3><div class="ring"><i style="width:${r.progress}%;background:${r.project.color}"></i></div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:#64748b"><span>${r.progress}% tamamlandı</span><span style="color:${r.delayed?"#dc2626":"#059669"}">${r.delayed} gecikme</span></div></div>`).join("")}</div><div class="card"><h2>Proje Karşılaştırması</h2><div class="table"><table><thead><tr><th>Proje</th><th>PM</th><th>Durum</th><th>İlerleme</th><th>Görev</th><th>Gecikme</th><th>Makine</th><th>Efor</th></tr></thead><tbody>${tableRows||"<tr><td colspan='8'>Proje yok.</td></tr>"}</tbody></table></div></div></div></body></html>`;
   downloadTextFile(html,`corject-genel-durum-${todayStr()}.html`,"text/html;charset=utf-8");
 }
@@ -803,7 +818,7 @@ function generateHTMLReport(project, people, logs) {
   const waiting=allTasks.filter(t=>t.status==="Bekliyor");
   const delayed=allTasks.filter(t=>delayLvl(t.dueDate,t.status));
   const progress=allTasks.length?Math.round((done.length/allTasks.length)*100):0;
-  const pm=people.find(p=>p.id===project.pm);
+  const pmNames=projectPmIds(project).map(id=>people.find(p=>p.id===id)?.name).filter(Boolean).join(", ");
   const projLogs=logs.filter(l=>l.project===project.name).slice(0,10);
 
   const taskRows=(tasks)=>tasks.map(t=>{
@@ -862,7 +877,7 @@ tr:last-child td{border-bottom:none}
 </style></head><body>
 <button onclick="window.print()" style="float:right;background:#4A6CF7;color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-weight:600;font-size:13px">Yazdır / PDF</button>
 <h1>${project.name}</h1>
-<div class="meta">Rapor tarihi: ${new Date().toLocaleDateString("tr-TR",{day:"2-digit",month:"long",year:"numeric"})} &nbsp;|&nbsp; PM: ${pm?.name||"Atanmamış"} &nbsp;|&nbsp; ${fmt(project.startDate)} - ${fmt(project.endDate)}</div>
+<div class="meta">Rapor tarihi: ${new Date().toLocaleDateString("tr-TR",{day:"2-digit",month:"long",year:"numeric"})} &nbsp;|&nbsp; PM: ${pmNames||"Atanmamış"} &nbsp;|&nbsp; ${fmt(project.startDate)} - ${fmt(project.endDate)}</div>
 
 <div class="stats">
   <div class="stat"><div class="stat-num" style="color:#4A6CF7">${progress}%</div><div class="stat-lbl">İlerleme</div></div>
@@ -1422,6 +1437,16 @@ const GlobalStyle = () => (
     input, select, textarea, button { font-family: inherit; }
     .sidebar-nav { scrollbar-width: none; }
     .sidebar-nav::-webkit-scrollbar { display: none; }
+    .login-users { scrollbar-width: thin; scrollbar-color: #475569 transparent; }
+    @media (max-height: 760px) and (min-width: 761px) {
+      .login-screen { padding: 8px 0 !important; }
+      .login-shell { max-width: 720px !important; }
+      .login-brand { margin-bottom: 8px !important; }
+      .login-logo { width: 44px !important; height: 44px !important; margin-bottom: 2px !important; }
+      .login-card { padding-top: 12px !important; padding-bottom: 12px !important; }
+      .login-users { max-height: 43vh !important; grid-template-columns: repeat(auto-fit,minmax(125px,1fr)) !important; }
+      .login-version { margin-top: 6px !important; }
+    }
     @media (max-width: 760px) {
       .todo-columns { grid-template-columns: 1fr !important; }
     }
@@ -1519,11 +1544,12 @@ export default function App() {
 
   // Project visibility filter
   const visibleProjects=isAdmin?state.projects:state.projects.filter(p=>{
-    if(p.pm===currentUser.id)return true;
+    if(projectPmIds(p).includes(currentUser.id))return true;
+    if(projectStakeholders(p).some(item=>item.userId===currentUser.id))return true;
     if((p.members||[]).includes(currentUser.id))return true;
     return p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id));
   });
-  const myProjects=state.projects.filter(p=>p.pm===currentUser.id||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
+  const myProjects=state.projects.filter(p=>projectPmIds(p).includes(currentUser.id)||projectStakeholders(p).some(item=>item.userId===currentUser.id)||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
   const listedProjects=projectScope==="mine"?myProjects:visibleProjects;
   const taskDeadlineWarnings=visibleProjects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectId:proj.id,projectName:proj.name,projectColor:proj.color,level:delayLvl(t.dueDate,t.status),days:daysDiff(t.dueDate)}))));
   const todoDeadlineWarnings=(((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(t=>!t.done&&t.dueDate&&daysDiff(t.dueDate)>0).map(t=>({id:t.id,title:t.action||t.text,projectName:t.customer||"Kişisel To-Do",dueDate:t.dueDate,kind:"todo",level:daysDiff(t.dueDate)>=7?"critical":"normal",days:daysDiff(t.dueDate),status:"Bekliyor"}));
@@ -1532,10 +1558,11 @@ export default function App() {
   const project=state.projects.find(p=>p.id===selProject);
   const milestone=project?.milestones.find(m=>m.id===selMilestone);
   const currentMs=project?.milestones.find(m=>m.status!=="Tamamland\u0131");
-  const activePM=project?state.people.find(p=>p.id===project.pm):null;
+  const activePMs=project?projectPmIds(project).map(id=>state.people.find(p=>p.id===id)).filter(Boolean):[];
+  const activeStakeholders=project?projectStakeholders(project).map(item=>({...item,person:state.people.find(p=>p.id===item.userId)})).filter(item=>item.person):[];
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
 
-  const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],machines:[],members:[],...data}; setState(s=>({...s,projects:[...s.projects,p]})); addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
+  const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],machines:[],members:[],pmIds:[],stakeholders:[],...data,pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]})); addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
   const addPerson=(data)=>{
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
     setState(s=>({...s,people:[...s.people,{id:uid(),avatar,...data}]}));
@@ -1548,10 +1575,10 @@ export default function App() {
   };
   const deletePerson=(id)=>setState(s=>({...s,
     people:s.people.filter(person=>person.id!==id),
-    projects:s.projects.map(p=>({...p,pm:p.pm===id?"":p.pm,members:(p.members||[]).filter(memberId=>memberId!==id),milestones:p.milestones.map(ms=>({...ms,tasks:ms.tasks.map(t=>t.assignee===id?{...t,assignee:""}:t)}))})),
+    projects:s.projects.map(p=>({...p,pm:p.pm===id?"":p.pm,pmIds:projectPmIds(p).filter(pmId=>pmId!==id),stakeholders:projectStakeholders(p).filter(item=>item.userId!==id),members:(p.members||[]).filter(memberId=>memberId!==id),milestones:p.milestones.map(ms=>({...ms,tasks:ms.tasks.map(t=>t.assignee===id?{...t,assignee:""}:t)}))})),
     personalTasks:(s.personalTasks||[]).map(t=>t.assignee===id?{...t,assignee:""}:t)
   }));
-  const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>p.id===id?{...p,...data}:p)}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
+  const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>p.id===id?{...p,...data,pm:data.pmIds?.[0]||""}:p)}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
   const deleteProject=(id)=>{ if(!isAdmin)return; const name=state.projects.find(p=>p.id===id)?.name; setState(s=>({...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id)})); setSelProject(null); setSelMilestone(null); addLog(currentUser.name,"general","Proje silindi: "+name); };
   const addRisk=(data)=>{ mutProject(p=>({...p,risks:[...(p.risks||[]),{id:uid(),...data}]})); addLog(currentUser.name,"risk_add",data.title,project?.name); };
   const updateRisk=(rId,data)=>mutProject(p=>({...p,risks:(p.risks||[]).map(r=>r.id===rId?{...r,...data}:r)}));
@@ -1786,7 +1813,8 @@ export default function App() {
             {criticalC>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Kritik: {criticalC}</span>}
           </div>
           <div style={{ display:"flex", gap:16, fontSize:12, color:"#64748B", flexWrap:"wrap", alignItems:"center" }}>
-            {activePM&&<span>PM: <b>{activePM.name}</b></span>}
+            {activePMs.length>0&&<span>PM: <b>{activePMs.map(p=>p.name).join(", ")}</b></span>}
+            {activeStakeholders.map(item=><span key={item.id} style={{background:"#F8FAFC",borderRadius:7,padding:"2px 7px"}}>{item.role}: <b>{item.person.name}</b></span>)}
             <span>{fmt(project.startDate)} - {fmt(project.endDate)}</span>
             <span>{doneT}/{totalT} görev</span>
             {currentMs&&<span style={{ background:"#F1F5FF", color:"#4A6CF7", borderRadius:8, padding:"2px 9px", fontWeight:600 }}>Aktif: {currentMs.name} ({fmt(currentMs.dueDate)})</span>}
@@ -1865,7 +1893,8 @@ export default function App() {
             const prog=total?Math.round((done/total)*100):0;
             const overdue=p.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,0);
             const crit=p.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length,0);
-            const pm=state.people.find(pe=>pe.id===p.pm);
+            const pms=projectPmIds(p).map(id=>state.people.find(pe=>pe.id===id)).filter(Boolean);
+            const stakeholders=projectStakeholders(p).map(item=>({...item,person:state.people.find(pe=>pe.id===item.userId)})).filter(item=>item.person);
             const aMs=p.milestones.find(m=>m.status!=="Tamamland\u0131");
             return <div key={p.id} onClick={()=>{ setSelProject(p.id); setSelMilestone(null); setProjectTab("tasks"); }}
               style={{ background:"#fff", borderRadius:13, padding:"17px", border:"1.5px solid #E2E8F0", cursor:"pointer", boxShadow:"0 2px 6px rgba(0,0,0,0.04)", borderTop:`4px solid ${p.color}` }}
@@ -1875,7 +1904,8 @@ export default function App() {
                 <h3 style={{ margin:0, fontSize:14, fontWeight:800 }}>{p.name}</h3><Badge label={p.status} />
               </div>
               {p.description&&<p style={{ margin:"0 0 7px", fontSize:12, color:"#64748B" }}>{p.description}</p>}
-              {pm&&<div style={{ fontSize:11, color:"#64748B", marginBottom:3 }}>PM: <b>{pm.name}</b></div>}
+              {pms.length>0&&<div style={{ fontSize:11, color:"#64748B", marginBottom:3 }}>PM: <b>{pms.map(pm=>pm.name).join(", ")}</b></div>}
+              {stakeholders.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:5}}>{stakeholders.slice(0,3).map(item=><span key={item.id} style={{fontSize:9,background:"#F1F5F9",color:"#64748B",borderRadius:6,padding:"2px 6px"}}>{item.role}: {item.person.name}</span>)}</div>}
               {aMs&&<div style={{ fontSize:11, color:"#4A6CF7", marginBottom:5, fontWeight:600 }}>Aktif: {aMs.name} — {fmt(aMs.dueDate)}</div>}
               <div style={{ display:"flex", gap:6, marginBottom:7, flexWrap:"wrap" }}>
                 {overdue>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Gecikmiş: {overdue}</span>}
@@ -2246,7 +2276,7 @@ function UserEditModal({ person, onClose, onSave, title="Profilimi Düzenle", al
   const [email,setEmail]=useState(person.email||"");
   const [role, setRole] = useState(person.role||"");
   const [isAdmin,setIsAdmin]=useState(Boolean(person.isAdmin));
-  return <Modal title={title} onClose={onClose}>
+  return <Modal title={title} onClose={onClose} wide>
     <Field label="Ad Soyad *"><input style={iStyle} value={name} onChange={e=>setName(e.target.value)} /></Field>
     <Field label="E-posta"><input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" /></Field>
     <Field label="Rol / Unvan"><input style={iStyle} value={role} onChange={e=>setRole(e.target.value)} /></Field>
@@ -2290,7 +2320,7 @@ function NotificationsPage({ notifications, currentUser, setState }) {
 function AddProjectModal({ onClose, onSave, people }) {
   const [step,setStep]=useState("template");
   const [tplData,setTplData]=useState(null);
-  const [f,setF]=useState({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:todayStr(), endDate:"", pm:"" });
+  const [f,setF]=useState({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:todayStr(), endDate:"", pmIds:[], stakeholders:[] });
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   const handleTplSelect=(tpl)=>{ setTplData(tpl); setF(s=>({...s,color:tpl.color})); setStep("form"); };
   const handleSave=()=>{ if(!f.name.trim())return; const built=tplData?buildFromTemplate(tplData,f.startDate||todayStr()):{milestones:[]}; onSave({...f,...built,risks:[]}); onClose(); };
@@ -2304,7 +2334,8 @@ function AddProjectModal({ onClose, onSave, people }) {
       </div>}
       <Field label="Proje Adı *"><input style={iStyle} value={f.name} onChange={e=>upd("name",e.target.value)} placeholder="Proje adi" /></Field>
       <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
-      <Field label="PM"><select style={iStyle} value={f.pm} onChange={e=>upd("pm",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
+      <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
+      <Field label="Bilgi Amaçlı Roller"><StakeholderEditor people={people} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
       <Field label="Renk"><div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
         <Field label="Başlangıç"><input type="date" style={iStyle} value={f.startDate} onChange={e=>upd("startDate",e.target.value)} /></Field>
@@ -2316,12 +2347,13 @@ function AddProjectModal({ onClose, onSave, people }) {
   </Modal>;
 }
 function ProjectModal({ title, initial, onClose, onSave, people }) {
-  const [f,setF]=useState({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:"", endDate:"", pm:"", ...initial });
+  const [f,setF]=useState(()=>({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:"", endDate:"", ...initial, pmIds:projectPmIds(initial||{}), stakeholders:projectStakeholders(initial||{}) }));
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   return <Modal title={title} onClose={onClose}>
     <Field label="Proje Adı *"><input style={iStyle} value={f.name} onChange={e=>upd("name",e.target.value)} /></Field>
     <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
-    <Field label="PM"><select style={iStyle} value={f.pm} onChange={e=>upd("pm",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
+    <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
+    <Field label="Bilgi Amaçlı Roller"><StakeholderEditor people={people} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
     <Field label="Renk"><div style={{ display:"flex", gap:7 }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Başlangıç"><input type="date" style={iStyle} value={f.startDate} onChange={e=>upd("startDate",e.target.value)} /></Field>
