@@ -36,3 +36,11 @@ export const getEmailConfig = () => ({
   appBaseUrl: optional("APP_BASE_URL").replace(/\/+$/, ""),
   reminderSecret: optional("REMINDER_CRON_SECRET"),
 });
+
+export const getWhatsAppConfig = () => ({
+  accessToken: optional("WHATSAPP_ACCESS_TOKEN"),
+  phoneNumberId: optional("WHATSAPP_PHONE_NUMBER_ID"),
+  templateName: optional("WHATSAPP_TASK_TEMPLATE") || "corject_task_assignment",
+  templateLanguage: optional("WHATSAPP_TEMPLATE_LANGUAGE") || "tr",
+  graphVersion: optional("WHATSAPP_GRAPH_VERSION") || "v26.0",
+});

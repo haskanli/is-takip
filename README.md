@@ -58,6 +58,22 @@ Günlük gecikme hatırlatıcısı için aynı repodan bir Render Cron Job oluş
 - Cron Job'a web service ile aynı `APP_BASE_URL` ve `REMINDER_CRON_SECRET`
   değerlerini ekleyin.
 
+## WhatsApp görev bildirimleri
+
+Görev atamalarında Meta WhatsApp Business Cloud API kullanılır. WhatsApp hazır
+değilse veya gönderim başarısız olursa mevcut e-posta bildirimi yedek kanal
+olarak çalışır.
+
+Meta WhatsApp Manager içinde `corject_task_assignment` adlı, Türkçe ve Utility
+kategorisinde bir şablon oluşturun. Gövde dört değişken içermelidir:
+
+`{{1}} size "{{2}}" görevini atadı. Termin: {{3}}. Görevi aç: {{4}}`
+
+Render Environment alanına `WHATSAPP_ACCESS_TOKEN`,
+`WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_TASK_TEMPLATE`,
+`WHATSAPP_TEMPLATE_LANGUAGE` ve `WHATSAPP_GRAPH_VERSION` değerlerini ekleyin.
+Kullanıcı telefonları ülke koduyla, örneğin `905551234567`, kaydedilmelidir.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

@@ -5,7 +5,7 @@ import { assignTasksWithNotification, createTicketWithNotification, notifyTicket
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.9.0";
+const APP_VERSION = "v1.10.0";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -1074,8 +1074,10 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
       const {assigneeIds,recurrence,...task}=data;
       const result=await assignTasksWithNotification({task,assigneeIds,recurrence,assignerId:currentUser.id,groupId:uid()});
       setState(s=>({...s,personalTasks:[...(s.personalTasks||[]),...result.tasks.filter(t=>!(s.personalTasks||[]).some(x=>x.id===t.id))],recurringTasks:result.recurringTemplate?[...(s.recurringTasks||[]).filter(x=>x.id!==result.recurringTemplate.id),result.recurringTemplate]:(s.recurringTasks||[])}));
-      const sent=result.notifications.filter(n=>n.sent).length;
-      setAssignmentNotice(`${result.tasks.length} görev oluşturuldu, ${sent} kullanıcıya e-posta gönderildi.`);
+      const whatsapp=result.notifications.filter(n=>n.sent&&n.channel==="whatsapp").length;
+      const email=result.notifications.filter(n=>n.sent&&n.channel==="email").length;
+      const failed=result.notifications.filter(n=>!n.sent).length;
+      setAssignmentNotice(`${result.tasks.length} görev oluşturuldu · WhatsApp: ${whatsapp} · E-posta: ${email}${failed?` · Ulaşmayan: ${failed}`:""}`);
       addLog(currentUser.name,"task_add",`${task.title} (${result.tasks.length} kişi)`);
       return;
     }
@@ -2373,14 +2375,18 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
 function UserEditModal({ person, onClose, onSave, title="Profilimi Düzenle", allowAdmin=false }) {
   const [name, setName] = useState(person.name);
   const [email,setEmail]=useState(person.email||"");
+  const [phone,setPhone]=useState(person.phone||"");
+  const [whatsappEnabled,setWhatsappEnabled]=useState(person.whatsappEnabled!==false);
   const [role, setRole] = useState(person.role||"");
   const [isAdmin,setIsAdmin]=useState(Boolean(person.isAdmin));
   return <Modal title={title} onClose={onClose} wide>
     <Field label="Ad Soyad *"><input style={iStyle} value={name} onChange={e=>setName(e.target.value)} /></Field>
     <Field label="E-posta"><input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" /></Field>
+    <Field label="WhatsApp Telefonu"><input type="tel" style={iStyle} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="905551234567" /></Field>
+    <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={whatsappEnabled} onChange={e=>setWhatsappEnabled(e.target.checked)}/> WhatsApp görev bildirimlerini al</label>
     <Field label="Rol / Unvan"><input style={iStyle} value={role} onChange={e=>setRole(e.target.value)} /></Field>
     {allowAdmin&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={isAdmin} onChange={e=>setIsAdmin(e.target.checked)}/> Yönetici yetkisi</label>}
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),role:role.trim(),...(allowAdmin?{isAdmin}:{})}); onClose(); }}>Kaydet</Btn></div>
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),phone:phone.replace(/\D/g,""),whatsappEnabled,role:role.trim(),...(allowAdmin?{isAdmin}:{})}); onClose(); }}>Kaydet</Btn></div>
   </Modal>;
 }
 
@@ -2571,6 +2577,8 @@ function TaskDetailModal({ task, people, currentUser, onClose, onUpdate }) {
 function PersonModal({ onClose, onSave }) {
   const [name, setName] = useState("");
   const [email,setEmail]=useState("");
+  const [phone,setPhone]=useState("");
+  const [whatsappEnabled,setWhatsappEnabled]=useState(true);
   const [role, setRole] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   return (
@@ -2584,6 +2592,10 @@ function PersonModal({ onClose, onSave }) {
       <Field label="E-posta">
         <input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" />
       </Field>
+      <Field label="WhatsApp Telefonu">
+        <input type="tel" style={iStyle} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="905551234567" />
+      </Field>
+      <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={whatsappEnabled} onChange={e=>setWhatsappEnabled(e.target.checked)}/> WhatsApp görev bildirimlerini al</label>
       <Field label="Yetki">
         <div style={{ display:"flex", gap:10 }}>
           <div onClick={()=>setIsAdmin(false)} style={{ flex:1, padding:"10px", borderRadius:8, border:`1.5px solid ${!isAdmin?"#4A6CF7":"#E2E8F0"}`, cursor:"pointer", textAlign:"center", background:!isAdmin?"#F1F5FF":"#fff", fontSize:12, fontWeight:600, color:!isAdmin?"#4A6CF7":"#64748B" }}>
@@ -2596,7 +2608,7 @@ function PersonModal({ onClose, onSave }) {
       </Field>
       <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}>
         <Btn variant="ghost" onClick={onClose}>İptal</Btn>
-        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,email:email.trim(),role,isAdmin}); onClose(); }}>Kaydet</Btn>
+        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,email:email.trim(),phone:phone.replace(/\D/g,""),whatsappEnabled,role,isAdmin}); onClose(); }}>Kaydet</Btn>
       </div>
     </Modal>
   );

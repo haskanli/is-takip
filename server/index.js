@@ -17,6 +17,7 @@ import {
   sendTaskAssignedEmail,
   sendTicketAssignedEmail,
 } from "./services/email.js";
+import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
 
@@ -193,6 +194,36 @@ const handleCreateTicket = async (request, response) => {
   json(response, 201, { ticket, notification });
 };
 
+const notifyTaskAssignee = async ({ assignee, task, assigner }) => {
+  let whatsappError = "";
+  try {
+    const whatsapp = await sendTaskAssignedWhatsApp({ assignee, task, assigner });
+    if (!whatsapp.skipped) return { sent: true, channel: "whatsapp", messageId: whatsapp.id || null };
+  } catch (error) {
+    whatsappError = error.message;
+    logger.error("whatsapp.task-assignment.failed", error, { taskId: task.id, userId: assignee?.id });
+  }
+
+  if (!assignee?.email) {
+    return {
+      sent: false,
+      channel: "none",
+      reason: whatsappError || "Assignee has no WhatsApp phone or email address",
+    };
+  }
+  try {
+    const email = await sendTaskAssignedEmail({ assignee, task, assigner });
+    return {
+      sent: !email.skipped,
+      channel: email.skipped ? "none" : "email",
+      emailId: email.id || null,
+      reason: email.skipped ? "Email is not configured" : whatsappError || undefined,
+    };
+  } catch (error) {
+    return { sent: false, channel: "none", reason: error.message, whatsappError };
+  }
+};
+
 const handleAssignTasks = async (request, response) => {
   const body = parseJson(await readBody(request));
   if (!body?.task?.title?.trim() || !body?.assignerId || !body.assigneeIds?.length) {
@@ -227,16 +258,7 @@ const handleAssignTasks = async (request, response) => {
   const notifications = [];
   for (const task of created) {
     const assignee = state.people?.find((person) => person.id === task.assignee);
-    if (!assignee?.email) {
-      notifications.push({ taskId: task.id, sent: false, reason: "Assignee has no email address" });
-      continue;
-    }
-    try {
-      const result = await sendTaskAssignedEmail({ assignee, task, assigner });
-      notifications.push({ taskId: task.id, sent: !result.skipped, emailId: result.id || null });
-    } catch (error) {
-      notifications.push({ taskId: task.id, sent: false, reason: error.message });
-    }
+    notifications.push({ taskId: task.id, ...await notifyTaskAssignee({ assignee, task, assigner }) });
   }
   json(response, 201, { tasks: created, notifications, recurringTemplate });
 };
@@ -248,20 +270,11 @@ const runRecurringTaskCycle = async () => {
   for (const task of created) {
     const assignee = state.people?.find((person) => person.id === task.assignee);
     const assigner = state.people?.find((person) => person.id === task.createdBy) || { name: task.createdByName || "Yönetici" };
-    if (!assignee?.email) {
-      notifications.push({ taskId: task.id, sent: false, reason: "Assignee has no email address" });
-      continue;
-    }
-    try {
-      const result = await sendTaskAssignedEmail({ assignee, task, assigner });
-      notifications.push({ taskId: task.id, sent: !result.skipped, emailId: result.id || null });
-    } catch (error) {
-      notifications.push({ taskId: task.id, sent: false, reason: error.message });
-    }
+    notifications.push({ taskId: task.id, ...await notifyTaskAssignee({ assignee, task, assigner }) });
   }
   logger.info("tasks.recurring.completed", {
     created: created.length,
-    emailsSent: notifications.filter((item) => item.sent).length,
+    notificationsSent: notifications.filter((item) => item.sent).length,
   });
   return { created: created.length, tasks: created, notifications };
 };
