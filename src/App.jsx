@@ -5,7 +5,7 @@ import { assignTasksWithNotification, createTicketWithNotification, notifyTicket
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.10.0";
+const APP_VERSION = "v1.11.0";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -1415,6 +1415,103 @@ function MachinePanel({ project, canEdit, onChange }) {
   </div>;
 }
 
+const COMMISSIONING_LEVELS = [
+  { label:"Sektör", childKey:"productionCenters", childLabel:"Üretim Merkezi" },
+  { label:"Üretim Merkezi", childKey:"workplaces", childLabel:"İşyeri" },
+  { label:"İşyeri", childKey:"lines", childLabel:"Hat" },
+  { label:"Hat", childKey:"machines", childLabel:"Makine" },
+];
+const commissioningMachines=(sectors=[])=>sectors.flatMap(sector=>(sector.productionCenters||[]).flatMap(center=>(center.workplaces||[]).flatMap(workplace=>(workplace.lines||[]).flatMap(line=>line.machines||[]))));
+const updateCommissioningNodes=(nodes,id,updater,level=0)=>(nodes||[]).map(node=>{
+  if(node.id===id)return updater(node);
+  const childKey=COMMISSIONING_LEVELS[level]?.childKey;
+  return childKey&&node[childKey]?{...node,[childKey]:updateCommissioningNodes(node[childKey],id,updater,level+1)}:node;
+});
+const removeCommissioningNode=(nodes,id,level=0)=>(nodes||[]).filter(node=>node.id!==id).map(node=>{
+  const childKey=COMMISSIONING_LEVELS[level]?.childKey;
+  return childKey&&node[childKey]?{...node,[childKey]:removeCommissioningNode(node[childKey],id,level+1)}:node;
+});
+
+function InlineHierarchyAdd({ label, onAdd, machine=false }) {
+  const [open,setOpen]=useState(false);
+  const [name,setName]=useState("");
+  const [code,setCode]=useState("");
+  const [type,setType]=useState("physical");
+  const save=()=>{
+    if(!name.trim())return;
+    onAdd(machine?{id:uid(),name:name.trim(),code:code.trim(),type,commissioned:false,commissionedAt:"",note:""}:{id:uid(),name:name.trim()});
+    setName("");setCode("");setType("physical");setOpen(false);
+  };
+  if(!open)return <Btn small variant="secondary" onClick={()=>setOpen(true)}>+ {label}</Btn>;
+  return <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",padding:"8px",background:"#F8FAFC",borderRadius:9,marginTop:8}}>
+    <input autoFocus style={{...iStyle,width:machine?180:220}} value={name} onChange={e=>setName(e.target.value)} placeholder={`${label} adı`}/>
+    {machine&&<input style={{...iStyle,width:120}} value={code} onChange={e=>setCode(e.target.value)} placeholder="Kod"/>}
+    {machine&&<select style={{...iStyle,width:110}} value={type} onChange={e=>setType(e.target.value)}><option value="physical">Fiziksel</option><option value="virtual">Sanal</option></select>}
+    <Btn small onClick={save}>Ekle</Btn><Btn small variant="ghost" onClick={()=>setOpen(false)}>İptal</Btn>
+  </div>;
+}
+
+function CommissioningBranch({ node, level, canEdit, onUpdate, onRemove, filter }) {
+  const [open,setOpen]=useState(true);
+  const [editing,setEditing]=useState(false);
+  const [name,setName]=useState(node.name);
+  const config=COMMISSIONING_LEVELS[level];
+  const children=node[config.childKey]||[];
+  const childMachines=level===3?children:commissioningMachines(level===0?[node]:level===1?[{productionCenters:[node]}]:[{productionCenters:[{workplaces:[node]}]}]);
+  const done=childMachines.filter(machine=>machine.commissioned).length;
+  const visibleChildren=level===3?children.filter(machine=>filter==="all"||(filter==="done"?machine.commissioned:!machine.commissioned)):children;
+  const addChild=(child)=>onUpdate(node.id,current=>({...current,[config.childKey]:[...(current[config.childKey]||[]),level===3?child:{...child,[COMMISSIONING_LEVELS[level+1]?.childKey]:[]}]}));
+  return <div style={{border:"1.5px solid #E2E8F0",borderRadius:12,background:"#fff",marginBottom:9,overflow:"hidden"}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",background:level===0?"#F1F5FF":"#FAFBFC"}}>
+      <button onClick={()=>setOpen(v=>!v)} style={{border:0,background:"transparent",cursor:"pointer",fontSize:16,color:"#64748B",padding:0,width:18}}>{open?"−":"+"}</button>
+      <div style={{flex:1,minWidth:0}}>{editing?<input autoFocus style={{...iStyle,maxWidth:260,padding:"5px 8px"}} value={name} onChange={e=>setName(e.target.value)}/>:<div style={{fontSize:12,fontWeight:800}}>{node.name}</div>}<div style={{fontSize:10,color:"#64748B"}}>{config.label} · {done}/{childMachines.length} makine devrede</div></div>
+      {canEdit&&editing&&<button onClick={()=>{if(name.trim())onUpdate(node.id,current=>({...current,name:name.trim()}));setEditing(false);}} style={{border:0,background:"transparent",color:"#059669",cursor:"pointer",fontSize:11,fontWeight:700}}>Kaydet</button>}
+      {canEdit&&editing&&<button onClick={()=>{setName(node.name);setEditing(false);}} style={{border:0,background:"transparent",color:"#64748B",cursor:"pointer",fontSize:11,fontWeight:700}}>İptal</button>}
+      {canEdit&&!editing&&<button onClick={()=>setEditing(true)} style={{border:0,background:"transparent",color:"#4A6CF7",cursor:"pointer",fontSize:11,fontWeight:700}}>Düzenle</button>}
+      {canEdit&&<button onClick={()=>confirm(`${config.label} ve alt kayıtları silinsin mi?`)&&onRemove(node.id)} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer",fontSize:11,fontWeight:700}}>Sil</button>}
+    </div>
+    {open&&<div style={{padding:"10px 10px 10px 22px"}}>
+      {level<3&&visibleChildren.map(child=><CommissioningBranch key={child.id} node={child} level={level+1} canEdit={canEdit} onUpdate={onUpdate} onRemove={onRemove} filter={filter}/>)}
+      {level===3&&visibleChildren.map(machine=><div key={machine.id} style={{border:`1.5px solid ${machine.commissioned?"#A7F3D0":"#FED7AA"}`,borderRadius:10,padding:11,marginBottom:7,background:machine.commissioned?"#F0FDF4":"#FFFBEB"}}>
+        <div style={{display:"flex",alignItems:"center",gap:9,flexWrap:"wrap"}}>
+          <input type="checkbox" checked={Boolean(machine.commissioned)} disabled={!canEdit} onChange={e=>onUpdate(machine.id,current=>({...current,commissioned:e.target.checked,commissionedAt:e.target.checked?todayStr():""}))}/>
+          <div style={{flex:1,minWidth:150}}><div style={{fontSize:12,fontWeight:800,textDecoration:machine.commissioned?"line-through":"none"}}>{machine.name}</div><div style={{fontSize:10,color:"#64748B"}}>{machine.code||"Kod yok"} · {machine.type==="virtual"?"Sanal":"Fiziksel"}{machine.commissionedAt?` · ${fmt(machine.commissionedAt)}`:""}</div></div>
+          {canEdit&&<select style={{...iStyle,width:105,padding:"5px 7px",fontSize:11}} value={machine.type||"physical"} onChange={e=>onUpdate(machine.id,current=>({...current,type:e.target.value}))}><option value="physical">Fiziksel</option><option value="virtual">Sanal</option></select>}
+          {canEdit&&<button onClick={()=>onRemove(machine.id)} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer",fontSize:11,fontWeight:700}}>Sil</button>}
+        </div>
+        {!machine.commissioned&&<textarea disabled={!canEdit} value={machine.note||""} onChange={e=>onUpdate(machine.id,current=>({...current,note:e.target.value}))} placeholder="Devreye alınamama açıklaması..." style={{...iStyle,minHeight:52,resize:"vertical",marginTop:8,fontSize:11}}/>}
+      </div>)}
+      {canEdit&&<InlineHierarchyAdd label={config.childLabel} machine={level===3} onAdd={addChild}/>}
+      {!visibleChildren.length&&!canEdit&&<div style={{fontSize:11,color:"#94A3B8",padding:8}}>Kayıt yok.</div>}
+    </div>}
+  </div>;
+}
+
+function CommissioningPanel({ project, canEdit, onChange }) {
+  const sectors=project.commissioningTree||[];
+  const [filter,setFilter]=useState("all");
+  const machines=commissioningMachines(sectors);
+  const commissioned=machines.filter(machine=>machine.commissioned).length;
+  const physical=machines.filter(machine=>machine.type!=="virtual").length;
+  const virtual=machines.filter(machine=>machine.type==="virtual").length;
+  const percent=machines.length?Math.round(commissioned/machines.length*100):0;
+  const update=(id,updater)=>onChange(updateCommissioningNodes(sectors,id,updater));
+  const remove=(id)=>onChange(removeCommissioningNode(sectors,id));
+  return <div style={{flex:1,overflow:"auto",padding:"clamp(14px,3vw,24px)",background:"#F8FAFC"}}>
+    <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:14}}>
+      <div><h3 style={{margin:0,fontSize:17}}>Hiyerarşik Devreye Alma</h3><div style={{fontSize:11,color:"#64748B",marginTop:3}}>Sektör → Üretim Merkezi → İşyeri → Hat → Makine</div></div>
+      {canEdit&&<InlineHierarchyAdd label="Sektör" onAdd={sector=>onChange([...sectors,{...sector,productionCenters:[]}])}/>}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:9,marginBottom:13}}>
+      {[["İlerleme",`${percent}%`,"#4A6CF7"],["Devrede",`${commissioned}/${machines.length}`,"#059669"],["Fiziksel",physical,"#0369A1"],["Sanal",virtual,"#7C3AED"],["Bekleyen",machines.length-commissioned,"#EA6C00"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:11,padding:12}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><div style={{fontSize:21,fontWeight:800,color,marginTop:2}}>{value}</div></div>)}
+    </div>
+    <div style={{height:10,background:"#E2E8F0",borderRadius:10,overflow:"hidden",marginBottom:13}}><div style={{height:"100%",width:`${percent}%`,background:"linear-gradient(90deg,#4A6CF7,#10B981)",transition:"width .25s"}}/></div>
+    <div style={{display:"flex",gap:6,marginBottom:13}}>{[["all","Tümü"],["pending","Devreye Alınacak"],["done","Devreye Alınan"]].map(([id,label])=><button key={id} onClick={()=>setFilter(id)} style={{border:0,borderRadius:8,padding:"7px 11px",background:filter===id?"#4A6CF7":"#fff",color:filter===id?"#fff":"#64748B",fontSize:11,fontWeight:700,cursor:"pointer"}}>{label}</button>)}</div>
+    {sectors.map(sector=><CommissioningBranch key={sector.id} node={sector} level={0} canEdit={canEdit} onUpdate={update} onRemove={remove} filter={filter}/>)}
+    {!sectors.length&&<div style={{padding:45,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8",background:"#fff"}}>İlk sektörü ekleyerek devreye alma ağacını oluşturun.</div>}
+  </div>;
+}
+
 function ReportsPage({ state, people, isAdmin }) {
   const [projectId,setProjectId]=useState(state.projects[0]?.id||"");
   const project=state.projects.find(p=>p.id===projectId);
@@ -1650,7 +1747,7 @@ export default function App() {
   const canManageProjectActions=isAdmin||(project?projectPmIds(project).includes(currentUser.id):false);
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
 
-  const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],machines:[],members:[],pmIds:[],stakeholders:[],...data,pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]})); addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
+  const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,members:[],pmIds:[],stakeholders:[],...data,pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]})); addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
   const addPerson=(data)=>{
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
     setState(s=>({...s,people:[...s.people,{id:uid(),avatar,...data}]}));
@@ -1843,6 +1940,9 @@ export default function App() {
   const progress=totalT?Math.round((doneT/totalT)*100):0;
   const overdueC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,0)||0;
   const criticalC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length,0)||0;
+  const projectCommissioningMachines=project?.commissioningTracking?commissioningMachines(project.commissioningTree||[]):[];
+  const projectCommissioningDone=projectCommissioningMachines.filter(machine=>machine.commissioned).length;
+  const projectCommissioningPercent=projectCommissioningMachines.length?Math.round(projectCommissioningDone/projectCommissioningMachines.length*100):0;
 
   const nav=[{id:"dashboard",icon:"home",label:"Dashboard"},{id:"todos",icon:"ticket",label:"To-Do"},{id:"projects",icon:"projects",label:"Projeler"},{id:"mytasks",icon:"tasks",label:"Görevlerim"},{id:"fieldplan",icon:"calendar",label:"Saha Planım"},{id:"deadlines",icon:"clock",label:`Termin Uyarıları${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},{id:"tickets",icon:"ticket",label:"Ticketlar"},{id:"reports",icon:"reports",label:"Raporlar"},{id:"people",icon:"people",label:"Ekip"},{id:"logs",icon:"activity",label:"Aktivite"}];
 
@@ -1897,6 +1997,7 @@ export default function App() {
             <span style={{ width:11, height:11, borderRadius:"50%", background:project.color }} />
             <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"#1E293B", background:"#fff", borderRadius:6, padding:"2px 4px" }}>{project.name}</h2>
             <Badge label={project.status} />
+            {project.commissioningTracking&&<button onClick={()=>setProjectTab("commissioning")} style={{border:0,background:"#ECFDF5",color:"#047857",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800,cursor:"pointer"}}>Devreye Alma: %{projectCommissioningPercent}</button>}
             {overdueC>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Gecikmiş: {overdueC}</span>}
             {criticalC>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Kritik: {criticalC}</span>}
           </div>
@@ -1912,7 +2013,7 @@ export default function App() {
             <span style={{ fontSize:12, fontWeight:700, color:project.color }}>{progress}%</span>
           </div>}
           <div style={{ display:"flex", gap:5, marginTop:10, overflowX:"auto", paddingBottom:3, scrollbarWidth:"thin" }}>
-            {[["tasks","tasks","Görevler"],["actions","activity","Aksiyonlar"],["gantt","gantt","Proje Planı"],["machines","machines","Makineler"],["risks","risk","Riskler"],["tickets","ticket","Ticketlar"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
+            {[["tasks","tasks","Görevler"],["actions","activity","Aksiyonlar"],["gantt","gantt","Proje Planı"],...(project.commissioningTracking?[["commissioning","machines","Devreye Alma"]]:[]),["machines","machines","Makineler"],["risks","risk","Riskler"],["tickets","ticket","Ticketlar"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
         </div>
 
@@ -1945,6 +2046,7 @@ export default function App() {
         </div>}
 
         {projectTab==="machines"&&<MachinePanel project={project} canEdit={isAdmin} onChange={(machines)=>mutProject(p=>({...p,machines}))} />}
+        {projectTab==="commissioning"&&project.commissioningTracking&&<CommissioningPanel project={project} canEdit={canManageProjectActions} onChange={(commissioningTree)=>mutProject(p=>({...p,commissioningTree}))} />}
         {projectTab==="actions"&&<ProjectActionsPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} canManage={canManageProjectActions}/>}
 
         {projectTab==="risks"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px", maxWidth:680 }}>
@@ -2425,7 +2527,7 @@ function NotificationsPage({ notifications, currentUser, setState }) {
 function AddProjectModal({ onClose, onSave, people }) {
   const [step,setStep]=useState("template");
   const [tplData,setTplData]=useState(null);
-  const [f,setF]=useState({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:todayStr(), endDate:"", pmIds:[], stakeholders:[] });
+  const [f,setF]=useState({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:todayStr(), endDate:"", pmIds:[], stakeholders:[], commissioningTracking:false });
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   const handleTplSelect=(tpl)=>{ setTplData(tpl); setF(s=>({...s,color:tpl.color})); setStep("form"); };
   const handleSave=()=>{ if(!f.name.trim())return; const built=tplData?buildFromTemplate(tplData,f.startDate||todayStr()):{milestones:[]}; onSave({...f,...built,risks:[]}); onClose(); };
@@ -2441,6 +2543,7 @@ function AddProjectModal({ onClose, onSave, people }) {
       <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
       <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
       <Field label="Bilgi Amaçlı Roller"><StakeholderEditor people={people} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
+      <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
       <Field label="Renk"><div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
         <Field label="Başlangıç"><input type="date" style={iStyle} value={f.startDate} onChange={e=>upd("startDate",e.target.value)} /></Field>
@@ -2459,6 +2562,7 @@ function ProjectModal({ title, initial, onClose, onSave, people }) {
     <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
     <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
     <Field label="Bilgi Amaçlı Roller"><StakeholderEditor people={people} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
+    <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
     <Field label="Renk"><div style={{ display:"flex", gap:7 }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Başlangıç"><input type="date" style={iStyle} value={f.startDate} onChange={e=>upd("startDate",e.target.value)} /></Field>
