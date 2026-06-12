@@ -19,3 +19,13 @@ export const notifyTicketAssignment = async (projectId, ticket) => {
   if (!result.sent) throw new Error(result.reason || "Atama e-postası gönderilemedi.");
   return result;
 };
+
+export const createTicketWithNotification = async (projectId, ticket) => {
+  const response = await fetch("/tickets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ projectId, ticket }),
+  });
+  if (!response.ok) throw new Error(await readError(response));
+  return response.json();
+};

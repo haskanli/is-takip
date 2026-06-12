@@ -42,6 +42,22 @@ export const loadState = async () =>
     return data?.data || {};
   }, "database.app_state.load");
 
+export const createTicket = async ({ projectId, ticket }) =>
+  mutateState((state) => {
+    state.projectTickets ||= {};
+    const tickets = state.projectTickets[projectId] || [];
+    const existing = tickets.find((item) => item.id === ticket.id);
+    if (existing) return existing;
+    tickets.push(ticket);
+    state.projectTickets[projectId] = tickets;
+    logger.info("database.ticket.created", {
+      projectId,
+      ticketId: ticket.id,
+      assignedTo: ticket.assignedTo || null,
+    });
+    return ticket;
+  });
+
 const saveState = async (state) =>
   runSupabase(async () => {
     const { error } = await getClient().from("app_state").upsert({

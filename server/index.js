@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { getEmailConfig, getServerConfig } from "./config.js";
 import { logger } from "./logger.js";
 import {
+  createTicket,
   saveJiraIssueToTicket,
   loadState,
   updateTicketStatusByJiraKey,
@@ -153,6 +154,42 @@ const handleTicketAssignedEmail = async (request, response) => {
   });
 };
 
+const handleCreateTicket = async (request, response) => {
+  const body = parseJson(await readBody(request));
+  validateTicketRequest(body);
+  const state = await loadState();
+  const project = state.projects?.find((item) => item.id === body.projectId);
+  if (!project) {
+    throw Object.assign(new Error("Project not found"), { status: 404 });
+  }
+  const ticket = await createTicket({
+    projectId: body.projectId,
+    ticket: body.ticket,
+  });
+  let notification = { sent: false, reason: "Ticket is not assigned" };
+  if (ticket.assignedTo) {
+    const assignee = state.people?.find((item) => item.id === ticket.assignedTo);
+    if (!assignee) {
+      notification = { sent: false, reason: "Assignee not found" };
+    } else if (!assignee.email) {
+      notification = { sent: false, reason: "Assignee has no email address" };
+    } else {
+      try {
+        const result = await sendTicketAssignedEmail({ assignee, ticket, project });
+        notification = { sent: !result.skipped, emailId: result.id || null };
+      } catch (error) {
+        logger.error("email.ticket-assignment.failed", error, {
+          projectId: project.id,
+          ticketId: ticket.id,
+          assigneeId: assignee.id,
+        });
+        notification = { sent: false, reason: error.message };
+      }
+    }
+  }
+  json(response, 201, { ticket, notification });
+};
+
 const dateOnly = (value) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
@@ -256,6 +293,8 @@ const server = createServer(async (request, response) => {
       await handleWebhook(request, response);
     } else if (request.method === "POST" && url.pathname === "/email/ticket-assigned") {
       await handleTicketAssignedEmail(request, response);
+    } else if (request.method === "POST" && url.pathname === "/tickets") {
+      await handleCreateTicket(request, response);
     } else if (request.method === "POST" && url.pathname === "/email/reminders") {
       await handleOverdueReminders(request, response);
     } else if (request.method === "GET") {
