@@ -1,20 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
-import { getJiraConfig, getSupabaseConfig } from "../config.js";
+import { getJiraConfig } from "../config.js";
+import { getDatabaseClient } from "../database.js";
 import { logger } from "../logger.js";
 import { withRetry } from "../retry.js";
+import { syncNormalizedState } from "./normalizedState.js";
 
-let client;
 let mutationQueue = Promise.resolve();
-
-const getClient = () => {
-  if (!client) {
-    const config = getSupabaseConfig();
-    client = createClient(config.url, config.key, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-  }
-  return client;
-};
 
 const isRetryable = (error) =>
   !error?.status || error.status === 429 || error.status >= 500;
@@ -33,7 +23,7 @@ const runSupabase = (operation, event) =>
 
 export const loadState = async () =>
   runSupabase(async () => {
-    const { data, error } = await getClient()
+    const { data, error } = await getDatabaseClient()
       .from("app_state")
       .select("data")
       .eq("id", 1)
@@ -44,7 +34,7 @@ export const loadState = async () =>
 
 export const loadStateRecord = async () =>
   runSupabase(async () => {
-    const { data, error } = await getClient()
+    const { data, error } = await getDatabaseClient()
       .from("app_state")
       .select("data,version,updated_at")
       .eq("id", 1)
@@ -60,7 +50,7 @@ export const loadStateRecord = async () =>
 export const saveStateRecord = async ({ state, expectedVersion }) =>
   runSupabase(async () => {
     const nextVersion = Number(expectedVersion) + 1;
-    const { data, error } = await getClient()
+    const { data, error } = await getDatabaseClient()
       .from("app_state")
       .update({
         data: state,
@@ -75,7 +65,14 @@ export const saveStateRecord = async ({ state, expectedVersion }) =>
     if (!data) {
       throw Object.assign(new Error("State changed by another user"), { status: 409 });
     }
-    const { error: metaError } = await getClient().from("app_meta").upsert({
+    try {
+      await syncNormalizedState(state);
+    } catch (syncError) {
+      logger.error("database.normalized-sync.failed", syncError, {
+        version: nextVersion,
+      });
+    }
+    const { error: metaError } = await getDatabaseClient().from("app_meta").upsert({
       id: 1,
       state_version: nextVersion,
       updated_at: new Date().toISOString(),
@@ -87,7 +84,7 @@ export const saveStateRecord = async ({ state, expectedVersion }) =>
 export const checkDatabase = async () =>
   runSupabase(async () => {
     const startedAt = Date.now();
-    const { error } = await getClient().from("app_state").select("id", { head: true }).eq("id", 1);
+    const { error } = await getDatabaseClient().from("app_state").select("id", { head: true }).eq("id", 1);
     if (error) throw error;
     return { ok: true, latencyMs: Date.now() - startedAt };
   }, "database.health");
@@ -162,21 +159,14 @@ export const generateRecurringTasks = async (today) =>
     return created;
   });
 
-const saveState = async (state) =>
-  runSupabase(async () => {
-    const { error } = await getClient().from("app_state").upsert({
-      id: 1,
-      data: state,
-      updated_at: new Date().toISOString(),
-    });
-    if (error) throw error;
-  }, "database.app_state.save");
-
 const mutateState = (mutator) => {
   const mutation = mutationQueue.then(async () => {
-    const state = await loadState();
-    const result = await mutator(state);
-    await saveState(state);
+    const record = await loadStateRecord();
+    const result = await mutator(record.state);
+    await saveStateRecord({
+      state: record.state,
+      expectedVersion: record.version,
+    });
     return result;
   });
 

@@ -24,6 +24,10 @@ import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
 import { authenticateRequest } from "./auth.js";
+import {
+  filterStateForProfile,
+  mergeStateForProfile,
+} from "./stateAccess.js";
 
 const MAX_BODY_BYTES = 1024 * 1024;
 const DIST_DIRECTORY = fileURLToPath(new URL("../dist/", import.meta.url));
@@ -117,6 +121,7 @@ const handleGetApplicationState = async (auth, response) => {
   const record = await loadStateRecord();
   json(response, 200, {
     ...record,
+    state: filterStateForProfile(record.state, auth?.profile),
     currentProfile: auth?.profile || null,
   });
 };
@@ -126,8 +131,13 @@ const handleSaveApplicationState = async (request, auth, response) => {
   if (!body?.state || !Number.isFinite(Number(body.version))) {
     throw Object.assign(new Error("state and version are required"), { status: 400 });
   }
-  const shared = { ...body.state };
-  delete shared.currentUserId;
+  const current = await loadStateRecord();
+  if (current.version !== Number(body.version)) {
+    throw Object.assign(new Error("State changed by another user"), { status: 409 });
+  }
+  const incoming = { ...body.state };
+  delete incoming.currentUserId;
+  const shared = mergeStateForProfile(current.state, incoming, auth?.profile);
   const saved = await saveStateRecord({
     state: shared,
     expectedVersion: Number(body.version),
