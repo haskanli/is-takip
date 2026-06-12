@@ -1,5 +1,7 @@
 create extension if not exists pgcrypto;
 create extension if not exists citext;
+create schema if not exists corject_legacy_backup;
+revoke all on schema corject_legacy_backup from public, anon, authenticated;
 
 alter table public.app_state add column if not exists version bigint not null default 1;
 
@@ -8,20 +10,55 @@ alter table public.app_state add column if not exists version bigint not null de
 do $$
 declare
   target_table text;
+  required_columns text;
+  required_column text;
   backup_name text;
+  backup_counter integer;
   has_rows boolean;
+  is_compatible boolean;
+  table_requirements jsonb := '{
+    "profiles": "id,legacy_id,email,name,payload",
+    "projects": "id,name,payload,version",
+    "project_members": "project_id,profile_id,membership_role,stakeholder_role",
+    "milestones": "id,project_id,name,payload,version",
+    "tasks": "id,task_kind,title,assignee_id,payload,version",
+    "task_comments": "id,task_id,author_id,body,payload",
+    "time_entries": "id,task_id,profile_id,hours,payload",
+    "tickets": "id,project_id,title,assigned_to,payload,version",
+    "project_actions": "id,project_id,author_id,body,payload",
+    "field_plans": "id,profile_id,project_id,plan_date,payload",
+    "commissioning_nodes": "id,project_id,parent_id,node_type,payload",
+    "user_notes": "profile_id,notes,todos",
+    "notifications": "id,profile_id,message,payload",
+    "recurring_tasks": "id,created_by,assignee_ids,payload",
+    "audit_logs": "id,actor_id,action,payload",
+    "app_meta": "id,state_version",
+    "data_migrations": "name,applied_at,detail"
+  }'::jsonb;
 begin
-  foreach target_table in array array['projects', 'milestones', 'tasks']
+  for target_table, required_columns in
+    select key, value from jsonb_each_text(table_requirements)
   loop
-    if to_regclass('public.' || target_table) is not null
-       and not exists (
-         select 1
-         from information_schema.columns c
-         where table_schema = 'public'
-           and c.table_name = target_table
-           and column_name = 'payload'
-       )
-    then
+    if to_regclass('public.' || target_table) is not null then
+      is_compatible := true;
+      foreach required_column in array string_to_array(required_columns, ',')
+      loop
+        if not exists (
+          select 1
+          from information_schema.columns c
+          where c.table_schema = 'public'
+            and c.table_name = target_table
+            and c.column_name = required_column
+        ) then
+          is_compatible := false;
+          exit;
+        end if;
+      end loop;
+
+      if is_compatible then
+        continue;
+      end if;
+
       execute format('select exists(select 1 from public.%I limit 1)', target_table)
         into has_rows;
       if has_rows then
@@ -30,13 +67,20 @@ begin
           target_table;
       end if;
 
-      backup_name := target_table || '_pre_normalization';
-      if to_regclass('public.' || backup_name) is not null then
-        raise exception
-          'Backup table public.% already exists; review it before retrying.',
-          backup_name;
+      backup_name := target_table;
+      backup_counter := 1;
+      while to_regclass('corject_legacy_backup.' || backup_name) is not null
+      loop
+        backup_counter := backup_counter + 1;
+        backup_name := target_table || '_' || backup_counter;
+      end loop;
+      if backup_name <> target_table then
+        execute format('alter table public.%I rename to %I', target_table, backup_name);
       end if;
-      execute format('alter table public.%I rename to %I', target_table, backup_name);
+      execute format(
+        'alter table public.%I set schema corject_legacy_backup',
+        backup_name
+      );
     end if;
   end loop;
 end $$;

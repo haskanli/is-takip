@@ -18,10 +18,9 @@ Open **Supabase Dashboard > SQL Editor > New query** and run:
 `supabase/migrations/202606120001_normalized_schema.sql`
 
 The migration keeps `app_state`, creates the normalized tables and enables
-RLS. Incompatible empty `projects`, `milestones` and `tasks` test tables are
-renamed with the `_pre_normalization` suffix instead of being deleted. If any
-of them unexpectedly contains data, the transaction stops without changing
-the table.
+RLS. Any incompatible empty test table is moved to the access-restricted
+`corject_legacy_backup` schema instead of being deleted. If one unexpectedly
+contains data, the transaction stops without changing the table.
 
 ## Import Data And Auth Users
 
