@@ -15,5 +15,7 @@ export const notifyTicketAssignment = async (projectId, ticket) => {
     body: JSON.stringify({ projectId, ticket }),
   });
   if (!response.ok) throw new Error(await readError(response));
-  return response.json();
+  const result = await response.json();
+  if (!result.sent) throw new Error(result.reason || "Atama e-postası gönderilemedi.");
+  return result;
 };

@@ -131,11 +131,26 @@ const handleTicketAssignedEmail = async (request, response) => {
     throw Object.assign(new Error("Project or assignee not found"), { status: 404 });
   }
   if (!assignee.email) {
+    logger.warn("email.ticket-assignment.skipped.no-address", {
+      projectId: project.id,
+      ticketId: body.ticket.id,
+      assigneeId: assignee.id,
+    });
     json(response, 202, { sent: false, reason: "Assignee has no email address" });
     return;
   }
   const result = await sendTicketAssignedEmail({ assignee, ticket: body.ticket, project });
-  json(response, 200, { sent: !result.skipped, skipped: Boolean(result.skipped) });
+  logger.info("email.ticket-assignment.completed", {
+    projectId: project.id,
+    ticketId: body.ticket.id,
+    assigneeId: assignee.id,
+    emailId: result.id,
+  });
+  json(response, 200, {
+    sent: !result.skipped,
+    skipped: Boolean(result.skipped),
+    emailId: result.id || null,
+  });
 };
 
 const dateOnly = (value) => {

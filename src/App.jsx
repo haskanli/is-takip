@@ -5,7 +5,7 @@ import { notifyTicketAssignment } from "./email";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.5.0";
+const APP_VERSION = "v1.5.1";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -1408,7 +1408,7 @@ function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false}){
     </div>})}</div>
     {!filtered.length&&<div style={{padding:40,textAlign:"center",background:"#fff",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Filtreye uygun ticket yok.</div>}
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}><Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><TicketForm types={TYPES} prios={PRIOS} people={state.people} onClose={()=>setModal(null)} onSave={data=>{if(!modal.projectId)return;add(modal.projectId,data);setModal(null);}}/></Modal>}
-    {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} canEdit={isAdmin||modal.data.author===currentUser.name} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)}/>}
+    {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} canEdit={isAdmin||modal.data.author===currentUser.name} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)} onResend={()=>notifyTicketAssignment(modal.projectId,((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data)}/>}
   </div>;
 }
 
@@ -2133,7 +2133,7 @@ function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>
       <TicketForm onSave={(d)=>{addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />
     </Modal>}
-    {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} canEdit={isAdmin||modal.data.author===currentUser.name} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />}
+    {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} canEdit={isAdmin||modal.data.author===currentUser.name} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} onResend={()=>notifyTicketAssignment(project.id,tickets.find(t=>t.id===modal.data.id)||modal.data)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />}
   </div>;
 }
 function TicketForm({ onSave, onClose, types, prios, people }) {
@@ -2158,12 +2158,13 @@ function TicketForm({ onSave, onClose, types, prios, people }) {
   </div>;
 }
 
-function TicketDetail({ ticket, canEdit, onClose, onUpdate, types, prios, people=[] }) {
+function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, prios, people=[] }) {
   const [editing,setEditing]=useState(false);
   const [form,setForm]=useState(ticket);
   const [jira,setJira]=useState(null);
   const [loading,setLoading]=useState(Boolean(ticket.jiraKey||ticket.jiraId));
   const [error,setError]=useState("");
+  const [mailStatus,setMailStatus]=useState({loading:false,message:"",error:false});
   const jiraKey=(ticket.jiraKey||ticket.jiraId||"").trim().toUpperCase();
   const upd=(k,v)=>setForm(s=>({...s,[k]:v}));
   const refreshJira=async()=>{
@@ -2197,6 +2198,16 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, types, prios, people
     onUpdate({...form,jiraKey:key,jiraId:key,...(key!==jiraKey?{jiraStatus:"",jiraLink:"",jiraIssueId:""}:{})});
     setEditing(false);
   };
+  const resend=async()=>{
+    if(!ticket.assignedTo)return;
+    setMailStatus({loading:true,message:"",error:false});
+    try{
+      const result=await onResend();
+      setMailStatus({loading:false,message:`Mail gönderildi${result.emailId?` (${result.emailId})`:""}.`,error:false});
+    }catch(e){
+      setMailStatus({loading:false,message:e?.message||"Mail gönderilemedi.",error:true});
+    }
+  };
   return <Modal title={ticket.title} onClose={onClose} wide>
     {editing?<div>
       <Field label="Başlık"><input style={iStyle} value={form.title||""} onChange={e=>upd("title",e.target.value)} /></Field>
@@ -2212,6 +2223,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, types, prios, people
       {ticket.description&&<div style={{fontSize:13,color:"#475569",lineHeight:1.6,marginBottom:16}}>{ticket.description}</div>}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}><span style={{background:"#F1F5FF",color:"#4A6CF7",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.type}</span><span style={{background:"#FFF7ED",color:"#EA6C00",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.priority}</span><span style={{background:"#F8FAFC",color:"#64748B",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.status}</span></div>
       {ticket.assignedTo&&<div style={{fontSize:12,color:"#4A6CF7",marginBottom:14}}>Atanan: <b>{people.find(person=>person.id===ticket.assignedTo)?.name||"Bilinmiyor"}</b></div>}
+      {mailStatus.message&&<div style={{fontSize:11,fontWeight:700,color:mailStatus.error?"#BE123C":"#059669",background:mailStatus.error?"#FFF1F2":"#ECFDF5",borderRadius:8,padding:"8px 10px",marginBottom:12}}>{mailStatus.message}</div>}
       <div style={{border:"1.5px solid #DDE7F5",borderRadius:12,padding:14,background:"#F8FBFF",marginBottom:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:jiraKey?10:0}}><div style={{fontWeight:800,fontSize:13,color:"#0052CC"}}>Jira Task</div>{jiraKey&&<button onClick={refreshJira} disabled={loading} style={{border:"none",background:"none",color:"#4A6CF7",fontSize:11,cursor:"pointer"}}>{loading?"Güncelleniyor...":"Yenile"}</button>}</div>
         {!jiraKey&&<div style={{fontSize:12,color:"#64748B"}}>Bu ticket henüz bir Jira taskıyla ilişkilendirilmemiş.</div>}
@@ -2223,7 +2235,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, types, prios, people
           {(jira?.url||ticket.jiraLink)&&<a href={jira?.url||ticket.jiraLink} target="_blank" rel="noreferrer" style={{display:"inline-block",background:"#0052CC",color:"#fff",borderRadius:8,padding:"6px 11px",fontSize:12,fontWeight:700,textDecoration:"none"}}>Jira'da Aç</a>}
         </div>}
       </div>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:7}}>{canEdit&&<Btn variant="secondary" onClick={()=>{setForm(ticket);setEditing(true);}}>Düzenle / Jira İlişkilendir</Btn>}<Btn variant="ghost" onClick={onClose}>Kapat</Btn></div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:7,flexWrap:"wrap"}}>{ticket.assignedTo&&onResend&&<Btn variant="success" disabled={mailStatus.loading} onClick={resend}>{mailStatus.loading?"Gönderiliyor...":"Atama Mailini Gönder"}</Btn>}{canEdit&&<Btn variant="secondary" onClick={()=>{setForm(ticket);setEditing(true);}}>Düzenle / Jira İlişkilendir</Btn>}<Btn variant="ghost" onClick={onClose}>Kapat</Btn></div>
     </div>}
   </Modal>;
 }
