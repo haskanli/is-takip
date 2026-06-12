@@ -3,13 +3,43 @@ create extension if not exists citext;
 
 alter table public.app_state add column if not exists version bigint not null default 1;
 
--- These legacy normalized tables were verified empty before this migration.
-drop table if exists public.task_comments cascade;
-drop table if exists public.time_entries cascade;
-drop table if exists public.project_members cascade;
-drop table if exists public.tasks cascade;
-drop table if exists public.milestones cascade;
-drop table if exists public.projects cascade;
+-- Preserve incompatible pre-existing test tables instead of deleting them.
+-- The migration stops if an incompatible table unexpectedly contains data.
+do $$
+declare
+  target_table text;
+  backup_name text;
+  has_rows boolean;
+begin
+  foreach target_table in array array['projects', 'milestones', 'tasks']
+  loop
+    if to_regclass('public.' || target_table) is not null
+       and not exists (
+         select 1
+         from information_schema.columns c
+         where table_schema = 'public'
+           and c.table_name = target_table
+           and column_name = 'payload'
+       )
+    then
+      execute format('select exists(select 1 from public.%I limit 1)', target_table)
+        into has_rows;
+      if has_rows then
+        raise exception
+          'Incompatible table public.% contains data; migration stopped without changing it.',
+          target_table;
+      end if;
+
+      backup_name := target_table || '_pre_normalization';
+      if to_regclass('public.' || backup_name) is not null then
+        raise exception
+          'Backup table public.% already exists; review it before retrying.',
+          backup_name;
+      end if;
+      execute format('alter table public.%I rename to %I', target_table, backup_name);
+    end if;
+  end loop;
+end $$;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -261,6 +291,7 @@ alter table public.notifications enable row level security;
 alter table public.recurring_tasks enable row level security;
 alter table public.audit_logs enable row level security;
 alter table public.app_meta enable row level security;
+alter table public.data_migrations enable row level security;
 
 drop policy if exists profiles_read_authenticated on public.profiles;
 create policy profiles_read_authenticated on public.profiles for select to authenticated using (active);
@@ -302,6 +333,7 @@ drop policy if exists app_meta_read_authenticated on public.app_meta;
 create policy app_meta_read_authenticated on public.app_meta for select to authenticated using (true);
 
 revoke all on public.app_state from anon, authenticated;
+revoke all on public.data_migrations from anon, authenticated;
 grant select on public.profiles, public.projects, public.project_members, public.milestones,
   public.tasks, public.task_comments, public.time_entries, public.tickets,
   public.project_actions, public.field_plans, public.commissioning_nodes,
