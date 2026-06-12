@@ -5,7 +5,7 @@ import { createTicketWithNotification, notifyTicketAssignment } from "./email";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.7.0";
+const APP_VERSION = "v1.8.0";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -1302,6 +1302,48 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
   </div>;
 }
 
+function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canManage}) {
+  const actions=((state.projectActions||{})[project.id])||[];
+  const [text,setText]=useState("");
+  const [actionAt,setActionAt]=useState(()=>new Date().toISOString().slice(0,16));
+  const [editingId,setEditingId]=useState(null);
+  const [filter,setFilter]=useState("");
+  const saveActions=next=>setState(s=>({...s,projectActions:{...(s.projectActions||{}),[project.id]:next}}));
+  const submit=()=>{
+    if(!text.trim())return;
+    const actionDate=new Date(actionAt);
+    const actionIso=Number.isNaN(actionDate.getTime())?now():actionDate.toISOString();
+    if(editingId){
+      saveActions(actions.map(item=>item.id===editingId?{...item,text:text.trim(),actionAt:actionIso,updatedAt:now(),updatedBy:currentUser.name}:item));
+    }else{
+      saveActions([{id:uid(),text:text.trim(),actionAt:actionIso,createdAt:now(),authorId:currentUser.id,authorName:currentUser.name},...actions]);
+    }
+    setText("");
+    setActionAt(new Date().toISOString().slice(0,16));
+    setEditingId(null);
+  };
+  const edit=item=>{setEditingId(item.id);setText(item.text);setActionAt(new Date(item.actionAt||item.createdAt).toISOString().slice(0,16));};
+  const remove=id=>saveActions(actions.filter(item=>item.id!==id));
+  const shown=actions.filter(item=>!filter.trim()||`${item.text} ${item.authorName}`.toLocaleLowerCase("tr-TR").includes(filter.trim().toLocaleLowerCase("tr-TR"))).sort((a,b)=>new Date(b.actionAt||b.createdAt)-new Date(a.actionAt||a.createdAt));
+  return <div style={{flex:1,overflow:"auto",padding:"clamp(16px,3vw,26px)",maxWidth:1050,width:"100%"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:17}}><div><h3 style={{margin:0,fontSize:17,display:"flex",alignItems:"center",gap:8}}><Icon name="activity" size={19}/>Proje Aksiyonları</h3><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Görüşme, arama, e-posta ve beklenen dönüşleri kronolojik olarak kaydedin.</p></div><input style={{...iStyle,width:240}} value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Aksiyonlarda ara..."/></div>
+    {canManage&&<div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:16,marginBottom:17,boxShadow:"0 5px 18px #0f172a0a"}}>
+      <Field label="Aksiyon"><textarea style={{...iStyle,minHeight:82,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>setText(e.target.value)} placeholder="Örn. Müşteriyle görüştüm, revize teklif mailini ilettim. Teknik ekipten dönüş bekliyorum."/></Field>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:10,flexWrap:"wrap"}}><div style={{width:230}}><Field label="Aksiyon Tarihi"><input type="datetime-local" style={iStyle} value={actionAt} onChange={e=>setActionAt(e.target.value)}/></Field></div><div style={{display:"flex",gap:7,marginBottom:13}}>{editingId&&<Btn variant="ghost" onClick={()=>{setEditingId(null);setText("");setActionAt(new Date().toISOString().slice(0,16));}}>İptal</Btn>}<Btn disabled={!text.trim()} onClick={submit}>{editingId?"Aksiyonu Güncelle":"Aksiyon Ekle"}</Btn></div></div>
+    </div>}
+    {!canManage&&<div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 13px",fontSize:11,color:"#64748B",marginBottom:14}}>Aksiyon ekleme yetkisi proje yöneticileri ve sistem yöneticilerindedir.</div>}
+    <div style={{position:"relative",paddingLeft:24}}>
+      <div style={{position:"absolute",left:7,top:8,bottom:8,width:2,background:"#E2E8F0"}}/>
+      {shown.map(item=>{const canEdit=isAdmin||item.authorId===currentUser.id;return <div key={item.id} style={{position:"relative",background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"13px 15px",marginBottom:10}}>
+        <span style={{position:"absolute",left:-22,top:18,width:12,height:12,borderRadius:"50%",background:project.color,border:"3px solid #F8FAFC"}}/>
+        <div style={{fontSize:13,color:"#1E293B",lineHeight:1.55,whiteSpace:"pre-wrap"}}>{item.text}</div>
+        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginTop:9,fontSize:10,color:"#94A3B8"}}><span style={{fontWeight:700,color:"#64748B"}}>{item.authorName}</span><span>·</span><span>{new Date(item.actionAt||item.createdAt).toLocaleString("tr-TR")}</span>{item.updatedAt&&<span>· Düzenlendi</span>}{canEdit&&<span style={{marginLeft:"auto",display:"flex",gap:8}}><button onClick={()=>edit(item)} style={{border:0,background:"transparent",color:"#4A6CF7",fontSize:10,fontWeight:700,cursor:"pointer"}}>Düzenle</button><button onClick={()=>confirm("Aksiyon silinsin mi?")&&remove(item.id)} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,fontWeight:700,cursor:"pointer"}}>Sil</button></span>}</div>
+      </div>})}
+      {!shown.length&&<div style={{padding:38,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8",fontSize:12}}>Henüz proje aksiyonu kaydedilmedi.</div>}
+    </div>
+  </div>;
+}
+
 function MachinePanel({ project, canEdit, onChange }) {
   const machines=project.machines||[];
   const [showForm,setShowForm]=useState(false);
@@ -1571,6 +1613,7 @@ export default function App() {
   const currentMs=project?.milestones.find(m=>m.status!=="Tamamland\u0131");
   const activePMs=project?projectPmIds(project).map(id=>state.people.find(p=>p.id===id)).filter(Boolean):[];
   const activeStakeholders=project?projectStakeholders(project).map(item=>({...item,person:state.people.find(p=>p.id===item.userId)})).filter(item=>item.person):[];
+  const canManageProjectActions=isAdmin||(project?projectPmIds(project).includes(currentUser.id):false);
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
 
   const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],machines:[],members:[],pmIds:[],stakeholders:[],...data,pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]})); addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
@@ -1590,7 +1633,7 @@ export default function App() {
     personalTasks:(s.personalTasks||[]).map(t=>t.assignee===id?{...t,assignee:""}:t)
   }));
   const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>p.id===id?{...p,...data,pm:data.pmIds?.[0]||""}:p)}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
-  const deleteProject=(id)=>{ if(!isAdmin)return; const name=state.projects.find(p=>p.id===id)?.name; setState(s=>({...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id)})); setSelProject(null); setSelMilestone(null); addLog(currentUser.name,"general","Proje silindi: "+name); };
+  const deleteProject=(id)=>{ if(!isAdmin)return; const name=state.projects.find(p=>p.id===id)?.name; setState(s=>{const projectActions={...(s.projectActions||{})};delete projectActions[id];return {...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id),projectActions};}); setSelProject(null); setSelMilestone(null); addLog(currentUser.name,"general","Proje silindi: "+name); };
   const addRisk=(data)=>{ mutProject(p=>({...p,risks:[...(p.risks||[]),{id:uid(),...data}]})); addLog(currentUser.name,"risk_add",data.title,project?.name); };
   const updateRisk=(rId,data)=>mutProject(p=>({...p,risks:(p.risks||[]).map(r=>r.id===rId?{...r,...data}:r)}));
   const deleteRisk=(rId)=>mutProject(p=>({...p,risks:(p.risks||[]).filter(r=>r.id!==rId)}));
@@ -1835,7 +1878,7 @@ export default function App() {
             <span style={{ fontSize:12, fontWeight:700, color:project.color }}>{progress}%</span>
           </div>}
           <div style={{ display:"flex", gap:5, marginTop:10, overflowX:"auto", paddingBottom:3, scrollbarWidth:"thin" }}>
-            {[["tasks","tasks","Görevler"],["gantt","gantt","Proje Planı"],["machines","machines","Makineler"],["risks","risk","Riskler"],["tickets","ticket","Ticketlar"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
+            {[["tasks","tasks","Görevler"],["actions","activity","Aksiyonlar"],["gantt","gantt","Proje Planı"],["machines","machines","Makineler"],["risks","risk","Riskler"],["tickets","ticket","Ticketlar"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
         </div>
 
@@ -1868,6 +1911,7 @@ export default function App() {
         </div>}
 
         {projectTab==="machines"&&<MachinePanel project={project} canEdit={isAdmin} onChange={(machines)=>mutProject(p=>({...p,machines}))} />}
+        {projectTab==="actions"&&<ProjectActionsPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} canManage={canManageProjectActions}/>}
 
         {projectTab==="risks"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px", maxWidth:680 }}>
           <RiskPanel risks={project.risks||[]} onAdd={()=>setModal({type:"addRisk"})} onUpdate={updateRisk} onDelete={deleteRisk} canEdit={isAdmin} />
