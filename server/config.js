@@ -27,7 +27,11 @@ export const getServerConfig = () => ({
   port: Number(process.env.PORT || 3001),
   requestTimeoutMs: Number(process.env.JIRA_REQUEST_TIMEOUT_MS || 10000),
   retryCount: Number(process.env.JIRA_RETRY_COUNT || 3),
-  allowedOrigin: optional("APP_ORIGIN"),
+  allowedOrigins: [
+    optional("APP_ORIGIN"),
+    "https://corject.com",
+    "https://www.corject.com",
+  ].filter(Boolean),
   requireAuth: optional("REQUIRE_AUTH").toLowerCase() === "true",
   dataModel: optional("DATA_MODEL") || "legacy",
 });

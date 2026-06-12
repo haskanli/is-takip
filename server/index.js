@@ -453,14 +453,29 @@ const handleStatic = async (url, response) => {
 const server = createServer(async (request, response) => {
   const startedAt = Date.now();
   const url = new URL(request.url, "http://localhost");
+  const config = getServerConfig();
+  const origin = request.headers.origin;
+  if (origin && config.allowedOrigins.includes(origin)) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
+    response.setHeader("Vary", "Origin");
+  }
   response.setHeader("X-Content-Type-Options", "nosniff");
   response.setHeader("X-Frame-Options", "DENY");
   response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
   try {
+    if (request.method === "OPTIONS") {
+      if (origin && !config.allowedOrigins.includes(origin)) {
+        throw Object.assign(new Error("Origin not allowed"), { status: 403 });
+      }
+      response.writeHead(204);
+      response.end();
+      return;
+    }
     enforceRateLimit(request);
-    const config = getServerConfig();
     const protectedPath =
       url.pathname.startsWith("/api/") ||
       url.pathname === "/tickets" ||

@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 import { getJiraIssue } from "./jira";
 import { assignTasksWithNotification, createTicketWithNotification, notifyTicketAssignment } from "./email";
+import { apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
 const APP_VERSION = "v1.12.0";
-const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true";
-const USE_DATA_API = import.meta.env.VITE_DATA_API === "true";
+const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
+const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -168,7 +169,7 @@ const authHeaders = async () => {
 };
 const loadFromSupabase = async () => {
   if(USE_DATA_API){
-    const response=await fetch("/api/state",{headers:await authHeaders()});
+    const response=await fetch(apiUrl("/api/state"),{headers:await authHeaders()});
     if(!response.ok){
       const detail=await response.text();
       throw new Error(`Veri yuklenemedi (${response.status}): ${detail}`);
@@ -192,7 +193,7 @@ const saveToSupabase = (state, onStatus) => {
     try {
       let error=null;
       if(USE_DATA_API){
-        const response=await fetch("/api/state",{method:"PUT",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({state:shared,version:apiStateVersion})});
+        const response=await fetch(apiUrl("/api/state"),{method:"PUT",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({state:shared,version:apiStateVersion})});
         if(response.ok){const result=await response.json();apiStateVersion=Number(result.version);}
         else error=new Error(response.status===409?"Başka bir kullanıcı veriyi güncelledi. Sayfa yenilenerek son veri alınmalı.":await response.text());
       }else{

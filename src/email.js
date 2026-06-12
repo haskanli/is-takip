@@ -8,7 +8,7 @@ const readError = async (response) => {
 };
 
 export const notifyTicketAssignment = async (projectId, ticket) => {
-  const response = await fetch("/email/ticket-assigned", {
+  const response = await fetch(apiUrl("/email/ticket-assigned"), {
     method: "POST",
     keepalive: true,
     headers: await apiHeaders({ "Content-Type": "application/json" }),
@@ -21,7 +21,7 @@ export const notifyTicketAssignment = async (projectId, ticket) => {
 };
 
 export const createTicketWithNotification = async (projectId, ticket) => {
-  const response = await fetch("/tickets", {
+  const response = await fetch(apiUrl("/tickets"), {
     method: "POST",
     headers: await apiHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ projectId, ticket }),
@@ -31,7 +31,7 @@ export const createTicketWithNotification = async (projectId, ticket) => {
 };
 
 export const assignTasksWithNotification = async (payload) => {
-  const response = await fetch("/tasks/assign", {
+  const response = await fetch(apiUrl("/tasks/assign"), {
     method: "POST",
     headers: await apiHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
@@ -39,4 +39,4 @@ export const assignTasksWithNotification = async (payload) => {
   if (!response.ok) throw new Error(await readError(response));
   return response.json();
 };
-import { apiHeaders } from "./api.js";
+import { apiHeaders, apiUrl } from "./api.js";
