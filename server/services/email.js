@@ -9,13 +9,23 @@ const escapeHtml = (value) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
-export const userTaskUrl = (userId) => {
+export const userTaskUrl = (userId, taskId = "") => {
   const { appBaseUrl } = getEmailConfig();
   if (!appBaseUrl) return "";
   const url = new URL(appBaseUrl);
   url.searchParams.set("user", userId);
   url.searchParams.set("view", "mytasks");
+  if (taskId) url.searchParams.set("task", taskId);
   return url.toString();
+};
+
+export const sendTaskAssignedEmail = ({ assignee, task, assigner }) => {
+  const link = userTaskUrl(assignee.id, task.id);
+  return sendEmail({
+    to: assignee.email,
+    subject: `[Corject] ${assigner.name} size bir görev atadı: ${task.title}`,
+    html: `<div style="margin:0;background:#eef2ff;padding:28px 12px;font-family:Arial,sans-serif;color:#172033"><div style="max-width:620px;margin:auto;background:#fff;border-radius:18px;padding:26px;box-shadow:0 12px 32px rgba(49,46,129,.12)"><div style="font-size:12px;letter-spacing:2px;color:#4A6CF7;font-weight:800">CORJECT</div><h2 style="margin:8px 0 12px">Yeni görev ataması</h2><p><b>${escapeHtml(assigner.name)}</b> size şu görevi atadı:</p><div style="border-left:5px solid #4A6CF7;background:#f8fafc;border-radius:10px;padding:16px;margin:16px 0"><b>${escapeHtml(task.title)}</b><p style="color:#64748b;line-height:1.5">${escapeHtml(task.notes||"Açıklama girilmedi.")}</p><span style="font-size:11px;color:#c2410c">Termin: ${escapeHtml(task.dueDate||"Belirtilmedi")}</span></div>${link?`<a href="${link}" style="display:inline-block;background:#4A6CF7;color:#fff;padding:11px 17px;border-radius:9px;text-decoration:none;font-weight:700">Görevi Aç</a>`:""}</div></div>`,
+  });
 };
 
 export const userTicketUrl = (userId, projectId, ticketId) => {

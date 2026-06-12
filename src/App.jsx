@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 import { getJiraIssue } from "./jira";
-import { createTicketWithNotification, notifyTicketAssignment } from "./email";
+import { assignTasksWithNotification, createTicketWithNotification, notifyTicketAssignment } from "./email";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.8.0";
+const APP_VERSION = "v1.9.0";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -935,14 +935,14 @@ ${projLogs.length>0?`<div class="card"><h2>Son Aktiviteler</h2><table><thead><tr
 }
 
 // ─── Task Card ───────────────────────────────────────────────────────────────
-function TaskCard({ task, people, projectColor, onCheck, onEdit, onDelete, onTime, showProject, projectName, canEdit }) {
+function TaskCard({ task, people, projectColor, onCheck, onEdit, onDelete, onTime, onOpen, showProject, projectName, canEdit }) {
   const assignee=people.find(p=>p.id===task.assignee);
   const dl=delayLvl(task.dueDate,task.status);
   return <div style={{ background:"#fff", borderRadius:10, padding:"11px 15px", border:`1.5px solid ${dl==="critical"?"#FCA5A5":dl==="normal"?"#FED7AA":"#E2E8F0"}`, display:"flex", alignItems:"flex-start", gap:11, boxShadow:"0 1px 3px rgba(0,0,0,0.04)", opacity:task.status==="Tamamland\u0131"?0.75:1 }}>
     {canEdit?<input type="checkbox" checked={task.status==="Tamamland\u0131"} onChange={e=>onCheck&&onCheck(e.target.checked)} style={{ marginTop:3, width:15, height:15, cursor:"pointer", accentColor:"#4A6CF7" }} />:<span style={{ marginTop:3, width:15, height:15, flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center", fontSize:12 }}>{task.status==="Tamamland\u0131"?"✓":"○"}</span>}
     <div style={{ flex:1, minWidth:0 }}>
       <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-        <span style={{ fontWeight:600, fontSize:13, textDecoration:task.status==="Tamamland\u0131"?"line-through":"none", color:task.status==="Tamamland\u0131"?"#94A3B8":"#1E293B" }}>{task.title}</span>
+        <button onClick={onOpen} style={{border:0,background:"transparent",padding:0,fontWeight:600,fontSize:13,textAlign:"left",cursor:onOpen?"pointer":"default",textDecoration:task.status==="Tamamland\u0131"?"line-through":"none",color:task.status==="Tamamland\u0131"?"#94A3B8":"#1E293B"}}>{task.title}</button>
         <Badge label={task.status} />
         <span style={{ fontSize:11, fontWeight:700, color:PCOL[task.priority] }}>+{task.priority}</span>
         <DelayBadge dateStr={task.dueDate} status={task.status} />
@@ -1036,6 +1036,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
   const [showDone,setShowDone]=useState(false);
   const [section,setSection]=useState("assigned");
   const [modal,setModal]=useState(null);
+  const [assignmentNotice,setAssignmentNotice]=useState("");
   const [noteText,setNoteText]=useState((state.userNotes||{})[currentUser.id]?.notes||"");
   const todos=((state.userNotes||{})[currentUser.id]?.todos)||[];
 
@@ -1052,10 +1053,36 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
   const sectionAll=section==="project"?myProjT.map(t=>({...t,source:"project"})):myP.map(t=>({...t,source:"personal"}));
   const sectionActive=sectionAll.filter(t=>t.status!=="Tamamland\u0131");
   const sectionCompleted=sectionAll.filter(t=>t.status==="Tamamland\u0131");
+  const linkedTaskId=new URLSearchParams(window.location.search).get("task");
 
   const updatePersonal=(id,data)=>setState(s=>{const old=(s.personalTasks||[]).find(t=>t.id===id);const upd={...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...data}:t)};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
   const updateProjTask=(pId,mId,tId,data)=>setState(s=>{const old=s.projects.find(p=>p.id===pId)?.milestones.find(m=>m.id===mId)?.tasks.find(t=>t.id===tId);const upd={...s,projects:s.projects.map(p=>p.id!==pId?p:{...p,milestones:p.milestones.map(m=>m.id!==mId?m:{...m,tasks:m.tasks.map(t=>t.id!==tId?t:{...t,...data})})})};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
-  const addPersonal=(data)=>{const t={id:uid(),...data,assignee:data.assignee||currentUser.id,createdBy:currentUser.id};setState(s=>({...s,personalTasks:[...(s.personalTasks||[]),t]}));addLog(currentUser.name,"task_add",t.title);};
+  useEffect(()=>{
+    if(!linkedTaskId)return;
+    const personal=(state.personalTasks||[]).find(t=>t.id===linkedTaskId);
+    if(personal){setModal({type:"taskDetail",data:{...personal,source:"personal"}});return;}
+    for(const project of state.projects){
+      for(const milestone of project.milestones){
+        const task=milestone.tasks.find(t=>t.id===linkedTaskId);
+        if(task){setModal({type:"taskDetail",data:{...task,source:"project",projId:project.id,msId:milestone.id}});return;}
+      }
+    }
+  },[linkedTaskId,state.personalTasks,state.projects]);
+  const addPersonal=async(data)=>{
+    setAssignmentNotice("");
+    if(isAdmin){
+      const {assigneeIds,recurrence,...task}=data;
+      const result=await assignTasksWithNotification({task,assigneeIds,recurrence,assignerId:currentUser.id,groupId:uid()});
+      setState(s=>({...s,personalTasks:[...(s.personalTasks||[]),...result.tasks.filter(t=>!(s.personalTasks||[]).some(x=>x.id===t.id))],recurringTasks:result.recurringTemplate?[...(s.recurringTasks||[]).filter(x=>x.id!==result.recurringTemplate.id),result.recurringTemplate]:(s.recurringTasks||[])}));
+      const sent=result.notifications.filter(n=>n.sent).length;
+      setAssignmentNotice(`${result.tasks.length} görev oluşturuldu, ${sent} kullanıcıya e-posta gönderildi.`);
+      addLog(currentUser.name,"task_add",`${task.title} (${result.tasks.length} kişi)`);
+      return;
+    }
+    const t={id:uid(),...data,assignee:currentUser.id,createdBy:currentUser.id,createdByName:currentUser.name,createdAt:new Date().toISOString(),comments:[]};
+    setState(s=>({...s,personalTasks:[...(s.personalTasks||[]),t]}));
+    addLog(currentUser.name,"task_add",t.title);
+  };
   const deletePersonal=(id)=>{const t=(state.personalTasks||[]).find(x=>x.id===id);setState(s=>({...s,personalTasks:(s.personalTasks||[]).filter(x=>x.id!==id)}));addLog(currentUser.name,"task_delete",t?.title||"");};
 
   return <div style={{ padding:"0 0 24px", flex:1, overflow:"auto", display:"flex", flexDirection:"column" }}>
@@ -1064,6 +1091,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
         <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="tasks" size={20}/>Görevlerim</h2><p style={{ margin:"3px 0 0", color:"#64748B", fontSize:13 }}>{active.length} aktif · {completed.length} tamamlandı</p></div>
         <Btn onClick={()=>setModal({type:"addPersonal"})}>+ Görev Ekle</Btn>
       </div>
+      {assignmentNotice&&<div style={{margin:"10px 0",padding:"10px 13px",borderRadius:9,background:"#ECFDF5",color:"#047857",fontSize:12,fontWeight:700}}>{assignmentNotice}</div>}
       {overdue.length>0&&<div style={{ background:"#FFF1F2", border:"1.5px solid #FCA5A5", borderRadius:12, padding:"12px 16px", margin:"12px 0" }}>
         <div style={{ fontWeight:700, fontSize:12, color:"#E11D48", marginBottom:6 }}>Gecikmiş: {overdue.length}</div>
         {overdue.map(t=><div key={t.id} style={{ fontSize:12, color:"#1E293B", display:"flex", gap:8, marginBottom:3 }}><DelayBadge dateStr={t.dueDate} status={t.status} /><span>{t.title}</span><span style={{ color:"#94A3B8" }}>— {fmt(t.dueDate)}</span></div>)}
@@ -1080,6 +1108,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
           <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {sectionActive.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel Görev"} canEdit
+              onOpen={()=>setModal({type:"taskDetail",data:t})}
               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
@@ -1091,6 +1120,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
           <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({sectionCompleted.length})</button>
           {showDone&&<div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {sectionCompleted.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel"} canEdit
+              onOpen={()=>setModal({type:"taskDetail",data:t})}
               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
@@ -1103,6 +1133,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
           {(state.personalTasks||[]).length===0&&<div style={{ color:"#94A3B8", fontSize:12 }}>Genel görev yok.</div>}
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {(state.personalTasks||[]).map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={null} showProject canEdit
+              onOpen={()=>setModal({type:"taskDetail",data:{...t,source:"personal"}})}
               onCheck={(c)=>updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"})}
               onEdit={()=>setModal({type:"editPersonal",data:t})}
               onDelete={()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}}
@@ -1120,6 +1151,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
     {modal?.type==="addPersonal"&&<PersonalTaskModal title="Genel Görev Ekle" people={state.people} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={addPersonal} />}
     {modal?.type==="editPersonal"&&<PersonalTaskModal title="Görevi Düzenle" initial={modal.data} people={state.people} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(d)=>{updatePersonal(modal.data.id,d);setModal(null);}} />}
     {modal?.type==="time"&&<TimeLogModal task={modal.data} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(entries)=>{const t=modal.data;if(t.source==="personal")updatePersonal(t.id,{timeEntries:entries});else updateProjTask(t.projId,t.msId,t.id,{timeEntries:entries});}} />}
+    {modal?.type==="taskDetail"&&<TaskDetailModal task={modal.data.source==="personal"?(state.personalTasks||[]).find(t=>t.id===modal.data.id)||modal.data:state.projects.find(p=>p.id===modal.data.projId)?.milestones.find(m=>m.id===modal.data.msId)?.tasks.find(t=>t.id===modal.data.id)||modal.data} people={state.people} currentUser={currentUser} onClose={()=>setModal(null)} onUpdate={(data)=>{const t=modal.data;if(t.source==="personal")updatePersonal(t.id,data);else updateProjTask(t.projId,t.msId,t.id,data);}} />}
   </div>;
 }
 
@@ -2470,15 +2502,29 @@ function TaskModal({ title, initial, onClose, onSave, people }) {
   </Modal>;
 }
 function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, currentUser }) {
-  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:isAdmin?"":currentUser.id, dueDate:"", estimatedHours:"", notes:"", waitSource:"", ...initial });
+  const editing=Boolean(initial?.id);
+  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:isAdmin?"":currentUser.id, assigneeIds:initial?.assignee?[initial.assignee]:[], dueDate:"", estimatedHours:"", notes:"", waitSource:"", recurring:false, frequency:"weekly", nextRunDate:"", ...initial });
+  const [saving,setSaving]=useState(false);
+  const [error,setError]=useState("");
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
+  const save=async()=>{
+    if(!f.title.trim())return;
+    if(isAdmin&&!editing&&!f.assigneeIds.length){setError("En az bir kişi seçmelisiniz.");return;}
+    if(f.recurring&&!f.nextRunDate){setError("Periyodik görev için ilk tekrar tarihini seçmelisiniz.");return;}
+    setSaving(true);setError("");
+    try{
+      await onSave({...f,recurrence:{enabled:!editing&&f.recurring,frequency:f.frequency,nextRunDate:f.nextRunDate}});
+      onClose();
+    }catch(err){setError(err.message||"Görev kaydedilemedi.");}
+    finally{setSaving(false);}
+  };
   return <Modal title={title} onClose={onClose}>
     <Field label="Görev Başlığı *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Durum"><select style={iStyle} value={f.status} onChange={e=>upd("status",e.target.value)}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></Field>
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></Field>
     </div>
-    {isAdmin?<Field label="Atanacak Kisi"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>:<div style={{ background:"#F1F5FF", borderRadius:8, padding:"8px 12px", marginBottom:13, fontSize:12, color:"#4A6CF7" }}>Görev size atanacak: <b>{currentUser.name}</b></div>}
+    {isAdmin?(editing?<Field label="Atanan Kişi"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>:<Field label="Atanacak Kişiler *"><PeopleMultiSelect people={people} value={f.assigneeIds} onChange={v=>upd("assigneeIds",v)}/></Field>):<div style={{ background:"#F1F5FF", borderRadius:8, padding:"8px 12px", marginBottom:13, fontSize:12, color:"#4A6CF7" }}>Görev size atanacak: <b>{currentUser.name}</b></div>}
     <Field label="Planlanan Efor (Saat)"><input type="number" min="0" step="0.5" style={iStyle} value={f.estimatedHours||""} onChange={e=>upd("estimatedHours",e.target.value)} placeholder="Örn. 4" /></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Başlangıç Tarihi"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
@@ -2486,7 +2532,40 @@ function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, c
     </div>
     <Field label="Bekleme Kaynağı"><select style={iStyle} value={f.waitSource} onChange={e=>upd("waitSource",e.target.value)}><option value="">- Yok -</option>{WAIT.map(s=><option key={s}>{s}</option>)}</select></Field>
     <Field label="Notlar"><input style={iStyle} value={f.notes} onChange={e=>upd("notes",e.target.value)} /></Field>
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.title.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>
+    {!editing&&<div style={{background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,padding:12,marginBottom:13}}>
+      <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:700,cursor:"pointer"}}><input type="checkbox" checked={f.recurring} onChange={e=>upd("recurring",e.target.checked)}/> Periyodik takip görevi</label>
+      {f.recurring&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginTop:11}}>
+        <Field label="Sıklık"><select style={iStyle} value={f.frequency} onChange={e=>upd("frequency",e.target.value)}><option value="daily">Her gün</option><option value="weekly">Her hafta</option><option value="monthly">Her ay</option></select></Field>
+        <Field label="İlk Tekrar Tarihi"><input type="date" style={iStyle} value={f.nextRunDate} onChange={e=>upd("nextRunDate",e.target.value)}/></Field>
+      </div>}
+    </div>}
+    {error&&<div style={{color:"#DC2626",fontSize:12,fontWeight:600,marginBottom:10}}>{error}</div>}
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn disabled={saving} onClick={save}>{saving?"Kaydediliyor...":"Kaydet"}</Btn></div>
+  </Modal>;
+}
+function TaskDetailModal({ task, people, currentUser, onClose, onUpdate }) {
+  const [comment,setComment]=useState("");
+  const assignee=people.find(p=>p.id===task.assignee);
+  const comments=task.comments||[];
+  const addComment=()=>{
+    const text=comment.trim();
+    if(!text)return;
+    onUpdate({comments:[...comments,{id:uid(),text,userId:currentUser.id,userName:currentUser.name,ts:new Date().toISOString()}]});
+    setComment("");
+  };
+  return <Modal title="Görev Detayı" onClose={onClose} wide>
+    <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",marginBottom:15}}>
+      <div><h2 style={{fontSize:18,margin:"0 0 5px"}}>{task.title}</h2><div style={{fontSize:11,color:"#64748B"}}>{assignee?.name||"Atanmamış"} · Termin: {fmt(task.dueDate)||"Belirtilmedi"}</div></div>
+      <select style={{...iStyle,width:180}} value={task.status||"Bekliyor"} onChange={e=>onUpdate({status:e.target.value})}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select>
+    </div>
+    {task.notes&&<div style={{background:"#F8FAFC",borderRadius:10,padding:13,fontSize:13,lineHeight:1.6,marginBottom:16}}>{task.notes}</div>}
+    <div style={{fontWeight:800,fontSize:13,marginBottom:9}}>Yorumlar ({comments.length})</div>
+    <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:260,overflowY:"auto",marginBottom:12}}>
+      {comments.map(item=><div key={item.id} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 12px"}}><div style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:10,color:"#64748B",marginBottom:4}}><b style={{color:"#334155"}}>{item.userName||people.find(p=>p.id===item.userId)?.name||"Kullanıcı"}</b><span>{item.ts?new Date(item.ts).toLocaleString("tr-TR"):""}</span></div><div style={{fontSize:12,lineHeight:1.5}}>{item.text}</div></div>)}
+      {!comments.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Henüz yorum eklenmedi.</div>}
+    </div>
+    <textarea style={{...iStyle,minHeight:80,resize:"vertical"}} value={comment} onChange={e=>setComment(e.target.value)} placeholder="Bu görevle ilgili yorumunuzu yazın..."/>
+    <div style={{display:"flex",justifyContent:"flex-end",gap:7,marginTop:9}}><Btn variant="ghost" onClick={onClose}>Kapat</Btn><Btn onClick={addComment}>Yorum Ekle</Btn></div>
   </Modal>;
 }
 function PersonModal({ onClose, onSave }) {

@@ -58,6 +58,60 @@ export const createTicket = async ({ projectId, ticket }) =>
     return ticket;
   });
 
+export const createAssignedTasks = async ({ tasks, recurringTemplate }) =>
+  mutateState((state) => {
+    state.personalTasks ||= [];
+    const created = [];
+    for (const task of tasks) {
+      if (state.personalTasks.some((item) => item.id === task.id)) continue;
+      state.personalTasks.push(task);
+      created.push(task);
+    }
+    if (recurringTemplate) {
+      state.recurringTasks ||= [];
+      if (!state.recurringTasks.some((item) => item.id === recurringTemplate.id)) {
+        state.recurringTasks.push(recurringTemplate);
+      }
+    }
+    return created;
+  });
+
+export const generateRecurringTasks = async (today) =>
+  mutateState((state) => {
+    state.personalTasks ||= [];
+    state.recurringTasks ||= [];
+    const created = [];
+    for (const template of state.recurringTasks) {
+      if (!template.active || !template.nextRunDate) continue;
+      while (template.nextRunDate <= today) {
+        const runDate = template.nextRunDate;
+        for (const assignee of template.assigneeIds || []) {
+          const occurrenceKey = `${template.id}:${assignee}:${runDate}`;
+          if (state.personalTasks.some((task) => task.occurrenceKey === occurrenceKey)) continue;
+          created.push({
+            ...template.task,
+            id: `${template.id}-${assignee}-${runDate}`,
+            assignee,
+            status: "Bekliyor",
+            startDate: runDate,
+            dueDate: runDate,
+            createdAt: new Date().toISOString(),
+            recurringTemplateId: template.id,
+            occurrenceKey,
+            comments: [],
+          });
+        }
+        const next = new Date(`${runDate}T00:00:00Z`);
+        if (template.frequency === "weekly") next.setUTCDate(next.getUTCDate() + 7);
+        else if (template.frequency === "monthly") next.setUTCMonth(next.getUTCMonth() + 1);
+        else next.setUTCDate(next.getUTCDate() + 1);
+        template.nextRunDate = next.toISOString().slice(0, 10);
+      }
+    }
+    state.personalTasks.push(...created);
+    return created;
+  });
+
 const saveState = async (state) =>
   runSupabase(async () => {
     const { error } = await getClient().from("app_state").upsert({

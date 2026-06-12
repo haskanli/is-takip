@@ -29,3 +29,13 @@ export const createTicketWithNotification = async (projectId, ticket) => {
   if (!response.ok) throw new Error(await readError(response));
   return response.json();
 };
+
+export const assignTasksWithNotification = async (payload) => {
+  const response = await fetch("/tasks/assign", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(await readError(response));
+  return response.json();
+};

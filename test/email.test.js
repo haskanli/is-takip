@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { sendEmail, userTaskUrl, userTicketUrl } from "../server/services/email.js";
-import { createTicketWithNotification, notifyTicketAssignment } from "../src/email.js";
+import { assignTasksWithNotification, createTicketWithNotification, notifyTicketAssignment } from "../src/email.js";
 
 process.env.RESEND_API_KEY = "resend-test-key";
 process.env.EMAIL_FROM = "Corject <test@example.com>";
@@ -11,6 +11,10 @@ test("userTaskUrl creates a direct My Tasks link", () => {
   assert.equal(
     userTaskUrl("person-1"),
     "https://corject.example.com/?user=person-1&view=mytasks",
+  );
+  assert.equal(
+    userTaskUrl("person-1", "task-1"),
+    "https://corject.example.com/?user=person-1&view=mytasks&task=task-1",
   );
 });
 
@@ -77,6 +81,30 @@ test("notifyTicketAssignment rejects skipped email responses", async () => {
       notifyTicketAssignment("project-1", { id: "ticket-1", assignedTo: "person-1" }),
       /no email address/,
     );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("assignTasksWithNotification sends multi-assignee tasks through the server endpoint", async () => {
+  const originalFetch = global.fetch;
+  let request;
+  global.fetch = async (url, options) => {
+    request = { url, options };
+    return new Response(JSON.stringify({
+      tasks: [{ id: "group-1-0" }, { id: "group-1-1" }],
+      notifications: [{ sent: true }, { sent: true }],
+    }), { status: 201, headers: { "Content-Type": "application/json" } });
+  };
+  try {
+    const result = await assignTasksWithNotification({
+      task: { title: "Takip" },
+      assignerId: "admin-1",
+      assigneeIds: ["person-1", "person-2"],
+    });
+    assert.equal(request.url, "/tasks/assign");
+    assert.deepEqual(JSON.parse(request.options.body).assigneeIds, ["person-1", "person-2"]);
+    assert.equal(result.tasks.length, 2);
   } finally {
     global.fetch = originalFetch;
   }

@@ -6,12 +6,15 @@ import { getEmailConfig, getServerConfig } from "./config.js";
 import { logger } from "./logger.js";
 import {
   createTicket,
+  createAssignedTasks,
+  generateRecurringTasks,
   saveJiraIssueToTicket,
   loadState,
   updateTicketStatusByJiraKey,
 } from "./repositories/appState.js";
 import {
   sendOverdueReminderEmail,
+  sendTaskAssignedEmail,
   sendTicketAssignedEmail,
 } from "./services/email.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
@@ -190,6 +193,89 @@ const handleCreateTicket = async (request, response) => {
   json(response, 201, { ticket, notification });
 };
 
+const handleAssignTasks = async (request, response) => {
+  const body = parseJson(await readBody(request));
+  if (!body?.task?.title?.trim() || !body?.assignerId || !body.assigneeIds?.length) {
+    throw Object.assign(new Error("task.title, assignerId and assigneeIds are required"), { status: 400 });
+  }
+  const state = await loadState();
+  const assigner = state.people?.find((person) => person.id === body.assignerId);
+  if (!assigner?.isAdmin) {
+    throw Object.assign(new Error("Only administrators can assign tasks"), { status: 403 });
+  }
+  const groupId = body.groupId || `${Date.now()}`;
+  const tasks = body.assigneeIds.map((assignee, index) => ({
+    ...body.task,
+    id: `${groupId}-${index}`,
+    assignee,
+    createdBy: assigner.id,
+    createdByName: assigner.name,
+    assignmentGroupId: groupId,
+    createdAt: new Date().toISOString(),
+    comments: [],
+  }));
+  const recurringTemplate = body.recurrence?.enabled ? {
+    id: `rec-${groupId}`,
+    active: true,
+    assigneeIds: body.assigneeIds,
+    frequency: body.recurrence.frequency,
+    nextRunDate: body.recurrence.nextRunDate,
+    createdBy: assigner.id,
+    task: { ...body.task, createdBy: assigner.id, createdByName: assigner.name },
+  } : null;
+  const created = await createAssignedTasks({ tasks, recurringTemplate });
+  const notifications = [];
+  for (const task of created) {
+    const assignee = state.people?.find((person) => person.id === task.assignee);
+    if (!assignee?.email) {
+      notifications.push({ taskId: task.id, sent: false, reason: "Assignee has no email address" });
+      continue;
+    }
+    try {
+      const result = await sendTaskAssignedEmail({ assignee, task, assigner });
+      notifications.push({ taskId: task.id, sent: !result.skipped, emailId: result.id || null });
+    } catch (error) {
+      notifications.push({ taskId: task.id, sent: false, reason: error.message });
+    }
+  }
+  json(response, 201, { tasks: created, notifications, recurringTemplate });
+};
+
+const runRecurringTaskCycle = async () => {
+  const created = await generateRecurringTasks(new Date().toISOString().slice(0, 10));
+  const state = await loadState();
+  const notifications = [];
+  for (const task of created) {
+    const assignee = state.people?.find((person) => person.id === task.assignee);
+    const assigner = state.people?.find((person) => person.id === task.createdBy) || { name: task.createdByName || "Yönetici" };
+    if (!assignee?.email) {
+      notifications.push({ taskId: task.id, sent: false, reason: "Assignee has no email address" });
+      continue;
+    }
+    try {
+      const result = await sendTaskAssignedEmail({ assignee, task, assigner });
+      notifications.push({ taskId: task.id, sent: !result.skipped, emailId: result.id || null });
+    } catch (error) {
+      notifications.push({ taskId: task.id, sent: false, reason: error.message });
+    }
+  }
+  logger.info("tasks.recurring.completed", {
+    created: created.length,
+    emailsSent: notifications.filter((item) => item.sent).length,
+  });
+  return { created: created.length, tasks: created, notifications };
+};
+
+const handleRecurringTasks = async (request, response) => {
+  const config = getEmailConfig();
+  const token = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!config.reminderSecret || token !== config.reminderSecret) {
+    json(response, 401, { error: "Invalid reminder secret" });
+    return;
+  }
+  json(response, 200, await runRecurringTaskCycle());
+};
+
 const dateOnly = (value) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
@@ -295,6 +381,10 @@ const server = createServer(async (request, response) => {
       await handleTicketAssignedEmail(request, response);
     } else if (request.method === "POST" && url.pathname === "/tickets") {
       await handleCreateTicket(request, response);
+    } else if (request.method === "POST" && url.pathname === "/tasks/assign") {
+      await handleAssignTasks(request, response);
+    } else if (request.method === "POST" && url.pathname === "/tasks/recurring/run") {
+      await handleRecurringTasks(request, response);
     } else if (request.method === "POST" && url.pathname === "/email/reminders") {
       await handleOverdueReminders(request, response);
     } else if (request.method === "GET") {
@@ -325,4 +415,11 @@ const server = createServer(async (request, response) => {
 const { port } = getServerConfig();
 server.listen(port, () => {
   logger.info("server.started", { port });
+  runRecurringTaskCycle().catch((error) => logger.error("tasks.recurring.failed", error));
 });
+
+const recurringTimer = setInterval(
+  () => runRecurringTaskCycle().catch((error) => logger.error("tasks.recurring.failed", error)),
+  60 * 60 * 1000,
+);
+recurringTimer.unref();
