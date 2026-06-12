@@ -5,7 +5,7 @@ import { notifyTicketAssignment } from "./email";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.4.0";
+const APP_VERSION = "v1.5.0";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
@@ -257,6 +257,7 @@ const Btn = ({ children, onClick, variant="primary", small, style:s, disabled })
 
 function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const [scope,setScope]=useState(isAdmin?"team":"mine");
+  const [personFilter,setPersonFilter]=useState("");
   const [weekOffset,setWeekOffset]=useState(0);
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
@@ -269,7 +270,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const days=Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
   const dateKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const weekEnd=days[6];
-  const visible=plans.filter(p=>(scope==="team"&&isAdmin)||p.userId===currentUser.id);
+  const visible=plans.filter(p=>scope==="team"&&isAdmin?(personFilter?p.userId===personFilter:true):p.userId===currentUser.id);
   const openForm=(date=todayStr(),plan=null)=>{
     setEditingId(plan?.id||null);
     setForm(plan?{userId:plan.userId,projectId:plan.projectId,date:plan.date,startTime:plan.startTime||"09:00",endTime:plan.endTime||"17:00",note:plan.note||""}:{userId:currentUser.id,projectId:"",date,startTime:"09:00",endTime:"17:00",note:""});
@@ -300,7 +301,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
       <div style={{display:"flex",justifyContent:"flex-end"}}><Btn disabled={!form.projectId||!form.date} onClick={save}>{editingId?"Değişiklikleri Kaydet":"Planı Kaydet"}</Btn></div>
     </div>}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
-      {isAdmin?<div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>{[["mine","Benim Planım"],["team","Tüm Ekip"]].map(([id,label])=><button key={id} onClick={()=>setScope(id)} style={{border:0,borderRadius:8,padding:"7px 12px",cursor:"pointer",fontWeight:700,fontSize:12,background:scope===id?"#fff":"transparent",color:scope===id?"#4A6CF7":"#64748B",boxShadow:scope===id?"0 2px 6px #0f172a14":"none"}}>{label}</button>)}</div>:<span style={{fontSize:12,fontWeight:700,color:"#4A6CF7"}}>Benim Planım</span>}
+      {isAdmin?<div style={{display:"flex",gap:7,flexWrap:"wrap"}}><div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>{[["mine","Benim Planım"],["team","Tüm Ekip"]].map(([id,label])=><button key={id} onClick={()=>setScope(id)} style={{border:0,borderRadius:8,padding:"7px 12px",cursor:"pointer",fontWeight:700,fontSize:12,background:scope===id?"#fff":"transparent",color:scope===id?"#4A6CF7":"#64748B",boxShadow:scope===id?"0 2px 6px #0f172a14":"none"}}>{label}</button>)}</div>{scope==="team"&&<select style={{...iStyle,width:190}} value={personFilter} onChange={e=>setPersonFilter(e.target.value)}><option value="">Tüm kişiler</option>{state.people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>}</div>:<span style={{fontSize:12,fontWeight:700,color:"#4A6CF7"}}>Benim Planım</span>}
       <div style={{display:"flex",alignItems:"center",gap:6}}><button onClick={()=>setWeekOffset(v=>v-1)} style={{border:0,borderRadius:8,padding:"7px 10px",background:"#fff",cursor:"pointer",color:"#64748B"}}>‹</button><button onClick={()=>setWeekOffset(0)} style={{border:0,borderRadius:8,padding:"7px 11px",background:"#F1F5FF",cursor:"pointer",fontWeight:700,color:"#4A6CF7"}}>{monthLabel}</button><button onClick={()=>setWeekOffset(v=>v+1)} style={{border:0,borderRadius:8,padding:"7px 10px",background:"#fff",cursor:"pointer",color:"#64748B"}}>›</button></div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(165px,1fr))",gap:9}}>
@@ -318,12 +319,37 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   </div>;
 }
 
+function TodoPage({state,setState,currentUser}) {
+  const todos=((state.userNotes||{})[currentUser.id]?.todos)||[];
+  const empty={projectId:"",customer:"",dueDate:todayStr(),action:""};
+  const [form,setForm]=useState(empty);
+  const [editingId,setEditingId]=useState(null);
+  const saveTodos=next=>setState(s=>({...s,userNotes:{...(s.userNotes||{}),[currentUser.id]:{...(s.userNotes||{})[currentUser.id],todos:next}}}));
+  const save=()=>{if(!form.action.trim())return;const item={id:editingId||uid(),done:false,createdAt:now(),...form,action:form.action.trim(),text:form.action.trim()};saveTodos(editingId?todos.map(t=>t.id===editingId?{...t,...item}:t):[...todos,item]);setForm(empty);setEditingId(null);};
+  const edit=t=>{setEditingId(t.id);setForm({projectId:t.projectId||"",customer:t.customer||"",dueDate:t.dueDate||"",action:t.action||t.text||""});};
+  const toggle=id=>saveTodos(todos.map(t=>t.id===id?{...t,done:!t.done}:t));
+  const remove=id=>saveTodos(todos.filter(t=>t.id!==id));
+  const active=todos.filter(t=>!t.done).sort((a,b)=>(a.dueDate||"9999").localeCompare(b.dueDate||"9999"));
+  const done=todos.filter(t=>t.done);
+  return <div style={{padding:"clamp(20px,4vw,32px)",flex:1,overflow:"auto",maxWidth:1200,width:"100%",margin:"0 auto"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,marginBottom:18,flexWrap:"wrap"}}><div><h2 style={{margin:0,fontSize:22,display:"flex",alignItems:"center",gap:8}}><Icon name="ticket" size={21}/>To-Do</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Yalnızca size özel müşteri aksiyonları.</p></div><span style={{fontSize:12,fontWeight:800,color:"#4A6CF7"}}>{active.length} açık aksiyon</span></div>
+    <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:17,marginBottom:16,boxShadow:"0 6px 20px #0f172a0a"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:11}}><Field label="Müşteri / Proje"><select style={iStyle} value={form.projectId} onChange={e=>{const p=state.projects.find(x=>x.id===e.target.value);setForm({...form,projectId:e.target.value,customer:p?.name||form.customer});}}><option value="">Proje seçin veya müşteri yazın</option>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><Field label="Müşteri"><input style={iStyle} value={form.customer} onChange={e=>setForm({...form,customer:e.target.value})} placeholder="Müşteri adı"/></Field><Field label="Termin"><input type="date" style={iStyle} value={form.dueDate} onChange={e=>setForm({...form,dueDate:e.target.value})}/></Field></div>
+      <Field label="Aksiyon"><input style={iStyle} value={form.action} onChange={e=>setForm({...form,action:e.target.value})} onKeyDown={e=>e.key==="Enter"&&save()} placeholder="Yapılacak aksiyon"/></Field>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:7}}>{editingId&&<Btn variant="ghost" onClick={()=>{setEditingId(null);setForm(empty);}}>İptal</Btn>}<Btn onClick={save}>{editingId?"Güncelle":"To-Do Ekle"}</Btn></div>
+    </div>
+    <div className="todo-columns" style={{display:"grid",gridTemplateColumns:"minmax(0,2fr) minmax(260px,1fr)",gap:15}}><div><div style={{fontSize:11,fontWeight:800,color:"#64748B",marginBottom:8,textTransform:"uppercase"}}>Açık Aksiyonlar</div>{active.map(t=>{const p=state.projects.find(x=>x.id===t.projectId);const late=t.dueDate&&daysDiff(t.dueDate)>0;return <div key={t.id} style={{background:"#fff",border:`1.5px solid ${late?"#FCA5A5":"#E2E8F0"}`,borderRadius:12,padding:13,marginBottom:8,display:"flex",gap:11,alignItems:"flex-start"}}><input type="checkbox" checked={false} onChange={()=>toggle(t.id)} style={{marginTop:3,accentColor:"#059669"}}/><div style={{flex:1}}><div style={{fontSize:13,fontWeight:800}}>{t.action||t.text}</div><div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:5,fontSize:10}}><span style={{color:p?.color||"#4A6CF7",fontWeight:700}}>{t.customer||p?.name||"Genel"}</span>{t.dueDate&&<span style={{color:late?"#E11D48":"#64748B",fontWeight:late?800:600}}>Termin: {fmt(t.dueDate)}{late?` · ${daysDiff(t.dueDate)} gün geçti`:""}</span>}</div></div><button onClick={()=>edit(t)} style={{border:0,background:"transparent",color:"#4A6CF7",cursor:"pointer"}}><Icon name="edit" size={15}/></button><button onClick={()=>confirm("To-Do silinsin mi?")&&remove(t.id)} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer"}}><Icon name="trash" size={15}/></button></div>})}{!active.length&&<div style={{padding:35,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Açık To-Do yok.</div>}</div><div><div style={{fontSize:11,fontWeight:800,color:"#64748B",marginBottom:8,textTransform:"uppercase"}}>Tamamlananlar</div>{done.map(t=><button key={t.id} onClick={()=>toggle(t.id)} style={{width:"100%",border:"1px solid #E2E8F0",background:"#F8FAFC",borderRadius:9,padding:10,marginBottom:6,textAlign:"left",fontSize:11,color:"#94A3B8",textDecoration:"line-through",cursor:"pointer"}}>{t.action||t.text}</button>)}{!done.length&&<div style={{fontSize:11,color:"#CBD5E1"}}>Tamamlanan kayıt yok.</div>}</div></div>
+  </div>;
+}
+
 function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
   const myTasks=state.projects.flatMap(p=>p.milestones.flatMap(m=>m.tasks.filter(t=>t.assignee===currentUser.id&&t.status!=="Tamamlandı")));
   const personal=(state.personalTasks||[]).filter(t=>t.assignee===currentUser.id&&t.status!=="Tamamlandı");
   const tickets=Object.values(state.projectTickets||{}).flat().filter(t=>t.assignedTo===currentUser.id||t.author===currentUser.name);
   const plans=(state.fieldPlans||[]).filter(p=>p.userId===currentUser.id&&p.date>=todayStr()).sort((a,b)=>a.date.localeCompare(b.date));
+  const todos=((state.userNotes||{})[currentUser.id]?.todos||[]).filter(t=>!t.done);
   const cards=[
+    {label:"To-Do",value:todos.length,desc:"Müşteri aksiyonlarım",icon:"ticket",color:"#DB2777",view:"todos"},
     {label:"Projelerim",value:myProjects.length,desc:"Dahil olduğum projeler",icon:"projects",color:"#4A6CF7",view:"projects"},
     {label:"Görevlerim",value:myTasks.length+personal.length,desc:"Aktif görevler",icon:"tasks",color:"#7C3AED",view:"mytasks"},
     {label:"Saha Planım",value:plans.length,desc:"Yaklaşan ziyaretler",icon:"calendar",color:"#059669",view:"fieldplan"},
@@ -346,12 +372,12 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
   </div>;
 }
 
-function DeadlinePage({warnings,people,onOpenProject}) {
+function DeadlinePage({warnings,people,onOpenProject,onOpenTodos}) {
   const [filter,setFilter]=useState("all");
   const shown=filter==="all"?warnings:warnings.filter(w=>w.level===filter);
   return <div style={{padding:"clamp(18px,4vw,28px)",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:18}}><div><h2 style={{margin:0,fontSize:20,display:"flex",alignItems:"center",gap:8}}><Icon name="clock" size={21}/>Termin Uyarıları</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>{warnings.length} geciken görev</p></div><div style={{display:"flex",gap:5}}>{[["all","Tümü"],["critical","Kritik"],["normal","Geciken"]].map(([id,label])=><button key={id} onClick={()=>setFilter(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontSize:11,fontWeight:700,background:filter===id?"#4A6CF7":"#F1F5FF",color:filter===id?"#fff":"#64748B"}}>{label}</button>)}</div></div>
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>{shown.map(t=>{const person=people.find(p=>p.id===t.assignee);return <button key={`${t.projectId}-${t.id}`} onClick={()=>onOpenProject(t.projectId)} style={{border:`1.5px solid ${t.level==="critical"?"#FCA5A5":"#FED7AA"}`,borderRadius:12,background:"#fff",padding:13,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}><div style={{width:42,height:42,borderRadius:11,background:t.level==="critical"?"#FFF1F2":"#FFF7ED",display:"grid",placeItems:"center",color:t.level==="critical"?"#E11D48":"#EA6C00",fontWeight:850,fontSize:12}}>{t.days}g</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:800}}>{t.title}</div><div style={{fontSize:11,color:"#64748B",marginTop:3}}><span style={{color:t.projectColor,fontWeight:700}}>{t.projectName}</span>{person?` · ${person.name}`:""} · Termin {fmt(t.dueDate)}</div></div><Badge label={t.status}/></button>})}{!shown.length&&<div style={{padding:40,textAlign:"center",color:"#94A3B8",border:"1.5px dashed #CBD5E1",borderRadius:13}}>Bu filtrede termin uyarısı yok.</div>}</div>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>{shown.map(t=>{const person=people.find(p=>p.id===t.assignee);return <button key={`${t.projectId||"todo"}-${t.id}`} onClick={()=>t.kind==="todo"?onOpenTodos():onOpenProject(t.projectId)} style={{border:`1.5px solid ${t.level==="critical"?"#FCA5A5":"#FED7AA"}`,borderRadius:12,background:"#fff",padding:13,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}><div style={{width:42,height:42,borderRadius:11,background:t.level==="critical"?"#FFF1F2":"#FFF7ED",display:"grid",placeItems:"center",color:t.level==="critical"?"#E11D48":"#EA6C00",fontWeight:850,fontSize:12}}>{t.days}g</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:800}}>{t.title}</div><div style={{fontSize:11,color:"#64748B",marginTop:3}}><span style={{color:t.kind==="todo"?"#DB2777":t.projectColor,fontWeight:800}}>{t.kind==="todo"?"TO-DO":t.projectName}</span>{person?` · ${person.name}`:""} · Termin {fmt(t.dueDate)}</div></div>{t.kind==="todo"?<span style={{background:"#FDF2F8",color:"#DB2777",borderRadius:8,padding:"4px 8px",fontSize:10,fontWeight:800}}>TO-DO</span>:<Badge label={t.status}/>}</button>})}{!shown.length&&<div style={{padding:40,textAlign:"center",color:"#94A3B8",border:"1.5px dashed #CBD5E1",borderRadius:13}}>Bu filtrede termin uyarısı yok.</div>}</div>
   </div>;
 }
 
@@ -992,18 +1018,13 @@ function PersonDetailModal({ person, projects, personalTasks, onClose }) {
 // ─── My Tasks + Notes ────────────────────────────────────────────────────────
 function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
   const [showDone,setShowDone]=useState(false);
-  const [section,setSection]=useState("tasks");
+  const [section,setSection]=useState("assigned");
   const [modal,setModal]=useState(null);
   const [noteText,setNoteText]=useState((state.userNotes||{})[currentUser.id]?.notes||"");
-  const [newTodo,setNewTodo]=useState("");
-  const [todoProject,setTodoProject]=useState("");
-  const [todoReminder,setTodoReminder]=useState("");
   const todos=((state.userNotes||{})[currentUser.id]?.todos)||[];
 
   const updateNotes=(v)=>{ setNoteText(v); setState(s=>({...s,userNotes:{...(s.userNotes||{}),[currentUser.id]:{...(s.userNotes||{})[currentUser.id],notes:v}}})); };
-  const addTodo=()=>{ if(!newTodo.trim())return; const t={id:uid(),text:newTodo,done:false,projectId:todoProject,reminderDays:parseInt(todoReminder)||0,createdAt:now()}; setState(s=>({...s,userNotes:{...(s.userNotes||{}),[currentUser.id]:{...(s.userNotes||{})[currentUser.id],todos:[...todos,t]}}})); setNewTodo(""); setTodoProject(""); setTodoReminder(""); };
   const toggleTodo=(id)=>setState(s=>({...s,userNotes:{...(s.userNotes||{}),[currentUser.id]:{...(s.userNotes||{})[currentUser.id],todos:todos.map(t=>t.id===id?{...t,done:!t.done}:t)}}}));
-  const deleteTodo=(id)=>setState(s=>({...s,userNotes:{...(s.userNotes||{}),[currentUser.id]:{...(s.userNotes||{})[currentUser.id],todos:todos.filter(t=>t.id!==id)}}}));
 
   const pt=state.personalTasks||[];
   const myP=pt.filter(t=>t.assignee===currentUser.id);
@@ -1012,6 +1033,9 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
   const active=allMy.filter(t=>t.status!=="Tamamland\u0131");
   const completed=allMy.filter(t=>t.status==="Tamamland\u0131");
   const overdue=active.filter(t=>delayLvl(t.dueDate,t.status));
+  const sectionAll=section==="project"?myProjT.map(t=>({...t,source:"project"})):myP.map(t=>({...t,source:"personal"}));
+  const sectionActive=sectionAll.filter(t=>t.status!=="Tamamland\u0131");
+  const sectionCompleted=sectionAll.filter(t=>t.status==="Tamamland\u0131");
 
   const updatePersonal=(id,data)=>setState(s=>{const old=(s.personalTasks||[]).find(t=>t.id===id);const upd={...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...data}:t)};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
   const updateProjTask=(pId,mId,tId,data)=>setState(s=>{const old=s.projects.find(p=>p.id===pId)?.milestones.find(m=>m.id===mId)?.tasks.find(t=>t.id===tId);const upd={...s,projects:s.projects.map(p=>p.id!==pId?p:{...p,milestones:p.milestones.map(m=>m.id!==mId?m:{...m,tasks:m.tasks.map(t=>t.id!==tId?t:{...t,...data})})})};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
@@ -1029,17 +1053,17 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
         {overdue.map(t=><div key={t.id} style={{ fontSize:12, color:"#1E293B", display:"flex", gap:8, marginBottom:3 }}><DelayBadge dateStr={t.dueDate} status={t.status} /><span>{t.title}</span><span style={{ color:"#94A3B8" }}>— {fmt(t.dueDate)}</span></div>)}
       </div>}
       <div style={{display:"flex",gap:6,overflowX:"auto",margin:"14px 0 4px"}}>
-        {[["tasks","tasks","Görevler"],["notes","notes","Notlarım"],["todos","ticket","To-Do"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 13px",background:section===id?"#4A6CF7":"#F1F5FF",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
+        {[["assigned","tasks","Yöneticinin Atadıkları"],["project","projects","Projeden Gelenler"],["todos","ticket","Kendi To-Do'larım"],["notes","notes","Notlarım"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 13px",background:section===id?"#4A6CF7":"#F1F5FF",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
       </div>
     </div>
 
     <div style={{ flex:1, overflow:"auto" }}>
       {/* Tasks column */}
-      {section==="tasks"&&<div style={{ padding:"12px clamp(14px, 4vw, 28px)" }}>
-        {active.length>0&&<div style={{ marginBottom:16 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Aktif ({active.length})</div>
+      {(section==="assigned"||section==="project")&&<div style={{ padding:"12px clamp(14px, 4vw, 28px)",maxWidth:1100,width:"100%" }}>
+        {sectionActive.length>0&&<div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {active.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel Görev"} canEdit
+            {sectionActive.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel Görev"} canEdit
               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
@@ -1047,10 +1071,10 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
             />)}
           </div>
         </div>}
-        {completed.length>0&&<div>
-          <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({completed.length})</button>
+        {sectionCompleted.length>0&&<div>
+          <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({sectionCompleted.length})</button>
           {showDone&&<div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {completed.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel"} canEdit
+            {sectionCompleted.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel"} canEdit
               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
@@ -1058,7 +1082,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
             />)}
           </div>}
         </div>}
-        {isAdmin&&<div style={{ marginTop:24, borderTop:"1.5px solid #E2E8F0", paddingTop:20 }}>
+        {section==="assigned"&&isAdmin&&<div style={{ marginTop:24, borderTop:"1.5px solid #E2E8F0", paddingTop:20 }}>
           <div style={{ fontWeight:700, fontSize:13, marginBottom:10 }}>Tüm Genel Görevler (Yönetici)</div>
           {(state.personalTasks||[]).length===0&&<div style={{ color:"#94A3B8", fontSize:12 }}>Genel görev yok.</div>}
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
@@ -1074,40 +1098,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
 
       {/* Notes & Todo sidebar */}
       {section==="notes"&&<div style={{padding:"16px clamp(14px, 4vw, 28px)"}}><div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:16}}><div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Notlarım</div><textarea value={noteText} onChange={e=>updateNotes(e.target.value)} placeholder="Serbest notlar, hatırlatmalar..." style={{width:"100%",minHeight:260,padding:12,borderRadius:9,border:"1.5px solid #E2E8F0",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",lineHeight:1.6}}/></div></div>}
-      {section==="todos"&&<div style={{padding:"16px clamp(14px, 4vw, 28px)"}}><div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:16,maxWidth:720}}>
-          <div style={{fontWeight:800,fontSize:14,marginBottom:12}}>To-Do {todos.filter(t=>!t.done).length>0?`(${todos.filter(t=>!t.done).length})`:""}</div>
-            <div style={{ marginBottom:8 }}>
-              <input value={newTodo} onChange={e=>setNewTodo(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTodo()} placeholder="Yeni madde ekle..." style={{ ...iStyle, width:"100%", padding:"8px 10px", fontSize:13, boxSizing:"border-box" }} />
-            </div>
-            <div style={{ display:"flex", gap:5, marginBottom:8 }}>
-              <select value={todoProject} onChange={e=>setTodoProject(e.target.value)} style={{ ...iStyle, flex:1, padding:"6px 8px", fontSize:11 }}>
-                <option value="">Proje bagla (opsiyonel)</option>
-                {state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-            <div style={{ display:"flex", gap:5, marginBottom:12, alignItems:"center" }}>
-              <input type="number" min="0" value={todoReminder} onChange={e=>setTodoReminder(e.target.value)} placeholder="Gun" style={{ ...iStyle, width:64, padding:"6px 8px", fontSize:11 }} title="Hatirlatma (gun sonra)" />
-              <span style={{ fontSize:10, color:"#94A3B8", flex:1 }}>gun sonra hatirlat</span>
-              <Btn small onClick={addTodo}>Ekle</Btn>
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              {todos.length===0&&<div style={{ fontSize:12, color:"#94A3B8" }}>Bos. Enter ile ekleyin.</div>}
-              {todos.map(t=>{
-                const proj=t.projectId?state.projects.find(p=>p.id===t.projectId):null;
-                return <div key={t.id} style={{ display:"flex", alignItems:"flex-start", gap:7, padding:"9px 11px", background:"#fff", borderRadius:8, border:"1.5px solid #E2E8F0" }}>
-                  <input type="checkbox" checked={t.done} onChange={()=>toggleTodo(t.id)} style={{ cursor:"pointer", accentColor:"#4A6CF7", marginTop:2 }} />
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, textDecoration:t.done?"line-through":"none", color:t.done?"#94A3B8":"#1E293B", lineHeight:1.4, wordBreak:"break-word" }}>{t.text}</div>
-                    <div style={{ display:"flex", gap:5, marginTop:3, flexWrap:"wrap" }}>
-                      {proj&&<span style={{ background:proj.color+"22", color:proj.color, borderRadius:6, padding:"1px 6px", fontSize:10, fontWeight:600 }}>{proj.name}</span>}
-                      {t.reminderDays>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:6, padding:"1px 6px", fontSize:10, fontWeight:600 }}>{t.reminderDays} gun sonra hatirlat</span>}
-                    </div>
-                  </div>
-                  <button onClick={()=>deleteTodo(t.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:14, padding:0, flexShrink:0 }}>x</button>
-                </div>;
-              })}
-            </div>
-        </div></div>}
+      {section==="todos"&&<div style={{padding:"16px clamp(14px, 4vw, 28px)",maxWidth:1000}}><div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:16}}><div style={{fontWeight:800,fontSize:14,marginBottom:12}}>Kendi To-Do'larım</div>{todos.filter(t=>!t.done).map(t=>{const p=state.projects.find(x=>x.id===t.projectId);const late=t.dueDate&&daysDiff(t.dueDate)>0;return <div key={t.id} style={{display:"flex",alignItems:"center",gap:9,padding:"10px 0",borderBottom:"1px solid #F1F5F9"}}><input type="checkbox" checked={false} onChange={()=>toggleTodo(t.id)}/><div style={{flex:1}}><div style={{fontSize:12,fontWeight:700}}>{t.action||t.text}</div><div style={{fontSize:10,color:late?"#E11D48":"#94A3B8",marginTop:2}}>{t.customer||p?.name||"Genel"}{t.dueDate?` · ${fmt(t.dueDate)}`:""}</div></div></div>})}{!todos.filter(t=>!t.done).length&&<div style={{fontSize:12,color:"#94A3B8"}}>Açık To-Do yok.</div>}</div></div>}
     </div>
 
     {modal?.type==="addPersonal"&&<PersonalTaskModal title="Genel Görev Ekle" people={state.people} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={addPersonal} />}
@@ -1217,10 +1208,7 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
   const deleteItem = (id) => save({ items:projNotes.items.filter(x=>x.id!==id) });
 
   // User todos linked to this project
-  const linkedTodos = state.people.flatMap(p=>{
-    const todos=((state.userNotes||{})[p.id]?.todos)||[];
-    return todos.filter(t=>t.projectId===project.id).map(t=>({...t, personName:p.name, personAvatar:p.avatar, personIsAdmin:p.isAdmin}));
-  });
+  const linkedTodos=((((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(t=>t.projectId===project.id)).map(t=>({...t,personName:currentUser.name,personAvatar:currentUser.avatar,personIsAdmin:currentUser.isAdmin}));
 
   return <div style={{ flex:1, overflow:"auto", padding:"clamp(14px, 3vw, 24px)" }}>
     <div style={{display:"flex",gap:7,marginBottom:16}}>
@@ -1261,7 +1249,7 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
 
     {/* Right: user todos linked to this project */}
     <div style={{ flex:"1 1 300px", minWidth:0 }}>
-      <div style={{ fontWeight:800, fontSize:15, marginBottom:14 }}>{section==="notes"?"Ekip Notları":"Kişisel To-Do Bağlantıları"}</div>
+      <div style={{ fontWeight:800, fontSize:15, marginBottom:14 }}>{section==="notes"?"Ekip Notları":"Kişisel To-Do Bağlantılarım"}</div>
       {section==="todos"&&<div style={{ background:"#fff", borderRadius:12, border:"1.5px solid #E2E8F0", padding:"16px" }}>
         <div style={{ fontWeight:700, fontSize:13, marginBottom:10, color:"#64748B" }}>Bu projeye bağlı todo ları</div>
         {linkedTodos.length===0&&<div style={{ fontSize:12, color:"#94A3B8" }}>Henüz bağlı kişisel todo yok.<br/>Görevlerim sayfasından todo eklerken proje seçin.</div>}
@@ -1432,6 +1420,11 @@ const GlobalStyle = () => (
     body { font-family: Inter, Segoe UI, sans-serif; background: #0F172A; }
     h1, h2, h3 { color: #1E293B; }
     input, select, textarea, button { font-family: inherit; }
+    .sidebar-nav { scrollbar-width: none; }
+    .sidebar-nav::-webkit-scrollbar { display: none; }
+    @media (max-width: 760px) {
+      .todo-columns { grid-template-columns: 1fr !important; }
+    }
   `}</style>
 );
 
@@ -1532,7 +1525,9 @@ export default function App() {
   });
   const myProjects=state.projects.filter(p=>p.pm===currentUser.id||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
   const listedProjects=projectScope==="mine"?myProjects:visibleProjects;
-  const deadlineWarnings=visibleProjects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectId:proj.id,projectName:proj.name,projectColor:proj.color,level:delayLvl(t.dueDate,t.status),days:daysDiff(t.dueDate)})))).sort((a,b)=>b.days-a.days);
+  const taskDeadlineWarnings=visibleProjects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectId:proj.id,projectName:proj.name,projectColor:proj.color,level:delayLvl(t.dueDate,t.status),days:daysDiff(t.dueDate)}))));
+  const todoDeadlineWarnings=(((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(t=>!t.done&&t.dueDate&&daysDiff(t.dueDate)>0).map(t=>({id:t.id,title:t.action||t.text,projectName:t.customer||"Kişisel To-Do",dueDate:t.dueDate,kind:"todo",level:daysDiff(t.dueDate)>=7?"critical":"normal",days:daysDiff(t.dueDate),status:"Bekliyor"}));
+  const deadlineWarnings=[...taskDeadlineWarnings,...todoDeadlineWarnings].sort((a,b)=>b.days-a.days);
 
   const project=state.projects.find(p=>p.id===selProject);
   const milestone=project?.milestones.find(m=>m.id===selMilestone);
@@ -1734,32 +1729,32 @@ export default function App() {
   const overdueC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,0)||0;
   const criticalC=project?.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length,0)||0;
 
-  const nav=[{id:"dashboard",icon:"home",label:"Dashboard"},{id:"projects",icon:"projects",label:"Projeler"},{id:"mytasks",icon:"tasks",label:"Görevlerim"},{id:"fieldplan",icon:"calendar",label:"Saha Planım"},{id:"deadlines",icon:"clock",label:`Termin Uyarıları${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},{id:"tickets",icon:"ticket",label:"Ticketlar"},{id:"reports",icon:"reports",label:"Raporlar"},{id:"people",icon:"people",label:"Ekip"},{id:"logs",icon:"activity",label:"Aktivite"}];
+  const nav=[{id:"dashboard",icon:"home",label:"Dashboard"},{id:"todos",icon:"ticket",label:"To-Do"},{id:"projects",icon:"projects",label:"Projeler"},{id:"mytasks",icon:"tasks",label:"Görevlerim"},{id:"fieldplan",icon:"calendar",label:"Saha Planım"},{id:"deadlines",icon:"clock",label:`Termin Uyarıları${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},{id:"tickets",icon:"ticket",label:"Ticketlar"},{id:"reports",icon:"reports",label:"Raporlar"},{id:"people",icon:"people",label:"Ekip"},{id:"logs",icon:"activity",label:"Aktivite"}];
 
   return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
     {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:50, background:"#1E293B", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
       <button onClick={()=>setMobileMenuOpen(v=>!v)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", padding:4 }}>☰</button>
-      <img src={corjectLogo} alt="" style={{width:27,height:27,objectFit:"contain"}}/><span style={{ fontSize:13, fontWeight:800, color:"#4A6CF7", letterSpacing:2 }}>CORJECT</span>
+      <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:27,height:27,objectFit:"contain"}}/><span style={{ fontSize:13, fontWeight:800, color:"#4A6CF7", letterSpacing:2 }}>CORJECT</span></button>
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
-        <button title="Görevlerime git" onClick={()=>{setView("mytasks");setSelProject(null);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
+        <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
       </div>
     </div>}
     {/* Mobil overlay arka plan */}
     {isMobile&&mobileMenuOpen&&<div onClick={()=>setMobileMenuOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:950 }} />}
     {/* Sidebar */}
-    <div style={{ width:220, background:"#1E293B", display:"flex", flexDirection:"column", flexShrink:0,
+    <div style={{ width:isMobile?220:244, background:"#1E293B", display:"flex", flexDirection:"column", flexShrink:0,
       ...(isMobile?{ position:"fixed", top:0, left:mobileMenuOpen?0:-240, bottom:0, zIndex:960, transition:"left .25s ease", boxShadow:mobileMenuOpen?"4px 0 20px rgba(0,0,0,0.3)":"none" }:{}) }}>
       <div style={{ padding:"18px 16px 12px", borderBottom:"1px solid #334155" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <div style={{ display:"flex",alignItems:"center",gap:7 }}><img src={corjectLogo} alt="" style={{width:26,height:26,objectFit:"contain"}}/><span style={{ fontSize:11, fontWeight:800, color:"#4A6CF7", letterSpacing:2, textTransform:"uppercase" }}>CORJECT</span></div>
+            <button onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:26,height:26,objectFit:"contain"}}/><span style={{ fontSize:11, fontWeight:800, color:"#4A6CF7", letterSpacing:2, textTransform:"uppercase" }}>CORJECT</span></button>
             <button onClick={()=>{ setView("notifications"); setSelProject(null); setMobileMenuOpen(false); markAllRead(); }} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
               <span style={{ color:"#94A3B8", display:"flex" }}><Icon name="bell" size={17} /></span>
               {(state.notifications||[]).filter(n=>n.userId===currentUser?.id&&!n.read).length>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
             </button>
           </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
-          <button title="Görevlerime git" onClick={()=>{setView("mytasks");setSelProject(null);setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
+          <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{currentUser.name}</div>
             <div style={{ fontSize:10, color:"#64748B" }}>{isAdmin?"Yönetici":currentUser.role}</div>
@@ -1767,37 +1762,18 @@ export default function App() {
           <button onClick={logout} style={{ background:"none", border:"none", cursor:"pointer", color:"#475569", fontSize:12, padding:2 }}>Çıkış</button>
         </div>
       </div>
-      <nav style={{ padding:"8px 7px", flex:1, overflowY:"auto" }}>
+      <nav className="sidebar-nav" style={{ padding:"10px 9px", flex:1, overflowY:"auto" }}>
         {nav.map(n=><button key={n.id} onClick={()=>{ setView(n.id); setSelProject(null); setSelMilestone(null); setMobileMenuOpen(false); if(n.id==="tickets")setTicketMineOnly(false); }}
           style={{ display:"flex", alignItems:"center", gap:9, width:"100%", padding:"9px 10px", borderRadius:8, border:"none", cursor:"pointer", background:view===n.id&&!selProject?"#4A6CF7":"transparent", color:view===n.id&&!selProject?"#fff":"#94A3B8", fontSize:13, fontWeight:600, textAlign:"left", marginBottom:2 }}>
           <span style={{ display:"flex", flexShrink:0 }}><Icon name={n.icon} size={15} /></span> {n.label}
         </button>)}
-        {visibleProjects.length>0&&<div style={{ marginTop:12 }}>
-          <div style={{ fontSize:9, fontWeight:700, color:"#475569", letterSpacing:1.5, textTransform:"uppercase", padding:"0 10px", marginBottom:4 }}>PROJELER</div>
-          {visibleProjects.map(p=><button key={p.id} onClick={()=>{ setSelProject(p.id); setSelMilestone(null); setView("projects"); setProjectTab("tasks"); setMobileMenuOpen(false); }}
-            style={{ display:"flex", alignItems:"center", gap:7, width:"100%", padding:"7px 10px", borderRadius:8, border:"none", cursor:"pointer", background:selProject===p.id?p.color+"33":"transparent", color:selProject===p.id?"#fff":"#94A3B8", fontSize:11, fontWeight:600, textAlign:"left", marginBottom:1 }}>
-            <span style={{ width:7, height:7, borderRadius:"50%", background:p.color, flexShrink:0 }} />
-            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
-          </button>)}
-        </div>}
       </nav>
-      <div style={{ padding:"8px 12px", borderTop:"1px solid #334155", fontSize:10 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ width:7, height:7, borderRadius:"50%", flexShrink:0, background: syncStatus.s==="saved"?"#059669": syncStatus.s==="saving"?"#EA6C00": syncStatus.s==="error"?"#E11D48":"#475569" }} />
-          <span style={{ color: syncStatus.s==="error"?"#FCA5A5":"#64748B", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={syncStatus.msg}>
-            {syncStatus.s==="saved"?"Kaydedildi": syncStatus.s==="saving"?"Kaydediliyor...": syncStatus.s==="error"?("HATA: "+syncStatus.msg.slice(0,40)):"Hazir"}
-          </span>
-        </div>
-        <div style={{ color:"#475569", marginTop:5, letterSpacing:.5 }}>CORJECT {APP_VERSION}</div>
-      </div>
-      {isAdmin&&<div style={{ padding:"10px 7px", borderTop:"1px solid #334155" }}>
-        <Btn onClick={()=>setModal({type:"addProject"})} style={{ width:"100%", justifyContent:"center" }}>+ Yeni Proje</Btn>
-      </div>}
     </div>
 
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?50:0 }}>
       {view==="dashboard"&&!selProject&&<DashboardPage state={state} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("mine");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
+      {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
@@ -1919,7 +1895,7 @@ export default function App() {
 
       {view==="mytasks"&&<MyTasksPage currentUser={currentUser} state={state} setState={setState} addLog={addLog} isAdmin={isAdmin} />}
       {view==="fieldplan"&&<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>}
-      {view==="deadlines"&&<DeadlinePage warnings={deadlineWarnings} people={state.people} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
+      {view==="deadlines"&&<DeadlinePage warnings={deadlineWarnings} people={state.people} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}} onOpenTodos={()=>setView("todos")}/>}
       {view==="tickets"&&<TicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} initialMine={ticketMineOnly}/>}
       {view==="reports"&&<ReportsPage state={state} people={state.people} isAdmin={isAdmin} />}
 
