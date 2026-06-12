@@ -167,18 +167,20 @@ const authHeaders = async () => {
   return data.session?.access_token?{Authorization:`Bearer ${data.session.access_token}`}:{};
 };
 const loadFromSupabase = async () => {
-  try {
-    if(USE_DATA_API){
-      const response=await fetch("/api/state",{headers:await authHeaders()});
-      if(!response.ok)throw new Error(await response.text());
-      const result=await response.json();
-      apiStateVersion=Number(result.version||1);
-      return result.state;
+  if(USE_DATA_API){
+    const response=await fetch("/api/state",{headers:await authHeaders()});
+    if(!response.ok){
+      const detail=await response.text();
+      throw new Error(`Veri yuklenemedi (${response.status}): ${detail}`);
     }
-    const { data, error } = await supabase.from("app_state").select("data").eq("id", 1).single();
-    if (error || !data) return null;
-    return data.data;
-  } catch { return null; }
+    const result=await response.json();
+    apiStateVersion=Number(result.version||1);
+    return result.state;
+  }
+  const { data, error } = await supabase.from("app_state").select("data").eq("id", 1).single();
+  if(error)throw error;
+  if(!data)throw new Error("Uygulama verisi bulunamadi");
+  return data.data;
 };
 
 let saveTimer = null;
@@ -1709,6 +1711,8 @@ export default function App() {
   const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<768);
   const [authSession,setAuthSession]=useState(null);
   const [authReady,setAuthReady]=useState(!REQUIRE_AUTH);
+  const [loadError,setLoadError]=useState("");
+  const [loadedAuthUserId,setLoadedAuthUserId]=useState("");
   const fileRef=useRef();
   const skipNextSave=useRef(true);
 
@@ -1731,6 +1735,8 @@ export default function App() {
 
   // Ilk yukleme: Supabase'den veri cek
   useEffect(()=>{
+    if(REQUIRE_AUTH&&(!authReady||!authSession))return;
+    let cancelled=false;
     // Once localStorage'dan kullanici kimligini geri yukle
     try{
       const savedUid=REQUIRE_AUTH?"":deepLink?.get("user")||localStorage.getItem("corject_uid");
@@ -1738,19 +1744,25 @@ export default function App() {
       if(!REQUIRE_AUTH&&deepLink?.get("user"))localStorage.setItem("corject_uid",deepLink.get("user"));
     }catch(e){}
     (async()=>{
-      const remote=await loadFromSupabase();
-      if(remote){
+      try{
+        setLoadError("");
+        const remote=await loadFromSupabase();
+        if(cancelled)return;
         skipNextSave.current=true;
         // currentUserId'yi localStorage'dan koru, Supabase'den geleni kullanma
         let savedUid="";
         try{ savedUid=REQUIRE_AUTH?"":deepLink?.get("user")||localStorage.getItem("corject_uid")||""; }catch(e){}
         setState(s=>({ ...remote, currentUserId:savedUid||s.currentUserId }));
-      } else {
-        saveToSupabase(state, (s,msg)=>setSyncStatus({s,msg:msg||""}));
+        setLoadedAuthUserId(authSession?.user?.id||"legacy");
+        setDataLoaded(true);
+      }catch(error){
+        if(cancelled)return;
+        console.error("Ilk veri yukleme hatasi:",error);
+        setLoadError(error?.message||String(error));
       }
-      setDataLoaded(true);
     })();
-  },[]);
+    return()=>{cancelled=true;};
+  },[authReady,authSession]);
 
   useEffect(()=>{
     if(!REQUIRE_AUTH||!dataLoaded||!authSession?.user?.email)return;
@@ -1808,7 +1820,14 @@ export default function App() {
 
   if(REQUIRE_AUTH&&!authReady)return <div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#94A3B8"}}>Oturum kontrol ediliyor...</div>;
   if(REQUIRE_AUTH&&!authSession)return <AuthLoginScreen/>;
-  if(!dataLoaded) return <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,sans-serif", background:"#1E293B", color:"#94A3B8", flexDirection:"column", gap:12 }}>
+  if(loadError)return <div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#F8FAFC",padding:20,fontFamily:"Inter,Segoe UI,sans-serif"}}>
+    <div style={{maxWidth:520,textAlign:"center"}}>
+      <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>Veriler yüklenemedi</div>
+      <div style={{fontSize:12,color:"#FCA5A5",lineHeight:1.6,marginBottom:16}}>{loadError}</div>
+      <button onClick={()=>window.location.reload()} style={{border:0,borderRadius:10,padding:"10px 16px",background:"#4A6CF7",color:"#fff",fontWeight:800,cursor:"pointer"}}>Tekrar Dene</button>
+    </div>
+  </div>;
+  if(!dataLoaded||(REQUIRE_AUTH&&loadedAuthUserId!==authSession?.user?.id)) return <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,sans-serif", background:"#1E293B", color:"#94A3B8", flexDirection:"column", gap:12 }}>
     <div style={{ fontSize:14, fontWeight:800, color:"#4A6CF7", letterSpacing:3 }}>CORJECT</div>
     <div style={{ fontSize:13 }}>Veriler yükleniyor...</div>
   </div>;
