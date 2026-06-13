@@ -6,7 +6,7 @@ import { apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.15.0";
+const APP_VERSION = "v1.16.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -316,6 +316,15 @@ const fieldPlanHours = (plan) => {
   const minutes=(endHour*60+endMinute)-(startHour*60+startMinute);
   return minutes>0?Math.round(minutes/6)/10:0;
 };
+const nextTicketNumber=(state)=>{
+  const year=new Date().getFullYear();
+  const prefix=`CJT-${year}-`;
+  const max=Object.values(state.projectTickets||{}).flat()
+    .map(ticket=>String(ticket.ticketNo||"").startsWith(prefix)?parseInt(String(ticket.ticketNo).slice(prefix.length),10):0)
+    .reduce((highest,value)=>Math.max(highest,Number.isFinite(value)?value:0),0);
+  return `${prefix}${String(max+1).padStart(4,"0")}`;
+};
+const ticketNumber=(ticket)=>ticket.ticketNo||`CJT-${String(ticket.id||"KAYIT").toUpperCase()}`;
 
 function PeopleMultiSelect({people,value,onChange}) {
   return <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:6,padding:9,border:"1.5px solid #E2E8F0",borderRadius:9,background:"#FAFBFC"}}>
@@ -460,6 +469,16 @@ function FieldVisitsPage({state,setState,currentUser,isAdmin,onOpenProject}) {
   </div>;
 }
 
+function FieldOperationsPage({state,setState,currentUser,isAdmin,onOpenProject}) {
+  const [section,setSection]=useState("plan");
+  return <div style={{flex:1,overflow:"auto",background:"#F8FAFC"}}>
+    <div style={{position:"sticky",top:0,zIndex:5,display:"flex",gap:7,padding:"12px clamp(16px,4vw,28px)",background:"#fff",borderBottom:"1px solid #E2E8F0"}}>
+      {[["plan","calendar","Saha Planı"],["visits","activity","Gerçekleşen Ziyaretler"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"8px 13px",background:section===id?"#0F766E":"#F1F5F9",color:section===id?"#fff":"#64748B",fontSize:12,fontWeight:800,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}><Icon name={icon} size={14}/>{label}</button>)}
+    </div>
+    {section==="plan"?<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>:<FieldVisitsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={onOpenProject}/>}
+  </div>;
+}
+
 function TodoPage({state,setState,currentUser}) {
   const todos=((state.userNotes||{})[currentUser.id]?.todos)||[];
   const empty={projectId:"",customer:"",dueDate:todayStr(),action:""};
@@ -494,8 +513,7 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
     {label:"To-Do",value:todos.length,desc:"Müşteri aksiyonlarım",icon:"ticket",color:"#DB2777",view:"todos"},
     {label:"Projelerim",value:myProjects.length,desc:"Dahil olduğum projeler",icon:"projects",color:"#4A6CF7",view:"projects"},
     {label:"Görevlerim",value:myTasks.length+personal.length,desc:"Aktif görevler",icon:"tasks",color:"#7C3AED",view:"mytasks"},
-    {label:"Saha Planım",value:plans.length,desc:"Yaklaşan ziyaretler",icon:"calendar",color:"#059669",view:"fieldplan"},
-    {label:"Saha Ziyaretlerim",value:visits.length,desc:"Gerçekleşen ziyaret ve eforlar",icon:"activity",color:"#0F766E",view:"fieldvisits"},
+    {label:"Saha Yönetimi",value:plans.length+visits.length,desc:`${plans.length} plan · ${visits.length} ziyaret`,icon:"calendar",color:"#059669",view:"fieldops"},
     {label:"Ticketlarım",value:tickets.length,desc:"İlgili ticketlar",icon:"ticket",color:"#EA6C00",view:"tickets"},
     {label:"Termin Uyarıları",value:deadlineWarnings.length,desc:"Geciken görevler",icon:"clock",color:"#E11D48",view:"deadlines"},
     {label:"Raporlar",value:"",desc:"Proje çıktılarını görüntüle",icon:"reports",color:"#0369A1",view:"reports"},
@@ -515,8 +533,9 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
   </div>;
 }
 
-function AdminDashboard({state,onOpenProject,onNavigate}) {
+function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
   const [projectId,setProjectId]=useState("all");
+  const [detailModal,setDetailModal]=useState(null);
   const projects=projectId==="all"?state.projects:state.projects.filter(project=>project.id===projectId);
   const projectIds=new Set(projects.map(project=>project.id));
   const scopedState={
@@ -547,7 +566,8 @@ function AdminDashboard({state,onOpenProject,onNavigate}) {
   const openRisks=risks.filter(({risk})=>risk.status!=="Kapalı");
   const highRisks=openRisks.filter(({risk})=>["Yüksek","Kritik"].includes(risk.level));
   const effortHours=tasks.reduce((total,{task})=>total+(task.timeEntries||[]).reduce((sum,entry)=>sum+(parseFloat(entry.hours)||0),0),0)
-    +(state.fieldPlans||[]).filter(plan=>projectIds.has(plan.projectId)&&(plan.status==="completed"||plan.completedAt)).reduce((total,plan)=>total+fieldPlanHours(plan),0);
+    +(state.fieldPlans||[]).filter(plan=>projectIds.has(plan.projectId)&&(plan.status==="completed"||plan.completedAt)).reduce((total,plan)=>total+fieldPlanHours(plan),0)
+    +Object.entries(state.projectActions||{}).filter(([id])=>projectIds.has(id)).flatMap(([,items])=>items||[]).reduce((total,item)=>total+(parseFloat(item.effortHours)||0),0);
   const estimatedHours=tasks.reduce((total,{task})=>total+(parseFloat(task.estimatedHours)||0),0);
   const machineList=projects.flatMap(project=>project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[]);
   const commissioned=machineList.filter(machine=>machine.commissioned).length;
@@ -585,15 +605,27 @@ function AdminDashboard({state,onOpenProject,onNavigate}) {
   const maxTicketStatus=Math.max(1,...ticketStatuses.map(item=>item.count));
   const statusColors={"Açık":"#3B82F6","Ürün Ekibinde":"#8B5CF6","Devam Ediyor":"#F59E0B","Beklemede":"#64748B","Tamamlandı":"#10B981","İptal Edildi":"#EF4444"};
   const kpis=[
-    {label:"Portföy Sağlığı",value:`${health}%`,detail:health>=80?"Kontrol altında":health>=60?"Yakın takip gerekli":"Yönetici aksiyonu gerekli",color:healthColor},
-    {label:"Genel İlerleme",value:`${progress}%`,detail:`${completedTasks.length}/${tasks.length} görev tamamlandı`,color:"#4A6CF7"},
-    {label:"Kritik Termin",value:criticalTasks.length,detail:`${delayedTasks.length} toplam gecikme`,color:"#E11D48"},
-    {label:"Açık Ticket",value:openTickets.length,detail:`${staleTickets.length} ticket 7+ gündür aksiyonsuz`,color:"#EA6C00"},
-    {label:"Açık Risk",value:openRisks.length,detail:`${highRisks.length} yüksek/kritik`,color:"#7C3AED"},
-    {label:"Toplam Efor",value:`${effortHours} sa`,detail:estimatedHours?`${estimatedHours} sa planlandı`:"Plan eforu girilmedi",color:"#0369A1"},
-    {label:"Devreye Alma",value:machineList.length?`${Math.round(commissioned/machineList.length*100)}%`:"-",detail:`${commissioned}/${machineList.length} makine devrede`,color:"#059669"},
-    {label:"Aktif Proje",value:projects.length,detail:`${projectRows.filter(item=>item.score<60).length} proje riskli`,color:"#0F766E"},
+    {id:"health",label:"Portföy Sağlığı",value:`${health}%`,detail:health>=80?"Kontrol altında":health>=60?"Yakın takip gerekli":"Yönetici aksiyonu gerekli",color:healthColor,info:"Görev ilerlemesi %45, termin uyumu %45 ve yüksek/kritik risk yoğunluğu %10 ağırlıkla hesaplanır.",items:projectRows.map(item=>({title:item.project.name,meta:`Sağlık ${item.score} · İlerleme %${item.pct} · ${item.delayed} gecikme`}))},
+    {id:"progress",label:"Genel İlerleme",value:`${progress}%`,detail:`${completedTasks.length}/${tasks.length} görev tamamlandı`,color:"#4A6CF7",info:"Tamamlanan görev sayısının kapsamdaki toplam görev sayısına oranıdır.",items:tasks.map(({task,project})=>({title:task.title,meta:`${project.name} · ${task.status}`}))},
+    {id:"deadlines",label:"Kritik Termin",value:criticalTasks.length,detail:`${delayedTasks.length} toplam gecikme`,color:"#E11D48",info:"Termin tarihi en az 7 gün geçmiş ve tamamlanmamış görevler kritik kabul edilir.",items:delayedTasks.map(({task,project})=>({title:task.title,meta:`${project.name} · ${daysDiff(task.dueDate)} gün gecikti`}))},
+    {id:"tickets",label:"Açık Ticket",value:openTickets.length,detail:`${staleTickets.length} ticket 7+ gündür aksiyonsuz`,color:"#EA6C00",info:"Tamamlandı veya İptal Edildi dışındaki ticketlar açık; son güncellemesi 7 günü geçenler aksiyonsuz sayılır.",items:openTickets.map(({ticket,project})=>({title:`${ticketNumber(ticket)} · ${ticket.title}`,meta:`${project?.name||"Proje"} · ${ticket.status||"Açık"}`}))},
+    {id:"risks",label:"Açık Risk",value:openRisks.length,detail:`${highRisks.length} yüksek/kritik`,color:"#7C3AED",info:"Kapalı olmayan riskler sayılır; Yüksek ve Kritik seviyeler ayrıca vurgulanır.",items:openRisks.map(({risk,project})=>({title:risk.title,meta:`${project.name} · ${risk.level}`}))},
+    {id:"effort",label:"Toplam Efor",value:`${effortHours} sa`,detail:estimatedHours?`${estimatedHours} sa planlandı`:"Plan eforu girilmedi",color:"#0369A1",info:"Görev zaman kayıtları, tamamlanan saha ziyaretleri ve efor girilmiş proje aksiyonlarının toplamıdır.",items:projects.map(project=>({title:project.name,meta:`${project.milestones.flatMap(m=>m.tasks).reduce((sum,task)=>sum+(task.timeEntries||[]).reduce((total,entry)=>total+(parseFloat(entry.hours)||0),0),0)+((state.projectActions||{})[project.id]||[]).reduce((sum,action)=>sum+(parseFloat(action.effortHours)||0),0)} saat görev/aksiyon eforu`}))},
+    {id:"commissioning",label:"Devreye Alma",value:machineList.length?`${Math.round(commissioned/machineList.length*100)}%`:"-",detail:`${commissioned}/${machineList.length} makine devrede`,color:"#059669",info:"Devreye alınmış makine sayısının kapsamdaki fiziksel ve sanal toplam makine sayısına oranıdır.",items:machineList.map(machine=>({title:machine.name,meta:`${machine.type==="virtual"?"Sanal":"Fiziksel"} · ${machine.commissioned?"Devrede":"Bekliyor"}`}))},
+    {id:"projects",label:"Aktif Proje",value:projects.length,detail:`${projectRows.filter(item=>item.score<60).length} proje riskli`,color:"#0F766E",info:"Seçilen kapsamdaki projeler sayılır; sağlık puanı 60 altındaki projeler riskli kabul edilir.",items:projectRows.map(item=>({title:item.project.name,meta:`Sağlık ${item.score} · ${item.project.status}`}))},
   ];
+  const savedOrder=(state.userNotes||{})[currentUser.id]?.adminKpiOrder||[];
+  const orderedKpis=[...kpis].sort((a,b)=>{
+    const ai=savedOrder.indexOf(a.id),bi=savedOrder.indexOf(b.id);
+    return (ai<0?999:ai)-(bi<0?999:bi);
+  });
+  const moveKpi=(id,direction)=>{
+    const order=orderedKpis.map(item=>item.id);
+    const index=order.indexOf(id),target=index+direction;
+    if(target<0||target>=order.length)return;
+    [order[index],order[target]]=[order[target],order[index]];
+    setState(current=>({...current,userNotes:{...(current.userNotes||{}),[currentUser.id]:{...(current.userNotes||{})[currentUser.id],adminKpiOrder:order}}}));
+  };
 
   return <div style={{padding:"clamp(16px,3vw,28px)",flex:1,overflow:"auto",background:"linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:14,flexWrap:"wrap",marginBottom:18}}>
@@ -609,10 +641,11 @@ function AdminDashboard({state,onOpenProject,onNavigate}) {
     </div>
 
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:10,marginBottom:14}}>
-      {kpis.map(kpi=><div key={kpi.label} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"14px 15px",boxShadow:"0 5px 16px rgba(15,23,42,.045)",borderTop:`3px solid ${kpi.color}`}}>
-        <div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45}}>{kpi.label}</div>
+      {orderedKpis.map((kpi,index)=><div key={kpi.id} role="button" tabIndex={0} onKeyDown={event=>event.key==="Enter"&&setDetailModal({mode:"detail",...kpi})} onClick={()=>setDetailModal({mode:"detail",...kpi})} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"14px 15px",boxShadow:"0 5px 16px rgba(15,23,42,.045)",borderTop:`3px solid ${kpi.color}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",position:"relative"}}>
+        <div style={{display:"flex",alignItems:"center",gap:5}}><div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45,flex:1}}>{kpi.label}</div><button title="Hesaplama bilgisi" onClick={event=>{event.stopPropagation();setDetailModal({mode:"info",...kpi});}} style={{width:20,height:20,borderRadius:"50%",border:"1px solid #CBD5E1",background:"#F8FAFC",color:"#64748B",fontSize:11,fontWeight:850,cursor:"pointer"}}>i</button></div>
         <div style={{fontSize:25,fontWeight:900,color:kpi.color,margin:"4px 0 2px"}}>{kpi.value}</div>
         <div style={{fontSize:10,color:"#94A3B8",lineHeight:1.35}}>{kpi.detail}</div>
+        <div style={{display:"flex",gap:4,marginTop:8}}><button title="Sola taşı" disabled={index===0} onClick={event=>{event.stopPropagation();moveKpi(kpi.id,-1);}} style={{border:0,borderRadius:6,background:"#F1F5F9",color:"#64748B",cursor:index===0?"default":"pointer",opacity:index===0 ? .35 : 1}}>←</button><button title="Sağa taşı" disabled={index===orderedKpis.length-1} onClick={event=>{event.stopPropagation();moveKpi(kpi.id,1);}} style={{border:0,borderRadius:6,background:"#F1F5F9",color:"#64748B",cursor:index===orderedKpis.length-1?"default":"pointer",opacity:index===orderedKpis.length-1 ? .35 : 1}}>→</button></div>
       </div>)}
     </div>
 
@@ -672,6 +705,7 @@ function AdminDashboard({state,onOpenProject,onNavigate}) {
         ].map(([title,description,color,action,label])=><button key={title} onClick={action} style={{border:"1px solid #E2E8F0",borderLeft:`4px solid ${color}`,borderRadius:11,background:"#FAFCFF",padding:12,textAlign:"left",cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",gap:7}}><b style={{fontSize:11}}>{title}</b><span style={{fontSize:8,fontWeight:850,color,background:color+"12",borderRadius:6,padding:"3px 5px"}}>{label}</span></div><div style={{fontSize:9,color:"#64748B",lineHeight:1.45,marginTop:5}}>{description}</div></button>)}
       </div>
     </div>
+    {detailModal&&<Modal title={detailModal.mode==="info"?`${detailModal.label} · Hesaplama`:`${detailModal.label} · Detay`} onClose={()=>setDetailModal(null)} wide>{detailModal.mode==="info"?<div style={{fontSize:13,color:"#475569",lineHeight:1.7,background:"#F8FAFC",borderRadius:11,padding:15}}>{detailModal.info}</div>:<div style={{display:"grid",gap:8,maxHeight:"60vh",overflow:"auto"}}>{(detailModal.items||[]).map((item,index)=><div key={`${item.title}-${index}`} style={{border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 12px"}}><div style={{fontSize:12,fontWeight:800}}>{item.title}</div><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{item.meta}</div></div>)}{!detailModal.items?.length&&<div style={{padding:30,textAlign:"center",color:"#94A3B8"}}>Bu kapsamda detay kaydı bulunmuyor.</div>}</div>}</Modal>}
   </div>;
 }
 
@@ -1119,12 +1153,21 @@ function downloadEffortReport(state,people){
     const person=people.find(item=>item.id===plan.userId);
     rows.push([project?.name||"Silinmiş proje","Saha Ziyareti",`Saha ziyareti · ${plan.date}`,person?.name||"Atanmamış","",fieldPlanHours(plan),"",plan.date||"",person?.name||"",plan.visitNotes||""]);
   });
+  Object.entries(state.projectActions||{}).forEach(([projectId,actions])=>{
+    const project=state.projects.find(item=>item.id===projectId);
+    (actions||[]).filter(action=>Number(action.effortHours)>0).forEach(action=>{
+      rows.push([project?.name||"Silinmiş proje","Proje Aksiyonu",action.text||"Aksiyon",action.authorName||"","",Number(action.effortHours),"",action.actionAt||action.createdAt||"",action.authorName||"",action.text||""]);
+    });
+  });
   downloadXlsx(rows,`efor-raporu-${todayStr()}.xlsx`,"Efor");
 }
 
 function downloadMachineReport(state){
-  const rows=[["Proje","Makine Kodu","Makine Adı","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"]];
-  state.projects.forEach(project=>(project.machines||[]).forEach(machine=>rows.push([project.name,machine.code||"",machine.name,machine.type==="virtual"?"Sanal":"Fiziksel",machine.commissioned?"Evet":"Hayır",machine.commissionedAt||"",machine.note||""])));
+  const rows=[["Proje","Sektör","Üretim Merkezi","İşyeri","Hat","Makine Kodu","Makine Adı","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"]];
+  state.projects.forEach(project=>{
+    (project.machines||[]).forEach(machine=>rows.push([project.name,"","","","",machine.code||"",machine.name,machine.type==="virtual"?"Sanal":"Fiziksel",machine.commissioned?"Evet":"Hayır",machine.commissionedAt||"",machine.note||""]));
+    commissioningRows(project.commissioningTree||[]).forEach(row=>rows.push([project.name,row.sector,row.productionCenter,row.workplace,row.line,row.machine.code||"",row.machine.name,row.machine.type==="virtual"?"Sanal":"Fiziksel",row.machine.commissioned?"Evet":"Hayır",row.machine.commissionedAt||"",row.machine.note||""]));
+  });
   downloadXlsx(rows,`makine-devreye-alma-${todayStr()}.xlsx`,"Makineler");
 }
 
@@ -1162,7 +1205,8 @@ function generatePortfolioReport(state,people){
   const data=state.projects.map(project=>{
     const tasks=project.milestones.flatMap(ms=>ms.tasks), done=tasks.filter(t=>t.status==="Tamamlandı").length;
     const fieldHours=(state.fieldPlans||[]).filter(plan=>plan.projectId===project.id&&(plan.status==="completed"||plan.completedAt)).reduce((sum,plan)=>sum+fieldPlanHours(plan),0);
-    return {project,tasks,done,progress:tasks.length?Math.round(done/tasks.length*100):0,delayed:tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,hours:tasks.reduce((sum,t)=>sum+(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0)+fieldHours,machines:project.machines||[]};
+    const actionHours=((state.projectActions||{})[project.id]||[]).reduce((sum,action)=>sum+(parseFloat(action.effortHours)||0),0);
+    return {project,tasks,done,progress:tasks.length?Math.round(done/tasks.length*100):0,delayed:tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,hours:tasks.reduce((sum,t)=>sum+(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0)+fieldHours+actionHours,machines:project.machines||[]};
   });
   const totalTasks=data.reduce((a,r)=>a+r.tasks.length,0), totalDone=data.reduce((a,r)=>a+r.done,0), totalDelayed=data.reduce((a,r)=>a+r.delayed,0), totalHours=data.reduce((a,r)=>a+r.hours,0);
   const tableRows=data.map(r=>`<tr><td><b>${r.project.name}</b></td><td>${projectPmIds(r.project).map(id=>people.find(p=>p.id===id)?.name).filter(Boolean).join(", ")||"Atanmamış"}</td><td>${r.project.status}</td><td><span class="track"><i style="width:${r.progress}%;background:${r.project.color}"></i></span><b>${r.progress}%</b></td><td>${r.done}/${r.tasks.length}</td><td class="${r.delayed?"danger":""}">${r.delayed}</td><td>${r.machines.filter(m=>m.commissioned).length}/${r.machines.length}</td><td>${r.hours} sa</td></tr>`).join("");
@@ -1605,12 +1649,21 @@ function MilestoneTaskPanel({ milestone, project, people, isAdmin, showDone, set
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 // ─── Project Notes Panel ───────────────────────────────────────────────────
-function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
+function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin, canManage }) {
   const [section,setSection]=useState("notes");
   // Shared project notes (admin can edit, others view)
   const projNotes = (state.projectNotes||{})[project.id] || { shared:"", items:[] };
   const [editNote, setEditNote] = useState(projNotes.shared);
   const [newItem, setNewItem] = useState("");
+  const emptyAccess={name:"",url:"",username:"",status:"Hazır",routing:"",secretReference:"",note:""};
+  const [accessForm,setAccessForm]=useState(emptyAccess);
+  const accessItems=project.remoteAccess||[];
+  const saveAccessItems=(items)=>setState(current=>({...current,projects:current.projects.map(item=>item.id===project.id?{...item,remoteAccess:items}:item)}));
+  const addAccess=()=>{
+    if(!accessForm.name.trim())return;
+    saveAccessItems([...accessItems,{id:uid(),...accessForm,name:accessForm.name.trim(),createdAt:now()}]);
+    setAccessForm(emptyAccess);
+  };
 
   const save = (data) => setState(s=>({...s, projectNotes:{...(s.projectNotes||{}), [project.id]:{...projNotes,...data}}}));
   const addItem = () => { if(!newItem.trim())return; save({ items:[...projNotes.items, {id:uid(),text:newItem,done:false,author:currentUser.name,ts:now()}]}); setNewItem(""); };
@@ -1622,8 +1675,15 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
 
   return <div style={{ flex:1, overflow:"auto", padding:"clamp(14px, 3vw, 24px)" }}>
     <div style={{display:"flex",gap:7,marginBottom:16}}>
-      {[["notes","notes","Notlar"],["todos","ticket","To-Do"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 14px",background:section===id?project.color:"#F1F5FF",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
+      {[["notes","notes","Notlar"],["todos","ticket","To-Do"],["access","machines","Uzaktan Erişim"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 14px",background:section===id?project.color:"#F1F5FF",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
     </div>
+    {section==="access"&&<div>
+      <div style={{background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:10,padding:"10px 12px",fontSize:11,color:"#9A3412",marginBottom:13}}>Güvenlik nedeniyle gerçek parola burada tutulmaz. “Parola kasası referansı” alanına 1Password, Bitwarden veya kurum kasasındaki kayıt adını yazın.</div>
+      {(isAdmin||canManage)&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:15,marginBottom:14}}><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:9}}>{[["name","Sistem / Sunucu"],["url","Bağlantı Adresi"],["username","Kullanıcı Adı"],["routing","VPN / Yönlendirme"],["secretReference","Parola Kasası Referansı"]].map(([key,label])=><Field key={key} label={label}><input style={iStyle} value={accessForm[key]} onChange={event=>setAccessForm(current=>({...current,[key]:event.target.value}))}/></Field>)}<Field label="Durum"><select style={iStyle} value={accessForm.status} onChange={event=>setAccessForm(current=>({...current,status:event.target.value}))}>{["Hazır","Test Bekliyor","Erişim Yok","Süresi Doldu"].map(status=><option key={status}>{status}</option>)}</select></Field></div><Field label="Not"><input style={iStyle} value={accessForm.note} onChange={event=>setAccessForm(current=>({...current,note:event.target.value}))}/></Field><div style={{display:"flex",justifyContent:"flex-end"}}><Btn onClick={addAccess}>Erişim Kaydı Ekle</Btn></div></div>}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(300px,100%),1fr))",gap:10}}>{accessItems.map(item=><div key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:14}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:13}}>{item.name}</b><span style={{fontSize:9,fontWeight:850,color:item.status==="Hazır"?"#047857":"#C2410C",background:item.status==="Hazır"?"#ECFDF5":"#FFF7ED",padding:"3px 6px",borderRadius:7}}>{item.status}</span></div><div style={{fontSize:11,color:"#64748B",lineHeight:1.7,marginTop:8}}>{item.url&&<div>Adres: <b>{item.url}</b></div>}{item.username&&<div>Kullanıcı: <b>{item.username}</b></div>}{item.routing&&<div>Yönlendirme: {item.routing}</div>}{item.secretReference&&<div>Kasa kaydı: <b>{item.secretReference}</b></div>}{item.note&&<div>Not: {item.note}</div>}</div>{(isAdmin||canManage)&&<button onClick={()=>confirm("Erişim kaydı silinsin mi?")&&saveAccessItems(accessItems.filter(entry=>entry.id!==item.id))} style={{marginTop:8,border:0,background:"transparent",color:"#E11D48",fontSize:10,cursor:"pointer"}}>Sil</button>}</div>)}</div>
+      {!accessItems.length&&<div style={{padding:35,textAlign:"center",border:"1px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Uzaktan erişim kaydı bulunmuyor.</div>}
+    </div>}
+    {section!=="access"&&<>
     <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
     {/* Left: shared notes */}
     <div style={{ flex:"1 1 340px", minWidth:280 }}>
@@ -1693,6 +1753,7 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
       </div>}
     </div>
     </div>
+    </>}
   </div>;
 }
 
@@ -1717,6 +1778,7 @@ function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canMana
     };
   });
   const [text,setText]=useState("");
+  const [effortHours,setEffortHours]=useState("");
   const [actionAt,setActionAt]=useState(()=>new Date().toISOString().slice(0,16));
   const [editingId,setEditingId]=useState(null);
   const [filter,setFilter]=useState("");
@@ -1726,22 +1788,23 @@ function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canMana
     const actionDate=new Date(actionAt);
     const actionIso=Number.isNaN(actionDate.getTime())?now():actionDate.toISOString();
     if(editingId){
-      saveActions(actions.map(item=>item.id===editingId?{...item,text:text.trim(),actionAt:actionIso,updatedAt:now(),updatedBy:currentUser.name}:item));
+      saveActions(actions.map(item=>item.id===editingId?{...item,text:text.trim(),effortHours:parseFloat(effortHours)||0,actionAt:actionIso,updatedAt:now(),updatedBy:currentUser.name}:item));
     }else{
-      saveActions([{id:uid(),text:text.trim(),actionAt:actionIso,createdAt:now(),authorId:currentUser.id,authorName:currentUser.name},...actions]);
+      saveActions([{id:uid(),text:text.trim(),effortHours:parseFloat(effortHours)||0,actionAt:actionIso,createdAt:now(),authorId:currentUser.id,authorName:currentUser.name},...actions]);
     }
     setText("");
+    setEffortHours("");
     setActionAt(new Date().toISOString().slice(0,16));
     setEditingId(null);
   };
-  const edit=item=>{setEditingId(item.id);setText(item.text);setActionAt(new Date(item.actionAt||item.createdAt).toISOString().slice(0,16));};
+  const edit=item=>{setEditingId(item.id);setText(item.text);setEffortHours(item.effortHours||"");setActionAt(new Date(item.actionAt||item.createdAt).toISOString().slice(0,16));};
   const remove=id=>saveActions(actions.filter(item=>item.id!==id));
   const shown=[...actions,...fieldActions].filter(item=>!filter.trim()||`${item.text} ${item.authorName}`.toLocaleLowerCase("tr-TR").includes(filter.trim().toLocaleLowerCase("tr-TR"))).sort((a,b)=>new Date(b.actionAt||b.createdAt)-new Date(a.actionAt||a.createdAt));
   return <div style={{flex:1,overflow:"auto",padding:"clamp(16px,3vw,26px)",maxWidth:1050,width:"100%"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:17}}><div><h3 style={{margin:0,fontSize:17,display:"flex",alignItems:"center",gap:8}}><Icon name="activity" size={19}/>Proje Aksiyonları</h3><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Görüşme, arama, e-posta ve beklenen dönüşleri kronolojik olarak kaydedin.</p></div><input style={{...iStyle,width:240}} value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Aksiyonlarda ara..."/></div>
     {canManage&&<div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:16,marginBottom:17,boxShadow:"0 5px 18px #0f172a0a"}}>
       <Field label="Aksiyon"><textarea style={{...iStyle,minHeight:82,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>setText(e.target.value)} placeholder="Örn. Müşteriyle görüştüm, revize teklif mailini ilettim. Teknik ekipten dönüş bekliyorum."/></Field>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:10,flexWrap:"wrap"}}><div style={{width:230}}><Field label="Aksiyon Tarihi"><input type="datetime-local" style={iStyle} value={actionAt} onChange={e=>setActionAt(e.target.value)}/></Field></div><div style={{display:"flex",gap:7,marginBottom:13}}>{editingId&&<Btn variant="ghost" onClick={()=>{setEditingId(null);setText("");setActionAt(new Date().toISOString().slice(0,16));}}>İptal</Btn>}<Btn disabled={!text.trim()} onClick={submit}>{editingId?"Aksiyonu Güncelle":"Aksiyon Ekle"}</Btn></div></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:10,flexWrap:"wrap"}}><div style={{display:"flex",gap:10,flexWrap:"wrap"}}><div style={{width:230}}><Field label="Aksiyon Tarihi"><input type="datetime-local" style={iStyle} value={actionAt} onChange={e=>setActionAt(e.target.value)}/></Field></div><div style={{width:170}}><Field label="Efor (Saat, isteğe bağlı)"><input type="number" min="0" step="0.25" style={iStyle} value={effortHours} onChange={e=>setEffortHours(e.target.value)} placeholder="Örn. 1.5"/></Field></div></div><div style={{display:"flex",gap:7,marginBottom:13}}>{editingId&&<Btn variant="ghost" onClick={()=>{setEditingId(null);setText("");setEffortHours("");setActionAt(new Date().toISOString().slice(0,16));}}>İptal</Btn>}<Btn disabled={!text.trim()} onClick={submit}>{editingId?"Aksiyonu Güncelle":"Aksiyon Ekle"}</Btn></div></div>
     </div>}
     {!canManage&&<div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 13px",fontSize:11,color:"#64748B",marginBottom:14}}>Aksiyon ekleme yetkisi proje yöneticileri ve sistem yöneticilerindedir.</div>}
     <div style={{position:"relative",paddingLeft:24}}>
@@ -1750,6 +1813,7 @@ function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canMana
         <span style={{position:"absolute",left:-22,top:18,width:12,height:12,borderRadius:"50%",background:item.source==="field_visit"?"#059669":project.color,border:"3px solid #F8FAFC"}}/>
         {item.source==="field_visit"&&<span style={{display:"inline-block",fontSize:9,fontWeight:850,color:item.completed?"#047857":"#0369A1",background:item.completed?"#ECFDF5":"#F0F9FF",borderRadius:6,padding:"3px 6px",marginBottom:7}}>{item.completed?"SAHA ZİYARETİ":"SAHA PLANI"}</span>}
         <div style={{fontSize:13,color:"#1E293B",lineHeight:1.55,whiteSpace:"pre-wrap"}}>{item.text}</div>
+        {item.source!=="field_visit"&&Number(item.effortHours)>0&&<span style={{display:"inline-block",marginTop:8,background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"3px 7px",fontSize:10,fontWeight:800}}>Efor: {item.effortHours} saat</span>}
         <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginTop:9,fontSize:10,color:"#94A3B8"}}><span style={{fontWeight:700,color:"#64748B"}}>{item.authorName}</span><span>·</span><span>{new Date(item.actionAt||item.createdAt).toLocaleString("tr-TR")}</span>{item.updatedAt&&<span>· Düzenlendi</span>}{item.source==="field_visit"&&(isAdmin||item.authorId===currentUser.id)&&<button onClick={()=>setVisitPlan(item.plan)} style={{marginLeft:"auto",border:0,background:"#ECFDF5",color:"#047857",borderRadius:7,padding:"5px 8px",fontSize:9,fontWeight:850,cursor:"pointer"}}>{item.completed?"Ziyaret ve eforu düzenle":"Not ve efor gir"}</button>}{canEdit&&<span style={{marginLeft:item.source==="field_visit"?0:"auto",display:"flex",gap:8}}><button onClick={()=>edit(item)} style={{border:0,background:"transparent",color:"#4A6CF7",fontSize:10,fontWeight:700,cursor:"pointer"}}>Düzenle</button><button onClick={()=>confirm("Aksiyon silinsin mi?")&&remove(item.id)} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,fontWeight:700,cursor:"pointer"}}>Sil</button></span>}</div>
       </div>})}
       {!shown.length&&<div style={{padding:38,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8",fontSize:12}}>Henüz proje aksiyonu kaydedilmedi.</div>}
@@ -1762,6 +1826,7 @@ function MachinePanel({ project, canEdit, onChange }) {
   const machines=project.machines||[];
   const [showForm,setShowForm]=useState(false);
   const [form,setForm]=useState({name:"",code:"",type:"physical",commissioned:false,commissionedAt:"",note:""});
+  const fileRef=useRef(null);
   const commissioned=machines.filter(m=>m.commissioned).length;
   const save=()=>{
     if(!form.name.trim())return;
@@ -1770,10 +1835,25 @@ function MachinePanel({ project, canEdit, onChange }) {
     setShowForm(false);
   };
   const update=(id,data)=>onChange(machines.map(m=>m.id===id?{...m,...data}:m));
+  const exportExcel=()=>downloadXlsx([["Makine Kodu","Makine Adı","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"],...machines.map(machine=>[machine.code||"",machine.name,machine.type==="virtual"?"Sanal":"Fiziksel",machine.commissioned?"Evet":"Hayır",machine.commissionedAt||"",machine.note||""])],`${safeFileName(project.name)}-makineler.xlsx`,"Makineler");
+  const importExcel=(event)=>{
+    const file=event.target.files?.[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const workbook=XLSX.read(reader.result,{type:"array"});
+        const data=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{defval:""});
+        const imported=data.map(item=>({id:uid(),code:String(item["Makine Kodu"]||"").trim(),name:String(item["Makine Adı"]||item["Makine Adi"]||"").trim(),type:String(item.Tip||"").toLocaleLowerCase("tr-TR")==="sanal"?"virtual":"physical",commissioned:["evet","true","1"].includes(String(item["Devreye Alındı"]||item["Devreye Alindi"]||"").toLocaleLowerCase("tr-TR")),commissionedAt:String(item["Devreye Alma Tarihi"]||""),note:String(item["Açıklama"]||item.Aciklama||"")})).filter(machine=>machine.name);
+        onChange([...machines,...imported]);
+      }catch(error){alert(`Excel okunamadı: ${error.message}`);}
+      event.target.value="";
+    };
+    reader.readAsArrayBuffer(file);
+  };
   return <div style={{flex:1,overflow:"auto",padding:"clamp(14px, 3vw, 24px)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
       <div><h3 style={{margin:0,fontSize:16,display:"flex",alignItems:"center",gap:7}}><Icon name="machines" size={18}/>Makine Devreye Alma</h3><div style={{fontSize:12,color:"#64748B",marginTop:3}}>{commissioned}/{machines.length} makine devrede</div></div>
-      {canEdit&&<Btn onClick={()=>setShowForm(v=>!v)}>{showForm?"Formu Kapat":"+ Makine Ekle"}</Btn>}
+      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}><Btn variant="secondary" onClick={exportExcel}>Excel Dışa Aktar</Btn>{canEdit&&<><Btn variant="secondary" onClick={()=>fileRef.current?.click()}>Excel İçe Aktar</Btn><input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}} onChange={importExcel}/><Btn onClick={()=>setShowForm(v=>!v)}>{showForm?"Formu Kapat":"+ Makine Ekle"}</Btn></>}</div>
     </div>
     <div style={{height:8,background:"#E2E8F0",borderRadius:8,marginBottom:16,overflow:"hidden"}}><div style={{height:"100%",width:`${machines.length?commissioned/machines.length*100:0}%`,background:"#059669"}} /></div>
     {showForm&&<div style={{background:"#fff",border:"1.5px solid #DCE6F2",borderRadius:12,padding:16,marginBottom:16}}>
@@ -1802,6 +1882,24 @@ const COMMISSIONING_LEVELS = [
   { label:"Hat", childKey:"machines", childLabel:"Makine" },
 ];
 const commissioningMachines=(sectors=[])=>sectors.flatMap(sector=>(sector.productionCenters||[]).flatMap(center=>(center.workplaces||[]).flatMap(workplace=>(workplace.lines||[]).flatMap(line=>line.machines||[]))));
+const commissioningRows=(sectors=[])=>sectors.flatMap(sector=>(sector.productionCenters||[]).flatMap(center=>(center.workplaces||[]).flatMap(workplace=>(workplace.lines||[]).flatMap(line=>(line.machines||[]).map(machine=>({sector:sector.name,productionCenter:center.name,workplace:workplace.name,line:line.name,machine}))))));
+const commissioningTreeFromRows=(rows=[])=>{
+  const sectors=[];
+  const getOrCreate=(list,name,childKey)=>{
+    let item=list.find(entry=>entry.name===name);
+    if(!item){item={id:uid(),name,[childKey]:[]};list.push(item);}
+    return item;
+  };
+  rows.forEach(row=>{
+    if(!row.sector||!row.productionCenter||!row.workplace||!row.line||!row.machine?.name)return;
+    const sector=getOrCreate(sectors,row.sector,"productionCenters");
+    const center=getOrCreate(sector.productionCenters,row.productionCenter,"workplaces");
+    const workplace=getOrCreate(center.workplaces,row.workplace,"lines");
+    const line=getOrCreate(workplace.lines,row.line,"machines");
+    line.machines.push({id:uid(),code:"",type:"physical",commissioned:false,commissionedAt:"",note:"",...row.machine});
+  });
+  return sectors;
+};
 const updateCommissioningNodes=(nodes,id,updater,level=0)=>(nodes||[]).map(node=>{
   if(node.id===id)return updater(node);
   const childKey=COMMISSIONING_LEVELS[level]?.childKey;
@@ -1812,83 +1910,60 @@ const removeCommissioningNode=(nodes,id,level=0)=>(nodes||[]).filter(node=>node.
   return childKey&&node[childKey]?{...node,[childKey]:removeCommissioningNode(node[childKey],id,level+1)}:node;
 });
 
-function InlineHierarchyAdd({ label, onAdd, machine=false }) {
-  const [open,setOpen]=useState(false);
-  const [name,setName]=useState("");
-  const [code,setCode]=useState("");
-  const [type,setType]=useState("physical");
-  const save=()=>{
-    if(!name.trim())return;
-    onAdd(machine?{id:uid(),name:name.trim(),code:code.trim(),type,commissioned:false,commissionedAt:"",note:""}:{id:uid(),name:name.trim()});
-    setName("");setCode("");setType("physical");setOpen(false);
-  };
-  if(!open)return <Btn small variant="secondary" onClick={()=>setOpen(true)}>+ {label}</Btn>;
-  return <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",padding:"8px",background:"#F8FAFC",borderRadius:9,marginTop:8}}>
-    <input autoFocus style={{...iStyle,width:machine?180:220}} value={name} onChange={e=>setName(e.target.value)} placeholder={`${label} adı`}/>
-    {machine&&<input style={{...iStyle,width:120}} value={code} onChange={e=>setCode(e.target.value)} placeholder="Kod"/>}
-    {machine&&<select style={{...iStyle,width:110}} value={type} onChange={e=>setType(e.target.value)}><option value="physical">Fiziksel</option><option value="virtual">Sanal</option></select>}
-    <Btn small onClick={save}>Ekle</Btn><Btn small variant="ghost" onClick={()=>setOpen(false)}>İptal</Btn>
-  </div>;
-}
-
-function CommissioningBranch({ node, level, canEdit, onUpdate, onRemove, filter }) {
-  const [open,setOpen]=useState(true);
-  const [editing,setEditing]=useState(false);
-  const [name,setName]=useState(node.name);
-  const config=COMMISSIONING_LEVELS[level];
-  const children=node[config.childKey]||[];
-  const childMachines=level===3?children:commissioningMachines(level===0?[node]:level===1?[{productionCenters:[node]}]:[{productionCenters:[{workplaces:[node]}]}]);
-  const done=childMachines.filter(machine=>machine.commissioned).length;
-  const visibleChildren=level===3?children.filter(machine=>filter==="all"||(filter==="done"?machine.commissioned:!machine.commissioned)):children;
-  const addChild=(child)=>onUpdate(node.id,current=>({...current,[config.childKey]:[...(current[config.childKey]||[]),level===3?child:{...child,[COMMISSIONING_LEVELS[level+1]?.childKey]:[]}]}));
-  return <div style={{border:"1.5px solid #E2E8F0",borderRadius:12,background:"#fff",marginBottom:9,overflow:"hidden"}}>
-    <div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",background:level===0?"#F1F5FF":"#FAFBFC"}}>
-      <button onClick={()=>setOpen(v=>!v)} style={{border:0,background:"transparent",cursor:"pointer",fontSize:16,color:"#64748B",padding:0,width:18}}>{open?"−":"+"}</button>
-      <div style={{flex:1,minWidth:0}}>{editing?<input autoFocus style={{...iStyle,maxWidth:260,padding:"5px 8px"}} value={name} onChange={e=>setName(e.target.value)}/>:<div style={{fontSize:12,fontWeight:800}}>{node.name}</div>}<div style={{fontSize:10,color:"#64748B"}}>{config.label} · {done}/{childMachines.length} makine devrede</div></div>
-      {canEdit&&editing&&<button onClick={()=>{if(name.trim())onUpdate(node.id,current=>({...current,name:name.trim()}));setEditing(false);}} style={{border:0,background:"transparent",color:"#059669",cursor:"pointer",fontSize:11,fontWeight:700}}>Kaydet</button>}
-      {canEdit&&editing&&<button onClick={()=>{setName(node.name);setEditing(false);}} style={{border:0,background:"transparent",color:"#64748B",cursor:"pointer",fontSize:11,fontWeight:700}}>İptal</button>}
-      {canEdit&&!editing&&<button onClick={()=>setEditing(true)} style={{border:0,background:"transparent",color:"#4A6CF7",cursor:"pointer",fontSize:11,fontWeight:700}}>Düzenle</button>}
-      {canEdit&&<button onClick={()=>confirm(`${config.label} ve alt kayıtları silinsin mi?`)&&onRemove(node.id)} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer",fontSize:11,fontWeight:700}}>Sil</button>}
-    </div>
-    {open&&<div style={{padding:"10px 10px 10px 22px"}}>
-      {level<3&&visibleChildren.map(child=><CommissioningBranch key={child.id} node={child} level={level+1} canEdit={canEdit} onUpdate={onUpdate} onRemove={onRemove} filter={filter}/>)}
-      {level===3&&visibleChildren.map(machine=><div key={machine.id} style={{border:`1.5px solid ${machine.commissioned?"#A7F3D0":"#FED7AA"}`,borderRadius:10,padding:11,marginBottom:7,background:machine.commissioned?"#F0FDF4":"#FFFBEB"}}>
-        <div style={{display:"flex",alignItems:"center",gap:9,flexWrap:"wrap"}}>
-          <input type="checkbox" checked={Boolean(machine.commissioned)} disabled={!canEdit} onChange={e=>onUpdate(machine.id,current=>({...current,commissioned:e.target.checked,commissionedAt:e.target.checked?todayStr():""}))}/>
-          <div style={{flex:1,minWidth:150}}><div style={{fontSize:12,fontWeight:800,textDecoration:machine.commissioned?"line-through":"none"}}>{machine.name}</div><div style={{fontSize:10,color:"#64748B"}}>{machine.code||"Kod yok"} · {machine.type==="virtual"?"Sanal":"Fiziksel"}{machine.commissionedAt?` · ${fmt(machine.commissionedAt)}`:""}</div></div>
-          {canEdit&&<select style={{...iStyle,width:105,padding:"5px 7px",fontSize:11}} value={machine.type||"physical"} onChange={e=>onUpdate(machine.id,current=>({...current,type:e.target.value}))}><option value="physical">Fiziksel</option><option value="virtual">Sanal</option></select>}
-          {canEdit&&<button onClick={()=>onRemove(machine.id)} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer",fontSize:11,fontWeight:700}}>Sil</button>}
-        </div>
-        {!machine.commissioned&&<textarea disabled={!canEdit} value={machine.note||""} onChange={e=>onUpdate(machine.id,current=>({...current,note:e.target.value}))} placeholder="Devreye alınamama açıklaması..." style={{...iStyle,minHeight:52,resize:"vertical",marginTop:8,fontSize:11}}/>}
-      </div>)}
-      {canEdit&&<InlineHierarchyAdd label={config.childLabel} machine={level===3} onAdd={addChild}/>}
-      {!visibleChildren.length&&!canEdit&&<div style={{fontSize:11,color:"#94A3B8",padding:8}}>Kayıt yok.</div>}
-    </div>}
-  </div>;
-}
-
 function CommissioningPanel({ project, canEdit, onChange }) {
   const sectors=project.commissioningTree||[];
   const [filter,setFilter]=useState("all");
+  const [showForm,setShowForm]=useState(false);
+  const [form,setForm]=useState({sector:"",productionCenter:"",workplace:"",line:"",name:"",code:"",type:"physical",commissioned:false,note:""});
+  const fileRef=useRef(null);
   const machines=commissioningMachines(sectors);
+  const rows=commissioningRows(sectors);
   const commissioned=machines.filter(machine=>machine.commissioned).length;
   const physical=machines.filter(machine=>machine.type!=="virtual").length;
   const virtual=machines.filter(machine=>machine.type==="virtual").length;
   const percent=machines.length?Math.round(commissioned/machines.length*100):0;
   const update=(id,updater)=>onChange(updateCommissioningNodes(sectors,id,updater));
   const remove=(id)=>onChange(removeCommissioningNode(sectors,id));
+  const visibleRows=rows.filter(row=>filter==="all"||(filter==="done"?row.machine.commissioned:!row.machine.commissioned));
+  const addMachine=()=>{
+    if(!form.sector.trim()||!form.productionCenter.trim()||!form.workplace.trim()||!form.line.trim()||!form.name.trim())return;
+    const nextRows=[...rows,{sector:form.sector.trim(),productionCenter:form.productionCenter.trim(),workplace:form.workplace.trim(),line:form.line.trim(),machine:{id:uid(),name:form.name.trim(),code:form.code.trim(),type:form.type,commissioned:form.commissioned,commissionedAt:form.commissioned?todayStr():"",note:form.note.trim()}}];
+    onChange(commissioningTreeFromRows(nextRows));
+    setForm({sector:"",productionCenter:"",workplace:"",line:"",name:"",code:"",type:"physical",commissioned:false,note:""});
+    setShowForm(false);
+  };
+  const exportExcel=()=>{
+    const data=[["Sektör","Üretim Merkezi","İşyeri","Hat","Makine Kodu","Makine Adı","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"]];
+    rows.forEach(row=>data.push([row.sector,row.productionCenter,row.workplace,row.line,row.machine.code||"",row.machine.name,row.machine.type==="virtual"?"Sanal":"Fiziksel",row.machine.commissioned?"Evet":"Hayır",row.machine.commissionedAt||"",row.machine.note||""]));
+    downloadXlsx(data,`${safeFileName(project.name)}-devreye-alma.xlsx`,"Devreye Alma");
+  };
+  const importExcel=(event)=>{
+    const file=event.target.files?.[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const workbook=XLSX.read(reader.result,{type:"array"});
+        const data=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{defval:""});
+        const imported=data.map(item=>({sector:String(item["Sektör"]||item.Sektor||"").trim(),productionCenter:String(item["Üretim Merkezi"]||item["Uretim Merkezi"]||"").trim(),workplace:String(item["İşyeri"]||item.Isyeri||"").trim(),line:String(item.Hat||"").trim(),machine:{name:String(item["Makine Adı"]||item["Makine Adi"]||"").trim(),code:String(item["Makine Kodu"]||"").trim(),type:String(item.Tip||"").toLocaleLowerCase("tr-TR")==="sanal"?"virtual":"physical",commissioned:["evet","true","1"].includes(String(item["Devreye Alındı"]||item["Devreye Alindi"]||"").toLocaleLowerCase("tr-TR")),commissionedAt:String(item["Devreye Alma Tarihi"]||""),note:String(item["Açıklama"]||item.Aciklama||"")}})).filter(row=>row.machine.name);
+        onChange(commissioningTreeFromRows([...rows,...imported]));
+      }catch(error){alert(`Excel okunamadı: ${error.message}`);}
+      event.target.value="";
+    };
+    reader.readAsArrayBuffer(file);
+  };
   return <div style={{flex:1,overflow:"auto",padding:"clamp(14px,3vw,24px)",background:"#F8FAFC"}}>
     <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:14}}>
-      <div><h3 style={{margin:0,fontSize:17}}>Hiyerarşik Devreye Alma</h3><div style={{fontSize:11,color:"#64748B",marginTop:3}}>Sektör → Üretim Merkezi → İşyeri → Hat → Makine</div></div>
-      {canEdit&&<InlineHierarchyAdd label="Sektör" onAdd={sector=>onChange([...sectors,{...sector,productionCenters:[]}])}/>}
+      <div><h3 style={{margin:0,fontSize:17}}>Toplu Devreye Alma Takibi</h3><div style={{fontSize:11,color:"#64748B",marginTop:3}}>Tüm hiyerarşi tek listede; filtreleyin, işaretleyin veya Excel ile yönetin.</div></div>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}><Btn small variant="secondary" onClick={exportExcel}>Excel Dışa Aktar</Btn>{canEdit&&<><Btn small variant="secondary" onClick={()=>fileRef.current?.click()}>Excel İçe Aktar</Btn><input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}} onChange={importExcel}/><Btn small onClick={()=>setShowForm(value=>!value)}>{showForm?"Formu Kapat":"+ Kayıt Ekle"}</Btn></>}</div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:9,marginBottom:13}}>
       {[["İlerleme",`${percent}%`,"#4A6CF7"],["Devrede",`${commissioned}/${machines.length}`,"#059669"],["Fiziksel",physical,"#0369A1"],["Sanal",virtual,"#7C3AED"],["Bekleyen",machines.length-commissioned,"#EA6C00"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:11,padding:12}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><div style={{fontSize:21,fontWeight:800,color,marginTop:2}}>{value}</div></div>)}
     </div>
     <div style={{height:10,background:"#E2E8F0",borderRadius:10,overflow:"hidden",marginBottom:13}}><div style={{height:"100%",width:`${percent}%`,background:"linear-gradient(90deg,#4A6CF7,#10B981)",transition:"width .25s"}}/></div>
     <div style={{display:"flex",gap:6,marginBottom:13}}>{[["all","Tümü"],["pending","Devreye Alınacak"],["done","Devreye Alınan"]].map(([id,label])=><button key={id} onClick={()=>setFilter(id)} style={{border:0,borderRadius:8,padding:"7px 11px",background:filter===id?"#4A6CF7":"#fff",color:filter===id?"#fff":"#64748B",fontSize:11,fontWeight:700,cursor:"pointer"}}>{label}</button>)}</div>
-    {sectors.map(sector=><CommissioningBranch key={sector.id} node={sector} level={0} canEdit={canEdit} onUpdate={update} onRemove={remove} filter={filter}/>)}
-    {!sectors.length&&<div style={{padding:45,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8",background:"#fff"}}>İlk sektörü ekleyerek devreye alma ağacını oluşturun.</div>}
+    {showForm&&<div style={{background:"#fff",border:"1px solid #DDE7F5",borderRadius:13,padding:15,marginBottom:14}}><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:9}}>{[["sector","Sektör"],["productionCenter","Üretim Merkezi"],["workplace","İşyeri"],["line","Hat"],["name","Makine Adı"],["code","Makine Kodu"]].map(([key,label])=><Field key={key} label={label}><input style={iStyle} value={form[key]} onChange={event=>setForm(current=>({...current,[key]:event.target.value}))}/></Field>)}<Field label="Tip"><select style={iStyle} value={form.type} onChange={event=>setForm(current=>({...current,type:event.target.value}))}><option value="physical">Fiziksel</option><option value="virtual">Sanal</option></select></Field></div><Field label="Açıklama"><input style={iStyle} value={form.note} onChange={event=>setForm(current=>({...current,note:event.target.value}))}/></Field><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}><label style={{fontSize:12,fontWeight:700}}><input type="checkbox" checked={form.commissioned} onChange={event=>setForm(current=>({...current,commissioned:event.target.checked}))}/> Devreye alındı</label><Btn onClick={addMachine}>Kaydet</Btn></div></div>}
+    <div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:13}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}><thead><tr>{["Durum","Sektör","Üretim Merkezi","İşyeri","Hat","Makine","Tip","Açıklama",""].map(label=><th key={label} style={{padding:"10px 9px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{visibleRows.map(row=><tr key={row.machine.id} style={{borderTop:"1px solid #EEF2F7"}}><td style={{padding:9}}><input type="checkbox" checked={Boolean(row.machine.commissioned)} disabled={!canEdit} onChange={event=>update(row.machine.id,current=>({...current,commissioned:event.target.checked,commissionedAt:event.target.checked?todayStr():""}))}/></td>{[row.sector,row.productionCenter,row.workplace,row.line].map((value,index)=><td key={index} style={{padding:9,fontSize:11,color:"#475569"}}>{value}</td>)}<td style={{padding:9}}><div style={{fontSize:11,fontWeight:800}}>{row.machine.name}</div><div style={{fontSize:9,color:"#94A3B8"}}>{row.machine.code||"Kod yok"}</div></td><td style={{padding:9,fontSize:11}}>{row.machine.type==="virtual"?"Sanal":"Fiziksel"}</td><td style={{padding:9,minWidth:190}}>{canEdit?<input style={{...iStyle,padding:"6px 8px",fontSize:10}} value={row.machine.note||""} onChange={event=>update(row.machine.id,current=>({...current,note:event.target.value}))}/>:<span style={{fontSize:10,color:"#64748B"}}>{row.machine.note||"-"}</span>}</td><td style={{padding:9}}>{canEdit&&<button onClick={()=>confirm("Makine silinsin mi?")&&remove(row.machine.id)} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer",fontSize:11}}>Sil</button>}</td></tr>)}</tbody></table></div>
+    {!visibleRows.length&&<div style={{padding:35,textAlign:"center",color:"#94A3B8"}}>Bu filtrede kayıt bulunmuyor.</div>}
   </div>;
 }
 
@@ -1918,30 +1993,52 @@ function generateRiskPortfolioReport(state){
   downloadTextFile(html,`risk-portfoyu-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
 }
 
+function downloadProjectActionsReport(state){
+  const rows=[["Proje","Aksiyon Tarihi","Aksiyon","Efor (Saat)","Girişi Yapan"]];
+  Object.entries(state.projectActions||{}).forEach(([projectId,actions])=>{
+    const project=state.projects.find(item=>item.id===projectId);
+    (actions||[]).forEach(action=>rows.push([project?.name||"Silinmiş proje",action.actionAt||action.createdAt||"",action.text||"",action.effortHours||0,action.authorName||""]));
+  });
+  downloadXlsx(rows,`proje-aksiyonlari-${todayStr()}.xlsx`,"Aksiyonlar");
+}
+
+function downloadFieldVisitsReport(state,people){
+  const rows=[["Proje","Ziyaret Tarihi","Sorumlu","Başlangıç","Bitiş","Efor (Saat)","Ziyaret Notu"]];
+  (state.fieldPlans||[]).filter(plan=>plan.status==="completed"||plan.completedAt).forEach(plan=>{
+    rows.push([state.projects.find(project=>project.id===plan.projectId)?.name||"Silinmiş proje",plan.date||"",people.find(person=>person.id===plan.userId)?.name||"",plan.actualStartTime||plan.startTime||"",plan.actualEndTime||plan.endTime||"",fieldPlanHours(plan),plan.visitNotes||""]);
+  });
+  downloadXlsx(rows,`saha-ziyaretleri-${todayStr()}.xlsx`,"Saha Ziyaretleri");
+}
+
 function ReportsPage({ state, people, isAdmin }) {
   const [projectId,setProjectId]=useState(state.projects[0]?.id||"");
+  const [group,setGroup]=useState("operations");
   const project=state.projects.find(p=>p.id===projectId);
   const tasks=project?project.milestones.flatMap(m=>m.tasks.map(task=>({task,project,milestone:m}))):[];
   const delayed=tasks.filter(({task})=>delayLvl(task.dueDate,task.status));
   const taskHours=tasks.reduce((sum,{task})=>sum+(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0);
-  const fieldHours=(state.fieldPlans||[]).filter(plan=>plan.projectId===projectId&&(plan.status==="completed"||plan.completedAt)).reduce((sum,plan)=>sum+fieldPlanHours(plan),0);
+  const fieldHours=(state.fieldPlans||[]).filter(plan=>plan.projectId===projectId&&(plan.status==="completed"||plan.completedAt)).reduce((sum,plan)=>sum+fieldPlanHours(plan),0)
+    +((state.projectActions||{})[projectId]||[]).reduce((sum,action)=>sum+(parseFloat(action.effortHours)||0),0);
   const hours=taskHours+fieldHours;
-  const machines=project?.machines||[];
+  const machines=project?(project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[]):[];
   const cards=[
-    {title:"Gecikme Raporu",desc:"Geciken görevler, gecikme günleri, sorumlu ve bekleme nedeni.",color:"#E11D48",action:()=>downloadDelayReport(state,people),label:"XLSX İndir"},
-    {title:"Efor Raporu",desc:"Planlanan ve gerçekleşen saatler; kişi, görev ve tarih kırılımı.",color:"#7C3AED",action:()=>downloadEffortReport(state,people),label:"XLSX İndir"},
-    {title:"Makine Devreye Alma",desc:"Fiziksel/sanal makineler, devre durumu ve devreye alınamama açıklamaları.",color:"#059669",action:()=>downloadMachineReport(state),label:"XLSX İndir"},
-    {title:"İç Operasyon Raporu",desc:"Grafikler, efor, gecikme, sorumlu, görev ve makine detaylarını içeren yönetim raporu.",color:"#0369A1",action:()=>project&&generateVisualReport(project,people,{fieldHours}),label:"HTML / PDF"},
-    {title:"Müşteri İlerleme Raporu",desc:"Renkli ilerleme grafikleri, teslim tarihleri ve makine durumunu sade müşteri görünümünde sunar.",color:"#EA6C00",action:()=>project&&generateVisualReport(project,people,{customer:true,fieldHours}),label:"HTML / PDF"},
-    ...(isAdmin?[{title:"Genel Durum Raporu",desc:"Tüm projeleri ilerleme, gecikme, makine ve efor göstergeleriyle karşılaştırır.",color:"#4338CA",action:()=>generatePortfolioReport(state,people),label:"HTML / PDF"}]:[]),
-    ...(isAdmin?[{title:"Ticket Durum Raporu",desc:"Ticket yaşı, son aksiyon, sorumlu, proje ve Jira durumlarını tüm portföyde gösterir.",color:"#BE123C",action:()=>generateTicketStatusReport(state,people),label:"HTML / PDF"}]:[]),
-    ...(isAdmin?[{title:"Ekip Kapasite Raporu",desc:"Kişi bazlı aktif iş yükü, gecikme yoğunluğu ve gerçekleşen eforu görselleştirir.",color:"#4F46E5",action:()=>generateTeamCapacityReport(state,people),label:"HTML / PDF"}]:[]),
-    ...(isAdmin?[{title:"Risk Portföyü Raporu",desc:"Açık riskleri proje ve önem seviyesine göre karşılaştırmalı gösterir.",color:"#C2410C",action:()=>generateRiskPortfolioReport(state),label:"HTML / PDF"}]:[]),
+    {group:"operations",title:"Gecikme Raporu",desc:"Geciken görevler, gecikme günleri, sorumlu ve bekleme nedeni.",color:"#E11D48",action:()=>downloadDelayReport(state,people),label:"XLSX İndir"},
+    {group:"operations",title:"Efor Raporu",desc:"Görev, saha ziyareti ve proje aksiyonlarından oluşan saat analizi.",color:"#7C3AED",action:()=>downloadEffortReport(state,people),label:"XLSX İndir"},
+    {group:"operations",title:"Proje Aksiyonları",desc:"Tüm proje aksiyonları, tarihleri, sahipleri ve girilen eforlar.",color:"#0F766E",action:()=>downloadProjectActionsReport(state),label:"XLSX İndir"},
+    {group:"operations",title:"Saha Ziyaretleri",desc:"Gerçekleşen ziyaretler, ziyaret notları ve proje eforları.",color:"#059669",action:()=>downloadFieldVisitsReport(state,people),label:"XLSX İndir"},
+    {group:"technical",title:"Makine Devreye Alma",desc:"Fiziksel/sanal makineler, devre durumu ve devreye alınamama açıklamaları.",color:"#059669",action:()=>downloadMachineReport(state),label:"XLSX İndir"},
+    {group:"project",title:"İç Operasyon Raporu",desc:"Grafikler, efor, gecikme, sorumlu, görev ve makine detaylarını içeren yönetim raporu.",color:"#0369A1",action:()=>project&&generateVisualReport(project,people,{fieldHours}),label:"HTML / PDF"},
+    {group:"project",title:"Müşteri İlerleme Raporu",desc:"Renkli ilerleme grafikleri, teslim tarihleri ve makine durumunu sade müşteri görünümünde sunar.",color:"#EA6C00",action:()=>project&&generateVisualReport(project,people,{customer:true,fieldHours}),label:"HTML / PDF"},
+    ...(isAdmin?[{group:"management",title:"Genel Durum Raporu",desc:"Tüm projeleri ilerleme, gecikme, makine ve efor göstergeleriyle karşılaştırır.",color:"#4338CA",action:()=>generatePortfolioReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{group:"management",title:"Ticket Durum Raporu",desc:"Ticket yaşı, son aksiyon, sorumlu, proje ve Jira durumlarını tüm portföyde gösterir.",color:"#BE123C",action:()=>generateTicketStatusReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{group:"management",title:"Ekip Kapasite Raporu",desc:"Kişi bazlı aktif iş yükü, gecikme yoğunluğu ve gerçekleşen eforu görselleştirir.",color:"#4F46E5",action:()=>generateTeamCapacityReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{group:"management",title:"Risk Portföyü Raporu",desc:"Açık riskleri proje ve önem seviyesine göre karşılaştırmalı gösterir.",color:"#C2410C",action:()=>generateRiskPortfolioReport(state),label:"HTML / PDF"}]:[]),
   ];
   return <div style={{padding:"clamp(16px, 4vw, 28px)",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,marginBottom:20,flexWrap:"wrap"}}><div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="reports" size={21}/>Raporlar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>İç operasyon ve müşteri paylaşımı için güncel proje çıktıları.</p></div><div style={{minWidth:"min(240px,100%)",flex:"0 1 280px"}}><label style={lStyle}>Rapor Projesi</label><select style={iStyle} value={projectId} onChange={e=>setProjectId(e.target.value)}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:10,marginBottom:20}}>{[["Geciken Görev",delayed.length,"#E11D48"],["Toplam Efor",`${hours} sa`,"#7C3AED"],["Makine",machines.length,"#0369A1"],["Devrede",machines.filter(m=>m.commissioned).length,"#059669"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:14}}><div style={{fontSize:11,color:"#64748B"}}>{label}</div><div style={{fontSize:24,fontWeight:800,color,marginTop:3}}>{value}</div></div>)}</div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12}}>{cards.map(card=><div key={card.title} style={{background:"#fff",borderRadius:14,padding:18,border:"1.5px solid #E2E8F0",borderTop:`4px solid ${card.color}`,boxShadow:"0 2px 6px rgba(0,0,0,.04)"}}><div style={{fontWeight:800,fontSize:14,marginBottom:6}}>{card.title}</div><div style={{fontSize:12,color:"#64748B",lineHeight:1.5,minHeight:54}}>{card.desc}</div><Btn style={{marginTop:12,background:card.color}} disabled={!project&&card.title.includes("Raporu")} onClick={card.action}>{card.label}</Btn></div>)}</div>
+    <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>{[["operations","Operasyon"],["project","Proje ve Müşteri"],["technical","Teknik"],...(isAdmin?[["management","Yönetici"]]:[])].map(([id,label])=><button key={id} onClick={()=>setGroup(id)} style={{border:0,borderRadius:9,padding:"8px 12px",background:group===id?"#4338CA":"#F1F5F9",color:group===id?"#fff":"#64748B",fontSize:11,fontWeight:800,cursor:"pointer"}}>{label}</button>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12}}>{cards.filter(card=>card.group===group).map(card=><div key={card.title} style={{background:"#fff",borderRadius:14,padding:18,border:"1.5px solid #E2E8F0",borderTop:`4px solid ${card.color}`,boxShadow:"0 2px 6px rgba(0,0,0,.04)"}}><div style={{fontWeight:800,fontSize:14,marginBottom:6}}>{card.title}</div><div style={{fontSize:12,color:"#64748B",lineHeight:1.5,minHeight:54}}>{card.desc}</div><Btn style={{marginTop:12,background:card.color}} disabled={!project&&card.title.includes("Raporu")} onClick={card.action}>{card.label}</Btn></div>)}</div>
   </div>;
 }
 
@@ -1955,7 +2052,7 @@ function generateTicketStatusReport(state,people){
   const rows=tickets.map(({ticket,project})=>{
     const age=Math.max(0,daysDiff(ticket.ts));
     const assignee=people.find(p=>p.id===ticket.assignedTo);
-    return `<tr><td><b>${ticket.title}</b></td><td>${project?.name||"Silinmiş proje"}</td><td>${ticket.status||"Açık"}</td><td>${ticket.priority||"-"}</td><td>${assignee?.name||"Atanmamış"}</td><td>${new Date(ticket.ts).toLocaleDateString("tr-TR")}</td><td class="${age>=7?"danger":""}">${age} gün</td><td>${ticket.updatedAt?new Date(ticket.updatedAt).toLocaleString("tr-TR"):"Aksiyon yok"}</td><td>${ticket.jiraStatus||"-"}</td></tr>`;
+    return `<tr><td><b>${ticketNumber(ticket)}</b><br>${ticket.title}</td><td>${project?.name||"Silinmiş proje"}</td><td>${ticket.status||"Açık"}</td><td>${ticket.priority||"-"}</td><td>${assignee?.name||"Atanmamış"}</td><td>${new Date(ticket.ts).toLocaleDateString("tr-TR")}</td><td class="${age>=7?"danger":""}">${age} gün</td><td>${ticket.updatedAt?new Date(ticket.updatedAt).toLocaleString("tr-TR"):"Aksiyon yok"}</td><td>${ticket.jiraStatus||"-"}</td></tr>`;
   }).join("");
   const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Ticket Durum Raporu</title><style>*{box-sizing:border-box}body{margin:0;padding:32px;background:#f1f5f9;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1250px;margin:auto}.hero{background:linear-gradient(125deg,#172554,#4338ca,#7c3aed);color:#fff;padding:28px;border-radius:22px}.hero h1{margin:0}.hero p{color:#c7d2fe}.print{float:right;border:0;border-radius:10px;background:#fff;color:#4338ca;padding:9px 15px;font-weight:800}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat{color:#fff;border-radius:15px;padding:17px}.stat b{font-size:27px;display:block}.blue{background:linear-gradient(135deg,#2563eb,#4f46e5)}.orange{background:linear-gradient(135deg,#ea580c,#f59e0b)}.green{background:linear-gradient(135deg,#059669,#10b981)}.purple{background:linear-gradient(135deg,#7c3aed,#a855f7)}.card{background:#fff;border:1px solid #e2e8f0;border-radius:17px;padding:20px}.table{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left;font-size:12px}th{background:#f8fafc;color:#64748b}.danger{color:#dc2626;font-weight:800}@media(max-width:760px){body{padding:14px}.stats{grid-template-columns:1fr 1fr}}@media print{body{padding:0;background:#fff}.print{display:none}}</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>Ticket Durum Raporu</h1><p>${new Date().toLocaleDateString("tr-TR")} · Tüm projeler</p></div><div class="stats"><div class="stat blue"><b>${tickets.length}</b>Toplam Ticket</div><div class="stat orange"><b>${open}</b>Açık Ticket</div><div class="stat green"><b>${tickets.length-open}</b>Kapanan Ticket</div><div class="stat purple"><b>${acted}</b>Aksiyon Alınan</div></div><div class="card"><div class="table"><table><thead><tr><th>Ticket</th><th>Proje</th><th>Durum</th><th>Öncelik</th><th>Sorumlu</th><th>Açılış</th><th>Geçen Süre</th><th>Son Aksiyon</th><th>Jira</th></tr></thead><tbody>${rows||"<tr><td colspan='9'>Ticket yok.</td></tr>"}</tbody></table></div></div></div></body></html>`;
   downloadTextFile(html,`ticket-durum-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
@@ -1979,13 +2076,13 @@ function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false}){
     return (list||[]).map(ticket=>({ticket,projectId,project}));
   });
   const filtered=all.filter(({ticket,projectId,project})=>{
-    const haystack=`${ticket.title||""} ${ticket.description||""} ${project?.name||""} ${state.people.find(p=>p.id===ticket.assignedTo)?.name||""}`.toLocaleLowerCase("tr-TR");
+    const haystack=`${ticket.ticketNo||""} ${ticket.title||""} ${ticket.description||""} ${project?.name||""} ${state.people.find(p=>p.id===ticket.assignedTo)?.name||""}`.toLocaleLowerCase("tr-TR");
     return (projectFilter==="all"||projectId===projectFilter)&&(statusFilter==="all"||ticket.status===statusFilter)&&(!mineOnly||ticket.assignedTo===currentUser.id||ticket.author===currentUser.name)&&(!search.trim()||haystack.includes(search.trim().toLocaleLowerCase("tr-TR")));
   });
   const save=(projectId,tickets)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[projectId]:tickets}}));
   const add=async(projectId,data)=>{
     const createdAt=now();
-    const ticket={id:uid(),ts:createdAt,updatedAt:createdAt,author:currentUser.name,...data};
+    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,...data};
     save(projectId,[...((state.projectTickets||{})[projectId]||[]),ticket]);
     const result=await createTicketWithNotification(projectId,ticket);
     setMailNotice(result.notification?.sent?"Ticket oluşturuldu ve atama maili gönderildi.":`Ticket oluşturuldu; mail gönderilemedi: ${result.notification?.reason||"Bilinmeyen hata"}`);
@@ -2012,7 +2109,7 @@ function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false}){
     </div>
     {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"#ECFDF5":"#FFF7ED",color:mailNotice.includes("gönderildi")?"#047857":"#C2410C",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
     <div style={{display:"flex",flexDirection:"column",gap:8}}>{filtered.map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderLeft:`4px solid ${project?.color||"#4A6CF7"}`,borderRadius:12,padding:"13px 15px",cursor:"pointer"}}>
-      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><b style={{fontSize:13}}>{ticket.title}</b><Badge label={ticket.status||"Açık"}/><span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span><span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontSize:10,fontWeight:850,color:"#4338CA",background:"#EEF2FF",padding:"3px 7px",borderRadius:7}}>{ticketNumber(ticket)}</span><b style={{fontSize:13}}>{ticket.title}</b><Badge label={ticket.status||"Açık"}/><span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span><span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
       <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"#64748B"}}><span>Sorumlu: <b>{assignee?.name||"Atanmamış"}</b></span><span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span>{(isAdmin||ticket.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();if(confirm("Ticket silinsin mi?"))remove(projectId,ticket.id);}} style={{marginLeft:"auto",border:0,background:"transparent",color:"#E11D48",fontSize:11,fontWeight:700,cursor:"pointer"}}>Sil</button>}</div>
     </div>})}</div>
     {!filtered.length&&<div style={{padding:40,textAlign:"center",background:"#fff",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Filtreye uygun ticket yok.</div>}
@@ -2436,8 +2533,7 @@ export default function App() {
     {id:"todos",icon:"ticket",label:"To-Do"},
     {id:"projects",icon:"projects",label:"Projeler"},
     {id:"mytasks",icon:"tasks",label:"G\u00f6revlerim"},
-    {id:"fieldplan",icon:"calendar",label:"Saha Plan\u0131m"},
-    {id:"fieldvisits",icon:"activity",label:"Saha Ziyaretlerim"},
+    {id:"fieldops",icon:"calendar",label:"Saha Y\u00f6netimi"},
     {id:"deadlines",icon:"clock",label:`Termin Uyar\u0131lar\u0131${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},
     {id:"tickets",icon:"ticket",label:"Ticketlar"},
     {id:"reports",icon:"reports",label:"Raporlar"},
@@ -2487,7 +2583,7 @@ export default function App() {
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?50:0 }}>
       {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&<DashboardPage state={state} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("mine");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
-      {view==="admin"&&isAdmin&&!selProject&&<AdminDashboard state={state} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
+      {view==="admin"&&isAdmin&&!selProject&&<AdminDashboard state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
 
       {/* PROJECT DETAIL */}
@@ -2554,7 +2650,7 @@ export default function App() {
         </div>}
 
         {projectTab==="tickets"&&<TicketsPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} />}
-        {projectTab==="notlar"&&<ProjectNotesPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} />}
+        {projectTab==="notlar"&&<ProjectNotesPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} canManage={canManageProjectActions} />}
 
         {projectTab==="projlogs"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
           <LogPage logs={state.logs.filter(l=>l.project===project.name)} projects={state.projects} />
@@ -2615,6 +2711,7 @@ export default function App() {
       </div>}
 
       {view==="mytasks"&&<MyTasksPage currentUser={currentUser} state={state} setState={setState} addLog={addLog} isAdmin={isAdmin} />}
+      {view==="fieldops"&&<FieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("actions");}}/>}
       {view==="fieldplan"&&<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>}
       {view==="fieldvisits"&&<FieldVisitsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("actions");}}/>}
       {view==="deadlines"&&<DeadlinePage warnings={deadlineWarnings} people={state.people} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}} onOpenTodos={()=>setView("todos")}/>}
@@ -2811,7 +2908,7 @@ function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
   const saveTickets=(t)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[project.id]:t}}));
   const addTicket=async(data)=>{
     const createdAt=now();
-    const ticket={id:uid(),ts:createdAt,updatedAt:createdAt,author:currentUser.name,...data};
+    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,...data};
     saveTickets([...tickets,ticket]);
     const result=await createTicketWithNotification(project.id,ticket);
     setMailNotice(result.notification?.sent?"Ticket oluşturuldu ve atama maili gönderildi.":`Ticket oluşturuldu; mail gönderilemedi: ${result.notification?.reason||"Bilinmeyen hata"}`);
@@ -2839,6 +2936,7 @@ function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
         <div style={{ width:8, height:8, borderRadius:"50%", background:TYPE_COLORS[t.type]||"#94A3B8", marginTop:4, flexShrink:0 }} />
         <div style={{ flex:1 }}>
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
+            <span style={{background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"2px 7px",fontSize:10,fontWeight:850}}>{ticketNumber(t)}</span>
             <span style={{ fontWeight:700, fontSize:13 }}>{t.title}</span>
             <span style={{ background:(TYPE_COLORS[t.type]||"#94A3B8")+"22", color:TYPE_COLORS[t.type]||"#94A3B8", borderRadius:8, padding:"1px 8px", fontSize:11, fontWeight:600 }}>{t.type}</span>
             <span style={{ background:"#F1F5FF", color:"#4A6CF7", borderRadius:8, padding:"1px 8px", fontSize:11 }}>{t.priority}</span>
@@ -2907,7 +3005,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
     try{
       const issue=await getJiraIssue(jiraKey);
       setJira(issue);
-      onUpdate({jiraKey:issue.key,jiraId:issue.key,jiraIssueId:issue.id,jiraLink:issue.url,jiraStatus:issue.status,jiraUpdatedAt:now()});
+      onUpdate({jiraKey:issue.key,jiraId:issue.key,jiraIssueId:issue.id,jiraLink:issue.url,jiraStatus:issue.status,jiraSummary:issue.summary,jiraDescription:issue.description,jiraAssignee:issue.assignee,jiraIssueType:issue.issueType,jiraPriority:issue.priority,jiraUpdatedAt:now()});
     }catch(e){setError(e?.message||"Jira bilgisi alınamadı.");}
     finally{setLoading(false);}
   };
@@ -2918,7 +3016,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
       if(!active)return;
       setJira(issue);
       setError("");
-      onUpdate({jiraKey:issue.key,jiraId:issue.key,jiraIssueId:issue.id,jiraLink:issue.url,jiraStatus:issue.status,jiraUpdatedAt:now()});
+      onUpdate({jiraKey:issue.key,jiraId:issue.key,jiraIssueId:issue.id,jiraLink:issue.url,jiraStatus:issue.status,jiraSummary:issue.summary,jiraDescription:issue.description,jiraAssignee:issue.assignee,jiraIssueType:issue.issueType,jiraPriority:issue.priority,jiraUpdatedAt:now()});
     }).catch(e=>{if(active)setError(e?.message||"Jira bilgisi alınamadı.");})
       .finally(()=>{if(active)setLoading(false);});
     return()=>{active=false;};
@@ -2941,7 +3039,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
       setMailStatus({loading:false,message:e?.message||"Mail gönderilemedi.",error:true});
     }
   };
-  return <Modal title={ticket.title} onClose={onClose} wide>
+  return <Modal title={`${ticketNumber(ticket)} · ${ticket.title}`} onClose={onClose} wide>
     {editing?<div>
       <Field label="Başlık"><input style={iStyle} value={form.title||""} onChange={e=>upd("title",e.target.value)} /></Field>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
@@ -2961,11 +3059,12 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
       <div style={{border:"1.5px solid #DDE7F5",borderRadius:12,padding:14,background:"#F8FBFF",marginBottom:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:jiraKey?10:0}}><div style={{fontWeight:800,fontSize:13,color:"#0052CC"}}>Jira Task</div>{jiraKey&&<button onClick={refreshJira} disabled={loading} style={{border:"none",background:"none",color:"#4A6CF7",fontSize:11,cursor:"pointer"}}>{loading?"Güncelleniyor...":"Yenile"}</button>}</div>
         {!jiraKey&&<div style={{fontSize:12,color:"#64748B"}}>Bu ticket henüz bir Jira taskıyla ilişkilendirilmemiş.</div>}
-        {jiraKey&&error&&<div style={{fontSize:12,color:"#BE123C"}}>{error}</div>}
-        {jiraKey&&!error&&<div>
+        {jiraKey&&error&&<div style={{fontSize:11,color:"#BE123C",background:"#FFF1F2",borderRadius:7,padding:"7px 9px",marginBottom:9}}>{error} Son alınan bilgiler gösteriliyor.</div>}
+        {jiraKey&&<div>
           <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:8}}><strong style={{fontSize:13}}>{jiraKey}</strong><span style={{background:"#E8F5E9",color:"#16794A",borderRadius:7,padding:"2px 8px",fontSize:11,fontWeight:700}}>{jira?.status||ticket.jiraStatus||"Durum alınıyor..."}</span></div>
-          {(jira?.summary)&&<div style={{fontSize:12,color:"#475569",marginBottom:9}}>{jira.summary}</div>}
-          {(jira?.assignee)&&<div style={{fontSize:11,color:"#64748B",marginBottom:9}}>Sorumlu: {jira.assignee}</div>}
+          {(jira?.summary||ticket.jiraSummary)&&<div style={{fontSize:12,fontWeight:750,color:"#334155",marginBottom:7}}>{jira?.summary||ticket.jiraSummary}</div>}
+          {(jira?.description||ticket.jiraDescription)&&<div style={{fontSize:11,color:"#475569",lineHeight:1.55,whiteSpace:"pre-wrap",background:"#fff",borderRadius:8,padding:"9px 10px",marginBottom:9}}>{jira?.description||ticket.jiraDescription}</div>}
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",fontSize:10,color:"#64748B",marginBottom:9}}>{(jira?.issueType||ticket.jiraIssueType)&&<span>Tip: <b>{jira?.issueType||ticket.jiraIssueType}</b></span>}{(jira?.priority||ticket.jiraPriority)&&<span>Öncelik: <b>{jira?.priority||ticket.jiraPriority}</b></span>}{(jira?.assignee||ticket.jiraAssignee)&&<span>Sorumlu: <b>{jira?.assignee||ticket.jiraAssignee}</b></span>}</div>
           {(jira?.url||ticket.jiraLink)&&<a href={jira?.url||ticket.jiraLink} target="_blank" rel="noreferrer" style={{display:"inline-block",background:"#0052CC",color:"#fff",borderRadius:8,padding:"6px 11px",fontSize:12,fontWeight:700,textDecoration:"none"}}>Jira'da Aç</a>}
         </div>}
       </div>

@@ -158,14 +158,20 @@ export const getJiraIssue = async (issueKey, { fetchImpl = fetch } = {}) => {
 
   const jira = getJiraConfig();
   const issue = await jiraRequest(
-    `/rest/api/3/issue/${encodeURIComponent(key)}?fields=summary,status,issuetype,priority,assignee`,
+    `/rest/api/3/issue/${encodeURIComponent(key)}?fields=summary,description,status,issuetype,priority,assignee`,
     { fetchImpl, event: "jira.issue.get" },
   );
+  const description = (issue.fields?.description?.content || [])
+    .flatMap((block) => block.content || [])
+    .map((content) => content.text || "")
+    .filter(Boolean)
+    .join("\n");
 
   const result = {
     id: String(issue.id),
     key: issue.key,
     summary: issue.fields?.summary || "",
+    description,
     status: issue.fields?.status?.name || "",
     issueType: issue.fields?.issuetype?.name || "",
     priority: issue.fields?.priority?.name || "",

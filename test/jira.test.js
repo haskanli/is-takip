@@ -51,6 +51,12 @@ test("getJiraIssue returns current Jira task details", async () => {
         key: "TEST-42",
         fields: {
           summary: "Linked task",
+          description: {
+            type: "doc",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "Jira detail" }] },
+            ],
+          },
           status: { name: "In Progress" },
           issuetype: { name: "Task" },
           priority: { name: "High" },
@@ -64,6 +70,7 @@ test("getJiraIssue returns current Jira task details", async () => {
     id: "10042",
     key: "TEST-42",
     summary: "Linked task",
+    description: "Jira detail",
     status: "In Progress",
     issueType: "Task",
     priority: "High",
