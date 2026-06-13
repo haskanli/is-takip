@@ -6,7 +6,7 @@ import { apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.18.0";
+const APP_VERSION = "v1.18.1";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -1098,7 +1098,7 @@ function AuthLoginScreen() {
     const {error}=await supabase.auth.signInWithOAuth({
       provider:"slack_oidc",
       options:{
-        redirectTo:"https://www.corject.com",
+        redirectTo:`${window.location.origin}/`,
         scopes:"openid profile email",
       },
     });
@@ -1111,8 +1111,8 @@ function AuthLoginScreen() {
     const {error}=await supabase.auth.signInWithOtp({
       email:value,
       options:{
-        emailRedirectTo:"https://www.corject.com",
-        shouldCreateUser:false,
+        emailRedirectTo:`${window.location.origin}/`,
+        shouldCreateUser:true,
       },
     });
     setStatus(error

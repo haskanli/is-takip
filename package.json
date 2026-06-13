@@ -18,6 +18,7 @@
     "db:backup": "node --env-file=.env --env-file-if-exists=.env.local scripts/backup-app-state.mjs",
     "db:migrate": "node --env-file=.env --env-file-if-exists=.env.local scripts/migrate-app-state.mjs",
     "db:verify": "node --env-file=.env --env-file-if-exists=.env.local scripts/verify-normalized.mjs",
+    "auth:sync": "node --env-file=.env --env-file-if-exists=.env.local scripts/sync-auth-profiles.mjs",
     "test": "node --test"
   },
   "dependencies": {
