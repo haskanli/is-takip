@@ -36,6 +36,11 @@ export const filterStateForProfile = (state, profile) => {
     canAccessProject(project, legacyId),
   );
   const projectIds = new Set(projects.map((project) => project.id));
+  const managedProjectIds = new Set(
+    projects
+      .filter((project) => canManageProject(project, legacyId))
+      .map((project) => project.id),
+  );
   const ownTask = (task) =>
     task.assignee === legacyId || task.createdBy === legacyId;
 
@@ -44,7 +49,10 @@ export const filterStateForProfile = (state, profile) => {
     projects: clone(projects),
     personalTasks: clone((state.personalTasks || []).filter(ownTask)),
     fieldPlans: clone(
-      (state.fieldPlans || []).filter((plan) => plan.userId === legacyId),
+      (state.fieldPlans || []).filter(
+        (plan) =>
+          plan.userId === legacyId || managedProjectIds.has(plan.projectId),
+      ),
     ),
     userNotes: state.userNotes?.[legacyId]
       ? { [legacyId]: clone(state.userNotes[legacyId]) }

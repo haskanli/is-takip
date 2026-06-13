@@ -41,8 +41,9 @@ const state = {
     { id: "pt2", assignee: "other", title: "Not mine" },
   ],
   fieldPlans: [
-    { id: "fp1", userId: "member" },
-    { id: "fp2", userId: "other" },
+    { id: "fp1", userId: "member", projectId: "p1" },
+    { id: "fp2", userId: "other", projectId: "p2" },
+    { id: "fp3", userId: "other", projectId: "p1" },
   ],
   userNotes: { member: { notes: "mine" }, other: { notes: "secret" } },
   notifications: [
@@ -117,8 +118,15 @@ test("member cannot save an unsafe profile image URL", () => {
 test("project manager can update only a managed project", () => {
   const profile = { ...member, legacy_id: "pm", name: "PM" };
   const incoming = filterStateForProfile(state, profile);
+  assert.deepEqual(incoming.fieldPlans.map((item) => item.id), ["fp1", "fp3"]);
   incoming.projects[0].name = "Updated by PM";
+  incoming.fieldPlans.find((item) => item.id === "fp3").visitNotes =
+    "Tampered visit";
   const merged = mergeStateForProfile(state, incoming, profile);
   assert.equal(merged.projects[0].name, "Updated by PM");
   assert.equal(merged.projects[1].name, "Hidden");
+  assert.equal(
+    merged.fieldPlans.find((item) => item.id === "fp3").visitNotes,
+    undefined,
+  );
 });
