@@ -3,6 +3,35 @@ import { logger } from "../logger.js";
 import { withRetry } from "../retry.js";
 import { userTaskUrl } from "./email.js";
 
+export const formatSlackDueDate = (value) => {
+  if (!value) return "Belirtilmedi";
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+
+  const [, year, month, day] = match;
+  const date = new Date(Date.UTC(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+  ));
+  if (
+    date.getUTCFullYear() !== Number(year) ||
+    date.getUTCMonth() !== Number(month) - 1 ||
+    date.getUTCDate() !== Number(day)
+  ) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    weekday: "long",
+    timeZone: "UTC",
+  }).format(date);
+};
+
 const slackRequest = async (method, body, token, fetchImpl) => {
   const response = await withRetry(
     () =>
@@ -101,7 +130,7 @@ export const sendTaskAssignedSlack = async (
         { type: "mrkdwn", text: `*Atayan:*\n${assigner.name}` },
         {
           type: "mrkdwn",
-          text: `*Termin:*\n${task.dueDate || "Belirtilmedi"}`,
+          text: `*Termin:*\n${formatSlackDueDate(task.dueDate)}`,
         },
       ],
     },
