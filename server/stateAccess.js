@@ -1,5 +1,19 @@
 const clone = (value) => structuredClone(value);
 
+const stripSensitiveState = (state) => {
+  const safe = clone(state);
+  delete safe.remoteAccessSecrets;
+  safe.projects = (safe.projects || []).map((project) => ({
+    ...project,
+    remoteAccess: (project.remoteAccess || []).map((record) => {
+      const metadata = { ...record };
+      delete metadata.password;
+      return metadata;
+    }),
+  }));
+  return safe;
+};
+
 const safeAvatarUrl = (value) => {
   try {
     const url = new URL(value);
@@ -29,10 +43,40 @@ const filterRecordByProjectIds = (record, projectIds) =>
   );
 
 export const filterStateForProfile = (state, profile) => {
-  if (!profile || profile.is_admin) return clone(state);
+  const safeState = stripSensitiveState(state);
+  if (!profile || profile.is_admin) return safeState;
 
   const legacyId = profile.legacy_id;
-  const projects = (state.projects || []).filter((project) =>
+  const ticketOnly = Boolean(
+    safeState.people?.find((person) => person.id === legacyId)?.ticketOnly,
+  );
+  if (ticketOnly) {
+    return {
+      ...safeState,
+      projects: (safeState.projects || []).map((project) => ({
+        id: project.id,
+        name: project.name,
+        color: project.color,
+        milestones: [],
+        members: [],
+        pmIds: [],
+        stakeholders: [],
+      })),
+      personalTasks: [],
+      fieldPlans: [],
+      userNotes: {},
+      notifications: clone(
+        (safeState.notifications || []).filter(
+          (item) => item.userId === legacyId,
+        ),
+      ),
+      recurringTasks: [],
+      projectTickets: clone(safeState.projectTickets || {}),
+      projectActions: {},
+      logs: [],
+    };
+  }
+  const projects = (safeState.projects || []).filter((project) =>
     canAccessProject(project, legacyId),
   );
   const projectIds = new Set(projects.map((project) => project.id));
@@ -45,7 +89,7 @@ export const filterStateForProfile = (state, profile) => {
     task.assignee === legacyId || task.createdBy === legacyId;
 
   return {
-    ...clone(state),
+    ...safeState,
     projects: clone(projects),
     personalTasks: clone((state.personalTasks || []).filter(ownTask)),
     fieldPlans: clone(
@@ -157,14 +201,34 @@ export const mergeStateForProfile = (current, incoming, profile) => {
   if (!profile) {
     throw Object.assign(new Error("Authentication required"), { status: 401 });
   }
-  if (profile.is_admin) return clone(incoming);
+  const safeIncoming = stripSensitiveState(incoming);
+  if (profile.is_admin) {
+    return {
+      ...safeIncoming,
+      remoteAccessSecrets: clone(current.remoteAccessSecrets || {}),
+    };
+  }
 
   const legacyId = profile.legacy_id;
+  const ticketOnly = Boolean(
+    current.people?.find((person) => person.id === legacyId)?.ticketOnly,
+  );
+  if (ticketOnly) {
+    return {
+      ...clone(current),
+      projectTickets: clone(safeIncoming.projectTickets || {}),
+      notifications: clone(
+        (safeIncoming.notifications || []).filter(
+          (item) => item.userId === legacyId,
+        ),
+      ),
+    };
+  }
   const accessibleProjects = (current.projects || []).filter((project) =>
     canAccessProject(project, legacyId),
   );
   const incomingByProject = new Map(
-    (incoming.projects || []).map((project) => [project.id, project]),
+    (safeIncoming.projects || []).map((project) => [project.id, project]),
   );
   const projects = (current.projects || []).map((project) => {
     if (!canAccessProject(project, legacyId)) return project;
@@ -195,33 +259,33 @@ export const mergeStateForProfile = (current, incoming, profile) => {
     projects,
     personalTasks: replaceOwnedItems(
       current.personalTasks,
-      incoming.personalTasks,
+      safeIncoming.personalTasks,
       ownsTask,
     ),
     fieldPlans: replaceOwnedItems(
       current.fieldPlans,
-      incoming.fieldPlans,
+      safeIncoming.fieldPlans,
       ownsPlan,
     ),
     notifications: replaceOwnedItems(
       current.notifications,
-      incoming.notifications,
+      safeIncoming.notifications,
       ownsNotification,
     ),
     recurringTasks: replaceOwnedItems(
       current.recurringTasks,
-      incoming.recurringTasks,
+      safeIncoming.recurringTasks,
       ownsRecurring,
     ),
     userNotes: {
       ...(current.userNotes || {}),
-      ...(incoming.userNotes?.[legacyId]
-        ? { [legacyId]: clone(incoming.userNotes[legacyId]) }
+      ...(safeIncoming.userNotes?.[legacyId]
+        ? { [legacyId]: clone(safeIncoming.userNotes[legacyId]) }
         : {}),
     },
     projectTickets: mergeProjectTickets(
       current.projectTickets,
-      incoming.projectTickets,
+      safeIncoming.projectTickets,
       accessibleProjects,
       profile,
     ),
@@ -232,7 +296,7 @@ export const mergeStateForProfile = (current, incoming, profile) => {
           .filter((project) => canManageProject(project, legacyId))
           .map((project) => [
             project.id,
-            clone(incoming.projectActions?.[project.id] || []),
+            clone(safeIncoming.projectActions?.[project.id] || []),
           ]),
       ),
     },

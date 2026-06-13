@@ -3,6 +3,7 @@ import { getDatabaseClient } from "../database.js";
 import { logger } from "../logger.js";
 import { withRetry } from "../retry.js";
 import { syncNormalizedState } from "./normalizedState.js";
+import { decryptSecret, encryptSecret } from "../services/vault.js";
 
 let mutationQueue = Promise.resolve();
 
@@ -181,6 +182,87 @@ const mutateState = (mutator) => {
   return mutation;
 };
 
+const mutateStateWithVersion = (mutator) => {
+  const mutation = mutationQueue.then(async () => {
+    const record = await loadStateRecord();
+    const result = await mutator(record.state);
+    const saved = await saveStateRecord({
+      state: record.state,
+      expectedVersion: record.version,
+    });
+    return { result, ...saved };
+  });
+
+  mutationQueue = mutation.catch(() => {});
+  return mutation;
+};
+
+const publicRemoteAccess = (item, encryptedPassword = "") => ({
+  ...item,
+  password: encryptedPassword ? decryptSecret(encryptedPassword) : "",
+});
+
+export const getRemoteAccessRecords = async (projectId) => {
+  const state = await loadState();
+  const project = state.projects?.find((item) => item.id === projectId);
+  if (!project) throw Object.assign(new Error("Project not found"), { status: 404 });
+  const secrets = state.remoteAccessSecrets?.[projectId] || {};
+  return (project.remoteAccess || []).map((item) =>
+    publicRemoteAccess(item, secrets[item.id]),
+  );
+};
+
+export const upsertRemoteAccessRecord = async ({
+  projectId,
+  record,
+  actor,
+}) =>
+  mutateStateWithVersion((state) => {
+    const project = state.projects?.find((item) => item.id === projectId);
+    if (!project) throw Object.assign(new Error("Project not found"), { status: 404 });
+    const records = project.remoteAccess || [];
+    const current = records.find((item) => item.id === record.id);
+    const next = {
+      ...(current || {}),
+      ...record,
+      password: undefined,
+      updatedAt: new Date().toISOString(),
+      updatedBy: actor?.name || "System",
+    };
+    delete next.password;
+    if (!current) {
+      next.createdAt = next.createdAt || new Date().toISOString();
+      records.unshift(next);
+    } else {
+      project.remoteAccess = records.map((item) =>
+        item.id === next.id ? next : item,
+      );
+    }
+    project.remoteAccess ||= records;
+    state.remoteAccessSecrets ||= {};
+    state.remoteAccessSecrets[projectId] ||= {};
+    if (record.password !== undefined) {
+      state.remoteAccessSecrets[projectId][next.id] = encryptSecret(record.password);
+    }
+    return publicRemoteAccess(
+      next,
+      state.remoteAccessSecrets[projectId][next.id],
+    );
+  });
+
+export const deleteRemoteAccessRecord = async ({ projectId, recordId }) =>
+  mutateStateWithVersion((state) => {
+    const project = state.projects?.find((item) => item.id === projectId);
+    if (!project) throw Object.assign(new Error("Project not found"), { status: 404 });
+    project.remoteAccess = (project.remoteAccess || []).filter(
+      (item) => item.id !== recordId,
+    );
+    if (state.remoteAccessSecrets?.[projectId]) {
+      delete state.remoteAccessSecrets[projectId][recordId];
+    }
+    return { id: recordId };
+  });
+
 export const saveJiraIssueToTicket = async ({
   projectId,
   ticket,
@@ -198,6 +280,19 @@ export const saveJiraIssueToTicket = async ({
       jiraLink: `${jira.baseUrl}/browse/${encodeURIComponent(issue.key)}`,
       jiraSyncedAt: new Date().toISOString(),
       jiraSyncError: null,
+      status: "Jira'da Çalışılıyor",
+      ownerTeam: "Ürün",
+      history: [
+        ...(ticket.history || []),
+        {
+          id: `jira-${Date.now()}`,
+          ts: new Date().toISOString(),
+          userName: "Jira",
+          label: "Jira ilişkisi",
+          from: "-",
+          to: issue.key,
+        },
+      ],
     };
     const index = tickets.findIndex((item) => item.id === ticket.id);
 
@@ -236,8 +331,35 @@ export const updateTicketStatusByJiraKey = async ({
       );
       if (!ticket) continue;
 
+      const previousStatus = ticket.status || "Açık";
+      const normalized = String(status || "").toLocaleLowerCase("tr-TR");
+      const workflow = normalized.includes("ready to release") ||
+        normalized.includes("yayına hazır")
+        ? { status: "Yayına Hazır", ownerTeam: "Ürün" }
+        : ["done", "closed", "resolved", "tamamlandı"].some((item) =>
+            normalized.includes(item),
+          )
+          ? { status: "Tamamlandı", ownerTeam: "Ürün" }
+          : normalized.includes("test")
+            ? {
+                status: "Operasyon Testinde",
+                ownerTeam: "Operasyon",
+                testResult: "Bekliyor",
+              }
+            : { status: "Jira'da Çalışılıyor", ownerTeam: "Ürün" };
       ticket.jiraStatus = status;
       ticket.jiraUpdatedAt = new Date().toISOString();
+      Object.assign(ticket, workflow);
+      ticket.updatedAt = new Date().toISOString();
+      ticket.history ||= [];
+      ticket.history.push({
+        id: `jira-webhook-${Date.now()}`,
+        ts: ticket.updatedAt,
+        userName: "Jira",
+        label: "Durum",
+        from: previousStatus,
+        to: workflow.status,
+      });
       if (deliveryId) {
         state.jiraWebhookDeliveries.push({
           id: deliveryId,

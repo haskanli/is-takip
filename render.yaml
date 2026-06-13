@@ -12,6 +12,8 @@ services:
         generateValue: true
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: ACCESS_VAULT_KEY
+        generateValue: true
       - key: DATA_MODEL
         value: legacy
       - key: REQUIRE_AUTH

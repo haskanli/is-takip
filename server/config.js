@@ -54,3 +54,9 @@ export const getWhatsAppConfig = () => ({
 export const getSlackConfig = () => ({
   botToken: optional("SLACK_BOT_TOKEN"),
 });
+
+export const getVaultConfig = () => ({
+  encryptionKey:
+    optional("ACCESS_VAULT_KEY") ||
+    required("SUPABASE_SERVICE_ROLE_KEY"),
+});

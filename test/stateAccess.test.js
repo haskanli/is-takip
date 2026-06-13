@@ -11,6 +11,7 @@ const state = {
     { id: "pm", name: "PM" },
     { id: "member", name: "Member" },
     { id: "other", name: "Other" },
+    { id: "product", name: "Product", ticketOnly: true },
   ],
   projects: [
     {
@@ -18,6 +19,9 @@ const state = {
       name: "Visible",
       pmIds: ["pm"],
       members: ["member"],
+      remoteAccess: [
+        { id: "r1", name: "VPN", username: "user", password: "plain-secret" },
+      ],
       milestones: [
         {
           id: "m1",
@@ -57,6 +61,7 @@ const state = {
   projectActions: { p1: [{ id: "a1" }], p2: [{ id: "a2" }] },
   recurringTasks: [],
   logs: [],
+  remoteAccessSecrets: { p1: { r1: "encrypted-secret" } },
 };
 
 const member = {
@@ -74,6 +79,31 @@ test("filters state to the authenticated user's scope", () => {
   assert.deepEqual(Object.keys(filtered.userNotes), ["member"]);
   assert.deepEqual(Object.keys(filtered.projectTickets), ["p1"]);
   assert.deepEqual(Object.keys(filtered.projectActions), ["p1"]);
+  assert.equal(filtered.remoteAccessSecrets, undefined);
+  assert.equal(filtered.projects[0].remoteAccess[0].password, undefined);
+});
+
+test("admin state also excludes remote access secrets", () => {
+  const filtered = filterStateForProfile(state, {
+    ...member,
+    legacy_id: "admin",
+    is_admin: true,
+  });
+  assert.equal(filtered.remoteAccessSecrets, undefined);
+  assert.equal(filtered.projects[0].remoteAccess[0].password, undefined);
+});
+
+test("ticket-only users see tickets without project details", () => {
+  const filtered = filterStateForProfile(state, {
+    ...member,
+    legacy_id: "product",
+    name: "Product",
+  });
+  assert.deepEqual(Object.keys(filtered.projectTickets).sort(), ["p1", "p2"]);
+  assert.equal(filtered.projects.length, 2);
+  assert.deepEqual(filtered.projects[0].milestones, []);
+  assert.deepEqual(filtered.personalTasks, []);
+  assert.deepEqual(filtered.projectActions, {});
 });
 
 test("member cannot change another user's task or hidden project", () => {

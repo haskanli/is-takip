@@ -14,6 +14,9 @@ import {
   saveStateRecord,
   checkDatabase,
   updateTicketStatusByJiraKey,
+  getRemoteAccessRecords,
+  upsertRemoteAccessRecord,
+  deleteRemoteAccessRecord,
 } from "./repositories/appState.js";
 import {
   sendOverdueReminderEmail,
@@ -118,6 +121,17 @@ const assertProjectAccess = (state, auth, projectId) => {
   }
 };
 
+const assertProjectManagement = (state, auth, projectId) => {
+  if (auth?.profile?.is_admin) return;
+  const project = state.projects?.find((item) => item.id === projectId);
+  const managers = [...(project?.pmIds || []), project?.pm].filter(Boolean);
+  if (!project || !managers.includes(auth?.profile?.legacy_id)) {
+    throw Object.assign(new Error("Project management permission required"), {
+      status: 403,
+    });
+  }
+};
+
 const handleGetApplicationState = async (auth, response) => {
   const record = await loadStateRecord();
   json(response, 200, {
@@ -172,6 +186,40 @@ const handleCreateIssue = async (request, response, auth) => {
 const handleGetIssue = async (issueKey, response) => {
   const issue = await getJiraIssue(issueKey);
   json(response, 200, { issue });
+};
+
+const handleRemoteAccess = async ({
+  request,
+  response,
+  auth,
+  projectId,
+  recordId,
+}) => {
+  const state = await loadState();
+  assertProjectManagement(state, auth, projectId);
+  if (request.method === "GET") {
+    json(response, 200, { records: await getRemoteAccessRecords(projectId) });
+    return;
+  }
+  if (request.method === "DELETE") {
+    const result = await deleteRemoteAccessRecord({ projectId, recordId });
+    json(response, 200, result);
+    return;
+  }
+  const body = parseJson(await readBody(request));
+  if (!body?.record?.name?.trim()) {
+    throw Object.assign(new Error("record.name is required"), { status: 400 });
+  }
+  const result = await upsertRemoteAccessRecord({
+    projectId,
+    record: {
+      ...body.record,
+      id: recordId || body.record.id,
+      name: body.record.name.trim(),
+    },
+    actor: auth?.profile,
+  });
+  json(response, recordId ? 200 : 201, result);
 };
 
 const handleWebhook = async (request, response) => {
@@ -517,6 +565,9 @@ const server = createServer(async (request, response) => {
     const auth = config.requireAuth && protectedPath
       ? await authenticateRequest(request)
       : null;
+    const remoteAccessMatch = url.pathname.match(
+      /^\/api\/projects\/([^/]+)\/remote-access(?:\/([^/]+))?$/,
+    );
     if (request.method === "GET" && url.pathname === "/health") {
       const database = await checkDatabase();
       json(response, 200, {
@@ -534,6 +585,20 @@ const server = createServer(async (request, response) => {
     } else if (request.method === "PUT" && url.pathname === "/api/state") {
       if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
       await handleSaveApplicationState(request, auth, response);
+    } else if (
+      remoteAccessMatch &&
+      ["GET", "POST", "PUT", "DELETE"].includes(request.method)
+    ) {
+      if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
+      await handleRemoteAccess({
+        request,
+        response,
+        auth,
+        projectId: decodeURIComponent(remoteAccessMatch[1]),
+        recordId: remoteAccessMatch[2]
+          ? decodeURIComponent(remoteAccessMatch[2])
+          : "",
+      });
     } else if (
       request.method === "GET" &&
       url.pathname.startsWith("/jira/issues/")
