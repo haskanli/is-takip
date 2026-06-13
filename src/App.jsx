@@ -6,7 +6,7 @@ import { apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.16.0";
+const APP_VERSION = "v1.16.1";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -533,9 +533,26 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
   </div>;
 }
 
+function AdminBoardCard({id,size="medium",draggedId,onDragStart,onDragEnd,onDrop,children,style={}}) {
+  const active=draggedId===id;
+  return <div
+    className={`admin-board-card admin-board-${size}`}
+    draggable
+    onDragStart={event=>onDragStart(event,id)}
+    onDragEnd={onDragEnd}
+    onDragOver={event=>event.preventDefault()}
+    onDrop={event=>onDrop(event,id)}
+    style={{position:"relative",opacity:active?.48:1,transform:active?"scale(.985)":"none",transition:"opacity .15s, transform .15s",...style}}
+  >
+    <div title="Sürükleyerek yerini değiştir" style={{position:"absolute",top:8,right:9,zIndex:2,color:"#CBD5E1",fontSize:15,lineHeight:1,cursor:"grab",letterSpacing:1,userSelect:"none"}}>⠿</div>
+    {children}
+  </div>;
+}
+
 function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
   const [projectId,setProjectId]=useState("all");
   const [detailModal,setDetailModal]=useState(null);
+  const [draggedCard,setDraggedCard]=useState(null);
   const projects=projectId==="all"?state.projects:state.projects.filter(project=>project.id===projectId);
   const projectIds=new Set(projects.map(project=>project.id));
   const scopedState={
@@ -614,18 +631,52 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
     {id:"commissioning",label:"Devreye Alma",value:machineList.length?`${Math.round(commissioned/machineList.length*100)}%`:"-",detail:`${commissioned}/${machineList.length} makine devrede`,color:"#059669",info:"Devreye alınmış makine sayısının kapsamdaki fiziksel ve sanal toplam makine sayısına oranıdır.",items:machineList.map(machine=>({title:machine.name,meta:`${machine.type==="virtual"?"Sanal":"Fiziksel"} · ${machine.commissioned?"Devrede":"Bekliyor"}`}))},
     {id:"projects",label:"Aktif Proje",value:projects.length,detail:`${projectRows.filter(item=>item.score<60).length} proje riskli`,color:"#0F766E",info:"Seçilen kapsamdaki projeler sayılır; sağlık puanı 60 altındaki projeler riskli kabul edilir.",items:projectRows.map(item=>({title:item.project.name,meta:`Sağlık ${item.score} · ${item.project.status}`}))},
   ];
-  const savedOrder=(state.userNotes||{})[currentUser.id]?.adminKpiOrder||[];
-  const orderedKpis=[...kpis].sort((a,b)=>{
-    const ai=savedOrder.indexOf(a.id),bi=savedOrder.indexOf(b.id);
-    return (ai<0?999:ai)-(bi<0?999:bi);
-  });
-  const moveKpi=(id,direction)=>{
-    const order=orderedKpis.map(item=>item.id);
-    const index=order.indexOf(id),target=index+direction;
-    if(target<0||target>=order.length)return;
-    [order[index],order[target]]=[order[target],order[index]];
-    setState(current=>({...current,userNotes:{...(current.userNotes||{}),[currentUser.id]:{...(current.userNotes||{})[currentUser.id],adminKpiOrder:order}}}));
+  const defaultCardOrder=[
+    ...kpis.map(kpi=>`kpi-${kpi.id}`),
+    "project-health","portfolio-distribution","ticket-statuses",
+    "critical-deadlines","team-workload","risk-radar","report-center",
+  ];
+  const savedOrder=(state.userNotes||{})[currentUser.id]?.adminDashboardOrder||[];
+  const cardOrder=[...savedOrder.filter(id=>defaultCardOrder.includes(id)),...defaultCardOrder.filter(id=>!savedOrder.includes(id))];
+  const saveCardOrder=(order)=>setState(current=>({...current,userNotes:{...(current.userNotes||{}),[currentUser.id]:{...(current.userNotes||{})[currentUser.id],adminDashboardOrder:order}}}));
+  const startDrag=(event,id)=>{
+    setDraggedCard(id);
+    event.dataTransfer.effectAllowed="move";
+    event.dataTransfer.setData("text/plain",id);
   };
+  const dropCard=(event,targetId)=>{
+    event.preventDefault();
+    const sourceId=draggedCard||event.dataTransfer.getData("text/plain");
+    if(!sourceId||sourceId===targetId)return setDraggedCard(null);
+    const next=[...cardOrder];
+    const sourceIndex=next.indexOf(sourceId),targetIndex=next.indexOf(targetId);
+    if(sourceIndex<0||targetIndex<0)return setDraggedCard(null);
+    next.splice(sourceIndex,1);
+    next.splice(targetIndex,0,sourceId);
+    saveCardOrder(next);
+    setDraggedCard(null);
+  };
+  const dashboardCards={};
+  kpis.forEach(kpi=>{
+    dashboardCards[`kpi-${kpi.id}`]={
+      size:"small",
+      node:<div role="button" tabIndex={0} onKeyDown={event=>event.key==="Enter"&&setDetailModal({mode:"detail",...kpi})} onClick={()=>setDetailModal({mode:"detail",...kpi})} style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"14px 15px",boxShadow:"0 5px 16px rgba(15,23,42,.045)",borderTop:`3px solid ${kpi.color}`,textAlign:"left",cursor:"pointer"}}>
+        <div style={{display:"flex",alignItems:"center",gap:5,paddingRight:20}}><div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45,flex:1}}>{kpi.label}</div><button title="Hesaplama bilgisi" onClick={event=>{event.stopPropagation();setDetailModal({mode:"info",...kpi});}} style={{width:20,height:20,borderRadius:"50%",border:"1px solid #CBD5E1",background:"#F8FAFC",color:"#64748B",fontSize:11,fontWeight:850,cursor:"pointer"}}>i</button></div>
+        <div style={{fontSize:25,fontWeight:900,color:kpi.color,margin:"4px 0 2px"}}>{kpi.value}</div>
+        <div style={{fontSize:10,color:"#94A3B8",lineHeight:1.35}}>{kpi.detail}</div>
+      </div>,
+    };
+  });
+  dashboardCards["project-health"]={size:"large",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16,boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
+    <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:13,paddingRight:18}}><div><div style={{fontWeight:850,fontSize:14}}>Proje Sağlık Haritası</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>En fazla yönetici ilgisi gerektiren projeler üstte.</div></div><button onClick={()=>onNavigate("projects")} style={{border:0,background:"#EEF2FF",color:"#4A6CF7",borderRadius:8,padding:"6px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Tüm projeler</button></div>
+    <div style={{display:"flex",flexDirection:"column",gap:9}}>{projectRows.slice(0,8).map(item=><button key={item.project.id} onClick={()=>onOpenProject(item.project.id)} style={{border:"1px solid #F1F5F9",background:"#FAFCFF",borderRadius:11,padding:"10px 11px",cursor:"pointer",textAlign:"left"}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}><span style={{width:8,height:8,borderRadius:"50%",background:item.project.color}}/><b style={{fontSize:11,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.project.name}</b><span style={{fontSize:11,fontWeight:900,color:item.score>=80?"#059669":item.score>=60?"#EA6C00":"#E11D48"}}>{item.score}</span></div><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{height:7,background:"#E2E8F0",borderRadius:10,overflow:"hidden",flex:1}}><div style={{height:"100%",width:`${item.pct}%`,background:`linear-gradient(90deg,${item.project.color},${item.project.color}BB)`,borderRadius:10}}/></div><span style={{fontSize:10,fontWeight:800,color:"#475569",width:32}}>{item.pct}%</span></div><div style={{display:"flex",gap:9,marginTop:6,fontSize:9,color:"#64748B"}}><span>{item.done}/{item.total} tamam</span><span style={{color:item.delayed?"#EA6C00":"#64748B"}}>{item.delayed} gecikme</span><span style={{color:item.critical?"#E11D48":"#64748B"}}>{item.critical} kritik</span><span>{item.risks} risk</span></div></button>)}{!projectRows.length&&<div style={{padding:30,textAlign:"center",color:"#94A3B8",fontSize:12}}>Bu kapsamda proje yok.</div>}</div>
+  </div>};
+  dashboardCards["portfolio-distribution"]={size:"medium",node:<div style={{height:"100%",background:"#172033",color:"#fff",borderRadius:16,padding:17,boxShadow:"0 8px 24px rgba(15,23,42,.16)"}}><div style={{fontSize:11,fontWeight:800,color:"#A5B4FC",paddingRight:18}}>PORTFÖY DAĞILIMI</div><div style={{display:"flex",alignItems:"center",gap:17,marginTop:12}}><div style={{width:112,height:112,borderRadius:"50%",background:`conic-gradient(#10B981 0 ${progress}%,#334155 ${progress}% 100%)`,display:"grid",placeItems:"center",flexShrink:0}}><div style={{width:78,height:78,borderRadius:"50%",background:"#172033",display:"grid",placeItems:"center",textAlign:"center"}}><div><b style={{fontSize:22}}>{progress}%</b><div style={{fontSize:8,color:"#94A3B8"}}>TAMAMLANMA</div></div></div></div><div style={{flex:1,display:"grid",gap:8}}>{[["Tamamlanan",completedTasks.length,"#10B981"],["Aktif",activeTasks.length-delayedTasks.length,"#60A5FA"],["Geciken",delayedTasks.length,"#F59E0B"],["Kritik",criticalTasks.length,"#FB7185"]].map(([label,value,color])=><div key={label} style={{display:"flex",alignItems:"center",gap:7,fontSize:10}}><span style={{width:7,height:7,borderRadius:"50%",background:color}}/><span style={{color:"#CBD5E1",flex:1}}>{label}</span><b>{value}</b></div>)}</div></div></div>};
+  dashboardCards["ticket-statuses"]={size:"medium",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}><div style={{fontWeight:850,fontSize:13,marginBottom:12,paddingRight:18}}>Ticket Durumları</div><div style={{display:"grid",gap:8}}>{ticketStatuses.map(item=><div key={item.status}><div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:4}}><span>{item.status}</span><b>{item.count}</b></div><div style={{height:6,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:`${item.count/maxTicketStatus*100}%`,background:statusColors[item.status]||"#4A6CF7",borderRadius:8}}/></div></div>)}{!ticketStatuses.length&&<div style={{fontSize:11,color:"#94A3B8"}}>Ticket bulunmuyor.</div>}</div><button onClick={()=>onNavigate("tickets")} style={{marginTop:12,border:0,background:"#FFF7ED",color:"#C2410C",borderRadius:8,padding:"7px 10px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Ticket ekranını aç</button></div>};
+  dashboardCards["critical-deadlines"]={size:"medium",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}><div style={{fontWeight:850,fontSize:13,marginBottom:11,paddingRight:18}}>Kritik Terminler</div><div style={{display:"grid",gap:7}}>{[...criticalTasks,...dueSoon].slice(0,6).map(({task,project})=><button key={`${project.id}-${task.id}`} onClick={()=>onOpenProject(project.id)} style={{border:0,borderLeft:`3px solid ${delayLvl(task.dueDate,task.status)?"#E11D48":"#F59E0B"}`,background:"#F8FAFC",borderRadius:8,padding:"8px 9px",textAlign:"left",cursor:"pointer"}}><div style={{fontSize:10,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.title}</div><div style={{fontSize:9,color:"#64748B",marginTop:3}}>{project.name} · {fmt(task.dueDate)}{delayLvl(task.dueDate,task.status)?` · ${daysDiff(task.dueDate)} gün gecikti`:""}</div></button>)}{![...criticalTasks,...dueSoon].length&&<div style={{fontSize:11,color:"#059669",padding:12,background:"#ECFDF5",borderRadius:9}}>Yakın veya kritik termin yok.</div>}</div></div>};
+  dashboardCards["team-workload"]={size:"medium",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}><div style={{fontWeight:850,fontSize:13,marginBottom:11,paddingRight:18}}>Ekip İş Yükü</div><div style={{display:"grid",gap:9}}>{workload.slice(0,7).map(item=><div key={item.person.id}><div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4}}><Avatar initials={item.person.avatar} imageUrl={item.person.avatarUrl} size={22}/><span style={{fontSize:10,fontWeight:750,flex:1}}>{item.person.name}</span><span style={{fontSize:9,color:item.delayed?"#E11D48":"#64748B"}}>{item.active} aktif · {item.delayed} gecikmiş</span></div><div style={{marginLeft:29,height:6,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:`${item.active/maxWorkload*100}%`,background:item.delayed?"linear-gradient(90deg,#F59E0B,#EF4444)":"linear-gradient(90deg,#4A6CF7,#7C3AED)",borderRadius:8}}/></div></div>)}{!workload.length&&<div style={{fontSize:11,color:"#94A3B8"}}>Aktif iş yükü bulunmuyor.</div>}</div></div>};
+  dashboardCards["risk-radar"]={size:"medium",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}><div style={{fontWeight:850,fontSize:13,marginBottom:11,paddingRight:18}}>Risk ve Aksiyon Radarı</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:11}}>{[["Yüksek Risk",highRisks.length,"#E11D48","#FFF1F2"],["Aksiyonsuz Ticket",staleTickets.length,"#EA6C00","#FFF7ED"],["Geciken Görev",delayedTasks.length,"#7C3AED","#F5F3FF"],["Devre Dışı",machineList.length-commissioned,"#0369A1","#F0F9FF"]].map(([label,value,color,bg])=><div key={label} style={{background:bg,borderRadius:10,padding:10}}><b style={{fontSize:20,color}}>{value}</b><div style={{fontSize:9,color:"#64748B",marginTop:2}}>{label}</div></div>)}</div><div style={{fontSize:10,color:"#64748B",lineHeight:1.55}}>{highRisks.length||criticalTasks.length||staleTickets.length?"Kritik sapmalar için proje sahipleriyle aksiyon planı oluşturulmalı.":"Portföyde acil yönetici aksiyonu gerektiren belirgin bir sapma yok."}</div></div>};
+  dashboardCards["report-center"]={size:"full",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12,paddingRight:18}}><div><div style={{fontWeight:850,fontSize:14}}>Yönetici Rapor Merkezi</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>Toplantı, operasyon takibi ve paylaşım için hazır çıktılar.</div></div><button onClick={()=>onNavigate("reports")} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:8,padding:"7px 10px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Tüm raporlar</button></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:9}}>{[["Genel Durum","Portföy ilerleme, gecikme ve kapasite özeti.","#4338CA",()=>generatePortfolioReport(scopedState,state.people),"HTML / PDF"],["Termin ve Gecikme","Geciken görevler ve sorumlu dağılımı.","#E11D48",()=>downloadDelayReport(scopedState,state.people),"XLSX"],["Efor ve Kapasite","Kişi, proje ve görev bazlı saat analizi.","#7C3AED",()=>downloadEffortReport(scopedState,state.people),"XLSX"],["Ticket Durumu","Ticket yaşı, aksiyon ve Jira durumları.","#EA6C00",()=>generateTicketStatusReport(scopedState,state.people),"HTML / PDF"]].map(([title,description,color,action,label])=><button key={title} onClick={action} style={{border:"1px solid #E2E8F0",borderLeft:`4px solid ${color}`,borderRadius:11,background:"#FAFCFF",padding:12,textAlign:"left",cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",gap:7}}><b style={{fontSize:11}}>{title}</b><span style={{fontSize:8,fontWeight:850,color,background:color+"12",borderRadius:6,padding:"3px 5px"}}>{label}</span></div><div style={{fontSize:9,color:"#64748B",lineHeight:1.45,marginTop:5}}>{description}</div></button>)}</div></div>};
 
   return <div style={{padding:"clamp(16px,3vw,28px)",flex:1,overflow:"auto",background:"linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:14,flexWrap:"wrap",marginBottom:18}}>
@@ -640,70 +691,8 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
       </div>
     </div>
 
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:10,marginBottom:14}}>
-      {orderedKpis.map((kpi,index)=><div key={kpi.id} role="button" tabIndex={0} onKeyDown={event=>event.key==="Enter"&&setDetailModal({mode:"detail",...kpi})} onClick={()=>setDetailModal({mode:"detail",...kpi})} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"14px 15px",boxShadow:"0 5px 16px rgba(15,23,42,.045)",borderTop:`3px solid ${kpi.color}`,textAlign:"left",cursor:"pointer",fontFamily:"inherit",position:"relative"}}>
-        <div style={{display:"flex",alignItems:"center",gap:5}}><div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45,flex:1}}>{kpi.label}</div><button title="Hesaplama bilgisi" onClick={event=>{event.stopPropagation();setDetailModal({mode:"info",...kpi});}} style={{width:20,height:20,borderRadius:"50%",border:"1px solid #CBD5E1",background:"#F8FAFC",color:"#64748B",fontSize:11,fontWeight:850,cursor:"pointer"}}>i</button></div>
-        <div style={{fontSize:25,fontWeight:900,color:kpi.color,margin:"4px 0 2px"}}>{kpi.value}</div>
-        <div style={{fontSize:10,color:"#94A3B8",lineHeight:1.35}}>{kpi.detail}</div>
-        <div style={{display:"flex",gap:4,marginTop:8}}><button title="Sola taşı" disabled={index===0} onClick={event=>{event.stopPropagation();moveKpi(kpi.id,-1);}} style={{border:0,borderRadius:6,background:"#F1F5F9",color:"#64748B",cursor:index===0?"default":"pointer",opacity:index===0 ? .35 : 1}}>←</button><button title="Sağa taşı" disabled={index===orderedKpis.length-1} onClick={event=>{event.stopPropagation();moveKpi(kpi.id,1);}} style={{border:0,borderRadius:6,background:"#F1F5F9",color:"#64748B",cursor:index===orderedKpis.length-1?"default":"pointer",opacity:index===orderedKpis.length-1 ? .35 : 1}}>→</button></div>
-      </div>)}
-    </div>
-
-    <div style={{display:"grid",gridTemplateColumns:"minmax(0,1.45fr) minmax(280px,.85fr)",gap:12,marginBottom:12}} className="admin-main-grid">
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16,boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:13}}><div><div style={{fontWeight:850,fontSize:14}}>Proje Sağlık Haritası</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>En fazla yönetici ilgisi gerektiren projeler üstte.</div></div><button onClick={()=>onNavigate("projects")} style={{border:0,background:"#EEF2FF",color:"#4A6CF7",borderRadius:8,padding:"6px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Tüm projeler</button></div>
-        <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          {projectRows.slice(0,8).map(item=><button key={item.project.id} onClick={()=>onOpenProject(item.project.id)} style={{border:"1px solid #F1F5F9",background:"#FAFCFF",borderRadius:11,padding:"10px 11px",cursor:"pointer",textAlign:"left"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}><span style={{width:8,height:8,borderRadius:"50%",background:item.project.color}}/><b style={{fontSize:11,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.project.name}</b><span style={{fontSize:11,fontWeight:900,color:item.score>=80?"#059669":item.score>=60?"#EA6C00":"#E11D48"}}>{item.score}</span></div>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{height:7,background:"#E2E8F0",borderRadius:10,overflow:"hidden",flex:1}}><div style={{height:"100%",width:`${item.pct}%`,background:`linear-gradient(90deg,${item.project.color},${item.project.color}BB)`,borderRadius:10}}/></div><span style={{fontSize:10,fontWeight:800,color:"#475569",width:32}}>{item.pct}%</span></div>
-            <div style={{display:"flex",gap:9,marginTop:6,fontSize:9,color:"#64748B"}}><span>{item.done}/{item.total} tamam</span><span style={{color:item.delayed?"#EA6C00":"#64748B"}}>{item.delayed} gecikme</span><span style={{color:item.critical?"#E11D48":"#64748B"}}>{item.critical} kritik</span><span>{item.risks} risk</span></div>
-          </button>)}
-          {!projectRows.length&&<div style={{padding:30,textAlign:"center",color:"#94A3B8",fontSize:12}}>Bu kapsamda proje yok.</div>}
-        </div>
-      </div>
-
-      <div style={{display:"grid",gap:12}}>
-        <div style={{background:"#172033",color:"#fff",borderRadius:16,padding:17,boxShadow:"0 8px 24px rgba(15,23,42,.16)"}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#A5B4FC"}}>PORTFÖY DAĞILIMI</div>
-          <div style={{display:"flex",alignItems:"center",gap:17,marginTop:12}}>
-            <div style={{width:112,height:112,borderRadius:"50%",background:`conic-gradient(#10B981 0 ${progress}%,#334155 ${progress}% 100%)`,display:"grid",placeItems:"center",flexShrink:0}}><div style={{width:78,height:78,borderRadius:"50%",background:"#172033",display:"grid",placeItems:"center",textAlign:"center"}}><div><b style={{fontSize:22}}>{progress}%</b><div style={{fontSize:8,color:"#94A3B8"}}>TAMAMLANMA</div></div></div></div>
-            <div style={{flex:1,display:"grid",gap:8}}>{[["Tamamlanan",completedTasks.length,"#10B981"],["Aktif",activeTasks.length-delayedTasks.length,"#60A5FA"],["Geciken",delayedTasks.length,"#F59E0B"],["Kritik",criticalTasks.length,"#FB7185"]].map(([label,value,color])=><div key={label} style={{display:"flex",alignItems:"center",gap:7,fontSize:10}}><span style={{width:7,height:7,borderRadius:"50%",background:color}}/><span style={{color:"#CBD5E1",flex:1}}>{label}</span><b>{value}</b></div>)}</div>
-          </div>
-        </div>
-        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
-          <div style={{fontWeight:850,fontSize:13,marginBottom:12}}>Ticket Durumları</div>
-          <div style={{display:"grid",gap:8}}>{ticketStatuses.map(item=><div key={item.status}><div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:4}}><span>{item.status}</span><b>{item.count}</b></div><div style={{height:6,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:`${item.count/maxTicketStatus*100}%`,background:statusColors[item.status]||"#4A6CF7",borderRadius:8}}/></div></div>)}{!ticketStatuses.length&&<div style={{fontSize:11,color:"#94A3B8"}}>Ticket bulunmuyor.</div>}</div>
-          <button onClick={()=>onNavigate("tickets")} style={{marginTop:12,border:0,background:"#FFF7ED",color:"#C2410C",borderRadius:8,padding:"7px 10px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Ticket ekranını aç</button>
-        </div>
-      </div>
-    </div>
-
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:12,marginBottom:12}} className="admin-triple-grid">
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
-        <div style={{fontWeight:850,fontSize:13,marginBottom:11}}>Kritik Terminler</div>
-        <div style={{display:"grid",gap:7}}>{[...criticalTasks,...dueSoon].slice(0,6).map(({task,project})=><button key={`${project.id}-${task.id}`} onClick={()=>onOpenProject(project.id)} style={{border:0,borderLeft:`3px solid ${delayLvl(task.dueDate,task.status)?"#E11D48":"#F59E0B"}`,background:"#F8FAFC",borderRadius:8,padding:"8px 9px",textAlign:"left",cursor:"pointer"}}><div style={{fontSize:10,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.title}</div><div style={{fontSize:9,color:"#64748B",marginTop:3}}>{project.name} · {fmt(task.dueDate)}{delayLvl(task.dueDate,task.status)?` · ${daysDiff(task.dueDate)} gün gecikti`:""}</div></button>)}{![...criticalTasks,...dueSoon].length&&<div style={{fontSize:11,color:"#059669",padding:12,background:"#ECFDF5",borderRadius:9}}>Yakın veya kritik termin yok.</div>}</div>
-      </div>
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
-        <div style={{fontWeight:850,fontSize:13,marginBottom:11}}>Ekip İş Yükü</div>
-        <div style={{display:"grid",gap:9}}>{workload.slice(0,7).map(item=><div key={item.person.id}><div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4}}><Avatar initials={item.person.avatar} imageUrl={item.person.avatarUrl} size={22}/><span style={{fontSize:10,fontWeight:750,flex:1}}>{item.person.name}</span><span style={{fontSize:9,color:item.delayed?"#E11D48":"#64748B"}}>{item.active} aktif · {item.delayed} gecikmiş</span></div><div style={{marginLeft:29,height:6,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:`${item.active/maxWorkload*100}%`,background:item.delayed?"linear-gradient(90deg,#F59E0B,#EF4444)":"linear-gradient(90deg,#4A6CF7,#7C3AED)",borderRadius:8}}/></div></div>)}{!workload.length&&<div style={{fontSize:11,color:"#94A3B8"}}>Aktif iş yükü bulunmuyor.</div>}</div>
-      </div>
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
-        <div style={{fontWeight:850,fontSize:13,marginBottom:11}}>Risk ve Aksiyon Radarı</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:11}}>{[["Yüksek Risk",highRisks.length,"#E11D48","#FFF1F2"],["Aksiyonsuz Ticket",staleTickets.length,"#EA6C00","#FFF7ED"],["Geciken Görev",delayedTasks.length,"#7C3AED","#F5F3FF"],["Devre Dışı",machineList.length-commissioned,"#0369A1","#F0F9FF"]].map(([label,value,color,bg])=><div key={label} style={{background:bg,borderRadius:10,padding:10}}><b style={{fontSize:20,color}}>{value}</b><div style={{fontSize:9,color:"#64748B",marginTop:2}}>{label}</div></div>)}</div>
-        <div style={{fontSize:10,color:"#64748B",lineHeight:1.55}}>{highRisks.length||criticalTasks.length||staleTickets.length?"Kritik sapmalar için proje sahipleriyle aksiyon planı oluşturulmalı.":"Portföyde acil yönetici aksiyonu gerektiren belirgin bir sapma yok."}</div>
-      </div>
-    </div>
-
-    <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}><div><div style={{fontWeight:850,fontSize:14}}>Yönetici Rapor Merkezi</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>Toplantı, operasyon takibi ve paylaşım için hazır çıktılar.</div></div><button onClick={()=>onNavigate("reports")} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:8,padding:"7px 10px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Tüm raporlar</button></div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:9}}>
-        {[
-          ["Genel Durum","Portföy ilerleme, gecikme ve kapasite özeti.","#4338CA",()=>generatePortfolioReport(scopedState,state.people),"HTML / PDF"],
-          ["Termin ve Gecikme","Geciken görevler ve sorumlu dağılımı.","#E11D48",()=>downloadDelayReport(scopedState,state.people),"XLSX"],
-          ["Efor ve Kapasite","Kişi, proje ve görev bazlı saat analizi.","#7C3AED",()=>downloadEffortReport(scopedState,state.people),"XLSX"],
-          ["Ticket Durumu","Ticket yaşı, aksiyon ve Jira durumları.","#EA6C00",()=>generateTicketStatusReport(scopedState,state.people),"HTML / PDF"],
-        ].map(([title,description,color,action,label])=><button key={title} onClick={action} style={{border:"1px solid #E2E8F0",borderLeft:`4px solid ${color}`,borderRadius:11,background:"#FAFCFF",padding:12,textAlign:"left",cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",gap:7}}><b style={{fontSize:11}}>{title}</b><span style={{fontSize:8,fontWeight:850,color,background:color+"12",borderRadius:6,padding:"3px 5px"}}>{label}</span></div><div style={{fontSize:9,color:"#64748B",lineHeight:1.45,marginTop:5}}>{description}</div></button>)}
-      </div>
+    <div className="admin-board-grid">
+      {cardOrder.map(id=>dashboardCards[id]&&<AdminBoardCard key={id} id={id} size={dashboardCards[id].size} draggedId={draggedCard} onDragStart={startDrag} onDragEnd={()=>setDraggedCard(null)} onDrop={dropCard}>{dashboardCards[id].node}</AdminBoardCard>)}
     </div>
     {detailModal&&<Modal title={detailModal.mode==="info"?`${detailModal.label} · Hesaplama`:`${detailModal.label} · Detay`} onClose={()=>setDetailModal(null)} wide>{detailModal.mode==="info"?<div style={{fontSize:13,color:"#475569",lineHeight:1.7,background:"#F8FAFC",borderRadius:11,padding:15}}>{detailModal.info}</div>:<div style={{display:"grid",gap:8,maxHeight:"60vh",overflow:"auto"}}>{(detailModal.items||[]).map((item,index)=><div key={`${item.title}-${index}`} style={{border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 12px"}}><div style={{fontSize:12,fontWeight:800}}>{item.title}</div><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{item.meta}</div></div>)}{!detailModal.items?.length&&<div style={{padding:30,textAlign:"center",color:"#94A3B8"}}>Bu kapsamda detay kaydı bulunmuyor.</div>}</div>}</Modal>}
   </div>;
@@ -2129,6 +2118,12 @@ const GlobalStyle = () => (
     .sidebar-nav { scrollbar-width: none; }
     .sidebar-nav::-webkit-scrollbar { display: none; }
     .login-users { scrollbar-width: thin; scrollbar-color: #475569 transparent; }
+    .admin-board-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:12px; align-items:start; }
+    .admin-board-small { grid-column:span 3; min-height:128px; }
+    .admin-board-medium { grid-column:span 4; min-height:190px; }
+    .admin-board-large { grid-column:span 8; }
+    .admin-board-full { grid-column:span 12; }
+    .admin-board-card[draggable="true"]:active { cursor:grabbing; }
     @media (max-height: 760px) and (min-width: 761px) {
       .login-screen { padding: 8px 0 !important; }
       .login-shell { max-width: 720px !important; }
@@ -2142,10 +2137,14 @@ const GlobalStyle = () => (
       .todo-columns { grid-template-columns: 1fr !important; }
       .admin-main-grid, .admin-triple-grid { grid-template-columns: 1fr !important; }
       .visit-time-grid { grid-template-columns: 1fr !important; }
+      .admin-board-small, .admin-board-medium, .admin-board-large, .admin-board-full { grid-column:span 12; }
     }
     @media (min-width: 761px) and (max-width: 1100px) {
       .admin-main-grid { grid-template-columns: 1fr !important; }
       .admin-triple-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+      .admin-board-small { grid-column:span 4; }
+      .admin-board-medium { grid-column:span 6; }
+      .admin-board-large, .admin-board-full { grid-column:span 12; }
     }
   `}</style>
 );
