@@ -1117,8 +1117,6 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin }) {
   const updatePersonal=(id,data)=>setState(s=>{const old=(s.personalTasks||[]).find(t=>t.id===id);const upd={...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...data}:t)};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
   const updateProjTask=(pId,mId,tId,data)=>setState(s=>{const old=s.projects.find(p=>p.id===pId)?.milestones.find(m=>m.id===mId)?.tasks.find(t=>t.id===tId);const upd={...s,projects:s.projects.map(p=>p.id!==pId?p:{...p,milestones:p.milestones.map(m=>m.id!==mId?m:{...m,tasks:m.tasks.map(t=>t.id!==tId?t:{...t,...data})})})};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
   useEffect(()=>{
-    if(REQUIRE_AUTH&&(!authReady||!authSession))return;
-    if(dataLoaded)return;
     if(!linkedTaskId)return;
     const personal=(state.personalTasks||[]).find(t=>t.id===linkedTaskId);
     if(personal){setModal({type:"taskDetail",data:{...personal,source:"personal"}});return;}
@@ -1719,6 +1717,11 @@ export default function App() {
   const [loadedAuthUserId,setLoadedAuthUserId]=useState("");
   const fileRef=useRef();
   const skipNextSave=useRef(true);
+
+  // Start waking the API while Supabase restores the persisted session.
+  useEffect(()=>{
+    if(USE_DATA_API)fetch(apiUrl("/health")).catch(()=>{});
+  },[]);
 
   // Mobil algilama
   useEffect(()=>{
