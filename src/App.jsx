@@ -479,7 +479,10 @@ function AuthLoginScreen() {
     setStatus({loading:true,message:"",error:false});
     const {error}=await supabase.auth.signInWithOtp({
       email:value,
-      options:{emailRedirectTo:window.location.origin},
+      options:{
+        emailRedirectTo:"https://www.corject.com",
+        shouldCreateUser:false,
+      },
     });
     setStatus(error
       ?{loading:false,message:error.message,error:true}
