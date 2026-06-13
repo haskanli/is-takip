@@ -40,3 +40,5 @@ services:
         value: tr
       - key: WHATSAPP_GRAPH_VERSION
         value: v26.0
+      - key: SLACK_BOT_TOKEN
+        sync: false

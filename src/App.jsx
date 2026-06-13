@@ -473,6 +473,17 @@ function LoginScreen({ people, onLogin }) {
 function AuthLoginScreen() {
   const [email,setEmail]=useState("");
   const [status,setStatus]=useState({loading:false,message:"",error:false});
+  const slackLogin=async()=>{
+    setStatus({loading:true,message:"",error:false});
+    const {error}=await supabase.auth.signInWithOAuth({
+      provider:"slack_oidc",
+      options:{
+        redirectTo:"https://www.corject.com",
+        scopes:"openid profile email",
+      },
+    });
+    if(error)setStatus({loading:false,message:error.message,error:true});
+  };
   const submit=async()=>{
     const value=email.trim().toLowerCase();
     if(!value)return;
@@ -494,6 +505,15 @@ function AuthLoginScreen() {
       <h1 style={{color:"#fff",fontSize:22,letterSpacing:3,margin:"8px 0 4px"}}>CORJECT</h1>
       <p style={{color:"#64748B",fontSize:12,margin:"0 0 22px"}}>Güvenli ekip girişi</p>
       <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.12)",borderRadius:18,padding:24,textAlign:"left"}}>
+        <button disabled={status.loading} onClick={slackLogin} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:10,padding:12,background:"#fff",color:"#1E293B",fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:9}}>
+          <span style={{fontSize:18,fontWeight:900,color:"#4A154B"}}>#</span>
+          Slack ile Giriş Yap
+        </button>
+        <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0",color:"#64748B",fontSize:10}}>
+          <span style={{height:1,background:"rgba(255,255,255,.12)",flex:1}}/>
+          veya e-posta bağlantısı
+          <span style={{height:1,background:"rgba(255,255,255,.12)",flex:1}}/>
+        </div>
         <label style={{display:"block",fontSize:12,fontWeight:700,color:"#CBD5E1",marginBottom:6}}>Kurumsal e-posta adresiniz</label>
         <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="ad@firma.com" style={{...iStyle,padding:12,background:"#fff",marginBottom:10}}/>
         <button disabled={status.loading} onClick={submit} style={{width:"100%",border:0,borderRadius:10,padding:12,background:"#4A6CF7",color:"#fff",fontWeight:800,cursor:"pointer"}}>{status.loading?"Gönderiliyor...":"Giriş Bağlantısı Gönder"}</button>

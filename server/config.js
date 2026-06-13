@@ -50,3 +50,7 @@ export const getWhatsAppConfig = () => ({
   templateLanguage: optional("WHATSAPP_TEMPLATE_LANGUAGE") || "tr",
   graphVersion: optional("WHATSAPP_GRAPH_VERSION") || "v26.0",
 });
+
+export const getSlackConfig = () => ({
+  botToken: optional("SLACK_BOT_TOKEN"),
+});

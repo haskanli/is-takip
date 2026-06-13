@@ -21,6 +21,7 @@ import {
   sendTicketAssignedEmail,
 } from "./services/email.js";
 import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
+import { sendTaskAssignedSlack } from "./services/slack.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
 import { authenticateRequest } from "./auth.js";
@@ -273,6 +274,24 @@ const handleCreateTicket = async (request, response, auth) => {
 };
 
 const notifyTaskAssignee = async ({ assignee, task, assigner }) => {
+  let slackError = "";
+  try {
+    const slack = await sendTaskAssignedSlack({ assignee, task, assigner });
+    if (!slack.skipped) {
+      return {
+        sent: true,
+        channel: "slack",
+        messageId: slack.id || null,
+      };
+    }
+  } catch (error) {
+    slackError = error.message;
+    logger.error("slack.task-assignment.failed", error, {
+      taskId: task.id,
+      userId: assignee?.id,
+    });
+  }
+
   let whatsappError = "";
   try {
     const whatsapp = await sendTaskAssignedWhatsApp({ assignee, task, assigner });
@@ -286,7 +305,10 @@ const notifyTaskAssignee = async ({ assignee, task, assigner }) => {
     return {
       sent: false,
       channel: "none",
-      reason: whatsappError || "Assignee has no WhatsApp phone or email address",
+      reason:
+        slackError ||
+        whatsappError ||
+        "Assignee has no Slack email, WhatsApp phone or email address",
     };
   }
   try {
@@ -295,10 +317,19 @@ const notifyTaskAssignee = async ({ assignee, task, assigner }) => {
       sent: !email.skipped,
       channel: email.skipped ? "none" : "email",
       emailId: email.id || null,
-      reason: email.skipped ? "Email is not configured" : whatsappError || undefined,
+      reason:
+        email.skipped
+          ? "Email is not configured"
+          : slackError || whatsappError || undefined,
     };
   } catch (error) {
-    return { sent: false, channel: "none", reason: error.message, whatsappError };
+    return {
+      sent: false,
+      channel: "none",
+      reason: error.message,
+      slackError,
+      whatsappError,
+    };
   }
 };
 
