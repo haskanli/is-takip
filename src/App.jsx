@@ -6,7 +6,7 @@ import { apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.16.2";
+const APP_VERSION = "v1.17.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -45,6 +45,16 @@ const STATUSES = Object.keys(S);
 const PRIORITIES = Object.keys(PCOL);
 const WAIT = ["PM","M\u00fc\u015fteri","ERP","Tedarik\u00e7i","Teknik","\u00dcr\u00fcn-Teknoloji","Y\u00f6netim","Di\u011fer"];
 const TICKET_STATUSES = ["Açık","Ürün Ekibinde","Devam Ediyor","Beklemede","Tamamlandı","İptal Edildi"];
+const ORG_LEVELS = [
+  { id:"ceo", label:"CEO", rank:1 },
+  { id:"coo", label:"COO", rank:2 },
+  { id:"operations_director", label:"Operasyon Direktörü", rank:3 },
+  { id:"project_director", label:"Proje Müdürü", rank:4 },
+  { id:"project_manager", label:"Proje Yöneticisi", rank:5 },
+  { id:"process_lead", label:"Süreç Lideri", rank:6 },
+  { id:"field_engineer", label:"Saha Mühendisi", rank:7 },
+];
+const orgLevelLabel = (id) => ORG_LEVELS.find(level=>level.id===id)?.label || "Atanmamış";
 const COLORS = ["#4A6CF7","#059669","#EA6C00","#E11D48","#7C3AED","#0EA5E9","#DB2777","#D97706"];
 
 const daysDiff = (d) => !d ? 0 : Math.floor((new Date().setHours(0,0,0,0) - new Date(d).setHours(0,0,0,0)) / 86400000);
@@ -525,6 +535,38 @@ function TodoPage({state,setState,currentUser}) {
   </div>;
 }
 
+function ProjectEffortPanel({project,state,people}) {
+  const taskRows=project.milestones.flatMap(milestone=>milestone.tasks.flatMap(task=>(task.timeEntries||[]).map(entry=>({
+    id:`task-${task.id}-${entry.id}`,source:"Görev",item:task.title,person:people.find(person=>person.id===(entry.userId||task.assignee))?.name||entry.user||"Bilinmiyor",date:entry.date||entry.ts,hours:Number(entry.hours)||0,note:entry.note||"",planned:Number(task.estimatedHours)||0,
+  }))));
+  const actionRows=((state.projectActions||{})[project.id]||[]).filter(action=>Number(action.effortHours)>0).map(action=>({
+    id:`action-${action.id}`,source:"Aksiyon",item:action.text||"Proje aksiyonu",person:action.authorName||people.find(person=>person.id===action.authorId)?.name||"Bilinmiyor",date:action.actionAt||action.createdAt,hours:Number(action.effortHours)||0,note:action.text||"",planned:0,
+  }));
+  const visitRows=(state.fieldPlans||[]).filter(plan=>plan.projectId===project.id&&(plan.status==="completed"||plan.completedAt)).map(plan=>({
+    id:`visit-${plan.id}`,source:"Saha Ziyareti",item:plan.customer||project.name,person:people.find(person=>person.id===plan.userId)?.name||"Bilinmiyor",date:plan.date||plan.completedAt,hours:fieldPlanHours(plan),note:plan.visitNotes||"",planned:0,
+  }));
+  const rows=[...taskRows,...actionRows,...visitRows].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+  const total=rows.reduce((sum,row)=>sum+row.hours,0);
+  const planned=project.milestones.flatMap(milestone=>milestone.tasks).reduce((sum,task)=>sum+(Number(task.estimatedHours)||0),0);
+  const byPerson=Object.entries(rows.reduce((result,row)=>({...result,[row.person]:(result[row.person]||0)+row.hours}),{})).sort((a,b)=>b[1]-a[1]);
+  const exportXlsx=()=>{
+    const data=[["Kaynak","İş / Kayıt","Kişi","Tarih","Efor (Saat)","Planlanan (Saat)","Açıklama"],...rows.map(row=>[row.source,row.item,row.person,row.date||"",row.hours,row.planned,row.note])];
+    const sheet=XLSX.utils.aoa_to_sheet(data);
+    sheet["!cols"]=[{wch:16},{wch:32},{wch:22},{wch:14},{wch:12},{wch:16},{wch:45}];
+    const book=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book,sheet,"Proje Eforu");
+    XLSX.writeFile(book,`${project.name.replace(/[^a-zA-Z0-9_-]/g,"_")}-efor.xlsx`);
+  };
+  return <div style={{flex:1,overflow:"auto",padding:"18px 22px"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:14}}><div><h3 style={{margin:0,fontSize:16}}>Proje Efor Merkezi</h3><p style={{margin:"3px 0 0",fontSize:11,color:"#64748B"}}>Görev, aksiyon ve saha ziyaretlerinden gelen tüm eforlar.</p></div><Btn small onClick={exportXlsx}>XLSX İndir</Btn></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9,marginBottom:14}}>
+      {[["Toplam Efor",`${total} sa`,"#7C3AED"],["Planlanan",`${planned} sa`,"#0369A1"],["Fark",`${Math.round((total-planned)*10)/10} sa`,total>planned?"#E11D48":"#059669"],["Kayıt",rows.length,"#4A6CF7"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${color}`,borderRadius:12,padding:13}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><b style={{display:"block",fontSize:22,color,marginTop:3}}>{value}</b></div>)}
+    </div>
+    {byPerson.length>0&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:13,marginBottom:12}}><div style={{fontSize:11,fontWeight:800,marginBottom:9}}>Kişi Bazlı Dağılım</div><div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{byPerson.map(([name,hours])=><span key={name} style={{background:"#F5F3FF",color:"#6D28D9",borderRadius:8,padding:"6px 9px",fontSize:10,fontWeight:700}}>{name}: {hours} sa</span>)}</div></div>}
+    <div style={{display:"grid",gap:7}}>{rows.map(row=><div key={row.id} className="project-effort-row" style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 12px",display:"grid",gridTemplateColumns:"110px minmax(160px,1fr) 150px 90px 75px",gap:9,alignItems:"center"}}><span style={{fontSize:9,fontWeight:800,color:"#4A6CF7",background:"#EEF2FF",borderRadius:6,padding:"4px 6px",textAlign:"center"}}>{row.source}</span><div style={{minWidth:0}}><b style={{fontSize:11}}>{row.item}</b>{row.note&&<div style={{fontSize:9,color:"#94A3B8",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{row.note}</div>}</div><span style={{fontSize:10,color:"#475569"}}>{row.person}</span><span style={{fontSize:10,color:"#64748B"}}>{fmt(row.date)}</span><b style={{fontSize:12,color:"#7C3AED",textAlign:"right"}}>{row.hours} sa</b></div>)}{!rows.length&&<div style={{padding:35,textAlign:"center",color:"#94A3B8",background:"#fff",border:"1px dashed #CBD5E1",borderRadius:12}}>Bu projede henüz efor kaydı yok.</div>}</div>
+  </div>;
+}
+
 function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
   const myTasks=state.projects.flatMap(p=>p.milestones.flatMap(m=>m.tasks.filter(t=>t.assignee===currentUser.id&&t.status!=="Tamamlandı")));
   const personal=(state.personalTasks||[]).filter(t=>t.assignee===currentUser.id&&t.status!=="Tamamlandı");
@@ -570,6 +612,60 @@ function AdminBoardCard({id,size="medium",draggedId,onDragStart,onDragEnd,onDrop
       <div draggable onDragStart={event=>onDragStart(event,id)} onDragEnd={onDragEnd} title="Sürükleyerek yerini değiştir" style={{color:"#CBD5E1",fontSize:15,lineHeight:1,cursor:"grab",letterSpacing:1,userSelect:"none"}}>⠿</div>
     </div>
     {children}
+  </div>;
+}
+
+function OrganizationPanel({people,onEdit}) {
+  const grouped=ORG_LEVELS.map(level=>({
+    ...level,
+    people:people.filter(person=>person.orgLevel===level.id),
+  }));
+  const unassigned=people.filter(person=>!person.orgLevel);
+  const Person=({person})=>{
+    const manager=people.find(item=>item.id===person.managerId);
+    return <button onClick={()=>onEdit?.(person)} style={{border:"1px solid #E2E8F0",background:"#fff",borderRadius:11,padding:"10px 12px",display:"flex",alignItems:"center",gap:9,textAlign:"left",cursor:onEdit?"pointer":"default",minWidth:0}}>
+      <Avatar initials={person.avatar} imageUrl={person.avatarUrl} size={30} color={person.isAdmin?"#E11D48":"#4A6CF7"}/>
+      <span style={{minWidth:0,flex:1}}><b style={{display:"block",fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{person.name}</b>{manager&&<span style={{display:"block",fontSize:9,color:"#94A3B8",marginTop:2}}>Yönetici: {manager.name}</span>}</span>
+    </button>;
+  };
+  return <div style={{display:"grid",gap:10}}>
+    {grouped.map(level=><div key={level.id} className="org-level-row" style={{display:"grid",gridTemplateColumns:"minmax(150px,190px) 1fr",gap:10,alignItems:"stretch"}}>
+      <div style={{background:`linear-gradient(135deg,#172033,${level.rank<4?"#3730A3":"#334155"})`,color:"#fff",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><b style={{fontSize:11}}>{level.label}</b><span style={{fontSize:10,color:"#CBD5E1"}}>{level.people.length}</span></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:7,background:"#F8FAFC",border:"1px dashed #CBD5E1",borderRadius:12,padding:7}}>
+        {level.people.map(person=><Person key={person.id} person={person}/>)}
+        {!level.people.length&&<div style={{fontSize:10,color:"#94A3B8",padding:10}}>Bu seviyeye kişi atanmadı.</div>}
+      </div>
+    </div>)}
+    {unassigned.length>0&&<div style={{borderTop:"1px solid #E2E8F0",paddingTop:12}}><div style={{fontSize:11,fontWeight:800,color:"#64748B",marginBottom:7}}>HİYERARŞİSİ ATANMAYANLAR</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:7}}>{unassigned.map(person=><Person key={person.id} person={person}/>)}</div></div>}
+  </div>;
+}
+
+function ManagerAssignedTasks({state,currentUser}) {
+  const tasks=(state.personalTasks||[]).filter(task=>task.createdBy===currentUser.id);
+  const rows=tasks.map(task=>({...task,person:state.people.find(person=>person.id===task.assignee)}));
+  const active=rows.filter(task=>task.status!=="Tamamland\u0131");
+  return <div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:10,marginBottom:14}}>
+      {[["Toplam Atama",rows.length,"#4A6CF7"],["Aktif",active.length,"#EA6C00"],["Geciken",active.filter(task=>delayLvl(task.dueDate,task.status)).length,"#E11D48"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${color}`,borderRadius:12,padding:13}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><b style={{fontSize:23,color}}>{value}</b></div>)}
+    </div>
+    <div style={{display:"grid",gap:7}}>{rows.map(task=><div key={task.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:11,padding:"11px 13px",display:"flex",alignItems:"center",gap:10}}>
+      <Avatar initials={task.person?.avatar||"?"} imageUrl={task.person?.avatarUrl} size={28}/>
+      <div style={{flex:1,minWidth:0}}><b style={{fontSize:12}}>{task.title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{task.person?.name||"Atanmamış"} · {fmt(task.dueDate)} · {task.status}</div></div>
+      {delayLvl(task.dueDate,task.status)&&<DelayBadge dateStr={task.dueDate} status={task.status}/>}
+    </div>)}{!rows.length&&<div style={{padding:35,textAlign:"center",color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px dashed #CBD5E1"}}>Henüz yönetici ataması bulunmuyor.</div>}</div>
+  </div>;
+}
+
+function ManagementWorkspace({state,setState,currentUser,onOpenProject,onNavigate,onEditPerson}) {
+  const [section,setSection]=useState("overview");
+  return <div style={{padding:"20px clamp(14px,3vw,28px)",flex:1,overflow:"auto"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:16}}>
+      <div><h2 style={{margin:0,fontSize:21}}>Yönetim</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Portföy, ekip atamaları ve organizasyon yapısı.</p></div>
+      <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>{[["overview","Genel Bakış"],["assigned","Atadığım İşler"],["organization","Organizasyon"]].map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:800,cursor:"pointer",background:section===id?"#fff":"transparent",color:section===id?"#4A6CF7":"#64748B"}}>{label}</button>)}</div>
+    </div>
+    {section==="overview"&&<AdminDashboard state={state} setState={setState} currentUser={currentUser} onOpenProject={onOpenProject} onNavigate={onNavigate}/>}
+    {section==="assigned"&&<ManagerAssignedTasks state={state} currentUser={currentUser}/>}
+    {section==="organization"&&<OrganizationPanel people={state.people} onEdit={onEditPerson}/>}
   </div>;
 }
 
@@ -2166,6 +2262,13 @@ const GlobalStyle = () => (
       .todo-columns { grid-template-columns: 1fr !important; }
       .admin-main-grid, .admin-triple-grid { grid-template-columns: 1fr !important; }
       .visit-time-grid { grid-template-columns: 1fr !important; }
+      .org-level-row { grid-template-columns:1fr !important; }
+      .project-effort-row { grid-template-columns:1fr auto !important; }
+      .project-effort-row > :nth-child(1) { grid-column:1; grid-row:2; justify-self:start; }
+      .project-effort-row > :nth-child(2) { grid-column:1 / -1; grid-row:1; }
+      .project-effort-row > :nth-child(3) { grid-column:1; grid-row:3; }
+      .project-effort-row > :nth-child(4) { grid-column:1; grid-row:4; }
+      .project-effort-row > :nth-child(5) { grid-column:2; grid-row:2 / 5; align-self:center; }
       .admin-board-tools { opacity:1; }
       .admin-board-small, .admin-board-medium, .admin-board-large, .admin-board-full { grid-column:span 12; }
     }
@@ -2371,7 +2474,7 @@ export default function App() {
     addLog(currentUser.name,"general",`Ekip üyesi güncellendi: ${data.name}`);
   };
   const deletePerson=(id)=>setState(s=>({...s,
-    people:s.people.filter(person=>person.id!==id),
+    people:s.people.filter(person=>person.id!==id).map(person=>person.managerId===id?{...person,managerId:""}:person),
     projects:s.projects.map(p=>({...p,pm:p.pm===id?"":p.pm,pmIds:projectPmIds(p).filter(pmId=>pmId!==id),stakeholders:projectStakeholders(p).filter(item=>item.userId!==id),members:(p.members||[]).filter(memberId=>memberId!==id),milestones:p.milestones.map(ms=>({...ms,tasks:ms.tasks.map(t=>t.assignee===id?{...t,assignee:""}:t)}))})),
     personalTasks:(s.personalTasks||[]).map(t=>t.assignee===id?{...t,assignee:""}:t)
   }));
@@ -2558,7 +2661,7 @@ export default function App() {
 
   const nav=[
     {id:"dashboard",icon:"home",label:"Dashboard"},
-    ...(isAdmin?[{id:"admin",icon:"admin",label:"Y\u00f6netici Paneli"}]:[]),
+    ...(isAdmin?[{id:"admin",icon:"admin",label:"Yönetim"}]:[]),
     {id:"todos",icon:"ticket",label:"To-Do"},
     {id:"projects",icon:"projects",label:"Projeler"},
     {id:"mytasks",icon:"tasks",label:"G\u00f6revlerim"},
@@ -2576,8 +2679,8 @@ export default function App() {
       <button onClick={()=>setMobileMenuOpen(v=>!v)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", padding:4 }}>☰</button>
       <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:27,height:27,objectFit:"contain"}}/><span style={{ fontSize:13, fontWeight:800, color:"#4A6CF7", letterSpacing:2 }}>CORJECT</span></button>
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
-        <div style={{textAlign:"right",minWidth:0}}><div style={{fontSize:10,fontWeight:800,color:"#fff",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{currentUser.name}</div><div style={{fontSize:8,color:"#94A3B8",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{currentUser.title||currentUser.role||""}</div></div>
         <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
+        <div style={{fontSize:10,fontWeight:800,color:"#fff",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:"28px"}}>{currentUser.name}</div>
       </div>
     </div>}
     {/* Mobil overlay arka plan */}
@@ -2595,9 +2698,8 @@ export default function App() {
           </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
           <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{currentUser.name}</div>
-            <div style={{ fontSize:10, color:"#94A3B8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{currentUser.title||currentUser.role||""}</div>
+          <div style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", minHeight:28 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", lineHeight:1 }}>{currentUser.name}</div>
           </div>
           <button onClick={logout} style={{ background:"none", border:"none", cursor:"pointer", color:"#475569", fontSize:12, padding:2 }}>Çıkış</button>
         </div>
@@ -2613,7 +2715,7 @@ export default function App() {
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?50:0 }}>
       {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&<DashboardPage state={state} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("mine");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
-      {view==="admin"&&isAdmin&&!selProject&&<AdminDashboard state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
+      {view==="admin"&&isAdmin&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
 
       {/* PROJECT DETAIL */}
@@ -2639,7 +2741,7 @@ export default function App() {
             <span style={{ fontSize:12, fontWeight:700, color:project.color }}>{progress}%</span>
           </div>}
           <div style={{ display:"flex", gap:5, marginTop:10, overflowX:"auto", paddingBottom:3, scrollbarWidth:"thin" }}>
-            {[["tasks","tasks","Görevler"],["actions","activity","Aksiyonlar"],["gantt","gantt","Proje Planı"],...(project.commissioningTracking?[["commissioning","machines","Devreye Alma"]]:[]),["machines","machines","Makineler"],["risks","risk","Riskler"],["tickets","ticket","Ticketlar"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
+            {[["tasks","tasks","Görevler"],["effort","clock","Efor"],["actions","activity","Aksiyonlar"],["gantt","gantt","Proje Planı"],...(project.commissioningTracking?[["commissioning","machines","Devreye Alma"]]:[]),["machines","machines","Makineler"],["risks","risk","Riskler"],["tickets","ticket","Ticketlar"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
         </div>
 
@@ -2671,6 +2773,7 @@ export default function App() {
           </div>
         </div>}
 
+        {projectTab==="effort"&&<ProjectEffortPanel project={project} state={state} people={state.people}/>}
         {projectTab==="machines"&&<MachinePanel project={project} canEdit={isAdmin} onChange={(machines)=>mutProject(p=>({...p,machines}))} />}
         {projectTab==="commissioning"&&project.commissioningTracking&&<CommissioningPanel project={project} canEdit={canManageProjectActions} onChange={(commissioningTree)=>mutProject(p=>({...p,commissioningTree}))} />}
         {projectTab==="actions"&&<ProjectActionsPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} canManage={canManageProjectActions}/>}
@@ -2753,6 +2856,10 @@ export default function App() {
           <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="people" size={20}/>Ekip</h2></div>
           {isAdmin&&<Btn onClick={()=>setModal({type:"addPerson"})}>+ Kişi Ekle</Btn>}
         </div>
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:14,marginBottom:16}}>
+          <div style={{fontSize:13,fontWeight:850,marginBottom:10}}>Organizasyonel Yapı</div>
+          <OrganizationPanel people={state.people} onEdit={isAdmin?person=>setModal({type:"editPerson",data:person}):null}/>
+        </div>
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {state.people.map(p=>{
             const allT=[...state.projects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>t.assignee===p.id))),...(state.personalTasks||[]).filter(t=>t.assignee===p.id)];
@@ -2771,7 +2878,7 @@ export default function App() {
                     <span style={{ fontWeight:700, fontSize:13 }}>{p.name}</span>
                     {p.isAdmin&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:6, padding:"1px 6px", fontSize:9, fontWeight:700 }}>YÖN</span>}
                   </div>
-                  <div style={{ color:"#94A3B8", fontSize:11, marginTop:1 }}>{p.role}{p.email?` · ${p.email}`:""}{projC>0?` · ${projC} proje`:""}</div>
+                  <div style={{ color:"#94A3B8", fontSize:11, marginTop:1 }}>{orgLevelLabel(p.orgLevel)}{p.email?` · ${p.email}`:""}{projC>0?` · ${projC} proje`:""}</div>
                   {stats.length>0&&<div style={{ display:"flex", gap:8, marginTop:4, flexWrap:"wrap" }}>
                     {stats.map(([l,c,col])=><span key={l} style={{ fontSize:11, fontWeight:700, color:col }}>{l} {c}</span>)}
                   </div>}
@@ -2798,8 +2905,8 @@ export default function App() {
     {modal?.type==="editMilestone"&&<MilestoneModal title="Milestone Duzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateMilestone(modal.data.id,d)} />}
     {modal?.type==="addTask"&&<TaskModal title="Yeni Görev" onClose={()=>setModal(null)} onSave={(d)=>addTask(modal.msId,d)} people={state.people} />}
     {modal?.type==="editTask"&&<TaskModal title="Görevi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateTask(modal.msId,modal.data.id,d)} people={state.people} />}
-    {modal?.type==="addPerson"&&<PersonModal onClose={()=>setModal(null)} onSave={addPerson} />}
-    {modal?.type==="editPerson"&&<UserEditModal title="Kullanıcıyı Düzenle" person={modal.data} allowAdmin onClose={()=>setModal(null)} onSave={(d)=>updatePerson(modal.data.id,d)} />}
+    {modal?.type==="addPerson"&&<PersonModal people={state.people} onClose={()=>setModal(null)} onSave={addPerson} />}
+    {modal?.type==="editPerson"&&<UserEditModal title="Kullanıcıyı Düzenle" person={modal.data} people={state.people} allowAdmin onClose={()=>setModal(null)} onSave={(d)=>updatePerson(modal.data.id,d)} />}
     {modal?.type==="personDetail"&&<PersonDetailModal person={modal.data} projects={state.projects} personalTasks={state.personalTasks} onClose={()=>setModal(null)} />}
     {modal?.type==="addRisk"&&<RiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
     {modal?.type==="editProfile"&&<UserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
@@ -3105,21 +3212,25 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
 }
 
 // ─── User Edit Modal ──────────────────────────────────────────────────────────
-function UserEditModal({ person, onClose, onSave, title="Profilimi Düzenle", allowAdmin=false }) {
+function UserEditModal({ person, people=[], onClose, onSave, title="Profilimi Düzenle", allowAdmin=false }) {
   const [name, setName] = useState(person.name);
   const [email,setEmail]=useState(person.email||"");
   const [phone,setPhone]=useState(person.phone||"");
   const [whatsappEnabled,setWhatsappEnabled]=useState(person.whatsappEnabled!==false);
-  const [role, setRole] = useState(person.role||"");
+  const [orgLevel,setOrgLevel]=useState(person.orgLevel||"");
+  const [managerId,setManagerId]=useState(person.managerId||"");
   const [isAdmin,setIsAdmin]=useState(Boolean(person.isAdmin));
   return <Modal title={title} onClose={onClose} wide>
     <Field label="Ad Soyad *"><input style={iStyle} value={name} onChange={e=>setName(e.target.value)} /></Field>
     <Field label="E-posta"><input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" /></Field>
     <Field label="WhatsApp Telefonu"><input type="tel" style={iStyle} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="905551234567" /></Field>
     <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={whatsappEnabled} onChange={e=>setWhatsappEnabled(e.target.checked)}/> WhatsApp görev bildirimlerini al</label>
-    <Field label="Rol / Unvan"><input style={iStyle} value={role} onChange={e=>setRole(e.target.value)} /></Field>
+    {allowAdmin&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <Field label="Organizasyon Seviyesi"><select style={iStyle} value={orgLevel} onChange={e=>setOrgLevel(e.target.value)}><option value="">- Atanmamış -</option>{ORG_LEVELS.map(level=><option key={level.id} value={level.id}>{level.label}</option>)}</select></Field>
+      <Field label="Bağlı Olduğu Yönetici"><select style={iStyle} value={managerId} onChange={e=>setManagerId(e.target.value)}><option value="">- Yönetici yok -</option>{people.filter(item=>item.id!==person.id).map(item=><option key={item.id} value={item.id}>{item.name} · {orgLevelLabel(item.orgLevel)}</option>)}</select></Field>
+    </div>}
     {allowAdmin&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={isAdmin} onChange={e=>setIsAdmin(e.target.checked)}/> Yönetici yetkisi</label>}
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),phone:phone.replace(/\D/g,""),whatsappEnabled,role:role.trim(),...(allowAdmin?{isAdmin}:{})}); onClose(); }}>Kaydet</Btn></div>
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),phone:phone.replace(/\D/g,""),whatsappEnabled,...(allowAdmin?{isAdmin,orgLevel,managerId,role:orgLevelLabel(orgLevel)}:{})}); onClose(); }}>Kaydet</Btn></div>
   </Modal>;
 }
 
@@ -3309,21 +3420,21 @@ function TaskDetailModal({ task, people, currentUser, onClose, onUpdate }) {
     <div style={{display:"flex",justifyContent:"flex-end",gap:7,marginTop:9}}><Btn variant="ghost" onClick={onClose}>Kapat</Btn><Btn onClick={addComment}>Yorum Ekle</Btn></div>
   </Modal>;
 }
-function PersonModal({ onClose, onSave }) {
+function PersonModal({ people=[], onClose, onSave }) {
   const [name, setName] = useState("");
   const [email,setEmail]=useState("");
   const [phone,setPhone]=useState("");
   const [whatsappEnabled,setWhatsappEnabled]=useState(true);
-  const [role, setRole] = useState("");
+  const [orgLevel,setOrgLevel]=useState("");
+  const [managerId,setManagerId]=useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   return (
     <Modal title="Ekip Üyesi Ekle" onClose={onClose}>
       <Field label="Ad Soyad *">
         <input style={iStyle} value={name} onChange={e=>setName(e.target.value)} placeholder="Ad soyad" />
       </Field>
-      <Field label="Rol / Unvan">
-        <input style={iStyle} value={role} onChange={e=>setRole(e.target.value)} placeholder="Geliştirici, Tasarımcı..." />
-      </Field>
+      <Field label="Organizasyon Seviyesi"><select style={iStyle} value={orgLevel} onChange={e=>setOrgLevel(e.target.value)}><option value="">- Atanmamış -</option>{ORG_LEVELS.map(level=><option key={level.id} value={level.id}>{level.label}</option>)}</select></Field>
+      <Field label="Bağlı Olduğu Yönetici"><select style={iStyle} value={managerId} onChange={e=>setManagerId(e.target.value)}><option value="">- Yönetici yok -</option>{people.map(item=><option key={item.id} value={item.id}>{item.name} · {orgLevelLabel(item.orgLevel)}</option>)}</select></Field>
       <Field label="E-posta">
         <input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" />
       </Field>
@@ -3343,7 +3454,7 @@ function PersonModal({ onClose, onSave }) {
       </Field>
       <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}>
         <Btn variant="ghost" onClick={onClose}>İptal</Btn>
-        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,email:email.trim(),phone:phone.replace(/\D/g,""),whatsappEnabled,role,isAdmin}); onClose(); }}>Kaydet</Btn>
+        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,email:email.trim(),phone:phone.replace(/\D/g,""),whatsappEnabled,orgLevel,managerId,role:orgLevelLabel(orgLevel),isAdmin}); onClose(); }}>Kaydet</Btn>
       </div>
     </Modal>
   );
