@@ -6,7 +6,7 @@ import { apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.12.0";
+const APP_VERSION = "v1.13.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -14,6 +14,24 @@ const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
 const now = () => new Date().toISOString();
 const todayStr = () => new Date().toISOString().slice(0, 10);
+const slackAvatarUrl = (user) => {
+  const metadata = user?.user_metadata || {};
+  const identityData = (user?.identities || [])
+    .map(identity => identity?.identity_data || {})
+    .find(data => data.avatar_url || data.picture) || {};
+  const value =
+    metadata.avatar_url ||
+    metadata.picture ||
+    identityData.avatar_url ||
+    identityData.picture ||
+    "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+};
 
 const S = {
   "Başlamadı":    { bg:"#F8FAFC", text:"#94A3B8", dot:"#94A3B8" },
@@ -228,8 +246,11 @@ const LOG_META = {
 };
 
 // ─── UI Atoms ───────────────────────────────────────────────────────────────
-function Avatar({ initials, size=28, color="#4A6CF7" }) {
-  return <div style={{ width:size, height:size, borderRadius:"50%", background:color+"22", border:`2px solid ${color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:size*0.35, fontWeight:700, color, flexShrink:0, fontFamily:"monospace" }}>{initials}</div>;
+function Avatar({ initials, imageUrl="", size=28, color="#4A6CF7" }) {
+  return <div style={{ width:size, height:size, borderRadius:"50%", background:color+"22", border:`2px solid ${color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:size*0.35, fontWeight:700, color, flexShrink:0, fontFamily:"monospace", overflow:"hidden", position:"relative" }}>
+    <span>{initials}</span>
+    {imageUrl&&<img src={imageUrl} alt="" referrerPolicy="no-referrer" onError={event=>{event.currentTarget.style.display="none";}} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover"}}/>}
+  </div>;
 }
 function Icon({ name, size=16 }) {
   const paths={
@@ -350,7 +371,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
         <button title="Bu güne plan ekle" onClick={()=>openForm(key)} style={{width:"100%",border:0,background:"transparent",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,cursor:"pointer",padding:0}}><div style={{fontSize:11,fontWeight:800,color:today?"#4A6CF7":"#64748B",textTransform:"uppercase"}}>{d.toLocaleDateString("tr-TR",{weekday:"short"})}<span style={{display:"block",fontSize:9,fontWeight:600,color:"#94A3B8",textTransform:"none",marginTop:2}}>+ plan ekle</span></div><div style={{width:28,height:28,borderRadius:9,display:"grid",placeItems:"center",fontWeight:800,fontSize:12,background:today?"#4A6CF7":"#F8FAFC",color:today?"#fff":"#1E293B"}}>{d.getDate()}</div></button>
         {dayPlans.map(plan=>{const project=state.projects.find(p=>p.id===plan.projectId);const person=state.people.find(p=>p.id===plan.userId);return <div key={plan.id} onClick={()=>openForm(key,plan)} style={{background:"#fff",border:`1px solid ${project?.color||"#CBD5E1"}55`,borderLeft:`4px solid ${project?.color||"#4A6CF7"}`,borderRadius:9,padding:"9px 8px",marginBottom:7,boxShadow:"0 2px 8px #0f172a0c",cursor:"pointer"}}>
           <div style={{fontSize:11,fontWeight:800,lineHeight:1.35}}>{project?.name||"Silinmiş proje"}</div><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{plan.startTime} - {plan.endTime}</div>
-          {scope==="team"&&person&&<div style={{display:"flex",alignItems:"center",gap:5,marginTop:6}}><Avatar initials={person.avatar} size={20}/><span style={{fontSize:10,fontWeight:700,color:"#475569"}}>{person.name}</span></div>}
+          {scope==="team"&&person&&<div style={{display:"flex",alignItems:"center",gap:5,marginTop:6}}><Avatar initials={person.avatar} imageUrl={person.avatarUrl} size={20}/><span style={{fontSize:10,fontWeight:700,color:"#475569"}}>{person.name}</span></div>}
           {plan.note&&<div style={{fontSize:10,color:"#64748B",lineHeight:1.4,marginTop:6,wordBreak:"break-word"}}>{plan.note}</div>}
           {(isAdmin||plan.userId===currentUser.id)&&<div style={{display:"flex",gap:8,marginTop:6}}><button onClick={e=>{e.stopPropagation();openForm(key,plan);}} style={{border:0,background:"transparent",color:"#4A6CF7",fontSize:10,cursor:"pointer",padding:0}}>Düzenle</button><button onClick={e=>{e.stopPropagation();if(confirm("Plan silinsin mi?"))remove(plan.id);}} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,cursor:"pointer",padding:0}}>Sil</button></div>}
         </div>})}
@@ -1040,7 +1061,7 @@ function TaskCard({ task, people, projectColor, onCheck, onEdit, onDelete, onTim
         <DelayBadge dateStr={task.dueDate} status={task.status} />
       </div>
       <div style={{ display:"flex", gap:10, marginTop:5, alignItems:"center", flexWrap:"wrap" }}>
-        {assignee&&<div style={{ display:"flex", alignItems:"center", gap:4 }}><Avatar initials={assignee.avatar} size={17} color={projectColor||"#4A6CF7"} /><span style={{ fontSize:11, color:"#64748B" }}>{assignee.name}</span></div>}
+        {assignee&&<div style={{ display:"flex", alignItems:"center", gap:4 }}><Avatar initials={assignee.avatar} imageUrl={assignee.avatarUrl} size={17} color={projectColor||"#4A6CF7"} /><span style={{ fontSize:11, color:"#64748B" }}>{assignee.name}</span></div>}
         {task.startDate&&<span style={{ fontSize:11, color:"#94A3B8" }}>Başl: {fmt(task.startDate)}</span>}
         {task.dueDate&&<span style={{ fontSize:11, color:dl?"#E11D48":"#94A3B8" }}>{task.startDate?"Bit:":"Termin:"} {fmt(task.dueDate)}</span>}
         {(task.timeEntries||[]).length>0&&<span style={{ fontSize:11, color:"#7C3AED", fontWeight:600, background:"#F5F3FF", borderRadius:6, padding:"1px 6px" }}>{(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0)} saat</span>}
@@ -1105,7 +1126,7 @@ function PersonDetailModal({ person, projects, personalTasks, onClose }) {
   </div>;};
   return <Modal title={`${person.name} Detay`} onClose={onClose} wide>
     <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:18 }}>
-      <Avatar initials={person.avatar} size={44} color={person.isAdmin?"#E11D48":"#4A6CF7"} />
+      <Avatar initials={person.avatar} imageUrl={person.avatarUrl} size={44} color={person.isAdmin?"#E11D48":"#4A6CF7"} />
       <div><div style={{ fontWeight:800, fontSize:15 }}>{person.name}</div><div style={{ color:"#64748B", fontSize:12 }}>{person.role}</div>{person.email&&<div style={{color:"#4A6CF7",fontSize:11,marginTop:2}}>{person.email}</div>}</div>
     </div>
     <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginBottom:18 }}>
@@ -1350,7 +1371,7 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
   const deleteItem = (id) => save({ items:projNotes.items.filter(x=>x.id!==id) });
 
   // User todos linked to this project
-  const linkedTodos=((((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(t=>t.projectId===project.id)).map(t=>({...t,personName:currentUser.name,personAvatar:currentUser.avatar,personIsAdmin:currentUser.isAdmin}));
+  const linkedTodos=((((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(t=>t.projectId===project.id)).map(t=>({...t,personName:currentUser.name,personAvatar:currentUser.avatar,personAvatarUrl:currentUser.avatarUrl,personIsAdmin:currentUser.isAdmin}));
 
   return <div style={{ flex:1, overflow:"auto", padding:"clamp(14px, 3vw, 24px)" }}>
     <div style={{display:"flex",gap:7,marginBottom:16}}>
@@ -1397,7 +1418,7 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
         {linkedTodos.length===0&&<div style={{ fontSize:12, color:"#94A3B8" }}>Henüz bağlı kişisel todo yok.<br/>Görevlerim sayfasından todo eklerken proje seçin.</div>}
         <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
           {linkedTodos.map(t=><div key={t.id} style={{ display:"flex", alignItems:"flex-start", gap:8, padding:"9px 11px", background:"#F8FAFC", borderRadius:8, border:"1.5px solid #E2E8F0" }}>
-            <Avatar initials={t.personAvatar} size={22} color={t.personIsAdmin?"#E11D48":"#4A6CF7"} />
+            <Avatar initials={t.personAvatar} imageUrl={t.personAvatarUrl} size={22} color={t.personIsAdmin?"#E11D48":"#4A6CF7"} />
             <div style={{ flex:1 }}>
               <div style={{ fontSize:12, textDecoration:t.done?"line-through":"none", color:t.done?"#94A3B8":"#1E293B" }}>{t.text}</div>
               <div style={{ fontSize:10, color:"#94A3B8", marginTop:1 }}>{t.personName}</div>
@@ -1415,7 +1436,7 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin }) {
           if(!note) return null;
           return <div key={p.id} style={{ marginBottom:10, paddingBottom:10, borderBottom:"1px solid #F1F5FF" }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-              <Avatar initials={p.avatar} size={18} color={p.isAdmin?"#E11D48":"#4A6CF7"} />
+              <Avatar initials={p.avatar} imageUrl={p.avatarUrl} size={18} color={p.isAdmin?"#E11D48":"#4A6CF7"} />
               <span style={{ fontSize:11, fontWeight:700 }}>{p.name}</span>
             </div>
             <div style={{ fontSize:11, color:"#64748B", whiteSpace:"pre-wrap", lineHeight:1.5 }}>{note}</div>
@@ -1808,7 +1829,22 @@ export default function App() {
     if(!REQUIRE_AUTH||!dataLoaded||!authSession?.user?.email)return;
     const email=authSession.user.email.trim().toLowerCase();
     const person=state.people.find(item=>item.email?.trim().toLowerCase()===email);
-    if(person&&state.currentUserId!==person.id)setState(s=>({...s,currentUserId:person.id}));
+    if(!person)return;
+    const avatarUrl=slackAvatarUrl(authSession.user);
+    if(state.currentUserId!==person.id||(avatarUrl&&person.avatarUrl!==avatarUrl)){
+      let cancelled=false;
+      queueMicrotask(()=>{
+        if(cancelled)return;
+        setState(s=>({
+          ...s,
+          currentUserId:person.id,
+          people:avatarUrl
+            ?s.people.map(item=>item.id===person.id?{...item,avatarUrl}:item)
+            :s.people,
+        }));
+      });
+      return()=>{cancelled=true;};
+    }
   },[authSession,dataLoaded,state.people,state.currentUserId]);
 
   // Degisiklikleri Supabase'e kaydet (ilk yuklemede atla)
@@ -2099,7 +2135,7 @@ export default function App() {
       <button onClick={()=>setMobileMenuOpen(v=>!v)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", padding:4 }}>☰</button>
       <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:27,height:27,objectFit:"contain"}}/><span style={{ fontSize:13, fontWeight:800, color:"#4A6CF7", letterSpacing:2 }}>CORJECT</span></button>
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
-        <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
+        <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
       </div>
     </div>}
     {/* Mobil overlay arka plan */}
@@ -2116,7 +2152,7 @@ export default function App() {
             </button>
           </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
-          <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
+          <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{currentUser.name}</div>
             <div style={{ fontSize:10, color:"#64748B" }}>{isAdmin?"Yönetici":currentUser.role}</div>
@@ -2284,7 +2320,7 @@ export default function App() {
             const stats=[["Aktif",active,"#4A6CF7"],["Bekl.",waiting,"#94A3B8"],["Gec.",delayed,"#EA6C00"],["Krit.",crit,"#E11D48"],["Bitti",comp,"#059669"]].filter(([,c])=>c>0);
             return (
               <div key={p.id} style={{ background:"#fff", borderRadius:12, padding:"11px 14px", border:"1.5px solid #E2E8F0", display:"flex", alignItems:"center", gap:12 }}>
-                <Avatar initials={p.avatar} size={36} color={p.isAdmin?"#E11D48":"#4A6CF7"} />
+                <Avatar initials={p.avatar} imageUrl={p.avatarUrl} size={36} color={p.isAdmin?"#E11D48":"#4A6CF7"} />
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
                     <span style={{ fontWeight:700, fontSize:13 }}>{p.name}</span>

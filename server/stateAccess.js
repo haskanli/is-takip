@@ -1,5 +1,14 @@
 const clone = (value) => structuredClone(value);
 
+const safeAvatarUrl = (value) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+};
+
 const projectManagerIds = (project) =>
   [...new Set([...(project.pmIds || []), project.pm].filter(Boolean))];
 
@@ -163,9 +172,18 @@ export const mergeStateForProfile = (current, incoming, profile) => {
   const ownsNotification = (item) => item.userId === legacyId;
   const ownsRecurring = (item) =>
     item.createdBy === legacyId || (item.assigneeIds || []).includes(legacyId);
+  const incomingPerson = (incoming.people || []).find(
+    (person) => person.id === legacyId,
+  );
+  const ownAvatarUrl = safeAvatarUrl(incomingPerson?.avatarUrl);
 
   return {
     ...clone(current),
+    people: (current.people || []).map((person) =>
+      person.id === legacyId && ownAvatarUrl
+        ? { ...clone(person), avatarUrl: ownAvatarUrl }
+        : clone(person),
+    ),
     projects,
     personalTasks: replaceOwnedItems(
       current.personalTasks,

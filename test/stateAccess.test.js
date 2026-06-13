@@ -77,6 +77,10 @@ test("filters state to the authenticated user's scope", () => {
 
 test("member cannot change another user's task or hidden project", () => {
   const incoming = filterStateForProfile(state, member);
+  incoming.people.find((person) => person.id === "member").avatarUrl =
+    "https://avatars.slack-edge.com/member.png";
+  incoming.people.find((person) => person.id === "other").avatarUrl =
+    "https://avatars.slack-edge.com/other.png";
   incoming.projects[0].name = "Tampered";
   incoming.projects[0].milestones[0].tasks[0].status = "Devam Ediyor";
   incoming.projects[0].milestones[0].tasks[1].status = "Tamamlandı";
@@ -89,6 +93,25 @@ test("member cannot change another user's task or hidden project", () => {
   );
   assert.equal(merged.projects[0].milestones[0].tasks[1].status, "Bekliyor");
   assert.equal(merged.projects[1].name, "Hidden");
+  assert.equal(
+    merged.people.find((person) => person.id === "member").avatarUrl,
+    "https://avatars.slack-edge.com/member.png",
+  );
+  assert.equal(
+    merged.people.find((person) => person.id === "other").avatarUrl,
+    undefined,
+  );
+});
+
+test("member cannot save an unsafe profile image URL", () => {
+  const incoming = filterStateForProfile(state, member);
+  incoming.people.find((person) => person.id === "member").avatarUrl =
+    "javascript:alert(1)";
+  const merged = mergeStateForProfile(state, incoming, member);
+  assert.equal(
+    merged.people.find((person) => person.id === "member").avatarUrl,
+    undefined,
+  );
 });
 
 test("project manager can update only a managed project", () => {
