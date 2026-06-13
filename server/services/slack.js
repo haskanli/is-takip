@@ -82,22 +82,28 @@ export const sendTaskAssignedSlack = async (
     fetchImpl,
   );
   const link = userTaskUrl(assignee.id, task.id);
-  const fields = [
-    { type: "mrkdwn", text: `*Atayan:*\n${assigner.name}` },
-    { type: "mrkdwn", text: `*Termin:*\n${task.dueDate || "Belirtilmedi"}` },
-  ];
   const blocks = [
     {
       type: "header",
-      text: { type: "plain_text", text: "Yeni görev ataması", emoji: true },
+      text: {
+        type: "plain_text",
+        text: "Yeni g\u00f6rev atamas\u0131",
+        emoji: true,
+      },
     },
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*${task.title}*\n${task.notes || "Açıklama girilmedi."}`,
+        text: `*${task.title}*\n${task.notes || "A\u00e7\u0131klama girilmedi."}`,
       },
-      fields,
+      fields: [
+        { type: "mrkdwn", text: `*Atayan:*\n${assigner.name}` },
+        {
+          type: "mrkdwn",
+          text: `*Termin:*\n${task.dueDate || "Belirtilmedi"}`,
+        },
+      ],
     },
   ];
   if (link) {
@@ -105,7 +111,11 @@ export const sendTaskAssignedSlack = async (
       type: "actions",
       elements: [{
         type: "button",
-        text: { type: "plain_text", text: "Görevi Aç", emoji: true },
+        text: {
+          type: "plain_text",
+          text: "G\u00f6revi A\u00e7",
+          emoji: true,
+        },
         url: link,
         style: "primary",
       }],
@@ -116,7 +126,7 @@ export const sendTaskAssignedSlack = async (
     "chat.postMessage",
     {
       channel: user.id,
-      text: `${assigner.name} size bir görev atadı: ${task.title}`,
+      text: `${assigner.name} size bir g\u00f6rev atad\u0131: ${task.title}`,
       blocks,
       unfurl_links: false,
       unfurl_media: false,

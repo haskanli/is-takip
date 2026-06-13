@@ -470,8 +470,18 @@ function LoginScreen({ people, onLogin }) {
   );
 }
 
+function SlackLogo({ size=22 }) {
+  return <svg width={size} height={size} viewBox="0 0 122.8 122.8" aria-hidden="true">
+    <path fill="#36C5F0" d="M30.3 77.6a15.1 15.1 0 1 1-15.1-15.1h15.1v15.1Zm7.6 0a15.1 15.1 0 0 1 30.2 0v37.8a15.1 15.1 0 0 1-30.2 0V77.6Z"/>
+    <path fill="#2EB67D" d="M45.4 30.3a15.1 15.1 0 1 1 15.1-15.1v15.1H45.4Zm0 7.6a15.1 15.1 0 0 1 0 30.2H7.6a15.1 15.1 0 0 1 0-30.2h37.8Z"/>
+    <path fill="#ECB22E" d="M92.5 45.4a15.1 15.1 0 1 1 15.1 15.1H92.5V45.4Zm-7.6 0a15.1 15.1 0 0 1-30.2 0V7.6a15.1 15.1 0 0 1 30.2 0v37.8Z"/>
+    <path fill="#E01E5A" d="M77.6 92.5a15.1 15.1 0 1 1-15.1 15.1V92.5h15.1Zm0-7.6a15.1 15.1 0 0 1 0-30.2h37.8a15.1 15.1 0 0 1 0 30.2H77.6Z"/>
+  </svg>;
+}
+
 function AuthLoginScreen() {
   const [email,setEmail]=useState("");
+  const [showEmail,setShowEmail]=useState(false);
   const [status,setStatus]=useState({loading:false,message:"",error:false});
   const slackLogin=async()=>{
     setStatus({loading:true,message:"",error:false});
@@ -505,18 +515,21 @@ function AuthLoginScreen() {
       <h1 style={{color:"#fff",fontSize:22,letterSpacing:3,margin:"8px 0 4px"}}>CORJECT</h1>
       <p style={{color:"#64748B",fontSize:12,margin:"0 0 22px"}}>Güvenli ekip girişi</p>
       <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.12)",borderRadius:18,padding:24,textAlign:"left"}}>
-        <button disabled={status.loading} onClick={slackLogin} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:10,padding:12,background:"#fff",color:"#1E293B",fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:9}}>
-          <span style={{fontSize:18,fontWeight:900,color:"#4A154B"}}>#</span>
+        <button disabled={status.loading} onClick={slackLogin} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:12,padding:"13px 16px",background:"#fff",color:"#1E293B",fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:11,boxShadow:"0 5px 18px rgba(0,0,0,.16)"}}>
+          <SlackLogo size={23}/>
           Slack ile Giriş Yap
         </button>
-        <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0",color:"#64748B",fontSize:10}}>
+        <button onClick={()=>{setShowEmail(value=>!value);setStatus({loading:false,message:"",error:false});}} style={{width:"100%",border:0,background:"transparent",color:"#94A3B8",fontSize:11,fontWeight:700,cursor:"pointer",padding:"14px 4px 2px",textDecoration:"underline"}}>
+          {showEmail?"E-posta girişini kapat":"E-posta ile giriş"}
+        </button>
+        <div style={{display:showEmail?"flex":"none",alignItems:"center",gap:10,margin:"14px 0",color:"#64748B",fontSize:10}}>
           <span style={{height:1,background:"rgba(255,255,255,.12)",flex:1}}/>
           veya e-posta bağlantısı
           <span style={{height:1,background:"rgba(255,255,255,.12)",flex:1}}/>
         </div>
-        <label style={{display:"block",fontSize:12,fontWeight:700,color:"#CBD5E1",marginBottom:6}}>Kurumsal e-posta adresiniz</label>
-        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="ad@firma.com" style={{...iStyle,padding:12,background:"#fff",marginBottom:10}}/>
-        <button disabled={status.loading} onClick={submit} style={{width:"100%",border:0,borderRadius:10,padding:12,background:"#4A6CF7",color:"#fff",fontWeight:800,cursor:"pointer"}}>{status.loading?"Gönderiliyor...":"Giriş Bağlantısı Gönder"}</button>
+        <label style={{display:showEmail?"block":"none",fontSize:12,fontWeight:700,color:"#CBD5E1",marginBottom:6}}>Kurumsal e-posta adresiniz</label>
+        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="ad@firma.com" style={{...iStyle,padding:12,background:"#fff",marginBottom:10,display:showEmail?"block":"none"}}/>
+        <button disabled={status.loading} onClick={submit} style={{width:"100%",border:0,borderRadius:10,padding:12,background:"#4A6CF7",color:"#fff",fontWeight:800,cursor:"pointer",display:showEmail?"block":"none"}}>{status.loading?"Gönderiliyor...":"Giriş Bağlantısı Gönder"}</button>
         {status.message&&<div style={{fontSize:11,lineHeight:1.5,marginTop:11,color:status.error?"#FCA5A5":"#A7F3D0"}}>{status.message}</div>}
       </div>
       <div style={{fontSize:10,color:"#475569",marginTop:14}}>CORJECT {APP_VERSION}</div>

@@ -35,6 +35,9 @@ test("sendTaskAssignedSlack finds the user by email and sends a task DM", async 
   assert.match(String(requests[0].url), /users\.lookupByEmail\?email=user%40example\.com/);
   const message = JSON.parse(requests[1].options.body);
   assert.equal(message.channel, "U123");
+  assert.equal(message.blocks[0].text.text, "Yeni görev ataması");
+  assert.equal(message.blocks[2].elements[0].text.text, "Görevi Aç");
+  assert.match(message.text, /görev atadı/);
   assert.match(message.blocks[2].elements[0].url, /task=task-1/);
   assert.doesNotMatch(requests[1].options.body, /xoxb-test-token/);
   assert.equal(result.id, "171234.567");
