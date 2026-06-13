@@ -6,7 +6,7 @@ import { apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.13.0";
+const APP_VERSION = "v1.14.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -267,6 +267,7 @@ function Icon({ name, size=16 }) {
     notes:<><path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/></>,
     calendar:<><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></>,
     home:<><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></>,
+    admin:<><path d="M12 3 4 6v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/><path d="M8 13h8M9 9h6M10 17h4"/></>,
     clock:<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
     edit:<><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></>,
     trash:<><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></>,
@@ -430,6 +431,165 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:14}}>
       <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{fontWeight:800,fontSize:13,marginBottom:10}}>Yaklaşan Saha Planları</div>{plans.slice(0,4).map(plan=>{const p=state.projects.find(x=>x.id===plan.projectId);return <div key={plan.id} style={{display:"flex",gap:9,alignItems:"center",padding:"8px 0",borderBottom:"1px solid #F1F5F9"}}><span style={{width:8,height:8,borderRadius:"50%",background:p?.color||"#4A6CF7"}}/><div style={{flex:1}}><div style={{fontSize:11,fontWeight:700}}>{p?.name||"Proje"}</div><div style={{fontSize:10,color:"#94A3B8"}}>{fmt(plan.date)} · {plan.startTime}</div></div></div>})}{!plans.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Yaklaşan saha planı yok.</div>}</div>
       <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{fontWeight:800,fontSize:13,marginBottom:10}}>Projelerim</div>{myProjects.slice(0,4).map(p=><button key={p.id} onClick={()=>onOpenProject(p.id)} style={{width:"100%",display:"flex",gap:9,alignItems:"center",padding:"9px 0",border:0,borderBottom:"1px solid #F1F5F9",background:"transparent",cursor:"pointer",textAlign:"left"}}><span style={{width:8,height:8,borderRadius:"50%",background:p.color}}/><span style={{fontSize:11,fontWeight:700}}>{p.name}</span></button>)}{!myProjects.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Atanmış proje yok.</div>}</div>
+    </div>
+  </div>;
+}
+
+function AdminDashboard({state,onOpenProject,onNavigate}) {
+  const [projectId,setProjectId]=useState("all");
+  const projects=projectId==="all"?state.projects:state.projects.filter(project=>project.id===projectId);
+  const projectIds=new Set(projects.map(project=>project.id));
+  const scopedState={
+    ...state,
+    projects,
+    projectTickets:Object.fromEntries(
+      Object.entries(state.projectTickets||{}).filter(([id])=>projectIds.has(id)),
+    ),
+  };
+  const tasks=projects.flatMap(project=>project.milestones.flatMap(milestone=>
+    milestone.tasks.map(task=>({task,project,milestone}))
+  ));
+  const tickets=Object.entries(state.projectTickets||{}).flatMap(([id,list])=>
+    projectIds.has(id)?(list||[]).map(ticket=>({ticket,project:state.projects.find(project=>project.id===id)})):[]
+  );
+  const risks=projects.flatMap(project=>(project.risks||[]).map(risk=>({risk,project})));
+  const activeTasks=tasks.filter(({task})=>task.status!=="Tamamland\u0131");
+  const completedTasks=tasks.filter(({task})=>task.status==="Tamamland\u0131");
+  const delayedTasks=activeTasks.filter(({task})=>delayLvl(task.dueDate,task.status));
+  const criticalTasks=delayedTasks.filter(({task})=>delayLvl(task.dueDate,task.status)==="critical");
+  const dueSoon=activeTasks.filter(({task})=>{
+    if(!task.dueDate||delayLvl(task.dueDate,task.status))return false;
+    const days=-daysDiff(task.dueDate);
+    return days>=0&&days<=14;
+  }).sort((a,b)=>(a.task.dueDate||"").localeCompare(b.task.dueDate||""));
+  const openTickets=tickets.filter(({ticket})=>!["Tamamland\u0131","\u0130ptal Edildi"].includes(ticket.status));
+  const staleTickets=openTickets.filter(({ticket})=>daysDiff(ticket.updatedAt||ticket.ts)>=7);
+  const openRisks=risks.filter(({risk})=>!["Kapal\u0131","Kapalı"].includes(risk.status));
+  const highRisks=openRisks.filter(({risk})=>["Y\u00fcksek","Kritik"].includes(risk.level));
+  const effortHours=tasks.reduce((total,{task})=>total+(task.timeEntries||[]).reduce((sum,entry)=>sum+(parseFloat(entry.hours)||0),0),0);
+  const estimatedHours=tasks.reduce((total,{task})=>total+(parseFloat(task.estimatedHours)||0),0);
+  const machineList=projects.flatMap(project=>project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[]);
+  const commissioned=machineList.filter(machine=>machine.commissioned).length;
+  const progress=tasks.length?Math.round(completedTasks.length/tasks.length*100):0;
+  const onTimeRate=tasks.length?Math.round((tasks.length-delayedTasks.length)/tasks.length*100):100;
+  const riskRate=projects.length?Math.min(100,Math.round(highRisks.length/projects.length*25)):0;
+  const health=Math.max(0,Math.min(100,Math.round(progress*.45+onTimeRate*.45+(100-riskRate)*.1)));
+  const healthColor=health>=80?"#059669":health>=60?"#EA6C00":"#E11D48";
+
+  const projectRows=projects.map(project=>{
+    const projectTasks=project.milestones.flatMap(milestone=>milestone.tasks);
+    const done=projectTasks.filter(task=>task.status==="Tamamland\u0131").length;
+    const delayed=projectTasks.filter(task=>delayLvl(task.dueDate,task.status)).length;
+    const critical=projectTasks.filter(task=>delayLvl(task.dueDate,task.status)==="critical").length;
+    const projectRisks=(project.risks||[]).filter(risk=>!["Kapal\u0131","Kapalı"].includes(risk.status)).length;
+    const pct=projectTasks.length?Math.round(done/projectTasks.length*100):0;
+    const score=Math.max(0,Math.min(100,Math.round(pct*.55+(projectTasks.length?(projectTasks.length-delayed)/projectTasks.length*35:35)+Math.max(0,10-projectRisks*3-critical*3))));
+    return {project,total:projectTasks.length,done,delayed,critical,risks:projectRisks,pct,score};
+  }).sort((a,b)=>a.score-b.score);
+
+  const workload=state.people.map(person=>{
+    const personTasks=activeTasks.filter(({task})=>task.assignee===person.id);
+    return {
+      person,
+      active:personTasks.length,
+      delayed:personTasks.filter(({task})=>delayLvl(task.dueDate,task.status)).length,
+      hours:tasks.filter(({task})=>task.assignee===person.id).reduce((total,{task})=>total+(task.timeEntries||[]).reduce((sum,entry)=>sum+(parseFloat(entry.hours)||0),0),0),
+    };
+  }).filter(item=>item.active||item.hours).sort((a,b)=>b.active-a.active||b.hours-a.hours);
+  const maxWorkload=Math.max(1,...workload.map(item=>item.active));
+  const ticketStatuses=TICKET_STATUSES.map(status=>({
+    status,
+    count:tickets.filter(({ticket})=>(ticket.status||"A\u00e7\u0131k")===status).length,
+  })).filter(item=>item.count);
+  const maxTicketStatus=Math.max(1,...ticketStatuses.map(item=>item.count));
+  const statusColors={"A\u00e7\u0131k":"#3B82F6","\u00dcr\u00fcn Ekibinde":"#8B5CF6","Devam Ediyor":"#F59E0B","Beklemede":"#64748B","Tamamland\u0131":"#10B981","\u0130ptal Edildi":"#EF4444"};
+  const kpis=[
+    {label:"Portf\u00f6y Sa\u011fl\u0131\u011f\u0131",value:`${health}%`,detail:health>=80?"Kontrol alt\u0131nda":health>=60?"Yak\u0131n takip gerekli":"Y\u00f6netici aksiyonu gerekli",color:healthColor},
+    {label:"Genel \u0130lerleme",value:`${progress}%`,detail:`${completedTasks.length}/${tasks.length} g\u00f6rev tamamland\u0131`,color:"#4A6CF7"},
+    {label:"Kritik Termin",value:criticalTasks.length,detail:`${delayedTasks.length} toplam gecikme`,color:"#E11D48"},
+    {label:"A\u00e7\u0131k Ticket",value:openTickets.length,detail:`${staleTickets.length} ticket 7+ g\u00fcnd\u00fcr aksiyonsuz`,color:"#EA6C00"},
+    {label:"A\u00e7\u0131k Risk",value:openRisks.length,detail:`${highRisks.length} y\u00fcksek/kritik`,color:"#7C3AED"},
+    {label:"Toplam Efor",value:`${effortHours} sa`,detail:estimatedHours?`${estimatedHours} sa planland\u0131`:"Plan eforu girilmedi",color:"#0369A1"},
+    {label:"Devreye Alma",value:machineList.length?`${Math.round(commissioned/machineList.length*100)}%`:"-",detail:`${commissioned}/${machineList.length} makine devrede`,color:"#059669"},
+    {label:"Aktif Proje",value:projects.length,detail:`${projectRows.filter(item=>item.score<60).length} proje riskli`,color:"#0F766E"},
+  ];
+
+  return <div style={{padding:"clamp(16px,3vw,28px)",flex:1,overflow:"auto",background:"linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:14,flexWrap:"wrap",marginBottom:18}}>
+      <div>
+        <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#EEF2FF",color:"#4338CA",borderRadius:20,padding:"4px 10px",fontSize:10,fontWeight:850,letterSpacing:.7,marginBottom:7}}><Icon name="admin" size={13}/>Y\u00d6NET\u0130C\u0130 G\u00d6R\u00dcN\u00dcM\u00dc</div>
+        <h2 style={{margin:0,fontSize:"clamp(21px,3vw,28px)",fontWeight:900,color:"#172033"}}>Operasyon Kontrol Merkezi</h2>
+        <p style={{margin:"5px 0 0",fontSize:12,color:"#64748B"}}>Projeler, terminler, riskler, ekip y\u00fck\u00fc ve ticketlar i\u00e7in tek bak\u0131\u015fta karar ekran\u0131.</p>
+      </div>
+      <div style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+        <div style={{minWidth:230}}><label style={lStyle}>Proje Kapsam\u0131</label><select style={{...iStyle,background:"#fff"}} value={projectId} onChange={event=>setProjectId(event.target.value)}><option value="all">T\u00fcm Portf\u00f6y</option>{state.projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></div>
+        <Btn variant="secondary" onClick={()=>generatePortfolioReport(scopedState,state.people)}>HTML Genel Rapor</Btn>
+      </div>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:10,marginBottom:14}}>
+      {kpis.map(kpi=><div key={kpi.label} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"14px 15px",boxShadow:"0 5px 16px rgba(15,23,42,.045)",borderTop:`3px solid ${kpi.color}`}}>
+        <div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45}}>{kpi.label}</div>
+        <div style={{fontSize:25,fontWeight:900,color:kpi.color,margin:"4px 0 2px"}}>{kpi.value}</div>
+        <div style={{fontSize:10,color:"#94A3B8",lineHeight:1.35}}>{kpi.detail}</div>
+      </div>)}
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"minmax(0,1.45fr) minmax(280px,.85fr)",gap:12,marginBottom:12}} className="admin-main-grid">
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16,boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:13}}><div><div style={{fontWeight:850,fontSize:14}}>Proje Sa\u011fl\u0131k Haritas\u0131</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>En fazla y\u00f6netici ilgisi gerektiren projeler \u00fcstte.</div></div><button onClick={()=>onNavigate("projects")} style={{border:0,background:"#EEF2FF",color:"#4A6CF7",borderRadius:8,padding:"6px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>T\u00fcm projeler</button></div>
+        <div style={{display:"flex",flexDirection:"column",gap:9}}>
+          {projectRows.slice(0,8).map(item=><button key={item.project.id} onClick={()=>onOpenProject(item.project.id)} style={{border:"1px solid #F1F5F9",background:"#FAFCFF",borderRadius:11,padding:"10px 11px",cursor:"pointer",textAlign:"left"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}><span style={{width:8,height:8,borderRadius:"50%",background:item.project.color}}/><b style={{fontSize:11,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.project.name}</b><span style={{fontSize:11,fontWeight:900,color:item.score>=80?"#059669":item.score>=60?"#EA6C00":"#E11D48"}}>{item.score}</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{height:7,background:"#E2E8F0",borderRadius:10,overflow:"hidden",flex:1}}><div style={{height:"100%",width:`${item.pct}%`,background:`linear-gradient(90deg,${item.project.color},${item.project.color}BB)`,borderRadius:10}}/></div><span style={{fontSize:10,fontWeight:800,color:"#475569",width:32}}>{item.pct}%</span></div>
+            <div style={{display:"flex",gap:9,marginTop:6,fontSize:9,color:"#64748B"}}><span>{item.done}/{item.total} tamam</span><span style={{color:item.delayed?"#EA6C00":"#64748B"}}>{item.delayed} gecikme</span><span style={{color:item.critical?"#E11D48":"#64748B"}}>{item.critical} kritik</span><span>{item.risks} risk</span></div>
+          </button>)}
+          {!projectRows.length&&<div style={{padding:30,textAlign:"center",color:"#94A3B8",fontSize:12}}>Bu kapsamda proje yok.</div>}
+        </div>
+      </div>
+
+      <div style={{display:"grid",gap:12}}>
+        <div style={{background:"#172033",color:"#fff",borderRadius:16,padding:17,boxShadow:"0 8px 24px rgba(15,23,42,.16)"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#A5B4FC"}}>PORTF\u00d6Y DA\u011eILIMI</div>
+          <div style={{display:"flex",alignItems:"center",gap:17,marginTop:12}}>
+            <div style={{width:112,height:112,borderRadius:"50%",background:`conic-gradient(#10B981 0 ${progress}%,#334155 ${progress}% 100%)`,display:"grid",placeItems:"center",flexShrink:0}}><div style={{width:78,height:78,borderRadius:"50%",background:"#172033",display:"grid",placeItems:"center",textAlign:"center"}}><div><b style={{fontSize:22}}>{progress}%</b><div style={{fontSize:8,color:"#94A3B8"}}>TAMAMLANMA</div></div></div></div>
+            <div style={{flex:1,display:"grid",gap:8}}>{[["Tamamlanan",completedTasks.length,"#10B981"],["Aktif",activeTasks.length-delayedTasks.length,"#60A5FA"],["Geciken",delayedTasks.length,"#F59E0B"],["Kritik",criticalTasks.length,"#FB7185"]].map(([label,value,color])=><div key={label} style={{display:"flex",alignItems:"center",gap:7,fontSize:10}}><span style={{width:7,height:7,borderRadius:"50%",background:color}}/><span style={{color:"#CBD5E1",flex:1}}>{label}</span><b>{value}</b></div>)}</div>
+          </div>
+        </div>
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
+          <div style={{fontWeight:850,fontSize:13,marginBottom:12}}>Ticket Durumlar\u0131</div>
+          <div style={{display:"grid",gap:8}}>{ticketStatuses.map(item=><div key={item.status}><div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:4}}><span>{item.status}</span><b>{item.count}</b></div><div style={{height:6,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:`${item.count/maxTicketStatus*100}%`,background:statusColors[item.status]||"#4A6CF7",borderRadius:8}}/></div></div>)}{!ticketStatuses.length&&<div style={{fontSize:11,color:"#94A3B8"}}>Ticket bulunmuyor.</div>}</div>
+          <button onClick={()=>onNavigate("tickets")} style={{marginTop:12,border:0,background:"#FFF7ED",color:"#C2410C",borderRadius:8,padding:"7px 10px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Ticket ekran\u0131n\u0131 a\u00e7</button>
+        </div>
+      </div>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:12,marginBottom:12}} className="admin-triple-grid">
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
+        <div style={{fontWeight:850,fontSize:13,marginBottom:11}}>Kritik Terminler</div>
+        <div style={{display:"grid",gap:7}}>{[...criticalTasks,...dueSoon].slice(0,6).map(({task,project})=><button key={`${project.id}-${task.id}`} onClick={()=>onOpenProject(project.id)} style={{border:0,borderLeft:`3px solid ${delayLvl(task.dueDate,task.status)?"#E11D48":"#F59E0B"}`,background:"#F8FAFC",borderRadius:8,padding:"8px 9px",textAlign:"left",cursor:"pointer"}}><div style={{fontSize:10,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.title}</div><div style={{fontSize:9,color:"#64748B",marginTop:3}}>{project.name} \u00b7 {fmt(task.dueDate)}{delayLvl(task.dueDate,task.status)?` \u00b7 ${daysDiff(task.dueDate)} g\u00fcn gecikti`:""}</div></button>)}{![...criticalTasks,...dueSoon].length&&<div style={{fontSize:11,color:"#059669",padding:12,background:"#ECFDF5",borderRadius:9}}>Yak\u0131n veya kritik termin yok.</div>}</div>
+      </div>
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
+        <div style={{fontWeight:850,fontSize:13,marginBottom:11}}>Ekip \u0130\u015f Y\u00fck\u00fc</div>
+        <div style={{display:"grid",gap:9}}>{workload.slice(0,7).map(item=><div key={item.person.id}><div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4}}><Avatar initials={item.person.avatar} imageUrl={item.person.avatarUrl} size={22}/><span style={{fontSize:10,fontWeight:750,flex:1}}>{item.person.name}</span><span style={{fontSize:9,color:item.delayed?"#E11D48":"#64748B"}}>{item.active} aktif \u00b7 {item.delayed} gecikmi\u015f</span></div><div style={{marginLeft:29,height:6,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:`${item.active/maxWorkload*100}%`,background:item.delayed?"linear-gradient(90deg,#F59E0B,#EF4444)":"linear-gradient(90deg,#4A6CF7,#7C3AED)",borderRadius:8}}/></div></div>)}{!workload.length&&<div style={{fontSize:11,color:"#94A3B8"}}>Aktif i\u015f y\u00fck\u00fc bulunmuyor.</div>}</div>
+      </div>
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
+        <div style={{fontWeight:850,fontSize:13,marginBottom:11}}>Risk ve Aksiyon Radar\u0131</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:11}}>{[["Y\u00fcksek Risk",highRisks.length,"#E11D48","#FFF1F2"],["Aksiyonsuz Ticket",staleTickets.length,"#EA6C00","#FFF7ED"],["Geciken G\u00f6rev",delayedTasks.length,"#7C3AED","#F5F3FF"],["Devre D\u0131\u015f\u0131",machineList.length-commissioned,"#0369A1","#F0F9FF"]].map(([label,value,color,bg])=><div key={label} style={{background:bg,borderRadius:10,padding:10}}><b style={{fontSize:20,color}}>{value}</b><div style={{fontSize:9,color:"#64748B",marginTop:2}}>{label}</div></div>)}</div>
+        <div style={{fontSize:10,color:"#64748B",lineHeight:1.55}}>{highRisks.length||criticalTasks.length||staleTickets.length?"Kritik sapmalar i\u00e7in proje sahipleriyle aksiyon plan\u0131 olu\u015fturulmal\u0131.":"Portf\u00f6yde acil y\u00f6netici aksiyonu gerektiren belirgin bir sapma yok."}</div>
+      </div>
+    </div>
+
+    <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}><div><div style={{fontWeight:850,fontSize:14}}>Y\u00f6netici Rapor Merkezi</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>Toplant\u0131, operasyon takibi ve payla\u015f\u0131m i\u00e7in haz\u0131r \u00e7\u0131kt\u0131lar.</div></div><button onClick={()=>onNavigate("reports")} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:8,padding:"7px 10px",fontSize:10,fontWeight:800,cursor:"pointer"}}>T\u00fcm raporlar</button></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:9}}>
+        {[
+          ["Genel Durum","Portf\u00f6y ilerleme, gecikme ve kapasite \u00f6zeti.","#4338CA",()=>generatePortfolioReport(scopedState,state.people),"HTML / PDF"],
+          ["Termin ve Gecikme","Geciken g\u00f6revler ve sorumlu da\u011f\u0131l\u0131m\u0131.","#E11D48",()=>downloadDelayReport(scopedState,state.people),"XLSX"],
+          ["Efor ve Kapasite","Ki\u015fi, proje ve g\u00f6rev bazl\u0131 saat analizi.","#7C3AED",()=>downloadEffortReport(scopedState,state.people),"XLSX"],
+          ["Ticket Durumu","Ticket ya\u015f\u0131, aksiyon ve Jira durumlar\u0131.","#EA6C00",()=>generateTicketStatusReport(scopedState,state.people),"HTML / PDF"],
+        ].map(([title,description,color,action,label])=><button key={title} onClick={action} style={{border:"1px solid #E2E8F0",borderLeft:`4px solid ${color}`,borderRadius:11,background:"#FAFCFF",padding:12,textAlign:"left",cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",gap:7}}><b style={{fontSize:11}}>{title}</b><span style={{fontSize:8,fontWeight:850,color,background:color+"12",borderRadius:6,padding:"3px 5px"}}>{label}</span></div><div style={{fontSize:9,color:"#64748B",lineHeight:1.45,marginTop:5}}>{description}</div></button>)}
+      </div>
     </div>
   </div>;
 }
@@ -1625,6 +1785,31 @@ function CommissioningPanel({ project, canEdit, onChange }) {
   </div>;
 }
 
+function generateTeamCapacityReport(state,people){
+  const tasks=state.projects.flatMap(project=>project.milestones.flatMap(milestone=>milestone.tasks.map(task=>({task,project}))));
+  const rows=people.map(person=>{
+    const assigned=tasks.filter(({task})=>task.assignee===person.id);
+    const active=assigned.filter(({task})=>task.status!=="Tamamland\u0131");
+    const delayed=active.filter(({task})=>delayLvl(task.dueDate,task.status));
+    const hours=assigned.reduce((total,{task})=>total+(task.timeEntries||[]).reduce((sum,entry)=>sum+(parseFloat(entry.hours)||0),0),0);
+    return {person,assigned:assigned.length,active:active.length,delayed:delayed.length,hours};
+  }).filter(item=>item.assigned||item.hours).sort((a,b)=>b.active-a.active||b.hours-a.hours);
+  const max=Math.max(1,...rows.map(item=>item.active));
+  const cards=rows.map(item=>`<div class="person"><div class="head"><div class="avatar">${item.person.avatar||"?"}</div><div><b>${item.person.name}</b><small>${item.person.role||""}</small></div><strong>${item.active} aktif</strong></div><div class="track"><i style="width:${item.active/max*100}%;background:${item.delayed?"linear-gradient(90deg,#f59e0b,#ef4444)":"linear-gradient(90deg,#4f46e5,#7c3aed)"}"></i></div><div class="meta"><span>${item.assigned} toplam görev</span><span class="${item.delayed?"danger":""}">${item.delayed} gecikmiş</span><span>${item.hours} saat efor</span></div></div>`).join("");
+  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Ekip Kapasite Raporu</title><style>*{box-sizing:border-box}body{margin:0;padding:30px;background:#eef2ff;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1100px;margin:auto}.hero{background:linear-gradient(125deg,#172554,#4338ca,#7c3aed);color:#fff;padding:28px;border-radius:22px;margin-bottom:18px}.hero h1{margin:0}.hero p{color:#c7d2fe}.print{float:right;border:0;border-radius:10px;background:#fff;color:#4338ca;padding:9px 15px;font-weight:800}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.person{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:17px}.head{display:flex;gap:10px;align-items:center}.head>div:nth-child(2){flex:1}.head small{display:block;color:#94a3b8;margin-top:2px}.head strong{color:#4338ca}.avatar{width:38px;height:38px;border-radius:50%;background:#eef2ff;color:#4338ca;display:grid;place-items:center;font-weight:900}.track{height:8px;background:#e2e8f0;border-radius:10px;overflow:hidden;margin:14px 0 8px}.track i{display:block;height:100%;border-radius:10px}.meta{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#64748b}.danger{color:#dc2626;font-weight:800}@media(max-width:700px){body{padding:14px}.grid{grid-template-columns:1fr}}@media print{body{background:#fff;padding:0}.print{display:none}}</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>Ekip Kapasite Raporu</h1><p>${new Date().toLocaleDateString("tr-TR")} · ${state.projects.length} proje · ${tasks.length} görev</p></div><div class="grid">${cards||"<div class='person'>Atanmış görev bulunmuyor.</div>"}</div></div></body></html>`;
+  downloadTextFile(html,`ekip-kapasite-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
+}
+
+function generateRiskPortfolioReport(state){
+  const risks=state.projects.flatMap(project=>(project.risks||[]).map(risk=>({risk,project})));
+  const open=risks.filter(({risk})=>!["Kapal\u0131","Kapalı"].includes(risk.status));
+  const high=open.filter(({risk})=>["Y\u00fcksek","Kritik"].includes(risk.level));
+  const rows=risks.map(({risk,project})=>`<tr><td><b>${risk.title}</b><small>${risk.note||""}</small></td><td>${project.name}</td><td><span class="pill ${["Y\u00fcksek","Kritik"].includes(risk.level)?"red":risk.level==="Orta"?"orange":"green"}">${risk.level||"-"}</span></td><td>${risk.status||"Açık"}</td></tr>`).join("");
+  const projectBars=state.projects.map(project=>{const count=(project.risks||[]).filter(risk=>!["Kapal\u0131","Kapalı"].includes(risk.status)).length;const critical=(project.risks||[]).filter(risk=>["Y\u00fcksek","Kritik"].includes(risk.level)&&!["Kapal\u0131","Kapalı"].includes(risk.status)).length;return `<div class="bar"><div><b>${project.name}</b><span>${count} açık · ${critical} yüksek</span></div><i><em style="width:${Math.min(100,count*20)}%;background:${critical?"#ef4444":count?"#f59e0b":"#10b981"}"></em></i></div>`}).join("");
+  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Risk Portföyü Raporu</title><style>*{box-sizing:border-box}body{margin:0;padding:30px;background:#fff7ed;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1200px;margin:auto}.hero{background:linear-gradient(125deg,#7c2d12,#ea580c,#f59e0b);color:#fff;padding:28px;border-radius:22px}.hero h1{margin:0}.hero p{color:#ffedd5}.print{float:right;border:0;border-radius:10px;background:#fff;color:#c2410c;padding:9px 15px;font-weight:800}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}.stat{background:#fff;border-radius:15px;padding:17px;border:1px solid #fed7aa}.stat b{display:block;font-size:28px;color:#c2410c}.layout{display:grid;grid-template-columns:1fr 1.5fr;gap:14px}.card{background:#fff;border:1px solid #fed7aa;border-radius:17px;padding:19px}.bar{margin-bottom:13px}.bar div{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}.bar span{color:#64748b}.bar i{display:block;height:8px;background:#f1f5f9;border-radius:10px;overflow:hidden}.bar em{display:block;height:100%;border-radius:10px}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #ffedd5;text-align:left;font-size:11px}th{color:#64748b;background:#fffaf5}td small{display:block;color:#94a3b8;margin-top:3px}.pill{padding:3px 7px;border-radius:8px;font-weight:800}.red{background:#fff1f2;color:#dc2626}.orange{background:#fff7ed;color:#ea580c}.green{background:#ecfdf5;color:#059669}@media(max-width:760px){body{padding:14px}.stats,.layout{grid-template-columns:1fr}}@media print{body{background:#fff;padding:0}.print{display:none}}</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>Risk Portföyü Raporu</h1><p>${new Date().toLocaleDateString("tr-TR")} · Yönetici risk görünümü</p></div><div class="stats"><div class="stat"><b>${risks.length}</b>Toplam Risk</div><div class="stat"><b>${open.length}</b>Açık Risk</div><div class="stat"><b>${high.length}</b>Yüksek / Kritik</div></div><div class="layout"><div class="card"><h3>Proje Risk Yoğunluğu</h3>${projectBars||"Proje bulunmuyor."}</div><div class="card"><h3>Risk Envanteri</h3><div style="overflow:auto"><table><thead><tr><th>Risk</th><th>Proje</th><th>Seviye</th><th>Durum</th></tr></thead><tbody>${rows||"<tr><td colspan='4'>Risk bulunmuyor.</td></tr>"}</tbody></table></div></div></div></div></body></html>`;
+  downloadTextFile(html,`risk-portfoyu-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
+}
+
 function ReportsPage({ state, people, isAdmin }) {
   const [projectId,setProjectId]=useState(state.projects[0]?.id||"");
   const project=state.projects.find(p=>p.id===projectId);
@@ -1640,6 +1825,8 @@ function ReportsPage({ state, people, isAdmin }) {
     {title:"Müşteri İlerleme Raporu",desc:"Renkli ilerleme grafikleri, teslim tarihleri ve makine durumunu sade müşteri görünümünde sunar.",color:"#EA6C00",action:()=>project&&generateVisualReport(project,people,{customer:true}),label:"HTML / PDF"},
     ...(isAdmin?[{title:"Genel Durum Raporu",desc:"Tüm projeleri ilerleme, gecikme, makine ve efor göstergeleriyle karşılaştırır.",color:"#4338CA",action:()=>generatePortfolioReport(state,people),label:"HTML / PDF"}]:[]),
     ...(isAdmin?[{title:"Ticket Durum Raporu",desc:"Ticket yaşı, son aksiyon, sorumlu, proje ve Jira durumlarını tüm portföyde gösterir.",color:"#BE123C",action:()=>generateTicketStatusReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{title:"Ekip Kapasite Raporu",desc:"Kişi bazlı aktif iş yükü, gecikme yoğunluğu ve gerçekleşen eforu görselleştirir.",color:"#4F46E5",action:()=>generateTeamCapacityReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{title:"Risk Portföyü Raporu",desc:"Açık riskleri proje ve önem seviyesine göre karşılaştırmalı gösterir.",color:"#C2410C",action:()=>generateRiskPortfolioReport(state),label:"HTML / PDF"}]:[]),
   ];
   return <div style={{padding:"clamp(16px, 4vw, 28px)",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,marginBottom:20,flexWrap:"wrap"}}><div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="reports" size={21}/>Raporlar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>İç operasyon ve müşteri paylaşımı için güncel proje çıktıları.</p></div><div style={{minWidth:"min(240px,100%)",flex:"0 1 280px"}}><label style={lStyle}>Rapor Projesi</label><select style={iStyle} value={projectId} onChange={e=>setProjectId(e.target.value)}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div></div>
@@ -1746,6 +1933,11 @@ const GlobalStyle = () => (
     }
     @media (max-width: 760px) {
       .todo-columns { grid-template-columns: 1fr !important; }
+      .admin-main-grid, .admin-triple-grid { grid-template-columns: 1fr !important; }
+    }
+    @media (min-width: 761px) and (max-width: 1100px) {
+      .admin-main-grid { grid-template-columns: 1fr !important; }
+      .admin-triple-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
     }
   `}</style>
 );
@@ -2127,7 +2319,19 @@ export default function App() {
   const projectCommissioningDone=projectCommissioningMachines.filter(machine=>machine.commissioned).length;
   const projectCommissioningPercent=projectCommissioningMachines.length?Math.round(projectCommissioningDone/projectCommissioningMachines.length*100):0;
 
-  const nav=[{id:"dashboard",icon:"home",label:"Dashboard"},{id:"todos",icon:"ticket",label:"To-Do"},{id:"projects",icon:"projects",label:"Projeler"},{id:"mytasks",icon:"tasks",label:"Görevlerim"},{id:"fieldplan",icon:"calendar",label:"Saha Planım"},{id:"deadlines",icon:"clock",label:`Termin Uyarıları${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},{id:"tickets",icon:"ticket",label:"Ticketlar"},{id:"reports",icon:"reports",label:"Raporlar"},{id:"people",icon:"people",label:"Ekip"},{id:"logs",icon:"activity",label:"Aktivite"}];
+  const nav=[
+    {id:"dashboard",icon:"home",label:"Dashboard"},
+    ...(isAdmin?[{id:"admin",icon:"admin",label:"Y\u00f6netici Paneli"}]:[]),
+    {id:"todos",icon:"ticket",label:"To-Do"},
+    {id:"projects",icon:"projects",label:"Projeler"},
+    {id:"mytasks",icon:"tasks",label:"G\u00f6revlerim"},
+    {id:"fieldplan",icon:"calendar",label:"Saha Plan\u0131m"},
+    {id:"deadlines",icon:"clock",label:`Termin Uyar\u0131lar\u0131${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},
+    {id:"tickets",icon:"ticket",label:"Ticketlar"},
+    {id:"reports",icon:"reports",label:"Raporlar"},
+    {id:"people",icon:"people",label:"Ekip"},
+    {id:"logs",icon:"activity",label:"Aktivite"},
+  ];
 
   return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
@@ -2170,7 +2374,8 @@ export default function App() {
 
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?50:0 }}>
-      {view==="dashboard"&&!selProject&&<DashboardPage state={state} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("mine");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
+      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&<DashboardPage state={state} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("mine");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
+      {view==="admin"&&isAdmin&&!selProject&&<AdminDashboard state={state} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("tasks");}}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
 
       {/* PROJECT DETAIL */}
