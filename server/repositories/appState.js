@@ -95,14 +95,21 @@ export const createTicket = async ({ projectId, ticket }) =>
     const tickets = state.projectTickets[projectId] || [];
     const existing = tickets.find((item) => item.id === ticket.id);
     if (existing) return existing;
-    tickets.push(ticket);
+    const allTickets = Object.values(state.projectTickets).flat();
+    const highestNumber = allTickets.reduce((highest, item) => {
+      const match = String(item.ticketNo || "").match(/^CJT-(\d+)$/);
+      return Math.max(highest, match ? Number(match[1]) : 0);
+    }, allTickets.length);
+    const createdTicket = { ...ticket, ticketNo: `CJT-${highestNumber + 1}` };
+    tickets.push(createdTicket);
     state.projectTickets[projectId] = tickets;
     logger.info("database.ticket.created", {
       projectId,
-      ticketId: ticket.id,
-      assignedTo: ticket.assignedTo || null,
+      ticketId: createdTicket.id,
+      ticketNo: createdTicket.ticketNo,
+      assignedTo: createdTicket.assignedTo || null,
     });
-    return ticket;
+    return createdTicket;
   });
 
 export const createAssignedTasks = async ({ tasks, recurringTemplate }) =>

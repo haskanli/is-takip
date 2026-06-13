@@ -6,7 +6,7 @@ import { apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.16.1";
+const APP_VERSION = "v1.16.2";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -194,12 +194,12 @@ const loadFromSupabase = async () => {
     }
     const result=await response.json();
     apiStateVersion=Number(result.version||1);
-    return result.state;
+    return normalizeTicketNumbers(result.state);
   }
   const { data, error } = await supabase.from("app_state").select("data").eq("id", 1).single();
   if(error)throw error;
   if(!data)throw new Error("Uygulama verisi bulunamadi");
-  return data.data;
+  return normalizeTicketNumbers(data.data);
 };
 
 let saveTimer = null;
@@ -317,14 +317,37 @@ const fieldPlanHours = (plan) => {
   return minutes>0?Math.round(minutes/6)/10:0;
 };
 const nextTicketNumber=(state)=>{
-  const year=new Date().getFullYear();
-  const prefix=`CJT-${year}-`;
-  const max=Object.values(state.projectTickets||{}).flat()
-    .map(ticket=>String(ticket.ticketNo||"").startsWith(prefix)?parseInt(String(ticket.ticketNo).slice(prefix.length),10):0)
-    .reduce((highest,value)=>Math.max(highest,Number.isFinite(value)?value:0),0);
-  return `${prefix}${String(max+1).padStart(4,"0")}`;
+  const tickets=Object.values(state.projectTickets||{}).flat();
+  const max=tickets
+    .map(ticket=>/^CJT-\d+$/.test(String(ticket.ticketNo||""))?parseInt(String(ticket.ticketNo).slice(4),10):0)
+    .reduce((highest,value)=>Math.max(highest,Number.isFinite(value)?value:0),tickets.length);
+  return `CJT-${max+1}`;
 };
-const ticketNumber=(ticket)=>ticket.ticketNo||`CJT-${String(ticket.id||"KAYIT").toUpperCase()}`;
+const ticketNumber=(ticket)=>ticket.ticketNo||"CJT";
+const normalizeTicketNumbers=(state)=>{
+  const entries=Object.entries(state?.projectTickets||{}).flatMap(([projectId,tickets])=>(tickets||[]).map(ticket=>({projectId,ticket})));
+  entries.sort((a,b)=>`${a.ticket.ts||a.ticket.createdAt||""}-${a.ticket.id||""}`.localeCompare(`${b.ticket.ts||b.ticket.createdAt||""}-${b.ticket.id||""}`));
+  const numbers=new Map();
+  const used=new Set();
+  entries.forEach(({projectId,ticket})=>{
+    const match=String(ticket.ticketNo||"").match(/^CJT-(\d+)$/);
+    const sequence=match?Number(match[1]):0;
+    if(sequence>0&&!used.has(sequence)){
+      used.add(sequence);
+      numbers.set(`${projectId}:${ticket.id}`,`CJT-${sequence}`);
+    }
+  });
+  let next=1;
+  entries.forEach(({projectId,ticket})=>{
+    const key=`${projectId}:${ticket.id}`;
+    if(numbers.has(key))return;
+    while(used.has(next))next++;
+    numbers.set(key,`CJT-${next}`);
+    used.add(next);
+    next++;
+  });
+  return {...state,projectTickets:Object.fromEntries(Object.entries(state?.projectTickets||{}).map(([projectId,tickets])=>[projectId,(tickets||[]).map(ticket=>({...ticket,ticketNo:numbers.get(`${projectId}:${ticket.id}`)}))]))};
+};
 
 function PeopleMultiSelect({people,value,onChange}) {
   return <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:6,padding:9,border:"1.5px solid #E2E8F0",borderRadius:9,background:"#FAFBFC"}}>
@@ -533,18 +556,19 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
   </div>;
 }
 
-function AdminBoardCard({id,size="medium",draggedId,onDragStart,onDragEnd,onDrop,children,style={}}) {
+function AdminBoardCard({id,size="medium",draggedId,onDragStart,onDragEnd,onDrop,onResize,children,style={}}) {
   const active=draggedId===id;
+  const sizeLabels={small:"Kompakt",medium:"Orta",large:"Geniş",full:"Tam"};
   return <div
     className={`admin-board-card admin-board-${size}`}
-    draggable
-    onDragStart={event=>onDragStart(event,id)}
-    onDragEnd={onDragEnd}
     onDragOver={event=>event.preventDefault()}
     onDrop={event=>onDrop(event,id)}
     style={{position:"relative",opacity:active?.48:1,transform:active?"scale(.985)":"none",transition:"opacity .15s, transform .15s",...style}}
   >
-    <div title="Sürükleyerek yerini değiştir" style={{position:"absolute",top:8,right:9,zIndex:2,color:"#CBD5E1",fontSize:15,lineHeight:1,cursor:"grab",letterSpacing:1,userSelect:"none"}}>⠿</div>
+    <div className="admin-board-tools" style={{position:"absolute",top:7,right:8,zIndex:3,display:"flex",alignItems:"center",gap:3}}>
+      <select title="Kart genişliği" value={size} onMouseDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()} onChange={event=>onResize(id,event.target.value)} style={{border:"1px solid #E2E8F0",borderRadius:6,background:"#fff",color:"#94A3B8",fontSize:9,padding:"2px 3px",cursor:"pointer",maxWidth:68}}>{Object.entries(sizeLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
+      <div draggable onDragStart={event=>onDragStart(event,id)} onDragEnd={onDragEnd} title="Sürükleyerek yerini değiştir" style={{color:"#CBD5E1",fontSize:15,lineHeight:1,cursor:"grab",letterSpacing:1,userSelect:"none"}}>⠿</div>
+    </div>
     {children}
   </div>;
 }
@@ -637,8 +661,10 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
     "critical-deadlines","team-workload","risk-radar","report-center",
   ];
   const savedOrder=(state.userNotes||{})[currentUser.id]?.adminDashboardOrder||[];
+  const savedSizes=(state.userNotes||{})[currentUser.id]?.adminDashboardSizes||{};
   const cardOrder=[...savedOrder.filter(id=>defaultCardOrder.includes(id)),...defaultCardOrder.filter(id=>!savedOrder.includes(id))];
   const saveCardOrder=(order)=>setState(current=>({...current,userNotes:{...(current.userNotes||{}),[currentUser.id]:{...(current.userNotes||{})[currentUser.id],adminDashboardOrder:order}}}));
+  const resizeCard=(id,size)=>setState(current=>({...current,userNotes:{...(current.userNotes||{}),[currentUser.id]:{...(current.userNotes||{})[currentUser.id],adminDashboardSizes:{...((current.userNotes||{})[currentUser.id]?.adminDashboardSizes||{}),[id]:size}}}}));
   const startDrag=(event,id)=>{
     setDraggedCard(id);
     event.dataTransfer.effectAllowed="move";
@@ -661,14 +687,14 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
     dashboardCards[`kpi-${kpi.id}`]={
       size:"small",
       node:<div role="button" tabIndex={0} onKeyDown={event=>event.key==="Enter"&&setDetailModal({mode:"detail",...kpi})} onClick={()=>setDetailModal({mode:"detail",...kpi})} style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"14px 15px",boxShadow:"0 5px 16px rgba(15,23,42,.045)",borderTop:`3px solid ${kpi.color}`,textAlign:"left",cursor:"pointer"}}>
-        <div style={{display:"flex",alignItems:"center",gap:5,paddingRight:20}}><div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45,flex:1}}>{kpi.label}</div><button title="Hesaplama bilgisi" onClick={event=>{event.stopPropagation();setDetailModal({mode:"info",...kpi});}} style={{width:20,height:20,borderRadius:"50%",border:"1px solid #CBD5E1",background:"#F8FAFC",color:"#64748B",fontSize:11,fontWeight:850,cursor:"pointer"}}>i</button></div>
+        <div style={{display:"flex",alignItems:"center",gap:5,paddingRight:88}}><div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45,flex:1}}>{kpi.label}</div><button title="Hesaplama bilgisi" onClick={event=>{event.stopPropagation();setDetailModal({mode:"info",...kpi});}} style={{width:20,height:20,borderRadius:"50%",border:"1px solid #CBD5E1",background:"#F8FAFC",color:"#64748B",fontSize:11,fontWeight:850,cursor:"pointer"}}>i</button></div>
         <div style={{fontSize:25,fontWeight:900,color:kpi.color,margin:"4px 0 2px"}}>{kpi.value}</div>
         <div style={{fontSize:10,color:"#94A3B8",lineHeight:1.35}}>{kpi.detail}</div>
       </div>,
     };
   });
   dashboardCards["project-health"]={size:"large",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16,boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
-    <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:13,paddingRight:18}}><div><div style={{fontWeight:850,fontSize:14}}>Proje Sağlık Haritası</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>En fazla yönetici ilgisi gerektiren projeler üstte.</div></div><button onClick={()=>onNavigate("projects")} style={{border:0,background:"#EEF2FF",color:"#4A6CF7",borderRadius:8,padding:"6px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Tüm projeler</button></div>
+    <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:13,paddingRight:88}}><div><div style={{fontWeight:850,fontSize:14}}>Proje Sağlık Haritası</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>En fazla yönetici ilgisi gerektiren projeler üstte.</div></div><button onClick={()=>onNavigate("projects")} style={{border:0,background:"#EEF2FF",color:"#4A6CF7",borderRadius:8,padding:"6px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Tüm projeler</button></div>
     <div style={{display:"flex",flexDirection:"column",gap:9}}>{projectRows.slice(0,8).map(item=><button key={item.project.id} onClick={()=>onOpenProject(item.project.id)} style={{border:"1px solid #F1F5F9",background:"#FAFCFF",borderRadius:11,padding:"10px 11px",cursor:"pointer",textAlign:"left"}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}><span style={{width:8,height:8,borderRadius:"50%",background:item.project.color}}/><b style={{fontSize:11,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.project.name}</b><span style={{fontSize:11,fontWeight:900,color:item.score>=80?"#059669":item.score>=60?"#EA6C00":"#E11D48"}}>{item.score}</span></div><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{height:7,background:"#E2E8F0",borderRadius:10,overflow:"hidden",flex:1}}><div style={{height:"100%",width:`${item.pct}%`,background:`linear-gradient(90deg,${item.project.color},${item.project.color}BB)`,borderRadius:10}}/></div><span style={{fontSize:10,fontWeight:800,color:"#475569",width:32}}>{item.pct}%</span></div><div style={{display:"flex",gap:9,marginTop:6,fontSize:9,color:"#64748B"}}><span>{item.done}/{item.total} tamam</span><span style={{color:item.delayed?"#EA6C00":"#64748B"}}>{item.delayed} gecikme</span><span style={{color:item.critical?"#E11D48":"#64748B"}}>{item.critical} kritik</span><span>{item.risks} risk</span></div></button>)}{!projectRows.length&&<div style={{padding:30,textAlign:"center",color:"#94A3B8",fontSize:12}}>Bu kapsamda proje yok.</div>}</div>
   </div>};
   dashboardCards["portfolio-distribution"]={size:"medium",node:<div style={{height:"100%",background:"#172033",color:"#fff",borderRadius:16,padding:17,boxShadow:"0 8px 24px rgba(15,23,42,.16)"}}><div style={{fontSize:11,fontWeight:800,color:"#A5B4FC",paddingRight:18}}>PORTFÖY DAĞILIMI</div><div style={{display:"flex",alignItems:"center",gap:17,marginTop:12}}><div style={{width:112,height:112,borderRadius:"50%",background:`conic-gradient(#10B981 0 ${progress}%,#334155 ${progress}% 100%)`,display:"grid",placeItems:"center",flexShrink:0}}><div style={{width:78,height:78,borderRadius:"50%",background:"#172033",display:"grid",placeItems:"center",textAlign:"center"}}><div><b style={{fontSize:22}}>{progress}%</b><div style={{fontSize:8,color:"#94A3B8"}}>TAMAMLANMA</div></div></div></div><div style={{flex:1,display:"grid",gap:8}}>{[["Tamamlanan",completedTasks.length,"#10B981"],["Aktif",activeTasks.length-delayedTasks.length,"#60A5FA"],["Geciken",delayedTasks.length,"#F59E0B"],["Kritik",criticalTasks.length,"#FB7185"]].map(([label,value,color])=><div key={label} style={{display:"flex",alignItems:"center",gap:7,fontSize:10}}><span style={{width:7,height:7,borderRadius:"50%",background:color}}/><span style={{color:"#CBD5E1",flex:1}}>{label}</span><b>{value}</b></div>)}</div></div></div>};
@@ -692,7 +718,7 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
     </div>
 
     <div className="admin-board-grid">
-      {cardOrder.map(id=>dashboardCards[id]&&<AdminBoardCard key={id} id={id} size={dashboardCards[id].size} draggedId={draggedCard} onDragStart={startDrag} onDragEnd={()=>setDraggedCard(null)} onDrop={dropCard}>{dashboardCards[id].node}</AdminBoardCard>)}
+      {cardOrder.map(id=>dashboardCards[id]&&<AdminBoardCard key={id} id={id} size={savedSizes[id]||dashboardCards[id].size} draggedId={draggedCard} onDragStart={startDrag} onDragEnd={()=>setDraggedCard(null)} onDrop={dropCard} onResize={resizeCard}>{dashboardCards[id].node}</AdminBoardCard>)}
     </div>
     {detailModal&&<Modal title={detailModal.mode==="info"?`${detailModal.label} · Hesaplama`:`${detailModal.label} · Detay`} onClose={()=>setDetailModal(null)} wide>{detailModal.mode==="info"?<div style={{fontSize:13,color:"#475569",lineHeight:1.7,background:"#F8FAFC",borderRadius:11,padding:15}}>{detailModal.info}</div>:<div style={{display:"grid",gap:8,maxHeight:"60vh",overflow:"auto"}}>{(detailModal.items||[]).map((item,index)=><div key={`${item.title}-${index}`} style={{border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 12px"}}><div style={{fontSize:12,fontWeight:800}}>{item.title}</div><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{item.meta}</div></div>)}{!detailModal.items?.length&&<div style={{padding:30,textAlign:"center",color:"#94A3B8"}}>Bu kapsamda detay kaydı bulunmuyor.</div>}</div>}</Modal>}
   </div>;
@@ -2074,6 +2100,7 @@ function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false}){
     const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,...data};
     save(projectId,[...((state.projectTickets||{})[projectId]||[]),ticket]);
     const result=await createTicketWithNotification(projectId,ticket);
+    if(result.ticket?.ticketNo)save(projectId,[...((state.projectTickets||{})[projectId]||[]),{...ticket,...result.ticket}]);
     setMailNotice(result.notification?.sent?"Ticket oluşturuldu ve atama maili gönderildi.":`Ticket oluşturuldu; mail gönderilemedi: ${result.notification?.reason||"Bilinmeyen hata"}`);
     return result;
   };
@@ -2118,12 +2145,14 @@ const GlobalStyle = () => (
     .sidebar-nav { scrollbar-width: none; }
     .sidebar-nav::-webkit-scrollbar { display: none; }
     .login-users { scrollbar-width: thin; scrollbar-color: #475569 transparent; }
-    .admin-board-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:12px; align-items:start; }
+    .admin-board-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-auto-flow:dense; gap:12px; align-items:start; }
     .admin-board-small { grid-column:span 3; min-height:128px; }
     .admin-board-medium { grid-column:span 4; min-height:190px; }
-    .admin-board-large { grid-column:span 8; }
+    .admin-board-large { grid-column:span 6; }
     .admin-board-full { grid-column:span 12; }
-    .admin-board-card[draggable="true"]:active { cursor:grabbing; }
+    .admin-board-tools { opacity:.38; transition:opacity .16s ease; }
+    .admin-board-card:hover .admin-board-tools,
+    .admin-board-tools:focus-within { opacity:1; }
     @media (max-height: 760px) and (min-width: 761px) {
       .login-screen { padding: 8px 0 !important; }
       .login-shell { max-width: 720px !important; }
@@ -2137,6 +2166,7 @@ const GlobalStyle = () => (
       .todo-columns { grid-template-columns: 1fr !important; }
       .admin-main-grid, .admin-triple-grid { grid-template-columns: 1fr !important; }
       .visit-time-grid { grid-template-columns: 1fr !important; }
+      .admin-board-tools { opacity:1; }
       .admin-board-small, .admin-board-medium, .admin-board-large, .admin-board-full { grid-column:span 12; }
     }
     @media (min-width: 761px) and (max-width: 1100px) {
@@ -2546,6 +2576,7 @@ export default function App() {
       <button onClick={()=>setMobileMenuOpen(v=>!v)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", padding:4 }}>☰</button>
       <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:27,height:27,objectFit:"contain"}}/><span style={{ fontSize:13, fontWeight:800, color:"#4A6CF7", letterSpacing:2 }}>CORJECT</span></button>
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{textAlign:"right",minWidth:0}}><div style={{fontSize:10,fontWeight:800,color:"#fff",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{currentUser.name}</div><div style={{fontSize:8,color:"#94A3B8",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{currentUser.title||currentUser.role||""}</div></div>
         <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
       </div>
     </div>}
@@ -2566,7 +2597,7 @@ export default function App() {
           <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{currentUser.name}</div>
-            <div style={{ fontSize:10, color:"#64748B" }}>{isAdmin?"Yönetici":currentUser.role}</div>
+            <div style={{ fontSize:10, color:"#94A3B8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{currentUser.title||currentUser.role||""}</div>
           </div>
           <button onClick={logout} style={{ background:"none", border:"none", cursor:"pointer", color:"#475569", fontSize:12, padding:2 }}>Çıkış</button>
         </div>
@@ -2910,6 +2941,7 @@ function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
     const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,...data};
     saveTickets([...tickets,ticket]);
     const result=await createTicketWithNotification(project.id,ticket);
+    if(result.ticket?.ticketNo)saveTickets([...tickets,{...ticket,...result.ticket}]);
     setMailNotice(result.notification?.sent?"Ticket oluşturuldu ve atama maili gönderildi.":`Ticket oluşturuldu; mail gönderilemedi: ${result.notification?.reason||"Bilinmeyen hata"}`);
     return result;
   };
