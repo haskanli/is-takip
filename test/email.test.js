@@ -6,6 +6,7 @@ import {
   userTaskUrl,
   userTicketUrl,
 } from "../server/services/email.js";
+import { renderManagedTemplate } from "../server/services/emailTemplate.js";
 import { assignTasksWithNotification, createTicketWithNotification, notifyTicketAssignment } from "../src/email.js";
 
 process.env.RESEND_API_KEY = "resend-test-key";
@@ -71,16 +72,49 @@ test("task email preserves Turkish text and uses the branded frame", async () =>
         notes: "Çözüm önerisini görüş.",
         dueDate: "2026-06-20",
       },
+      tenantProfile: { name: "A Firması", accentColor: "#22c55e" },
     });
     assert.match(payload.subject, /görev atadı/);
+    assert.equal(payload.from, "A Firması via Corject <test@example.com>");
     assert.match(payload.html, /Çağrı Şen/);
     assert.match(payload.html, /Üretim görüşmesi/);
     assert.match(payload.html, /charset=UTF-8/i);
-    assert.match(payload.html, /width="66"/);
+    assert.match(payload.html, /A Firması/);
+    assert.match(payload.html, /Sent by/);
+    assert.match(payload.html, /width="22"/);
     assert.doesNotMatch(payload.html, /�|Ã|Å/);
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test("managed template uses tenant branding and escapes dynamic values", () => {
+  const rendered = renderManagedTemplate({
+    tenantProfile: {
+      name: "Örnek Sanayi",
+      logoUrl: "https://example.com/logo.png",
+      accentColor: "#123456",
+    },
+    template: {
+      subject: "{{project_name}} bilgilendirmesi",
+      eyebrow: "DUYURU",
+      title: "{{project_name}}",
+      intro: "Güncel bilgi",
+      body: "Merhaba {{recipient_name}}",
+      buttonLabel: "Aç",
+      accentColor: "#123456",
+    },
+    variables: {
+      project_name: "MES <Pilot>",
+      recipient_name: "<script>alert(1)</script>",
+    },
+    actionUrl: "https://example.com",
+  });
+  assert.equal(rendered.subject, "MES <Pilot> bilgilendirmesi");
+  assert.match(rendered.html, /Örnek Sanayi/);
+  assert.match(rendered.html, /example\.com\/logo\.png/);
+  assert.match(rendered.html, /Sent by/);
+  assert.doesNotMatch(rendered.html, /<script>/);
 });
 
 test("createTicketWithNotification creates the ticket through the server endpoint", async () => {

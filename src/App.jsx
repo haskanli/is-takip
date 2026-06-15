@@ -1,12 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 import { getJiraIssue } from "./jira";
-import { assignTasksWithNotification, createTicketWithNotification, notifyTicketAssignment } from "./email";
+import {
+  assignTasksWithNotification,
+  createTicketWithNotification,
+  notifyTicketAssignment,
+  sendManagedTemplateEmail,
+} from "./email";
 import { apiHeaders, apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
+import {
+  DEFAULT_EMAIL_TEMPLATES,
+  renderManagedTemplate,
+  resolveEmailTemplates,
+  resolveTenantProfile,
+} from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.21.1";
+const APP_VERSION = "v1.22.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -352,6 +363,7 @@ function Icon({ name, size=16 }) {
     edit:<><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></>,
     trash:<><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></>,
     download:<><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></>,
+    mail:<><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]||paths.projects}</svg>;
 }
@@ -382,6 +394,7 @@ const Btn = ({ children, onClick, variant="primary", small, style:s, disabled })
   const v={ primary:{background:"#4A6CF7",color:"#fff"}, secondary:{background:"#F1F5FF",color:"#4A6CF7"}, danger:{background:"#FFF1F2",color:"#E11D48"}, ghost:{background:"transparent",color:"#64748B"}, warning:{background:"#FFF7ED",color:"#EA6C00"}, success:{background:"#ECFDF5",color:"#059669"} };
   return <button disabled={disabled} style={{ borderRadius:8, border:"none", cursor:disabled?"default":"pointer", fontWeight:600, fontSize:small?12:13, padding:small?"5px 11px":"8px 16px", fontFamily:"inherit", opacity:disabled?0.5:1, ...v[variant], ...s }} onClick={onClick}>{children}</button>;
 };
+const Card = ({children,style}) => <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:16,...style}}>{children}</div>;
 
 const projectPmIds = (project) => [...new Set([...(project.pmIds||[]),project.pm].filter(Boolean))];
 const projectStakeholders = (project) => project.stakeholders||[];
@@ -2632,6 +2645,128 @@ function downloadFieldVisitsReport(state,people){
   downloadXlsx(rows,`saha-ziyaretleri-${todayStr()}.xlsx`,"Saha Ziyaretleri");
 }
 
+const EMAIL_SAMPLE_VARIABLES = {
+  recipient_name:"Ayşe Yılmaz",
+  assigner_name:"Proje Yöneticisi",
+  task_title:"Haftalık proje durumunu güncelle",
+  task_description:"Güncel riskleri, eforları ve tamamlanan işleri rapora ekleyin.",
+  due_date:"20.06.2026",
+  project_name:"A Müşterisi MES Projesi",
+  ticket_title:"Üretim ekranında veri gecikmesi",
+  ticket_description:"Operatör ekranındaki üretim verileri geç güncelleniyor.",
+  priority:"Yüksek",
+  status:"Devam Ediyor",
+  task_count:"3",
+  task_list:"• Haftalık rapor · 2 gün gecikme\n• Sunucu kontrolü · 1 gün gecikme",
+};
+
+function MailCenterPage({state,setState}) {
+  const tenant=resolveTenantProfile(state.tenantProfile);
+  const templates=resolveEmailTemplates(state.emailTemplates);
+  const [selectedId,setSelectedId]=useState(templates[0]?.id||"");
+  const [draft,setDraft]=useState(templates.find(item=>item.id===selectedId)||templates[0]);
+  const [recipient,setRecipient]=useState("");
+  const [variablesText,setVariablesText]=useState(JSON.stringify(EMAIL_SAMPLE_VARIABLES,null,2));
+  const [sendStatus,setSendStatus]=useState({loading:false,message:"",error:false});
+  const fileInput=useRef();
+  const selected=templates.find(item=>item.id===selectedId)||templates[0];
+  const selectTemplate=(item)=>{setSelectedId(item.id);setDraft(item);setSendStatus({loading:false,message:"",error:false});};
+  const variables=(()=>{try{return JSON.parse(variablesText||"{}");}catch{return EMAIL_SAMPLE_VARIABLES;}})();
+  const preview=renderManagedTemplate({template:draft||selected,tenantProfile:tenant,variables,actionUrl:"https://www.corject.com"});
+  const updateTenant=(patch)=>setState(current=>({...current,tenantProfile:{...resolveTenantProfile(current.tenantProfile),...patch}}));
+  const saveTemplate=()=>{
+    if(!draft?.name?.trim())return;
+    setState(current=>{
+      const currentTemplates=resolveEmailTemplates(current.emailTemplates);
+      const exists=currentTemplates.some(item=>item.id===draft.id);
+      return {...current,emailTemplates:exists?currentTemplates.map(item=>item.id===draft.id?draft:item):[...currentTemplates,draft]};
+    });
+    setSendStatus({loading:false,message:"Şablon kaydedildi.",error:false});
+  };
+  const addTemplate=()=>{
+    const item={id:`custom_${uid()}`,name:"Yeni Şablon",category:"Özel",subject:"{{project_name}} bilgilendirmesi",eyebrow:"BİLGİLENDİRME",title:"{{project_name}} hakkında",intro:"Güncel bilgilendirme",body:"Merhaba {{recipient_name}},\n\nMesajınızı buraya yazın.",buttonLabel:"Detayı Aç",accentColor:tenant.accentColor,enabled:true};
+    setState(current=>({...current,emailTemplates:[...resolveEmailTemplates(current.emailTemplates),item]}));
+    selectTemplate(item);
+  };
+  const removeTemplate=()=>{
+    if(DEFAULT_EMAIL_TEMPLATES.some(item=>item.id===draft.id)){setSendStatus({loading:false,message:"Sistem şablonları silinemez; pasif hale getirebilirsiniz.",error:true});return;}
+    setState(current=>({...current,emailTemplates:resolveEmailTemplates(current.emailTemplates).filter(item=>item.id!==draft.id)}));
+    const fallback=resolveEmailTemplates(state.emailTemplates).find(item=>item.id==="task_assignment");
+    selectTemplate(fallback);
+  };
+  const uploadLogo=(file)=>{
+    if(!file)return;
+    if(file.size>150*1024){setSendStatus({loading:false,message:"Logo dosyası 150 KB'dan küçük olmalı.",error:true});return;}
+    const reader=new FileReader();
+    reader.onload=()=>updateTenant({logoUrl:String(reader.result||"")});
+    reader.readAsDataURL(file);
+  };
+  const send=async()=>{
+    if(!recipient.trim()){setSendStatus({loading:false,message:"Alıcı e-posta adresini girin.",error:true});return;}
+    let parsed;
+    try{parsed=JSON.parse(variablesText||"{}");}catch{setSendStatus({loading:false,message:"Değişkenler geçerli JSON olmalı.",error:true});return;}
+    setSendStatus({loading:true,message:"Gönderiliyor...",error:false});
+    try{
+      const result=await sendManagedTemplateEmail({to:recipient.trim(),templateId:draft.id,template:draft,variables:parsed,actionUrl:"https://www.corject.com"});
+      setSendStatus({loading:false,message:`Mail gönderildi${result.emailId?` · ${result.emailId}`:""}`,error:false});
+    }catch(error){setSendStatus({loading:false,message:error.message,error:true});}
+  };
+  return <div style={{padding:"22px 26px",flex:1,overflow:"auto"}}>
+    <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",flexWrap:"wrap",marginBottom:18}}>
+      <div><h1 style={{margin:0,fontSize:22}}>Mail Merkezi</h1><p style={{margin:"5px 0 0",fontSize:12,color:"#64748B"}}>Firma markası, dinamik şablonlar, önizleme ve manuel gönderim.</p></div>
+      <Btn onClick={addTemplate}>+ Yeni Şablon</Btn>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"minmax(280px,.8fr) minmax(380px,1.25fr)",gap:16,alignItems:"start"}} className="admin-main-grid">
+      <div style={{display:"grid",gap:14}}>
+        <Card>
+          <div style={{fontWeight:850,fontSize:14,marginBottom:12}}>Satın Alan Firma</div>
+          <Field label="Firma Adı"><input style={iStyle} value={tenant.name} onChange={e=>updateTenant({name:e.target.value})} placeholder="A Firması"/></Field>
+          <Field label="Logo">
+            <div style={{display:"flex",gap:9,alignItems:"center"}}>
+              <div style={{width:58,height:58,border:"1px solid #E2E8F0",borderRadius:13,display:"grid",placeItems:"center",overflow:"hidden",background:"#F8FAFC",flexShrink:0}}>{tenant.logoUrl?<img src={tenant.logoUrl} alt="" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}}/>:<b style={{color:tenant.accentColor}}>{tenant.name.slice(0,2).toUpperCase()}</b>}</div>
+              <div style={{flex:1}}><input style={iStyle} value={tenant.logoUrl.startsWith("data:")?"":tenant.logoUrl} onChange={e=>updateTenant({logoUrl:e.target.value})} placeholder="https://firma.com/logo.png"/><button onClick={()=>fileInput.current?.click()} style={{border:0,background:"transparent",color:"#4338CA",fontSize:10,fontWeight:800,cursor:"pointer",padding:"6px 0 0"}}>veya dosya yükle</button><input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e=>uploadLogo(e.target.files?.[0])}/></div>
+            </div>
+          </Field>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+            <Field label="Marka Rengi"><input type="color" style={{...iStyle,padding:4,height:39}} value={tenant.accentColor} onChange={e=>updateTenant({accentColor:e.target.value})}/></Field>
+            <Field label="Yanıt Adresi"><input type="email" style={iStyle} value={tenant.replyTo} onChange={e=>updateTenant({replyTo:e.target.value})} placeholder="info@firma.com"/></Field>
+          </div>
+          <div style={{fontSize:10,color:"#64748B",background:"#F8FAFC",borderRadius:9,padding:10}}>Gönderici teknik olarak <b>info@corject.com</b> kalır. Görünen marka firma olur; yanıtlar belirlediğiniz adrese yönlenir.</div>
+        </Card>
+        <Card>
+          <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Şablonlar</div>
+          <div style={{display:"grid",gap:7}}>{templates.map(item=><button key={item.id} onClick={()=>selectTemplate(item)} style={{border:`1px solid ${selectedId===item.id?item.accentColor:"#E2E8F0"}`,borderLeft:`5px solid ${item.accentColor}`,borderRadius:10,background:selectedId===item.id?item.accentColor+"0D":"#fff",padding:"10px 11px",textAlign:"left",cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:11}}>{item.name}</b><span style={{fontSize:8,color:item.enabled===false?"#E11D48":"#059669",fontWeight:850}}>{item.enabled===false?"PASİF":"AKTİF"}</span></div><div style={{fontSize:9,color:"#94A3B8",marginTop:3}}>{item.category}</div></button>)}</div>
+        </Card>
+      </div>
+      <div style={{display:"grid",gap:14}}>
+        <Card>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:12}}><b style={{fontSize:14}}>Şablon Düzenleyici</b><label style={{fontSize:10,fontWeight:800,color:"#64748B"}}><input type="checkbox" checked={draft?.enabled!==false} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/> Aktif</label></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}><Field label="Şablon Adı"><input style={iStyle} value={draft?.name||""} onChange={e=>setDraft({...draft,name:e.target.value})}/></Field><Field label="Kategori"><input style={iStyle} value={draft?.category||""} onChange={e=>setDraft({...draft,category:e.target.value})}/></Field></div>
+          <Field label="Konu"><input style={iStyle} value={draft?.subject||""} onChange={e=>setDraft({...draft,subject:e.target.value})}/></Field>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}><Field label="Üst Etiket"><input style={iStyle} value={draft?.eyebrow||""} onChange={e=>setDraft({...draft,eyebrow:e.target.value})}/></Field><Field label="Vurgu Rengi"><input type="color" style={{...iStyle,padding:4,height:39}} value={draft?.accentColor||tenant.accentColor} onChange={e=>setDraft({...draft,accentColor:e.target.value})}/></Field></div>
+          <Field label="Başlık"><input style={iStyle} value={draft?.title||""} onChange={e=>setDraft({...draft,title:e.target.value})}/></Field>
+          <Field label="Giriş"><input style={iStyle} value={draft?.intro||""} onChange={e=>setDraft({...draft,intro:e.target.value})}/></Field>
+          <Field label="İçerik"><textarea style={{...iStyle,minHeight:120,resize:"vertical"}} value={draft?.body||""} onChange={e=>setDraft({...draft,body:e.target.value})}/></Field>
+          <Field label="Buton Metni"><input style={iStyle} value={draft?.buttonLabel||""} onChange={e=>setDraft({...draft,buttonLabel:e.target.value})}/></Field>
+          <div style={{fontSize:9,color:"#64748B",background:"#F8FAFC",padding:9,borderRadius:8}}>Değişkenler: <code>{"{{recipient_name}}, {{project_name}}, {{task_title}}, {{ticket_title}}, {{due_date}}"}</code></div>
+          <div style={{display:"flex",gap:8,marginTop:12}}><Btn onClick={saveTemplate}>Şablonu Kaydet</Btn><Btn variant="secondary" onClick={removeTemplate}>Sil</Btn></div>
+        </Card>
+        <Card>
+          <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Canlı Önizleme</div>
+          <iframe title="Mail önizleme" srcDoc={preview.html} style={{width:"100%",height:560,border:"1px solid #E2E8F0",borderRadius:12,background:"#F1F5F9"}}/>
+        </Card>
+        <Card>
+          <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Manuel Gönderim</div>
+          <Field label="Alıcı"><input type="email" style={iStyle} value={recipient} onChange={e=>setRecipient(e.target.value)} placeholder="alici@firma.com"/></Field>
+          <Field label="Test Değişkenleri (JSON)"><textarea style={{...iStyle,minHeight:170,fontFamily:"Consolas,monospace",fontSize:10}} value={variablesText} onChange={e=>setVariablesText(e.target.value)}/></Field>
+          <Btn onClick={send} disabled={sendStatus.loading}>Gönder</Btn>
+          {sendStatus.message&&<div style={{marginTop:9,fontSize:10,color:sendStatus.error?"#E11D48":"#059669"}}>{sendStatus.message}</div>}
+        </Card>
+      </div>
+    </div>
+  </div>;
+}
+
 function ReportsPage({ state, people, isAdmin }) {
   const [projectId,setProjectId]=useState(state.projects[0]?.id||"");
   const [group,setGroup]=useState("operations");
@@ -2956,6 +3091,7 @@ export default function App() {
 
   const currentUser=state.people.find(p=>p.id===state.currentUserId);
   const isAdmin=currentUser?.isAdmin||false;
+  const tenantProfile=resolveTenantProfile(state.tenantProfile);
   useEffect(()=>{
     if(currentUser?.ticketOnly&&!["tickets","notifications"].includes(view)){
       setView("tickets");
@@ -3221,6 +3357,7 @@ export default function App() {
     {id:"tickets",icon:"ticket",label:"Ticketlar"},
     {id:"ai",icon:"activity",label:"AI Asistan"},
     ...(isAdmin?[{id:"import",icon:"reports",label:"Import Merkezi"}]:[]),
+    ...(isAdmin?[{id:"mailcenter",icon:"mail",label:"Mail Merkezi"}]:[]),
     {id:"reports",icon:"reports",label:"Raporlar"},
     {id:"people",icon:"people",label:"Ekip"},
     {id:"logs",icon:"activity",label:"Aktivite"},
@@ -3231,7 +3368,7 @@ export default function App() {
     {/* Mobil ust bar */}
     {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:50, background:"#1E293B", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
       <button onClick={()=>setMobileMenuOpen(v=>!v)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", padding:4 }}>☰</button>
-      <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:32,height:32,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:15,fontWeight:850,color:"#A5B4FC",letterSpacing:1.2}}>Corject</span></button>
+      <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:32,height:32,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:15,fontWeight:850,color:"#fff",letterSpacing:.3,maxWidth:145,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
         <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
         <div style={{fontSize:10,fontWeight:800,color:"#fff",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:"28px"}}>{currentUser.name}</div>
@@ -3244,7 +3381,7 @@ export default function App() {
       ...(isMobile?{ position:"fixed", top:0, left:mobileMenuOpen?0:-240, bottom:0, zIndex:960, transition:"left .25s ease", boxShadow:mobileMenuOpen?"4px 0 20px rgba(0,0,0,0.3)":"none" }:{}) }}>
       <div style={{ padding:"18px 16px 14px", borderBottom:"1px solid #334155" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <button onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgba(99,102,241,.3))"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:20,fontWeight:850,color:"#C7D2FE",letterSpacing:.8,lineHeight:1}}>Corject</span></button>
+            <button onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",minWidth:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgba(99,102,241,.3))"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:850,color:"#fff",letterSpacing:.3,lineHeight:1,maxWidth:135,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
             <button onClick={()=>{ setView("notifications"); setSelProject(null); setMobileMenuOpen(false); markAllRead(); }} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
               <span style={{ color:"#94A3B8", display:"flex" }}><Icon name="bell" size={17} /></span>
               {(state.notifications||[]).filter(n=>n.userId===currentUser?.id&&!n.read).length>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
@@ -3273,6 +3410,7 @@ export default function App() {
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
       {view==="ai"&&!selProject&&<AIWorkspace projects={visibleProjects}/>}
       {view==="import"&&isAdmin&&!selProject&&<ImportCenter state={state} setState={setState} currentUser={currentUser}/>}
+      {view==="mailcenter"&&isAdmin&&!selProject&&<MailCenterPage state={state} setState={setState}/>}
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>

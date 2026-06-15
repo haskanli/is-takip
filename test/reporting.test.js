@@ -20,11 +20,15 @@ const project = {
 };
 
 test("project status report renders progress and milestone details", () => {
-  const html = createProjectStatusReport({ project });
+  const html = createProjectStatusReport({
+    project,
+    tenantProfile: { name: "A Firması", accentColor: "#06b6d4" },
+  });
   assert.match(html, /MES Fabrika/);
   assert.match(html, /%50/);
   assert.match(html, /Analiz/);
-  assert.match(html, /Project Intelligence/i);
+  assert.match(html, /A Firması/);
+  assert.match(html, /Sent by/);
   assert.match(html, />Corject</);
   assert.match(html, /charset=UTF-8/i);
   assert.match(html, /OTOMATİK PROJE RAPORU/);

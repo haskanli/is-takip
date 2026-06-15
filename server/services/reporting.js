@@ -1,4 +1,9 @@
-import { emailFrame, escapeHtml } from "./emailTemplate.js";
+import {
+  emailFrame,
+  escapeHtml,
+  fillTemplate,
+  resolveEmailTemplates,
+} from "./emailTemplate.js";
 
 const taskStats = (project) => {
   const tasks = (project.milestones || []).flatMap((milestone) => milestone.tasks || []);
@@ -15,7 +20,11 @@ const taskStats = (project) => {
   };
 };
 
-export const createProjectStatusReport = ({ project }) => {
+export const createProjectStatusReport = ({
+  project,
+  tenantProfile,
+  emailTemplates,
+}) => {
   const stats = taskStats(project);
   const risks = (project.risks || []).filter((risk) => !String(risk.status).includes("Kapal"));
   const cards = [
@@ -42,11 +51,16 @@ export const createProjectStatusReport = ({ project }) => {
     </tr>`;
   }).join("");
 
+  const template = resolveEmailTemplates(emailTemplates).find(
+    (item) => item.id === "project_report",
+  );
+  const variables = { project_name: project.name };
   return emailFrame({
-    eyebrow: "OTOMATİK PROJE RAPORU",
-    title: project.name,
-    intro: "Projenin güncel ilerleme, termin ve risk özeti.",
-    accent: "#06b6d4",
+    tenantProfile,
+    eyebrow: fillTemplate(template.eyebrow, variables),
+    title: fillTemplate(template.title, variables),
+    intro: fillTemplate(template.intro, variables),
+    accent: template.accentColor,
     content: `
       <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"><tr>${cards}</tr></table>
       <h2 style="font-size:19px;line-height:26px;color:#172033;margin:28px 0 12px">Milestone Özeti</h2>
@@ -62,7 +76,12 @@ export const createProjectStatusReport = ({ project }) => {
   });
 };
 
-export const createJiraNewsletter = ({ project, tickets }) => {
+export const createJiraNewsletter = ({
+  project,
+  tickets,
+  tenantProfile,
+  emailTemplates,
+}) => {
   const since = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const done = (tickets || []).filter((ticket) => {
     const status = `${ticket.jiraStatus || ""} ${ticket.status || ""}`.toLocaleLowerCase("tr-TR");
@@ -86,11 +105,16 @@ export const createJiraNewsletter = ({ project, tickets }) => {
       </table>`;
   }).join("");
 
+  const template = resolveEmailTemplates(emailTemplates).find(
+    (item) => item.id === "jira_newsletter",
+  );
+  const variables = { project_name: project.name };
   return emailFrame({
-    eyebrow: "HAFTALIK GELİŞTİRMELER",
-    title: `${project.name} Geliştirme Bülteni`,
-    intro: "Jira üzerinde son yedi günde tamamlanan çalışmalar.",
-    accent: "#f59e0b",
+    tenantProfile,
+    eyebrow: fillTemplate(template.eyebrow, variables),
+    title: fillTemplate(template.title, variables),
+    intro: fillTemplate(template.intro, variables),
+    accent: template.accentColor,
     content: stories || '<div style="padding:28px;text-align:center;color:#475569;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px">Bu hafta tamamlanan Jira geliştirmesi bulunmuyor.</div>',
   });
 };

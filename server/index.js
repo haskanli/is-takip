@@ -30,6 +30,11 @@ import {
   createProjectStatusReport,
   nextScheduledRun,
 } from "./services/reporting.js";
+import {
+  renderManagedTemplate,
+  resolveEmailTemplates,
+  resolveTenantProfile,
+} from "./services/emailTemplate.js";
 import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
 import { sendTaskAssignedSlack } from "./services/slack.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
@@ -276,7 +281,13 @@ const handleTicketAssignedEmail = async (request, response, auth) => {
     json(response, 202, { sent: false, reason: "Assignee has no email address" });
     return;
   }
-  const result = await sendTicketAssignedEmail({ assignee, ticket: body.ticket, project });
+  const result = await sendTicketAssignedEmail({
+    assignee,
+    ticket: body.ticket,
+    project,
+    tenantProfile: state.tenantProfile,
+    emailTemplates: state.emailTemplates,
+  });
   logger.info("email.ticket-assignment.completed", {
     projectId: project.id,
     ticketId: body.ticket.id,
@@ -314,7 +325,13 @@ const handleCreateTicket = async (request, response, auth) => {
       notification = { sent: false, reason: "Assignee has no email address" };
     } else {
       try {
-        const result = await sendTicketAssignedEmail({ assignee, ticket, project });
+        const result = await sendTicketAssignedEmail({
+          assignee,
+          ticket,
+          project,
+          tenantProfile: state.tenantProfile,
+          emailTemplates: state.emailTemplates,
+        });
         notification = { sent: !result.skipped, emailId: result.id || null };
       } catch (error) {
         logger.error("email.ticket-assignment.failed", error, {
@@ -329,7 +346,7 @@ const handleCreateTicket = async (request, response, auth) => {
   json(response, 201, { ticket, notification });
 };
 
-const notifyTaskAssignee = async ({ assignee, task, assigner }) => {
+const notifyTaskAssignee = async ({ assignee, task, assigner, state }) => {
   let slackError = "";
   try {
     const slack = await sendTaskAssignedSlack({ assignee, task, assigner });
@@ -368,7 +385,13 @@ const notifyTaskAssignee = async ({ assignee, task, assigner }) => {
     };
   }
   try {
-    const email = await sendTaskAssignedEmail({ assignee, task, assigner });
+    const email = await sendTaskAssignedEmail({
+      assignee,
+      task,
+      assigner,
+      tenantProfile: state.tenantProfile,
+      emailTemplates: state.emailTemplates,
+    });
     return {
       sent: !email.skipped,
       channel: email.skipped ? "none" : "email",
@@ -424,7 +447,7 @@ const handleAssignTasks = async (request, response, auth) => {
   const notifications = [];
   for (const task of created) {
     const assignee = state.people?.find((person) => person.id === task.assignee);
-    notifications.push({ taskId: task.id, ...await notifyTaskAssignee({ assignee, task, assigner }) });
+    notifications.push({ taskId: task.id, ...await notifyTaskAssignee({ assignee, task, assigner, state }) });
   }
   json(response, 201, { tasks: created, notifications, recurringTemplate });
 };
@@ -436,7 +459,7 @@ const runRecurringTaskCycle = async () => {
   for (const task of created) {
     const assignee = state.people?.find((person) => person.id === task.assignee);
     const assigner = state.people?.find((person) => person.id === task.createdBy) || { name: task.createdByName || "Yönetici" };
-    notifications.push({ taskId: task.id, ...await notifyTaskAssignee({ assignee, task, assigner }) });
+    notifications.push({ taskId: task.id, ...await notifyTaskAssignee({ assignee, task, assigner, state }) });
   }
   logger.info("tasks.recurring.completed", {
     created: created.length,
@@ -464,16 +487,31 @@ const runScheduledReportCycle = async () => {
       if (!schedule.enabled || !schedule.nextRunAt || new Date(schedule.nextRunAt) > current) continue;
       const tickets = state.projectTickets?.[project.id] || [];
       const html = schedule.reportType === "jira_newsletter"
-        ? createJiraNewsletter({ project, tickets })
-        : createProjectStatusReport({ project });
+        ? createJiraNewsletter({
+            project,
+            tickets,
+            tenantProfile: state.tenantProfile,
+            emailTemplates: state.emailTemplates,
+          })
+        : createProjectStatusReport({
+            project,
+            tenantProfile: state.tenantProfile,
+            emailTemplates: state.emailTemplates,
+          });
       try {
+        const templateId = schedule.reportType === "jira_newsletter"
+          ? "jira_newsletter"
+          : "project_report";
+        const template = resolveEmailTemplates(state.emailTemplates).find(
+          (item) => item.id === templateId,
+        );
         for (const recipient of schedule.recipients || []) {
           await sendEmail({
             to: recipient,
-            subject: schedule.reportType === "jira_newsletter"
-              ? `[Corject] ${project.name} haftalık geliştirmeler`
-              : `[Corject] ${project.name} otomatik durum raporu`,
+            subject: template.subject.replaceAll("{{project_name}}", project.name),
             html,
+            replyTo: state.tenantProfile?.replyTo,
+            senderName: state.tenantProfile?.name,
           });
         }
         await markReportScheduleSent({
@@ -514,6 +552,45 @@ const handleScheduledReports = async (request, response) => {
     return;
   }
   json(response, 200, { reports: await runScheduledReportCycle() });
+};
+
+const handleManualTemplateEmail = async (request, response, auth) => {
+  if (!auth?.profile?.is_admin) {
+    throw Object.assign(new Error("Only administrators can send template emails"), {
+      status: 403,
+    });
+  }
+  const body = parseJson(await readBody(request));
+  const to = String(body.to || "").trim();
+  if (!to || !body.templateId) {
+    throw Object.assign(new Error("to and templateId are required"), { status: 400 });
+  }
+  const state = await loadState();
+  const tenantProfile = resolveTenantProfile(state.tenantProfile);
+  const template = body.template?.id === body.templateId
+    ? body.template
+    : resolveEmailTemplates(state.emailTemplates).find(
+        (item) => item.id === body.templateId,
+      );
+  if (!template) {
+    throw Object.assign(new Error("Email template not found"), { status: 404 });
+  }
+  if (template.enabled === false) {
+    throw Object.assign(new Error("Email template is disabled"), { status: 409 });
+  }
+  const rendered = renderManagedTemplate({
+    template,
+    tenantProfile,
+    variables: body.variables || {},
+    actionUrl: body.actionUrl || "",
+  });
+  const result = await sendEmail({
+    to,
+    ...rendered,
+    replyTo: tenantProfile.replyTo,
+    senderName: tenantProfile.name,
+  });
+  json(response, 200, { sent: !result.skipped, emailId: result.id || null });
 };
 
 const handleProjectAI = async (request, response, auth) => {
@@ -594,7 +671,12 @@ const handleOverdueReminders = async (request, response) => {
       skipped += 1;
       continue;
     }
-    const result = await sendOverdueReminderEmail({ assignee, tasks });
+    const result = await sendOverdueReminderEmail({
+      assignee,
+      tasks,
+      tenantProfile: state.tenantProfile,
+      emailTemplates: state.emailTemplates,
+    });
     if (result.skipped) skipped += 1;
     else sent += 1;
   }
@@ -694,6 +776,9 @@ const server = createServer(async (request, response) => {
     } else if (request.method === "POST" && url.pathname === "/api/ai/project-insight") {
       if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
       await handleProjectAI(request, response, auth);
+    } else if (request.method === "POST" && url.pathname === "/api/email/send-template") {
+      if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
+      await handleManualTemplateEmail(request, response, auth);
     } else if (
       remoteAccessMatch &&
       ["GET", "POST", "PUT", "DELETE"].includes(request.method)

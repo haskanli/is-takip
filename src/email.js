@@ -39,4 +39,14 @@ export const assignTasksWithNotification = async (payload) => {
   if (!response.ok) throw new Error(await readError(response));
   return response.json();
 };
+
+export const sendManagedTemplateEmail = async (payload) => {
+  const response = await fetch(apiUrl("/api/email/send-template"), {
+    method: "POST",
+    headers: await apiHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(await readError(response));
+  return response.json();
+};
 import { apiHeaders, apiUrl } from "./api.js";
