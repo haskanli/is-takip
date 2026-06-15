@@ -2,11 +2,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 import { getJiraIssue } from "./jira";
 import { assignTasksWithNotification, createTicketWithNotification, notifyTicketAssignment } from "./email";
-import { apiUrl, isPublicCorjectHost } from "./api";
+import { apiHeaders, apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.18.1";
+const APP_VERSION = "v1.19.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -44,7 +44,53 @@ const PCOL = { "D\u00fc\u015f\u00fck":"#94A3B8", "Orta":"#EA6C00", "Y\u00fcksek"
 const STATUSES = Object.keys(S);
 const PRIORITIES = Object.keys(PCOL);
 const WAIT = ["PM","M\u00fc\u015fteri","ERP","Tedarik\u00e7i","Teknik","\u00dcr\u00fcn-Teknoloji","Y\u00f6netim","Di\u011fer"];
-const TICKET_STATUSES = ["Açık","Operasyon İncelemesinde","Ürün Değerlendirmesinde","Jira'da Çalışılıyor","Operasyon Testinde","Test Başarısız","Yayına Hazır","Tamamlandı","Beklemede","İptal Edildi"];
+const RESPONSIBILITY_GROUPS = ["Proje Ekibi","\u00dcr\u00fcn Ekibi","Yaz\u0131l\u0131m Ekibi","M\u00fc\u015fteri","Tedarik\u00e7i","Di\u011fer"];
+const MES_READINESS_TEMPLATE = [
+  {id:"scope",category:"Y\u00f6neti\u015fim",text:"Proje kapsam\u0131, hedef KPI'lar, ba\u015far\u0131 \u00f6l\u00e7\u00fctleri ve kapsam d\u0131\u015f\u0131 konular onayland\u0131.",weight:8},
+  {id:"sponsor",category:"Y\u00f6neti\u015fim",text:"Proje sponsoru, karar mekanizmas\u0131, RACI ve eskalasyon yolu belirlendi.",weight:7},
+  {id:"process",category:"S\u00fcre\u00e7 ve Model",text:"Mevcut ve hedef \u00fcretim s\u00fcre\u00e7leri ile ISA-95 ekipman hiyerar\u015fisi tan\u0131mland\u0131.",weight:8},
+  {id:"usecases",category:"S\u00fcre\u00e7 ve Model",text:"MES kullan\u0131m senaryolar\u0131, istisnalar ve operasyon kurallar\u0131 onayland\u0131.",weight:7},
+  {id:"masterdata",category:"Veri",text:"Malzeme, rota, operasyon, vardiya, personel ve ekipman ana verilerinin sahibi belirlendi.",weight:8},
+  {id:"quality",category:"Veri",text:"Kaynak veri kalitesi kontrol edildi; temizleme ve migrasyon plan\u0131 haz\u0131r.",weight:7},
+  {id:"interfaces",category:"Entegrasyon",text:"ERP, kalite, bak\u0131m, depo ve di\u011fer sistem entegrasyonlar\u0131n\u0131n kapsam\u0131 ve veri y\u00f6n\u00fc belirlendi.",weight:8},
+  {id:"contracts",category:"Entegrasyon",text:"API/protokol, hata y\u00f6netimi, tekrar deneme, sahiplik ve test verileri tan\u0131mland\u0131.",weight:7},
+  {id:"infrastructure",category:"OT Altyap\u0131",text:"Sunucu, a\u011f, zaman senkronizasyonu, yedekleme, kapasite ve ortam ayr\u0131m\u0131 haz\u0131r.",weight:8},
+  {id:"security",category:"OT Altyap\u0131",text:"OT/IT a\u011f s\u0131n\u0131rlar\u0131, uzaktan eri\u015fim, hesaplar, yetkiler ve siber g\u00fcvenlik kontrolleri onayland\u0131.",weight:7},
+  {id:"equipment",category:"Saha Haz\u0131rl\u0131\u011f\u0131",text:"Makine/PLC ba\u011flant\u0131 envanteri, protokoller, sinyal listeleri ve fiziksel eri\u015fim haz\u0131r.",weight:6},
+  {id:"owners",category:"Saha Haz\u0131rl\u0131\u011f\u0131",text:"Hat baz\u0131nda teknik sorumlular ve planl\u0131 duru\u015f/ba\u011flant\u0131 zamanlar\u0131 belirlendi.",weight:4},
+  {id:"test",category:"Test ve Kabul",text:"FAT/SAT/UAT senaryolar\u0131, kabul kriterleri, test sorumlular\u0131 ve kan\u0131t format\u0131 haz\u0131r.",weight:6},
+  {id:"cutover",category:"Test ve Kabul",text:"Canl\u0131ya ge\u00e7i\u015f, geri d\u00f6n\u00fc\u015f, veri do\u011frulama ve destek plan\u0131 onayland\u0131.",weight:4},
+  {id:"training",category:"De\u011fi\u015fim Y\u00f6netimi",text:"Anahtar kullan\u0131c\u0131lar, e\u011fitim, ileti\u015fim ve vardiya bazl\u0131 benimseme plan\u0131 haz\u0131r.",weight:3},
+  {id:"support",category:"De\u011fi\u015fim Y\u00f6netimi",text:"Hypercare, SLA, izleme, sorun sahipli\u011fi ve kal\u0131c\u0131 destek modeli belirlendi.",weight:2},
+];
+const createReadinessChecklist = () => MES_READINESS_TEMPLATE.map(item=>({...item,status:"unanswered",note:""}));
+const readinessScore = (project) => {
+  const items=project?.readinessChecklist||createReadinessChecklist();
+  const total=items.reduce((sum,item)=>sum+(Number(item.weight)||0),0)||1;
+  const earned=items.reduce((sum,item)=>sum+(Number(item.weight)||0)*(item.status==="ready"?1:item.status==="partial"?0.5:0),0);
+  return Math.round(earned/total*100);
+};
+const remainingResponsibility = (project) => {
+  const open=(project?.milestones||[]).flatMap(ms=>ms.tasks||[]).filter(task=>task.status!=="Tamamland\u0131");
+  const totals={};
+  open.forEach(task=>{const group=task.responsibilityGroup||"Proje Ekibi";totals[group]=(totals[group]||0)+(Number(task.estimatedHours)||1);});
+  const all=Object.values(totals).reduce((sum,value)=>sum+value,0)||1;
+  return Object.entries(totals).sort((a,b)=>b[1]-a[1]).map(([group,value])=>({group,value,percent:Math.round(value/all*100)}));
+};
+const nextReportRunAt = (schedule, from=new Date()) => {
+  const next=new Date(from);
+  const [hour,minute]=String(schedule.time||"09:00").split(":").map(Number);
+  next.setHours(hour||0,minute||0,0,0);
+  if(schedule.frequency==="monthly") next.setMonth(next.getMonth()+1,1);
+  else {
+    const target=Number(schedule.weekday||1);
+    let days=(target-next.getDay()+7)%7;
+    if(days===0&&next<=from)days=7;
+    next.setDate(next.getDate()+days);
+  }
+  return next.toISOString();
+};
+const TICKET_STATUSES = ["Açık","Operasyon İncelemesinde","Ürün Değerlendirmesinde","Jira'da Çalışılıyor","Operasyon Testinde","Test Başarısız","Yayına Hazır","Müşteri Onayında","Müşteri Reddetti","Tamamlandı","Beklemede","İptal Edildi"];
 const TICKET_CATEGORIES = ["Operasyonel","Bug","Geliştirme","Entegrasyon","İyileştirme","Veri","Eğitim","Diğer"];
 const ORG_LEVELS = [
   { id:"ceo", label:"CEO", rank:1 },
@@ -1671,11 +1717,14 @@ function TaskCard({ task, people, projectColor, onCheck, onEdit, onDelete, onTim
         {task.dueDate&&<span style={{ fontSize:11, color:dl?"#E11D48":"#94A3B8" }}>{task.startDate?"Bit:":"Termin:"} {fmt(task.dueDate)}</span>}
         {(task.timeEntries||[]).length>0&&<span style={{ fontSize:11, color:"#7C3AED", fontWeight:600, background:"#F5F3FF", borderRadius:6, padding:"1px 6px" }}>{(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0)} saat</span>}
         {task.estimatedHours&&<span style={{ fontSize:11, color:"#0369A1", fontWeight:600, background:"#F0F9FF", borderRadius:6, padding:"1px 6px" }}>Plan: {task.estimatedHours} sa</span>}
+        {task.responsibilityGroup&&<span style={{ fontSize:11, color:"#4338CA", fontWeight:700, background:"#EEF2FF", borderRadius:6, padding:"1px 6px" }}>{task.responsibilityGroup}</span>}
         {task.waitSource&&<span style={{ fontSize:11, color:"#EA6C00", fontWeight:600 }}>Bekliyor: {task.waitSource}</span>}
+        {task.waitReason&&["Bekliyor","Engellendi"].includes(task.status)&&<span style={{fontSize:11,color:"#9A3412",background:"#FFF7ED",borderRadius:6,padding:"1px 6px"}}>{task.waitReason}</span>}
         {task.link&&(()=>{const jm=String(task.link).match(/([A-Z][A-Z0-9]+-[0-9]+)/);return <a href={task.link} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ fontSize:11, color:"#0052CC", background:"#DEEBFF", borderRadius:6, padding:"1px 7px", fontWeight:700, textDecoration:"none" }}>{jm?jm[1]:"Jira"}</a>;})()}
         {showProject&&projectName&&<span style={{ fontSize:11, color:"#4A6CF7", background:"#F1F5FF", borderRadius:6, padding:"1px 6px" }}>{projectName}</span>}
         {task.notes&&<span style={{ fontSize:11, color:"#94A3B8", fontStyle:"italic" }}>"{task.notes}"</span>}
       </div>
+      {(task.waitingHistory||[]).length>0&&<details style={{marginTop:7}}><summary style={{fontSize:10,color:"#64748B",cursor:"pointer",fontWeight:700}}>Bekleme geçmişi ({task.waitingHistory.length})</summary><div style={{display:"grid",gap:4,marginTop:6}}>{task.waitingHistory.slice().reverse().map(entry=><div key={entry.id} style={{fontSize:10,color:"#475569",background:"#F8FAFC",borderRadius:7,padding:"6px 8px"}}><b>{entry.source}</b> · {entry.reason} · {fmtFull(entry.startAt)} - {entry.endAt?fmtFull(entry.endAt):"Devam ediyor"}</div>)}</div></details>}
     </div>
     <div style={{ display:"flex", gap:4, flexShrink:0 }}>
       {onTime&&<Btn small variant="ghost" onClick={onTime} style={{ color:"#7C3AED" }}>Efor</Btn>}
@@ -1925,6 +1974,64 @@ function LogPage({ logs, projects }) {
 }
 
 // ─── Milestone Task Panel ────────────────────────────────────────────────────
+function ProjectSetupPanel({project,onChange,canEdit}) {
+  const [section,setSection]=useState("readiness");
+  const [contact,setContact]=useState({side:"M\u00fc\u015fteri",name:"",title:"",company:"",department:"",email:"",phone:"",raci:"C",scope:""});
+  const [document,setDocument]=useState({name:"",purpose:"",tags:"",url:"",owner:"",version:"1.0"});
+  const emptySchedule={name:"",reportType:"project_status",recipients:"",frequency:"weekly",weekday:"1",time:"09:00",enabled:true};
+  const [schedule,setSchedule]=useState(emptySchedule);
+  const [aiQuestion,setAiQuestion]=useState("Bu projenin en kritik üç riski ve bu hafta alınması gereken aksiyonlar nelerdir?");
+  const [aiAnswer,setAiAnswer]=useState("");
+  const [aiLoading,setAiLoading]=useState(false);
+  const [aiError,setAiError]=useState("");
+  const checklist=project.readinessChecklist||createReadinessChecklist();
+  const score=readinessScore({...project,readinessChecklist:checklist});
+  const threshold=Number(project.readinessThreshold||80);
+  const updateItem=(id,data)=>onChange({readinessChecklist:checklist.map(item=>item.id===id?{...item,...data}:item)});
+  const addContact=()=>{if(!contact.name.trim())return;onChange({raciContacts:[...(project.raciContacts||[]),{...contact,id:uid()}]});setContact({side:"M\u00fc\u015fteri",name:"",title:"",company:"",department:"",email:"",phone:"",raci:"C",scope:""});};
+  const addDocument=()=>{if(!document.name.trim())return;onChange({documents:[...(project.documents||[]),{...document,id:uid(),tags:document.tags.split(",").map(x=>x.trim()).filter(Boolean),createdAt:now()}]});setDocument({name:"",purpose:"",tags:"",url:"",owner:"",version:"1.0"});};
+  const addSchedule=()=>{if(!schedule.name.trim()||!schedule.recipients.trim())return;onChange({reportSchedules:[...(project.reportSchedules||[]),{...schedule,id:uid(),recipients:schedule.recipients.split(",").map(x=>x.trim()).filter(Boolean),createdAt:now(),nextRunAt:nextReportRunAt(schedule)}]});setSchedule(emptySchedule);};
+  const askAI=async()=>{if(!aiQuestion.trim())return;setAiLoading(true);setAiError("");try{const response=await fetch(apiUrl("/api/ai/project-insight"),{method:"POST",headers:await apiHeaders({"Content-Type":"application/json"}),body:JSON.stringify({projectId:project.id,question:aiQuestion})});const body=await response.json();if(!response.ok)throw new Error(body.error||"AI yan\u0131t\u0131 al\u0131namad\u0131.");setAiAnswer(body.answer);}catch(error){setAiError(error.message);}finally{setAiLoading(false);}};
+  const tabs=[["readiness","Ba\u015flang\u0131\u00e7 Sa\u011fl\u0131\u011f\u0131"],["raci","RACI ve Kontaklar"],["documents","Dok\u00fcmanlar"],["automation","Rapor Otomasyonu"],["ai","AI Proje Yorumu"]];
+  return <div style={{flex:1,overflow:"auto",padding:"clamp(14px,3vw,24px)"}}>
+    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>{tabs.map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:800,background:section===id?project.color:"#F1F5F9",color:section===id?"#fff":"#64748B"}}>{label}</button>)}</div>
+    {section==="readiness"&&<div>
+      <div className="readiness-summary" style={{display:"grid",gridTemplateColumns:"minmax(170px,240px) 1fr",gap:14,marginBottom:15}}>
+        <div style={{background:"#fff",border:`2px solid ${score>=threshold?"#10B981":"#E11D48"}`,borderRadius:16,padding:20,textAlign:"center"}}><div style={{fontSize:10,fontWeight:900,color:"#64748B",letterSpacing:1}}>BA\u015eLANGI\u00c7 SA\u011eLI\u011eI</div><div style={{fontSize:42,fontWeight:900,color:score>=threshold?"#059669":"#E11D48"}}>{score}</div><div style={{fontSize:11,color:"#64748B"}}>E\u015fik: {threshold}/100</div></div>
+        <div style={{background:score>=threshold?"#ECFDF5":"#FFF1F2",borderRadius:16,padding:18,color:score>=threshold?"#047857":"#BE123C"}}><b style={{fontSize:15}}>{score>=threshold?"Proje ba\u015flang\u0131ca elveri\u015fli":"Proje ba\u015flamaya elveri\u015fli de\u011fil"}</b><p style={{fontSize:12,lineHeight:1.6,margin:"7px 0 0"}}>{score>=threshold?"Kritik haz\u0131rl\u0131k alanlar\u0131 yeterli seviyede. K\u0131smi maddeleri proje risklerine ekleyerek ilerleyin.":"80 puan alt\u0131nda kapsam, veri, entegrasyon, OT altyap\u0131 veya kabul haz\u0131rl\u0131klar\u0131 tamamlanmadan saha uygulamas\u0131na ge\u00e7ilmemeli."}</p></div>
+      </div>
+      <div style={{display:"grid",gap:8}}>{checklist.map(item=><div className="readiness-row" key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:12,display:"grid",gridTemplateColumns:"110px minmax(220px,1fr) 125px 70px auto",gap:8,alignItems:"center"}}>
+        <span style={{fontSize:10,fontWeight:850,color:"#4F46E5"}}>{item.category}</span><input disabled={!canEdit} style={{...iStyle,fontWeight:650}} value={item.text} onChange={e=>updateItem(item.id,{text:e.target.value})}/>
+        <select disabled={!canEdit} style={iStyle} value={item.status} onChange={e=>updateItem(item.id,{status:e.target.value})}><option value="unanswered">De\u011ferlendirilmedi</option><option value="ready">Haz\u0131r</option><option value="partial">K\u0131smi</option><option value="not_ready">Haz\u0131r De\u011fil</option></select>
+        <input disabled={!canEdit} type="number" min="1" max="100" title="A\u011f\u0131rl\u0131k" style={iStyle} value={item.weight} onChange={e=>updateItem(item.id,{weight:e.target.value})}/>
+        {canEdit&&<button title="Sil" onClick={()=>onChange({readinessChecklist:checklist.filter(x=>x.id!==item.id)})} style={{border:0,background:"#FFF1F2",color:"#E11D48",borderRadius:7,padding:"7px 9px",cursor:"pointer"}}>x</button>}
+        <input disabled={!canEdit} style={{...iStyle,gridColumn:"2 / span 3"}} value={item.note||""} onChange={e=>updateItem(item.id,{note:e.target.value})} placeholder="Kan\u0131t, eksik veya aksiyon notu"/>
+      </div>)}</div>
+      {canEdit&&<div style={{display:"flex",gap:7,marginTop:12}}><Btn small onClick={()=>onChange({readinessChecklist:[...checklist,{id:uid(),category:"\u00d6zel",text:"Yeni kontrol maddesi",weight:1,status:"unanswered",note:""}]})}>+ Kontrol Maddesi</Btn><Btn small variant="secondary" onClick={()=>onChange({readinessChecklist:createReadinessChecklist()})}>MES \u015eablonunu S\u0131f\u0131rla</Btn></div>}
+    </div>}
+    {section==="raci"&&<div>
+      <div style={{background:"#EEF2FF",color:"#4338CA",borderRadius:11,padding:"10px 13px",fontSize:11,marginBottom:12}}><b>R</b> yapan, <b>A</b> nihai hesap veren, <b>C</b> g\u00f6r\u00fc\u015f\u00fc al\u0131nan, <b>I</b> bilgilendirilen. Her kapsam i\u00e7in tek bir A belirlenmesi \u00f6nerilir.</div>
+      <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",background:"#fff",fontSize:11}}><thead><tr>{["Taraf","Ad Soyad","Unvan / Departman","RACI","Sorumluluk Kapsam\u0131","Kontak",""].map(x=><th key={x} style={{textAlign:"left",padding:10,background:"#F8FAFC",borderBottom:"1px solid #E2E8F0"}}>{x}</th>)}</tr></thead><tbody>{(project.raciContacts||[]).map(item=><tr key={item.id}><td style={{padding:9}}>{item.side}</td><td style={{padding:9,fontWeight:750}}>{item.name}</td><td style={{padding:9}}>{item.title}{item.department?` / ${item.department}`:""}</td><td style={{padding:9,color:"#4F46E5",fontWeight:850}}>{item.raci}</td><td style={{padding:9}}>{item.scope}</td><td style={{padding:9}}>{item.email}<br/>{item.phone}</td><td>{canEdit&&<button onClick={()=>onChange({raciContacts:(project.raciContacts||[]).filter(x=>x.id!==item.id)})} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer"}}>Sil</button>}</td></tr>)}</tbody></table></div>
+      {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginTop:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}><select style={iStyle} value={contact.side} onChange={e=>setContact({...contact,side:e.target.value})}>{["Bizim Taraf","M\u00fc\u015fteri","Partner/Tedarik\u00e7i"].map(x=><option key={x}>{x}</option>)}</select>{["name","title","company","department","email","phone","scope"].map(key=><input key={key} style={iStyle} value={contact[key]} onChange={e=>setContact({...contact,[key]:e.target.value})} placeholder={({name:"Ad Soyad",title:"Unvan",company:"\u015eirket",department:"Departman",email:"E-posta",phone:"Telefon",scope:"Sorumluluk kapsam\u0131"})[key]}/>)}<select style={iStyle} value={contact.raci} onChange={e=>setContact({...contact,raci:e.target.value})}>{["R","A","C","I"].map(x=><option key={x}>{x}</option>)}</select><Btn onClick={addContact}>Konta\u011f\u0131 Ekle</Btn></div>}
+    </div>}
+    {section==="documents"&&<div>
+      <div style={{background:"#F0F9FF",color:"#0369A1",borderRadius:11,padding:"10px 13px",fontSize:11,marginBottom:12}}>Dosyan\u0131n kendisi yerine \u015fimdilik OneDrive ba\u011flant\u0131s\u0131 ve metadata saklan\u0131r. Microsoft Graph ba\u011flant\u0131s\u0131 eklendi\u011finde ayn\u0131 kay\u0131t modeli do\u011frudan y\u00fcklemeyi destekleyecek.</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:9}}>{(project.documents||[]).map(item=><div key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:13}}><div style={{display:"flex",justifyContent:"space-between"}}><b>{item.name}</b><span style={{fontSize:9}}>v{item.version}</span></div><div style={{fontSize:11,color:"#64748B",marginTop:5}}>{item.purpose}</div><div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:7}}>{(item.tags||[]).map(tag=><span key={tag} style={{background:"#EEF2FF",color:"#4338CA",borderRadius:6,padding:"2px 6px",fontSize:9}}>{tag}</span>)}</div><div style={{display:"flex",gap:9,marginTop:9}}>{item.url&&<a href={item.url} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:800,color:"#2563EB"}}>OneDrive'da A\u00e7</a>}{canEdit&&<button onClick={()=>onChange({documents:(project.documents||[]).filter(x=>x.id!==item.id)})} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,cursor:"pointer"}}>Sil</button>}</div></div>)}</div>
+      {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginTop:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:8}}>{["name","purpose","tags","url","owner","version"].map(key=><input key={key} style={iStyle} value={document[key]} onChange={e=>setDocument({...document,[key]:e.target.value})} placeholder={({name:"Dok\u00fcman ad\u0131",purpose:"Ama\u00e7 / kategori",tags:"Etiketler (virg\u00fcll\u00fc)",url:"OneDrive linki",owner:"Dok\u00fcman sahibi",version:"Versiyon"})[key]}/>)}<Btn onClick={addDocument}>Dok\u00fcman Ekle</Btn></div>}
+    </div>}
+    {section==="automation"&&<div>
+      <div style={{display:"grid",gap:8}}>{(project.reportSchedules||[]).map(item=><div key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:13,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}><div style={{flex:1,minWidth:180}}><b style={{fontSize:12}}>{item.name}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{item.reportType==="jira_newsletter"?"Jira Done geli\u015ftirme b\u00fclteni":"Proje durum raporu"} \u00b7 {item.frequency==="weekly"?"Haftal\u0131k":"Ayl\u0131k"} \u00b7 {(item.recipients||[]).join(", ")}</div></div><button onClick={()=>onChange({reportSchedules:(project.reportSchedules||[]).map(x=>x.id===item.id?{...x,enabled:!x.enabled}:x)})} style={{border:0,borderRadius:8,padding:"6px 9px",cursor:"pointer",background:item.enabled?"#ECFDF5":"#F1F5F9",color:item.enabled?"#047857":"#64748B"}}>{item.enabled?"Aktif":"Pasif"}</button>{canEdit&&<button onClick={()=>onChange({reportSchedules:(project.reportSchedules||[]).filter(x=>x.id!==item.id)})} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer"}}>Sil</button>}</div>)}</div>
+      {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginTop:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}><input style={iStyle} value={schedule.name} onChange={e=>setSchedule({...schedule,name:e.target.value})} placeholder="Plan ad\u0131"/><select style={iStyle} value={schedule.reportType} onChange={e=>setSchedule({...schedule,reportType:e.target.value})}><option value="project_status">Proje Durum Raporu</option><option value="jira_newsletter">Jira Done Newsletter</option></select><input style={iStyle} value={schedule.recipients} onChange={e=>setSchedule({...schedule,recipients:e.target.value})} placeholder="Al\u0131c\u0131 e-postalar\u0131"/><select style={iStyle} value={schedule.frequency} onChange={e=>setSchedule({...schedule,frequency:e.target.value})}><option value="weekly">Haftal\u0131k</option><option value="monthly">Ayl\u0131k</option></select>{schedule.frequency==="weekly"&&<select style={iStyle} value={schedule.weekday} onChange={e=>setSchedule({...schedule,weekday:e.target.value})}>{["Pazar","Pazartesi","Sal\u0131","\u00c7ar\u015famba","Per\u015fembe","Cuma","Cumartesi"].map((day,index)=><option key={day} value={index}>{day}</option>)}</select>}<input type="time" style={iStyle} value={schedule.time} onChange={e=>setSchedule({...schedule,time:e.target.value})}/><Btn onClick={addSchedule}>Planla</Btn></div>}
+    </div>}
+    {section==="ai"&&<div style={{maxWidth:820}}><div style={{background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:12,padding:"11px 13px",fontSize:11,color:"#5B21B6",marginBottom:12}}>Yaln\u0131zca bu projedeki g\u00f6rev, termin, risk, checklist ve ticket \u00f6zetleri analiz edilir. Uzaktan eri\u015fim parolalar\u0131 ve dok\u00fcman i\u00e7erikleri modele g\u00f6nderilmez.</div><Field label="Projeyle ilgili sorunuzu yaz\u0131n"><textarea style={{...iStyle,minHeight:90,resize:"vertical"}} value={aiQuestion} onChange={e=>setAiQuestion(e.target.value)}/></Field><Btn disabled={aiLoading} onClick={askAI}>{aiLoading?"Analiz ediliyor...":"Projeyi Yorumla"}</Btn>{aiError&&<div style={{marginTop:12,padding:12,borderRadius:10,background:"#FFF1F2",color:"#BE123C",fontSize:11}}>{aiError}</div>}{aiAnswer&&<div style={{marginTop:12,padding:16,borderRadius:13,background:"#fff",border:"1px solid #E2E8F0",whiteSpace:"pre-wrap",fontSize:12,lineHeight:1.7}}>{aiAnswer}</div>}</div>}
+  </div>;
+}
+
+function ResponsibilitySummary({project}) {
+  const items=remainingResponsibility(project);
+  return <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginBottom:12}}><div style={{fontSize:12,fontWeight:850,marginBottom:9}}>Kalan \u0130\u015fin Sorumluluk Da\u011f\u0131l\u0131m\u0131</div>{items.length?<div style={{display:"grid",gap:7}}>{items.map((item,index)=><div key={item.group}><div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:3}}><b>{item.group}</b><span>%{item.percent}</span></div><div style={{height:7,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:`${item.percent}%`,background:COLORS[index%COLORS.length]}}/></div></div>)}</div>:<div style={{fontSize:11,color:"#059669"}}>Kalan g\u00f6rev bulunmuyor.</div>}</div>;
+}
+
 function MilestoneTaskPanel({ milestone, project, people, isAdmin, showDone, setShowDone, onEdit, onDelete, onAddTask, onEditTask, onDeleteTask, onCheckTask, onTimeTask }) {
   const active=milestone.tasks.filter(t=>t.status!=="Tamamland\u0131");
   const done=milestone.tasks.filter(t=>t.status==="Tamamland\u0131");
@@ -2464,6 +2571,11 @@ const GlobalStyle = () => (
     .admin-board-tools { opacity:.38; transition:opacity .16s ease; }
     .admin-board-card:hover .admin-board-tools,
     .admin-board-tools:focus-within { opacity:1; }
+    @media (max-width: 760px) {
+      .readiness-row { grid-template-columns: 1fr !important; }
+      .readiness-row > * { grid-column: 1 !important; }
+      .readiness-summary { grid-template-columns: 1fr !important; }
+    }
     @media (max-height: 760px) and (min-width: 761px) {
       .login-screen { padding: 8px 0 !important; }
       .login-shell { max-width: 720px !important; }
@@ -2684,7 +2796,7 @@ export default function App() {
   const canManageProjectActions=isAdmin||(project?projectPmIds(project).includes(currentUser.id):false);
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
 
-  const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,members:[],pmIds:[],stakeholders:[],...data,pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]})); addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
+  const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,members:[],pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));setSelProject(p.id);setView("projects");setProjectTab("setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
   const addPerson=(data)=>{
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
     setState(s=>({...s,people:[...s.people,{id:uid(),avatar,...data}]}));
@@ -2709,7 +2821,8 @@ export default function App() {
   const updateMilestone=(msId,data)=>{ const old=project?.milestones.find(m=>m.id===msId); mutProject(p=>({...p,milestones:p.milestones.map(m=>m.id===msId?normalizeMilestone({...m,...data,status:m.status}):m)})); addLog(currentUser.name,"general","Milestone güncellendi: "+(data.name||old?.name),project?.name); };
   const deleteMilestone=(msId)=>{ mutProject(p=>({...p,milestones:p.milestones.filter(m=>m.id!==msId)})); setSelMilestone(null); addLog(currentUser.name,"general","Milestone silindi",project?.name); };
   const addTask=(msId,data)=>{
-    const task={id:uid(),waitSource:"",...data};
+    const task={id:uid(),waitSource:"",waitReason:"",waitingHistory:[],responsibilityGroup:"Proje Ekibi",...data};
+    if(["Bekliyor","Engellendi"].includes(task.status))task.waitingHistory=[{id:uid(),source:task.waitSource||"Diğer",reason:task.waitReason||"Açıklama girilmedi",startAt:now(),endAt:"",createdBy:currentUser.name}];
     mutProject(p=>({...p,milestones:p.milestones.map(m=>m.id===msId?normalizeMilestone({...m,tasks:[...m.tasks,task]}):m)}));
     addLog(currentUser.name,"task_add",task.title,project?.name,project?.milestones.find(m=>m.id===msId)?.name);
     if(task.assignee&&task.assignee!==currentUser.id){
@@ -2721,7 +2834,19 @@ export default function App() {
     mutProject(p=>{
       const newMs=p.milestones.map(m=>{
         if(m.id!==msId)return m;
-        const newTasks=m.tasks.map(t=>t.id===taskId?{...t,...data}:t);
+        const newTasks=m.tasks.map(t=>{
+          if(t.id!==taskId)return t;
+          const next={...t,...data};
+          const wasWaiting=["Bekliyor","Engellendi"].includes(t.status);
+          const isWaiting=["Bekliyor","Engellendi"].includes(next.status);
+          const history=[...(t.waitingHistory||[])];
+          const openIndex=history.findIndex(entry=>!entry.endAt);
+          if(isWaiting&&(!wasWaiting||openIndex<0||t.waitSource!==next.waitSource||t.waitReason!==next.waitReason)){
+            if(openIndex>=0)history[openIndex]={...history[openIndex],endAt:now()};
+            history.push({id:uid(),source:next.waitSource||"Diğer",reason:next.waitReason||"Açıklama girilmedi",startAt:now(),endAt:"",createdBy:currentUser.name});
+          } else if(!isWaiting&&openIndex>=0) history[openIndex]={...history[openIndex],endAt:now()};
+          return {...next,waitingHistory:history};
+        });
         const next=normalizeMilestone({...m,tasks:newTasks});
         return {...next,...(next.status==="Tamamlandı"&&!m.actualEnd?{actualEnd:todayStr()}:{})};
       });
@@ -2942,6 +3067,7 @@ export default function App() {
             <span style={{ width:11, height:11, borderRadius:"50%", background:project.color }} />
             <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"#1E293B", background:"#fff", borderRadius:6, padding:"2px 4px" }}>{project.name}</h2>
             <Badge label={project.status} />
+            <button onClick={()=>setProjectTab("setup")} style={{border:0,background:readinessScore(project)>=Number(project.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(project)>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800,cursor:"pointer"}}>Başlangıç: {readinessScore(project)}/100</button>
             {project.commissioningTracking&&<button onClick={()=>setProjectTab("commissioning")} style={{border:0,background:"#ECFDF5",color:"#047857",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800,cursor:"pointer"}}>Devreye Alma: %{projectCommissioningPercent}</button>}
             {overdueC>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Gecikmiş: {overdueC}</span>}
             {criticalC>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Kritik: {criticalC}</span>}
@@ -2959,11 +3085,13 @@ export default function App() {
             <span style={{ fontSize:12, fontWeight:700, color:project.color }}>{progress}%</span>
           </div>}
           <div style={{ display:"flex", gap:5, marginTop:10, overflowX:"auto", paddingBottom:3, scrollbarWidth:"thin" }}>
-            {[["tasks","tasks","Görevler"],["effort","clock","Efor"],["actions","activity","Aksiyonlar"],["access","machines","Uzaktan Erişim"],["gantt","gantt","Proje Planı"],...(project.commissioningTracking?[["commissioning","machines","Devreye Alma"]]:[]),["machines","machines","Makineler"],["risks","risk","Riskler"],["tickets","ticket","Ticketlar"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
+            {[["setup","projects","Başlangıç"],["tasks","tasks","Görevler"],["effort","clock","Efor"],["actions","activity","Aksiyonlar"],["access","machines","Uzaktan Erişim"],["gantt","gantt","Proje Planı"],...(project.commissioningTracking?[["commissioning","machines","Devreye Alma"]]:[]),["machines","machines","Makineler"],["risks","risk","Riskler"],["tickets","ticket","Ticketlar"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
         </div>
 
+        {projectTab==="setup"&&<ProjectSetupPanel project={project} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))}/>}
         {projectTab==="tasks"&&<div style={{ flex:1, overflow:"auto", padding:isMobile?"12px":"18px 22px" }}>
+          <ResponsibilitySummary project={project}/>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><h3 style={{margin:0,fontSize:15}}>Milestonelar</h3><span style={{fontSize:11,color:"#64748B"}}>Görevleri görmek için milestone seçin.</span></div>{isAdmin&&<Btn small onClick={()=>setModal({type:"addMilestone"})}>+ Milestone</Btn>}</div>
           {project.milestones.map(ms=>{const open=selMilestone===ms.id;const done=ms.tasks.filter(t=>t.status==="Tamamland\u0131").length;return <div key={ms.id} style={{background:"#fff",border:`1.5px solid ${open?project.color:"#E2E8F0"}`,borderRadius:12,marginBottom:9,overflow:"hidden"}}>
             <button onClick={()=>{setSelMilestone(open?null:ms.id);setShowDoneTasks(false);}} style={{width:"100%",border:"none",background:open?project.color+"0D":"#fff",padding:"13px 15px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",fontFamily:"inherit"}}>
@@ -3047,6 +3175,7 @@ export default function App() {
               {stakeholders.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:5}}>{stakeholders.slice(0,3).map(item=><span key={item.id} style={{fontSize:9,background:"#F1F5F9",color:"#64748B",borderRadius:6,padding:"2px 6px"}}>{item.role}: {item.person.name}</span>)}</div>}
               {aMs&&<div style={{ fontSize:11, color:"#4A6CF7", marginBottom:5, fontWeight:600 }}>Aktif: {aMs.name} — {fmt(aMs.dueDate)}</div>}
               <div style={{ display:"flex", gap:6, marginBottom:7, flexWrap:"wrap" }}>
+                <span style={{background:readinessScore(p)>=Number(p.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(p)>=Number(p.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:10,padding:"2px 7px",fontSize:10,fontWeight:800}}>Başlangıç {readinessScore(p)}/100</span>
                 {overdue>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Gecikmiş: {overdue}</span>}
                 {crit>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Kritik: {crit}</span>}
               </div>
@@ -3445,6 +3574,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
         <Field label="Efor (saat)"><input type="number" min="0" step="0.25" style={iStyle} value={form.effortHours||""} onChange={e=>upd("effortHours",e.target.value)}/></Field>
       </div>
       <Field label="Tekrar Eden Problem Kodu"><input style={iStyle} value={form.recurrenceKey||""} onChange={e=>upd("recurrenceKey",e.target.value)} placeholder="Aynı problem için ortak kod"/></Field>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}><Field label="Müşteri Onay Yetkilisi"><input style={iStyle} value={form.customerApproval?.name||""} onChange={e=>upd("customerApproval",{...(form.customerApproval||{}),name:e.target.value})} placeholder="Ad Soyad"/></Field><Field label="Müşteri Onay E-postası"><input type="email" style={iStyle} value={form.customerApproval?.email||""} onChange={e=>upd("customerApproval",{...(form.customerApproval||{}),email:e.target.value})}/></Field></div>
       <Field label="Kök Neden"><textarea style={{...iStyle,height:65,resize:"vertical"}} value={form.rootCause||""} onChange={e=>upd("rootCause",e.target.value)}/></Field>
       <Field label="Kalıcı Çözüm"><textarea style={{...iStyle,height:65,resize:"vertical"}} value={form.resolution||""} onChange={e=>upd("resolution",e.target.value)}/></Field>
       <Field label="Jira Task Key"><input style={iStyle} value={form.jiraKey||form.jiraId||""} onChange={e=>upd("jiraKey",e.target.value)} placeholder="PROJ-123" /></Field>
@@ -3467,6 +3597,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
         </div>}
       </div>
       {(ticket.recurrenceKey||ticket.rootCause||ticket.resolution||ticket.effortHours)&&<div style={{border:"1px solid #E2E8F0",borderRadius:12,padding:13,background:"#fff",marginBottom:16}}><div style={{fontWeight:800,fontSize:12,marginBottom:8}}>Problem Bilgisi</div><div style={{display:"grid",gap:6,fontSize:11,color:"#475569"}}>{ticket.recurrenceKey&&<div>Tekrar kodu: <b>{ticket.recurrenceKey}</b></div>}{ticket.effortHours&&<div>Efor: <b>{ticket.effortHours} saat</b></div>}{ticket.rootCause&&<div><b>Kök neden:</b> {ticket.rootCause}</div>}{ticket.resolution&&<div><b>Kalıcı çözüm:</b> {ticket.resolution}</div>}</div></div>}
+      <div style={{border:"1px solid #C7D2FE",borderRadius:12,padding:13,background:"#EEF2FF",marginBottom:16}}><div style={{fontWeight:800,fontSize:12,color:"#3730A3"}}>Müşteri Kabulü</div><div style={{fontSize:11,color:"#64748B",margin:"5px 0 10px"}}>{ticket.customerApproval?.name||"Onay yetkilisi belirlenmedi"}{ticket.customerApproval?.email?` · ${ticket.customerApproval.email}`:""} · {ticket.customerApproval?.status==="approved"?"Onaylandı":ticket.customerApproval?.status==="rejected"?"Reddedildi":ticket.customerApproval?.status==="pending"?"Onay bekleniyor":"Henüz istenmedi"}</div>{canEdit&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}><Btn small onClick={()=>onUpdate({status:"Müşteri Onayında",customerApproval:{...(ticket.customerApproval||{}),status:"pending",requestedAt:now()}})}>Onaya Gönder</Btn><Btn small variant="success" onClick={()=>onUpdate({status:"Tamamlandı",customerApproval:{...(ticket.customerApproval||{}),status:"approved",respondedAt:now()}})}>Onaylandı</Btn><Btn small variant="danger" onClick={()=>onUpdate({status:"Müşteri Reddetti",customerApproval:{...(ticket.customerApproval||{}),status:"rejected",respondedAt:now()}})}>Reddedildi</Btn></div>}</div>
       <div style={{border:"1px solid #E2E8F0",borderRadius:12,padding:13,background:"#F8FAFC",marginBottom:16}}>
         <div style={{fontWeight:800,fontSize:12,marginBottom:9}}>Ticket Geçmişi</div>
         <div style={{display:"grid",gap:7}}>{[...(ticket.history||[])].reverse().map(entry=><div key={entry.id} style={{fontSize:10,color:"#475569",display:"grid",gridTemplateColumns:"110px 1fr",gap:8}}><span style={{color:"#94A3B8"}}>{new Date(entry.ts).toLocaleString("tr-TR")}</span><span><b>{entry.userName||"Sistem"}</b> · {entry.label}: {entry.from} → {entry.to}</span></div>)}</div>
@@ -3603,7 +3734,7 @@ function MilestoneModal({ title, initial, onClose, onSave }) {
   </Modal>;
 }
 function TaskModal({ title, initial, onClose, onSave, people }) {
-  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:"", startDate:"", dueDate:"", estimatedHours:"", notes:"", waitSource:"", link:"", ...initial });
+  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:"", responsibilityGroup:"Proje Ekibi", startDate:"", dueDate:"", estimatedHours:"", notes:"", waitSource:"", waitReason:"", link:"", ...initial });
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   return <Modal title={title} onClose={onClose}>
     <Field label="Görev Başlığı *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
@@ -3611,13 +3742,17 @@ function TaskModal({ title, initial, onClose, onSave, people }) {
       <Field label="Durum"><select style={iStyle} value={f.status} onChange={e=>upd("status",e.target.value)}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></Field>
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></Field>
     </div>
-    <Field label="Sorumlu"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+      <Field label="Sorumlu Kişi"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
+      <Field label="Sorumluluk Grubu"><select style={iStyle} value={f.responsibilityGroup} onChange={e=>upd("responsibilityGroup",e.target.value)}>{RESPONSIBILITY_GROUPS.map(group=><option key={group}>{group}</option>)}</select></Field>
+    </div>
     <Field label="Planlanan Efor (Saat)"><input type="number" min="0" step="0.5" style={iStyle} value={f.estimatedHours||""} onChange={e=>upd("estimatedHours",e.target.value)} placeholder="Örn. 8" /></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Başlangıç Tarihi"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
       <Field label="Termin Tarihi"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
     </div>
     <Field label="Bekleme Kaynağı"><select style={iStyle} value={f.waitSource} onChange={e=>upd("waitSource",e.target.value)}><option value="">- Yok -</option>{WAIT.map(s=><option key={s}>{s}</option>)}</select></Field>
+    {["Bekliyor","Engellendi"].includes(f.status)&&<Field label="Bekleme Sebebi"><textarea style={{...iStyle,minHeight:70,resize:"vertical"}} value={f.waitReason||""} onChange={e=>upd("waitReason",e.target.value)} placeholder="Neyi, kimden ve hangi tarihe kadar bekliyoruz?"/></Field>}
     <Field label="Notlar"><input style={iStyle} value={f.notes} onChange={e=>upd("notes",e.target.value)} /></Field>
     <Field label="Jira Linki"><input style={iStyle} value={f.link||""} onChange={e=>upd("link",e.target.value)} placeholder="https://sirket.atlassian.net/browse/PROJ-123" /></Field>
     <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.title.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>

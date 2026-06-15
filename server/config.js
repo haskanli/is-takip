@@ -55,6 +55,11 @@ export const getSlackConfig = () => ({
   botToken: optional("SLACK_BOT_TOKEN"),
 });
 
+export const getAIConfig = () => ({
+  apiKey: optional("OPENAI_API_KEY"),
+  model: optional("OPENAI_MODEL") || "gpt-5-mini",
+});
+
 export const getVaultConfig = () => ({
   encryptionKey:
     optional("ACCESS_VAULT_KEY") ||

@@ -167,6 +167,29 @@ export const generateRecurringTasks = async (today) =>
     return created;
   });
 
+export const markReportScheduleSent = async ({
+  projectId,
+  scheduleId,
+  sentAt,
+  nextRunAt,
+  error = "",
+}) =>
+  mutateState((state) => {
+    const project = state.projects?.find((item) => item.id === projectId);
+    if (!project) throw Object.assign(new Error("Project not found"), { status: 404 });
+    const schedule = (project.reportSchedules || []).find(
+      (item) => item.id === scheduleId,
+    );
+    if (!schedule) throw Object.assign(new Error("Report schedule not found"), { status: 404 });
+    schedule.lastAttemptAt = sentAt;
+    schedule.lastError = error;
+    if (!error) {
+      schedule.lastSentAt = sentAt;
+      schedule.nextRunAt = nextRunAt;
+    }
+    return schedule;
+  });
+
 const mutateState = (mutator) => {
   const mutation = mutationQueue.then(async () => {
     const record = await loadStateRecord();

@@ -14,6 +14,7 @@ import {
   saveStateRecord,
   checkDatabase,
   updateTicketStatusByJiraKey,
+  markReportScheduleSent,
   getRemoteAccessRecords,
   upsertRemoteAccessRecord,
   deleteRemoteAccessRecord,
@@ -22,10 +23,17 @@ import {
   sendOverdueReminderEmail,
   sendTaskAssignedEmail,
   sendTicketAssignedEmail,
+  sendEmail,
 } from "./services/email.js";
+import {
+  createJiraNewsletter,
+  createProjectStatusReport,
+  nextScheduledRun,
+} from "./services/reporting.js";
 import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
 import { sendTaskAssignedSlack } from "./services/slack.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
+import { askProjectAI } from "./services/projectAI.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
 import { authenticateRequest } from "./auth.js";
 import {
@@ -447,6 +455,88 @@ const handleRecurringTasks = async (request, response) => {
   json(response, 200, await runRecurringTaskCycle());
 };
 
+const runScheduledReportCycle = async () => {
+  const state = await loadState();
+  const current = new Date();
+  const results = [];
+  for (const project of state.projects || []) {
+    for (const schedule of project.reportSchedules || []) {
+      if (!schedule.enabled || !schedule.nextRunAt || new Date(schedule.nextRunAt) > current) continue;
+      const tickets = state.projectTickets?.[project.id] || [];
+      const html = schedule.reportType === "jira_newsletter"
+        ? createJiraNewsletter({ project, tickets })
+        : createProjectStatusReport({ project });
+      try {
+        for (const recipient of schedule.recipients || []) {
+          await sendEmail({
+            to: recipient,
+            subject: schedule.reportType === "jira_newsletter"
+              ? `[Corject] ${project.name} haftalık geliştirmeler`
+              : `[Corject] ${project.name} otomatik durum raporu`,
+            html,
+          });
+        }
+        await markReportScheduleSent({
+          projectId: project.id,
+          scheduleId: schedule.id,
+          sentAt: current.toISOString(),
+          nextRunAt: nextScheduledRun(schedule, current),
+        });
+        results.push({ projectId: project.id, scheduleId: schedule.id, sent: true });
+      } catch (error) {
+        await markReportScheduleSent({
+          projectId: project.id,
+          scheduleId: schedule.id,
+          sentAt: current.toISOString(),
+          nextRunAt: schedule.nextRunAt,
+          error: error.message,
+        });
+        logger.error("reports.scheduled.failed", error, {
+          projectId: project.id,
+          scheduleId: schedule.id,
+        });
+        results.push({ projectId: project.id, scheduleId: schedule.id, sent: false });
+      }
+    }
+  }
+  logger.info("reports.scheduled.completed", {
+    attempted: results.length,
+    sent: results.filter((item) => item.sent).length,
+  });
+  return results;
+};
+
+const handleScheduledReports = async (request, response) => {
+  const config = getEmailConfig();
+  const token = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!config.reminderSecret || token !== config.reminderSecret) {
+    json(response, 401, { error: "Invalid reminder secret" });
+    return;
+  }
+  json(response, 200, { reports: await runScheduledReportCycle() });
+};
+
+const handleProjectAI = async (request, response, auth) => {
+  const body = await readBody(request);
+  if (!body.projectId || !String(body.question || "").trim()) {
+    throw Object.assign(new Error("projectId and question are required"), { status: 400 });
+  }
+  const state = await loadState();
+  assertProjectAccess(state, auth, body.projectId);
+  const project = state.projects?.find((item) => item.id === body.projectId);
+  if (!project) throw Object.assign(new Error("Project not found"), { status: 404 });
+  const answer = await askProjectAI({
+    project,
+    tickets: state.projectTickets?.[project.id] || [],
+    question: String(body.question).slice(0, 1200),
+  });
+  logger.info("ai.project-insight.completed", {
+    projectId: project.id,
+    profileId: auth?.profile?.id,
+  });
+  json(response, 200, { answer });
+};
+
 const dateOnly = (value) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
@@ -585,6 +675,9 @@ const server = createServer(async (request, response) => {
     } else if (request.method === "PUT" && url.pathname === "/api/state") {
       if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
       await handleSaveApplicationState(request, auth, response);
+    } else if (request.method === "POST" && url.pathname === "/api/ai/project-insight") {
+      if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
+      await handleProjectAI(request, response, auth);
     } else if (
       remoteAccessMatch &&
       ["GET", "POST", "PUT", "DELETE"].includes(request.method)
@@ -619,6 +712,8 @@ const server = createServer(async (request, response) => {
       await handleAssignTasks(request, response, auth);
     } else if (request.method === "POST" && url.pathname === "/tasks/recurring/run") {
       await handleRecurringTasks(request, response);
+    } else if (request.method === "POST" && url.pathname === "/reports/scheduled/run") {
+      await handleScheduledReports(request, response);
     } else if (request.method === "POST" && url.pathname === "/email/reminders") {
       await handleOverdueReminders(request, response);
     } else if (request.method === "GET") {
@@ -650,6 +745,7 @@ const { port } = getServerConfig();
 server.listen(port, () => {
   logger.info("server.started", { port });
   runRecurringTaskCycle().catch((error) => logger.error("tasks.recurring.failed", error));
+  runScheduledReportCycle().catch((error) => logger.error("reports.scheduled.failed", error));
 });
 
 const recurringTimer = setInterval(
@@ -657,3 +753,9 @@ const recurringTimer = setInterval(
   60 * 60 * 1000,
 );
 recurringTimer.unref();
+
+const reportTimer = setInterval(
+  () => runScheduledReportCycle().catch((error) => logger.error("reports.scheduled.failed", error)),
+  60 * 60 * 1000,
+);
+reportTimer.unref();
