@@ -75,3 +75,40 @@ export const askProjectAI = async ({ project, tickets, question }, { fetchImpl =
     result.output?.flatMap((item) => item.content || []).map((item) => item.text).filter(Boolean).join("\n") ||
     "Yanıt üretilemedi.";
 };
+
+export const askPortfolioAI = async ({ projects, projectTickets, question }, { fetchImpl = fetch } = {}) => {
+  const config = getAIConfig();
+  if (!config.apiKey) {
+    throw Object.assign(new Error("OPENAI_API_KEY is not configured"), { status: 503 });
+  }
+  const portfolio = (projects || []).map((project) =>
+    compactProject(project, projectTickets?.[project.id] || []));
+  const response = await withRetry(
+    () => fetchImpl("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: config.model,
+        instructions: "You are a read-only MES portfolio analyst. Answer in Turkish. Compare only the supplied projects, state uncertainty clearly, never invent facts, and provide concise prioritized actions. Never request or reveal credentials.",
+        input: `Soru: ${question}\n\nErişilebilir proje portföyü:\n${JSON.stringify(portfolio)}`,
+      }),
+    }),
+    {
+      retries: 2,
+      shouldRetry: (error) => !error?.status || error.status === 429 || error.status >= 500,
+    },
+  );
+  if (!response.ok) {
+    const detail = await response.text();
+    throw Object.assign(new Error(`AI request failed (${response.status}): ${detail}`), {
+      status: response.status,
+    });
+  }
+  const result = await response.json();
+  return result.output_text ||
+    result.output?.flatMap((item) => item.content || []).map((item) => item.text).filter(Boolean).join("\n") ||
+    "Yanıt üretilemedi.";
+};

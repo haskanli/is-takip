@@ -33,7 +33,7 @@ import {
 import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
 import { sendTaskAssignedSlack } from "./services/slack.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
-import { askProjectAI } from "./services/projectAI.js";
+import { askPortfolioAI, askProjectAI } from "./services/projectAI.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
 import { authenticateRequest } from "./auth.js";
 import {
@@ -517,18 +517,34 @@ const handleScheduledReports = async (request, response) => {
 };
 
 const handleProjectAI = async (request, response, auth) => {
-  const body = await readBody(request);
-  if (!body.projectId || !String(body.question || "").trim()) {
-    throw Object.assign(new Error("projectId and question are required"), { status: 400 });
+  const body = parseJson(await readBody(request));
+  const question = String(body.question || "").trim();
+  const scope = body.scope === "portfolio" ? "portfolio" : "project";
+  if (!question || (scope === "project" && !body.projectId)) {
+    throw Object.assign(new Error("question and a valid scope are required"), { status: 400 });
   }
   const state = await loadState();
+  const accessibleState = filterStateForProfile(state, auth?.profile);
+  if (scope === "portfolio") {
+    const answer = await askPortfolioAI({
+      projects: accessibleState.projects || [],
+      projectTickets: accessibleState.projectTickets || {},
+      question: question.slice(0, 1200),
+    });
+    logger.info("ai.portfolio-insight.completed", {
+      projectCount: accessibleState.projects?.length || 0,
+      profileId: auth?.profile?.id,
+    });
+    json(response, 200, { answer, scope });
+    return;
+  }
   assertProjectAccess(state, auth, body.projectId);
-  const project = state.projects?.find((item) => item.id === body.projectId);
+  const project = accessibleState.projects?.find((item) => item.id === body.projectId);
   if (!project) throw Object.assign(new Error("Project not found"), { status: 404 });
   const answer = await askProjectAI({
     project,
-    tickets: state.projectTickets?.[project.id] || [],
-    question: String(body.question).slice(0, 1200),
+    tickets: accessibleState.projectTickets?.[project.id] || [],
+    question: question.slice(0, 1200),
   });
   logger.info("ai.project-insight.completed", {
     projectId: project.id,

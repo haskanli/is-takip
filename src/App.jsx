@@ -6,7 +6,7 @@ import { apiHeaders, apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.19.1";
+const APP_VERSION = "v1.20.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -44,6 +44,7 @@ const PCOL = { "D\u00fc\u015f\u00fck":"#94A3B8", "Orta":"#EA6C00", "Y\u00fcksek"
 const STATUSES = Object.keys(S);
 const PRIORITIES = Object.keys(PCOL);
 const WAIT = ["PM","M\u00fc\u015fteri","ERP","Tedarik\u00e7i","Teknik","\u00dcr\u00fcn-Teknoloji","Y\u00f6netim","Di\u011fer"];
+const DEFAULT_ACTION_TAGS = ["Toplantı","Telefon / Görüşme","Yazışma","Sistem Kontrolü","Saha Ziyareti","Takip","Karar","Bilgilendirme","Diğer"];
 const RESPONSIBILITY_GROUPS = ["Proje Ekibi","\u00dcr\u00fcn Ekibi","Yaz\u0131l\u0131m Ekibi","M\u00fc\u015fteri","Tedarik\u00e7i","Di\u011fer"];
 const MES_READINESS_TEMPLATE = [
   {id:"scope",category:"Y\u00f6neti\u015fim",text:"Proje kapsam\u0131, hedef KPI'lar, ba\u015far\u0131 \u00f6l\u00e7\u00fctleri ve kapsam d\u0131\u015f\u0131 konular onayland\u0131.",weight:8},
@@ -815,6 +816,7 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
     {label:"Saha Yönetimi",value:plans.length+visits.length,desc:`${plans.length} plan · ${visits.length} ziyaret`,icon:"calendar",color:"#059669",view:"fieldops"},
     {label:"Ticketlarım",value:tickets.length,desc:"İlgili ticketlar",icon:"ticket",color:"#EA6C00",view:"tickets"},
     {label:"Termin Uyarıları",value:deadlineWarnings.length,desc:"Geciken görevler",icon:"clock",color:"#E11D48",view:"deadlines"},
+    {label:"AI Asistan",value:"",desc:"Projeleri yorumla ve aksiyon çıkar",icon:"activity",color:"#6D28D9",view:"ai"},
     {label:"Raporlar",value:"",desc:"Proje çıktılarını görüntüle",icon:"reports",color:"#0369A1",view:"reports"},
   ];
   return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}>
@@ -1003,7 +1005,7 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
   const defaultCardOrder=[
     ...kpis.map(kpi=>`kpi-${kpi.id}`),
     "project-health","portfolio-distribution","ticket-statuses",
-    "critical-deadlines","team-workload","risk-radar","report-center",
+    "critical-deadlines","team-workload","risk-radar","ai-assistant","report-center",
   ];
   const savedOrder=(state.userNotes||{})[currentUser.id]?.adminDashboardOrder||[];
   const savedSizes=(state.userNotes||{})[currentUser.id]?.adminDashboardSizes||{};
@@ -1047,6 +1049,7 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
   dashboardCards["critical-deadlines"]={size:"medium",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}><div style={{fontWeight:850,fontSize:13,marginBottom:11,paddingRight:18}}>Kritik Terminler</div><div style={{display:"grid",gap:7}}>{[...criticalTasks,...dueSoon].slice(0,6).map(({task,project})=><button key={`${project.id}-${task.id}`} onClick={()=>onOpenProject(project.id)} style={{border:0,borderLeft:`3px solid ${delayLvl(task.dueDate,task.status)?"#E11D48":"#F59E0B"}`,background:"#F8FAFC",borderRadius:8,padding:"8px 9px",textAlign:"left",cursor:"pointer"}}><div style={{fontSize:10,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.title}</div><div style={{fontSize:9,color:"#64748B",marginTop:3}}>{project.name} · {fmt(task.dueDate)}{delayLvl(task.dueDate,task.status)?` · ${daysDiff(task.dueDate)} gün gecikti`:""}</div></button>)}{![...criticalTasks,...dueSoon].length&&<div style={{fontSize:11,color:"#059669",padding:12,background:"#ECFDF5",borderRadius:9}}>Yakın veya kritik termin yok.</div>}</div></div>};
   dashboardCards["team-workload"]={size:"medium",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}><div style={{fontWeight:850,fontSize:13,marginBottom:11,paddingRight:18}}>Ekip İş Yükü</div><div style={{display:"grid",gap:9}}>{workload.slice(0,7).map(item=><div key={item.person.id}><div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4}}><Avatar initials={item.person.avatar} imageUrl={item.person.avatarUrl} size={22}/><span style={{fontSize:10,fontWeight:750,flex:1}}>{item.person.name}</span><span style={{fontSize:9,color:item.delayed?"#E11D48":"#64748B"}}>{item.active} aktif · {item.delayed} gecikmiş</span></div><div style={{marginLeft:29,height:6,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:`${item.active/maxWorkload*100}%`,background:item.delayed?"linear-gradient(90deg,#F59E0B,#EF4444)":"linear-gradient(90deg,#4A6CF7,#7C3AED)",borderRadius:8}}/></div></div>)}{!workload.length&&<div style={{fontSize:11,color:"#94A3B8"}}>Aktif iş yükü bulunmuyor.</div>}</div></div>};
   dashboardCards["risk-radar"]={size:"medium",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}><div style={{fontWeight:850,fontSize:13,marginBottom:11,paddingRight:18}}>Risk ve Aksiyon Radarı</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:11}}>{[["Yüksek Risk",highRisks.length,"#E11D48","#FFF1F2"],["Aksiyonsuz Ticket",staleTickets.length,"#EA6C00","#FFF7ED"],["Geciken Görev",delayedTasks.length,"#7C3AED","#F5F3FF"],["Devre Dışı",machineList.length-commissioned,"#0369A1","#F0F9FF"]].map(([label,value,color,bg])=><div key={label} style={{background:bg,borderRadius:10,padding:10}}><b style={{fontSize:20,color}}>{value}</b><div style={{fontSize:9,color:"#64748B",marginTop:2}}>{label}</div></div>)}</div><div style={{fontSize:10,color:"#64748B",lineHeight:1.55}}>{highRisks.length||criticalTasks.length||staleTickets.length?"Kritik sapmalar için proje sahipleriyle aksiyon planı oluşturulmalı.":"Portföyde acil yönetici aksiyonu gerektiren belirgin bir sapma yok."}</div></div>};
+  dashboardCards["ai-assistant"]={size:"medium",node:<button onClick={()=>onNavigate("ai")} style={{width:"100%",height:"100%",border:"1px solid #DDD6FE",borderRadius:16,padding:18,background:"linear-gradient(135deg,#2E1065,#6D28D9)",color:"#fff",textAlign:"left",cursor:"pointer",boxShadow:"0 10px 24px rgba(109,40,217,.2)"}}><span style={{width:36,height:36,borderRadius:11,display:"grid",placeItems:"center",background:"rgba(255,255,255,.14)",marginBottom:16}}><Icon name="activity" size={19}/></span><b style={{display:"block",fontSize:15}}>AI Portföy Asistanı</b><span style={{display:"block",fontSize:10,color:"#DDD6FE",lineHeight:1.55,marginTop:5}}>Seçili proje veya tüm portföy için risk, gecikme ve öncelikli aksiyon analizi alın.</span><span style={{display:"inline-block",marginTop:14,fontSize:10,fontWeight:850,background:"#fff",color:"#6D28D9",borderRadius:8,padding:"6px 9px"}}>Analizi aç</span></button>};
   dashboardCards["report-center"]={size:"full",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12,paddingRight:18}}><div><div style={{fontWeight:850,fontSize:14}}>Yönetici Rapor Merkezi</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>Toplantı, operasyon takibi ve paylaşım için hazır çıktılar.</div></div><button onClick={()=>onNavigate("reports")} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:8,padding:"7px 10px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Tüm raporlar</button></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:9}}>{[["Genel Durum","Portföy ilerleme, gecikme ve kapasite özeti.","#4338CA",()=>generatePortfolioReport(scopedState,state.people),"HTML / PDF"],["Termin ve Gecikme","Geciken görevler ve sorumlu dağılımı.","#E11D48",()=>downloadDelayReport(scopedState,state.people),"XLSX"],["Efor ve Kapasite","Kişi, proje ve görev bazlı saat analizi.","#7C3AED",()=>downloadEffortReport(scopedState,state.people),"XLSX"],["Ticket Durumu","Ticket yaşı, aksiyon ve Jira durumları.","#EA6C00",()=>generateTicketStatusReport(scopedState,state.people),"HTML / PDF"]].map(([title,description,color,action,label])=><button key={title} onClick={action} style={{border:"1px solid #E2E8F0",borderLeft:`4px solid ${color}`,borderRadius:11,background:"#FAFCFF",padding:12,textAlign:"left",cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",gap:7}}><b style={{fontSize:11}}>{title}</b><span style={{fontSize:8,fontWeight:850,color,background:color+"12",borderRadius:6,padding:"3px 5px"}}>{label}</span></div><div style={{fontSize:9,color:"#64748B",lineHeight:1.45,marginTop:5}}>{description}</div></button>)}</div></div>};
 
   return <div style={{padding:"clamp(16px,3vw,28px)",flex:1,overflow:"auto",background:"linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)"}}>
@@ -1974,16 +1977,130 @@ function LogPage({ logs, projects }) {
 }
 
 // ─── Milestone Task Panel ────────────────────────────────────────────────────
+function AIWorkspace({projects=[],initialProjectId="",embedded=false}) {
+  const [scope,setScope]=useState(initialProjectId?"project":"portfolio");
+  const [projectId,setProjectId]=useState(initialProjectId||projects[0]?.id||"");
+  const [question,setQuestion]=useState("En kritik riskleri, gecikmeleri ve öncelikli aksiyonları yorumla.");
+  const [answer,setAnswer]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState("");
+  const ask=async()=>{
+    if(!question.trim()||(scope==="project"&&!projectId))return;
+    setLoading(true);setError("");
+    try{
+      const response=await fetch(apiUrl("/api/ai/project-insight"),{method:"POST",headers:await apiHeaders({"Content-Type":"application/json"}),body:JSON.stringify({scope,projectId:scope==="project"?projectId:undefined,question:question.trim()})});
+      const body=await response.json();
+      if(!response.ok)throw new Error(body.error||"AI yanıtı alınamadı.");
+      setAnswer(body.answer);
+    }catch(requestError){setError(requestError.message);}finally{setLoading(false);}
+  };
+  return <div style={{padding:embedded?0:"clamp(18px,4vw,30px)",flex:1,overflow:"auto",background:embedded?"transparent":"linear-gradient(180deg,#F8FAFC,#F5F3FF)"}}><div style={{maxWidth:900,margin:embedded?0:"0 auto"}}>
+    {!embedded&&<div style={{marginBottom:17}}><div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#EDE9FE",color:"#6D28D9",borderRadius:20,padding:"5px 10px",fontSize:10,fontWeight:850}}><Icon name="activity" size={13}/>CORJECT AI</div><h2 style={{margin:"8px 0 4px",fontSize:23}}>Proje ve Portföy Asistanı</h2><p style={{margin:0,fontSize:12,color:"#64748B"}}>Görev, termin, risk, checklist ve ticket özetlerinden yönetilebilir öneriler üretir.</p></div>}
+    <div style={{background:"#fff",border:"1px solid #DDD6FE",borderRadius:16,padding:"clamp(14px,3vw,20px)",boxShadow:"0 10px 30px rgba(76,29,149,.07)"}}>
+      <div style={{background:"#F5F3FF",borderRadius:10,padding:"9px 12px",fontSize:10,color:"#5B21B6",marginBottom:13}}>Uzaktan erişim parolaları ve doküman içerikleri AI analizine gönderilmez. Sonuçlar karar desteğidir; kaynak kayıtlarla doğrulanmalıdır.</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:10}}><Field label="Analiz Kapsamı"><select style={iStyle} value={scope} onChange={event=>setScope(event.target.value)}><option value="portfolio">Tüm erişilebilir projeler</option><option value="project">Tek proje</option></select></Field><Field label="Proje"><select disabled={scope!=="project"} style={{...iStyle,opacity:scope==="project"?1:.55}} value={projectId} onChange={event=>setProjectId(event.target.value)}><option value="">Proje seçin</option>{projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></Field></div>
+      <Field label="Sorunuz"><textarea style={{...iStyle,minHeight:105,resize:"vertical",lineHeight:1.55}} value={question} onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if((event.ctrlKey||event.metaKey)&&event.key==="Enter")ask();}}/></Field>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}><span style={{fontSize:9,color:"#94A3B8"}}>Ctrl + Enter ile analiz edebilirsiniz.</span><Btn disabled={loading||!question.trim()||(scope==="project"&&!projectId)} onClick={ask}>{loading?"Analiz ediliyor...":"Yorumla"}</Btn></div>
+      {error&&<div style={{marginTop:12,padding:12,borderRadius:10,background:"#FFF1F2",color:"#BE123C",fontSize:11}}>{error}</div>}
+      {answer&&<div style={{marginTop:14,padding:16,borderRadius:13,background:"#FAFAFF",border:"1px solid #E2E8F0",whiteSpace:"pre-wrap",fontSize:12,lineHeight:1.75}}>{answer}</div>}
+    </div>
+  </div></div>;
+}
+
+const importSheetRows=(workbook,name)=>workbook.Sheets[name]?XLSX.utils.sheet_to_json(workbook.Sheets[name],{defval:""}):[];
+const importText=(value)=>String(value??"").trim();
+const importBool=(value)=>["evet","true","1","yes"].includes(importText(value).toLocaleLowerCase("tr-TR"));
+
+function ImportCenter({setState,currentUser}) {
+  const [preview,setPreview]=useState(null);
+  const [fileName,setFileName]=useState("");
+  const [message,setMessage]=useState("");
+  const downloadTemplate=()=>{
+    const workbook=XLSX.utils.book_new();
+    const sheets={
+      "Projeler":[["Proje Kodu","Proje Adı","Açıklama","Durum","Başlangıç","Bitiş","Renk"],["PRJ-001","Örnek MES Projesi","Kapsam açıklaması","Devam Ediyor","2026-07-01","2026-12-31","#4A6CF7"]],
+      "Kişiler":[["E-posta","Ad Soyad","Telefon","Rol"],["kullanici@sirket.com","Örnek Kullanıcı","+90 5xx","Proje Yöneticisi"]],
+      "Görevler":[["Proje Kodu","Milestone","Görev","Başlangıç","Termin","Durum","Öncelik","Sorumlu E-posta","Sorumluluk Grubu","Planlanan Efor"],["PRJ-001","Analiz","Süreç analizi","2026-07-01","2026-07-10","Başlamadı","Yüksek","kullanici@sirket.com","Proje Ekibi",8]],
+      "Ticketlar":[["Proje Kodu","Başlık","Açıklama","Kategori","Öncelik","Durum","Atanan E-posta","Açılış Tarihi"],["PRJ-001","Örnek ticket","Detay","Bug","Orta","Açık","kullanici@sirket.com","2026-07-02"]],
+      "Makineler":[["Proje Kodu","Makine Kodu","Makine Adı","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"],["PRJ-001","MC-01","Paketleme Makinesi","Fiziksel","Hayır","","Bağlantı bekleniyor"]],
+      "Aksiyonlar":[["Proje Kodu","Tarih","Etiket","Aksiyon","Efor","Yapan E-posta"],["PRJ-001","2026-07-03 10:00","Toplantı","Kapsam toplantısı yapıldı",1.5,"kullanici@sirket.com"]],
+    };
+    Object.entries(sheets).forEach(([name,rows])=>{const sheet=XLSX.utils.aoa_to_sheet(rows);sheet["!cols"]=rows[0].map((_,index)=>({wch:index<2?22:18}));XLSX.utils.book_append_sheet(workbook,sheet,name);});
+    XLSX.writeFile(workbook,"corject-import-sablonu.xlsx");
+  };
+  const readFile=event=>{
+    const file=event.target.files?.[0];if(!file)return;
+    setMessage("");
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const workbook=XLSX.read(reader.result,{type:"array",cellDates:false});
+        const data={projects:importSheetRows(workbook,"Projeler"),people:importSheetRows(workbook,"Kişiler"),tasks:importSheetRows(workbook,"Görevler"),tickets:importSheetRows(workbook,"Ticketlar"),machines:importSheetRows(workbook,"Makineler"),actions:importSheetRows(workbook,"Aksiyonlar")};
+        const errors=[];
+        data.projects.forEach((row,index)=>{if(!importText(row["Proje Kodu"])||!importText(row["Proje Adı"]))errors.push(`Projeler satır ${index+2}: Proje Kodu ve Proje Adı zorunlu.`);});
+        ["tasks","tickets","machines","actions"].forEach(key=>data[key].forEach((row,index)=>{if(!importText(row["Proje Kodu"]))errors.push(`${key} satır ${index+2}: Proje Kodu zorunlu.`);}));
+        setPreview({...data,errors});
+        setFileName(file.name);
+      }catch(error){setPreview(null);setMessage(`Dosya okunamadı: ${error.message}`);}
+      event.target.value="";
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  const applyImport=()=>{
+    if(!preview||preview.errors.length)return;
+    setState(current=>{
+      const people=[...current.people];
+      const personByEmail=new Map(people.filter(person=>person.email).map(person=>[person.email.toLocaleLowerCase("tr-TR"),person]));
+      preview.people.forEach(row=>{
+        const email=importText(row["E-posta"]).toLocaleLowerCase("tr-TR");
+        const name=importText(row["Ad Soyad"]);
+        if(!email||!name||personByEmail.has(email))return;
+        const person={id:uid(),email,name,phone:importText(row.Telefon),role:importText(row.Rol)||"Kullanıcı",avatar:name.split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase(),isAdmin:false};
+        people.push(person);personByEmail.set(email,person);
+      });
+      const projects=current.projects.map(project=>({...project,milestones:(project.milestones||[]).map(milestone=>({...milestone,tasks:[...(milestone.tasks||[])]})),machines:[...(project.machines||[])]}));
+      const projectByCode=new Map(projects.filter(project=>project.importCode).map(project=>[project.importCode,project]));
+      preview.projects.forEach(row=>{
+        const code=importText(row["Proje Kodu"]);if(projectByCode.has(code))return;
+        const existing=projects.find(project=>project.name.toLocaleLowerCase("tr-TR")===importText(row["Proje Adı"]).toLocaleLowerCase("tr-TR"));
+        if(existing){existing.importCode=code;projectByCode.set(code,existing);return;}
+        const project={id:uid(),importCode:code,name:importText(row["Proje Adı"]),description:importText(row["Açıklama"]),status:importText(row.Durum)||"Başlamadı",startDate:importText(row["Başlangıç"]),endDate:importText(row["Bitiş"]),color:importText(row.Renk)||"#4A6CF7",milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,members:[],pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[]};
+        projects.push(project);projectByCode.set(code,project);
+      });
+      preview.tasks.forEach(row=>{
+        const project=projectByCode.get(importText(row["Proje Kodu"]));if(!project)return;
+        const milestoneName=importText(row.Milestone)||"Genel";
+        let milestone=project.milestones.find(item=>item.name===milestoneName);
+        if(!milestone){milestone={id:uid(),name:milestoneName,status:"Başlamadı",startDate:"",dueDate:"",tasks:[]};project.milestones.push(milestone);}
+        const title=importText(row.Görev);if(!title||milestone.tasks.some(task=>task.title===title&&task.dueDate===importText(row.Termin)))return;
+        const person=personByEmail.get(importText(row["Sorumlu E-posta"]).toLocaleLowerCase("tr-TR"));
+        milestone.tasks.push({id:uid(),title,startDate:importText(row.Başlangıç),dueDate:importText(row.Termin),status:STATUSES.includes(importText(row.Durum))?importText(row.Durum):"Başlamadı",priority:PRIORITIES.includes(importText(row.Öncelik))?importText(row.Öncelik):"Orta",assignee:person?.id||"",responsibilityGroup:importText(row["Sorumluluk Grubu"])||"Proje Ekibi",estimatedHours:Number(row["Planlanan Efor"])||0,timeEntries:[],waitingHistory:[]});
+        Object.assign(milestone,normalizeMilestone(milestone));
+      });
+      preview.machines.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const name=importText(row["Makine Adı"]);if(!project||!name||project.machines.some(machine=>machine.code&&machine.code===importText(row["Makine Kodu"])))return;project.machines.push({id:uid(),code:importText(row["Makine Kodu"]),name,type:importText(row.Tip).toLocaleLowerCase("tr-TR")==="sanal"?"virtual":"physical",commissioned:importBool(row["Devreye Alındı"]),commissionedAt:importText(row["Devreye Alma Tarihi"]),note:importText(row["Açıklama"])});});
+      const projectTickets={...(current.projectTickets||{})};
+      preview.tickets.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const title=importText(row.Başlık);const openedAt=importText(row["Açılış Tarihi"]);if(!project||!title||(projectTickets[project.id]||[]).some(ticket=>ticket.title===title&&String(ticket.ts||"").slice(0,10)===openedAt.slice(0,10)))return;const person=personByEmail.get(importText(row["Atanan E-posta"]).toLocaleLowerCase("tr-TR"));projectTickets[project.id]=[...(projectTickets[project.id]||[]),{id:uid(),title,description:importText(row.Açıklama),category:importText(row.Kategori)||"Diğer",priority:importText(row.Öncelik)||"Orta",status:importText(row.Durum)||"Açık",assignedTo:person?.id||"",author:currentUser.name,ts:openedAt||now(),updatedAt:now(),history:[]}];});
+      const projectActions={...(current.projectActions||{})};
+      preview.actions.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const text=importText(row.Aksiyon);const actionAt=importText(row.Tarih);if(!project||!text||(projectActions[project.id]||[]).some(action=>action.text===text&&String(action.actionAt||"").slice(0,16)===actionAt.slice(0,16)))return;const person=personByEmail.get(importText(row["Yapan E-posta"]).toLocaleLowerCase("tr-TR"))||currentUser;projectActions[project.id]=[...(projectActions[project.id]||[]),{id:uid(),tag:importText(row.Etiket)||"Diğer",text,effortHours:Number(row.Efor)||0,actionAt:actionAt||now(),createdAt:now(),authorId:person.id,authorName:person.name}];});
+      return {...current,people,projects,projectTickets,projectActions};
+    });
+    setMessage("Import tamamlandı. Yeni kayıtlar mevcut verilerle birleştirildi.");
+    setPreview(null);setFileName("");
+  };
+  const counts=preview&&[["Projeler",preview.projects.length],["Kişiler",preview.people.length],["Görevler",preview.tasks.length],["Ticketlar",preview.tickets.length],["Makineler",preview.machines.length],["Aksiyonlar",preview.actions.length]];
+  return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}><div style={{maxWidth:980,margin:"0 auto"}}><div style={{marginBottom:18}}><h2 style={{margin:0,fontSize:22}}>Import Merkezi</h2><p style={{margin:"5px 0 0",fontSize:12,color:"#64748B"}}>Başka uygulamalardaki temel operasyon verilerini kontrollü olarak Corject'e taşıyın.</p></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12,marginBottom:14}}><div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17}}><b style={{fontSize:13}}>1. Şablonu indirin</b><p style={{fontSize:11,color:"#64748B",lineHeight:1.55}}>Sayfa ve kolon adlarını değiştirmeden mevcut sisteminizden verileri doldurun.</p><Btn variant="secondary" onClick={downloadTemplate}>XLSX Şablonu İndir</Btn></div><div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17}}><b style={{fontSize:13}}>2. Dolu dosyayı seçin</b><p style={{fontSize:11,color:"#64748B",lineHeight:1.55}}>Önce önizleme yapılır; onay vermeden hiçbir kayıt değiştirilmez.</p><label style={{display:"inline-flex",background:"#4A6CF7",color:"#fff",borderRadius:9,padding:"9px 12px",fontSize:11,fontWeight:800,cursor:"pointer"}}>XLSX Seç<input type="file" accept=".xlsx,.xls" onChange={readFile} style={{display:"none"}}/></label></div></div>
+    {preview&&<div style={{background:"#fff",border:`1.5px solid ${preview.errors.length?"#FDA4AF":"#C7D2FE"}`,borderRadius:15,padding:17}}><div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap"}}><div><b>{fileName}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>Import önizlemesi</div></div><Btn disabled={preview.errors.length>0} onClick={applyImport}>Importu Uygula</Btn></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:13}}>{counts.map(([label,value])=><div key={label} style={{background:"#F8FAFC",borderRadius:10,padding:10}}><b style={{fontSize:20,color:"#4F46E5"}}>{value}</b><div style={{fontSize:9,color:"#64748B"}}>{label}</div></div>)}</div>{preview.errors.length>0&&<div style={{marginTop:12,background:"#FFF1F2",color:"#BE123C",borderRadius:10,padding:11,fontSize:10,lineHeight:1.6}}>{preview.errors.map(error=><div key={error}>{error}</div>)}</div>}</div>}
+    {message&&<div style={{marginTop:12,background:message.startsWith("Import")?"#ECFDF5":"#FFF1F2",color:message.startsWith("Import")?"#047857":"#BE123C",borderRadius:10,padding:12,fontSize:11}}>{message}</div>}
+  </div></div>;
+}
+
 function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,isAdmin}) {
   const [section,setSection]=useState("readiness");
   const [contact,setContact]=useState({side:"M\u00fc\u015fteri",name:"",title:"",company:"",department:"",email:"",phone:"",raci:"C",scope:""});
   const [document,setDocument]=useState({name:"",purpose:"",tags:"",url:"",owner:"",version:"1.0"});
   const emptySchedule={name:"",reportType:"project_status",recipients:"",frequency:"weekly",weekday:"1",time:"09:00",enabled:true};
   const [schedule,setSchedule]=useState(emptySchedule);
-  const [aiQuestion,setAiQuestion]=useState("Bu projenin en kritik üç riski ve bu hafta alınması gereken aksiyonlar nelerdir?");
-  const [aiAnswer,setAiAnswer]=useState("");
-  const [aiLoading,setAiLoading]=useState(false);
-  const [aiError,setAiError]=useState("");
   const checklist=project.readinessChecklist||createReadinessChecklist();
   const score=readinessScore({...project,readinessChecklist:checklist});
   const threshold=Number(project.readinessThreshold||80);
@@ -1991,7 +2108,6 @@ function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,
   const addContact=()=>{if(!contact.name.trim())return;onChange({raciContacts:[...(project.raciContacts||[]),{...contact,id:uid()}]});setContact({side:"M\u00fc\u015fteri",name:"",title:"",company:"",department:"",email:"",phone:"",raci:"C",scope:""});};
   const addDocument=()=>{if(!document.name.trim())return;onChange({documents:[...(project.documents||[]),{...document,id:uid(),tags:document.tags.split(",").map(x=>x.trim()).filter(Boolean),createdAt:now()}]});setDocument({name:"",purpose:"",tags:"",url:"",owner:"",version:"1.0"});};
   const addSchedule=()=>{if(!schedule.name.trim()||!schedule.recipients.trim())return;onChange({reportSchedules:[...(project.reportSchedules||[]),{...schedule,id:uid(),recipients:schedule.recipients.split(",").map(x=>x.trim()).filter(Boolean),createdAt:now(),nextRunAt:nextReportRunAt(schedule)}]});setSchedule(emptySchedule);};
-  const askAI=async()=>{if(!aiQuestion.trim())return;setAiLoading(true);setAiError("");try{const response=await fetch(apiUrl("/api/ai/project-insight"),{method:"POST",headers:await apiHeaders({"Content-Type":"application/json"}),body:JSON.stringify({projectId:project.id,question:aiQuestion})});const body=await response.json();if(!response.ok)throw new Error(body.error||"AI yan\u0131t\u0131 al\u0131namad\u0131.");setAiAnswer(body.answer);}catch(error){setAiError(error.message);}finally{setAiLoading(false);}};
   const tabs=[["readiness","Başlangıç Sağlığı"],["raci","RACI ve Kontaklar"],["access","Uzaktan Erişim"],["machines","Makineler"],...(project.commissioningTracking?[["commissioning","Devreye Alma"]]:[]),["effort","Efor"],["documents","Dokümanlar"],["automation","Rapor Otomasyonu"],["ai","AI Proje Yorumu"]];
   return <div style={{flex:1,overflow:"auto",padding:"clamp(14px,3vw,24px)"}}>
     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>{tabs.map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:800,background:section===id?project.color:"#F1F5F9",color:section===id?"#fff":"#64748B"}}>{label}</button>)}</div>
@@ -2027,7 +2143,7 @@ function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,
       <div style={{display:"grid",gap:8}}>{(project.reportSchedules||[]).map(item=><div key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:13,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}><div style={{flex:1,minWidth:180}}><b style={{fontSize:12}}>{item.name}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{item.reportType==="jira_newsletter"?"Jira Done geli\u015ftirme b\u00fclteni":"Proje durum raporu"} \u00b7 {item.frequency==="weekly"?"Haftal\u0131k":"Ayl\u0131k"} \u00b7 {(item.recipients||[]).join(", ")}</div></div><button onClick={()=>onChange({reportSchedules:(project.reportSchedules||[]).map(x=>x.id===item.id?{...x,enabled:!x.enabled}:x)})} style={{border:0,borderRadius:8,padding:"6px 9px",cursor:"pointer",background:item.enabled?"#ECFDF5":"#F1F5F9",color:item.enabled?"#047857":"#64748B"}}>{item.enabled?"Aktif":"Pasif"}</button>{canEdit&&<button onClick={()=>onChange({reportSchedules:(project.reportSchedules||[]).filter(x=>x.id!==item.id)})} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer"}}>Sil</button>}</div>)}</div>
       {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginTop:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}><input style={iStyle} value={schedule.name} onChange={e=>setSchedule({...schedule,name:e.target.value})} placeholder="Plan adı"/><select style={iStyle} value={schedule.reportType} onChange={e=>setSchedule({...schedule,reportType:e.target.value})}><option value="project_status">Proje Durum Raporu</option><option value="jira_newsletter">Jira Done Newsletter</option></select><input style={iStyle} value={schedule.recipients} onChange={e=>setSchedule({...schedule,recipients:e.target.value})} placeholder="Alıcı e-postaları"/><select style={iStyle} value={schedule.frequency} onChange={e=>setSchedule({...schedule,frequency:e.target.value})}><option value="weekly">Haftalık</option><option value="monthly">Aylık</option></select>{schedule.frequency==="weekly"&&<select style={iStyle} value={schedule.weekday} onChange={e=>setSchedule({...schedule,weekday:e.target.value})}>{["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"].map((day,index)=><option key={day} value={index}>{day}</option>)}</select>}<input type="time" style={iStyle} value={schedule.time} onChange={e=>setSchedule({...schedule,time:e.target.value})}/><Btn onClick={addSchedule}>Planla</Btn></div>}
     </div>}
-    {section==="ai"&&<div style={{maxWidth:820}}><div style={{background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:12,padding:"11px 13px",fontSize:11,color:"#5B21B6",marginBottom:12}}>Yalnızca bu projedeki görev, termin, risk, checklist ve ticket özetleri analiz edilir. Uzaktan erişim parolaları ve doküman içerikleri modele gönderilmez.</div><Field label="Projeyle ilgili sorunuzu yazın"><textarea style={{...iStyle,minHeight:90,resize:"vertical"}} value={aiQuestion} onChange={e=>setAiQuestion(e.target.value)}/></Field><Btn disabled={aiLoading} onClick={askAI}>{aiLoading?"Analiz ediliyor...":"Projeyi Yorumla"}</Btn>{aiError&&<div style={{marginTop:12,padding:12,borderRadius:10,background:"#FFF1F2",color:"#BE123C",fontSize:11}}>{aiError}</div>}{aiAnswer&&<div style={{marginTop:12,padding:16,borderRadius:13,background:"#fff",border:"1px solid #E2E8F0",whiteSpace:"pre-wrap",fontSize:12,lineHeight:1.7}}>{aiAnswer}</div>}</div>}
+    {section==="ai"&&<AIWorkspace projects={[project]} initialProjectId={project.id} embedded/>}
   </div>;
 }
 
@@ -2184,6 +2300,7 @@ function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin, can
 
 function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canManage}) {
   const actions=((state.projectActions||{})[project.id])||[];
+  const actionTags=(project.actionTags?.length?project.actionTags:DEFAULT_ACTION_TAGS);
   const personalTodos=(((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(todo=>todo.projectId===project.id&&!todo.done&&!todo.actionId);
   const [visitPlan,setVisitPlan]=useState(null);
   const fieldActions=(state.fieldPlans||[]).filter(plan=>plan.projectId===project.id).map(plan=>{
@@ -2193,6 +2310,7 @@ function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canMana
     return {
       id:`field-${plan.id}`,
       source:"field_visit",
+      tag:"Saha Ziyareti",
       authorId:plan.userId,
       authorName:person?.name||"Kullanıcı",
       actionAt:`${plan.date}T${plan.actualStartTime||plan.startTime||"09:00"}:00`,
@@ -2208,17 +2326,28 @@ function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canMana
   const [actionAt,setActionAt]=useState(()=>new Date().toISOString().slice(0,16));
   const [editingId,setEditingId]=useState(null);
   const [filter,setFilter]=useState("");
+  const [tagFilter,setTagFilter]=useState("all");
+  const [selectedTag,setSelectedTag]=useState(actionTags[0]||"Diğer");
+  const [newTag,setNewTag]=useState("");
   const [todoEfforts,setTodoEfforts]=useState({});
   const [showActionForm,setShowActionForm]=useState(false);
   const saveActions=next=>setState(s=>({...s,projectActions:{...(s.projectActions||{}),[project.id]:next}}));
+  const saveTags=next=>setState(s=>({...s,projects:s.projects.map(item=>item.id===project.id?{...item,actionTags:next}:item)}));
+  const addTag=()=>{
+    const value=newTag.trim();
+    if(!value||actionTags.some(tag=>tag.toLocaleLowerCase("tr-TR")===value.toLocaleLowerCase("tr-TR")))return;
+    saveTags([...actionTags,value]);
+    setSelectedTag(value);
+    setNewTag("");
+  };
   const submit=()=>{
     if(!text.trim())return;
     const actionDate=new Date(actionAt);
     const actionIso=Number.isNaN(actionDate.getTime())?now():actionDate.toISOString();
     if(editingId){
-      saveActions(actions.map(item=>item.id===editingId?{...item,text:text.trim(),effortHours:parseFloat(effortHours)||0,actionAt:actionIso,updatedAt:now(),updatedBy:currentUser.name}:item));
+      saveActions(actions.map(item=>item.id===editingId?{...item,tag:selectedTag,text:text.trim(),effortHours:parseFloat(effortHours)||0,actionAt:actionIso,updatedAt:now(),updatedBy:currentUser.name}:item));
     }else{
-      saveActions([{id:uid(),text:text.trim(),effortHours:parseFloat(effortHours)||0,actionAt:actionIso,createdAt:now(),authorId:currentUser.id,authorName:currentUser.name},...actions]);
+      saveActions([{id:uid(),tag:selectedTag,text:text.trim(),effortHours:parseFloat(effortHours)||0,actionAt:actionIso,createdAt:now(),authorId:currentUser.id,authorName:currentUser.name},...actions]);
     }
     setText("");
     setEffortHours("");
@@ -2226,35 +2355,36 @@ function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canMana
     setEditingId(null);
     setShowActionForm(false);
   };
-  const edit=item=>{setEditingId(item.id);setText(item.text);setEffortHours(item.effortHours||"");setActionAt(new Date(item.actionAt||item.createdAt).toISOString().slice(0,16));setShowActionForm(true);};
+  const edit=item=>{setEditingId(item.id);setSelectedTag(item.tag||"Diğer");setText(item.text);setEffortHours(item.effortHours||"");setActionAt(new Date(item.actionAt||item.createdAt).toISOString().slice(0,16));setShowActionForm(true);};
   const remove=id=>saveActions(actions.filter(item=>item.id!==id));
   const sendTodoToActions=todo=>{
-    const action={id:uid(),text:todo.action||todo.text,effortHours:parseFloat(todoEfforts[todo.id])||0,actionAt:now(),createdAt:now(),authorId:currentUser.id,authorName:currentUser.name,source:"personal_todo",todoId:todo.id};
+    const action={id:uid(),tag:"Takip",text:todo.action||todo.text,effortHours:parseFloat(todoEfforts[todo.id])||0,actionAt:now(),createdAt:now(),authorId:currentUser.id,authorName:currentUser.name,source:"personal_todo",todoId:todo.id};
     setState(current=>({...current,
       projectActions:{...(current.projectActions||{}),[project.id]:[action,...(((current.projectActions||{})[project.id])||[])]},
       userNotes:{...(current.userNotes||{}),[currentUser.id]:{...((current.userNotes||{})[currentUser.id]),todos:(((current.userNotes||{})[currentUser.id]?.todos)||[]).map(item=>item.id===todo.id?{...item,actionId:action.id,actionSentAt:now()}:item)}}
     }));
   };
-  const shown=[...actions,...fieldActions].filter(item=>!filter.trim()||`${item.text} ${item.authorName}`.toLocaleLowerCase("tr-TR").includes(filter.trim().toLocaleLowerCase("tr-TR"))).sort((a,b)=>new Date(b.actionAt||b.createdAt)-new Date(a.actionAt||a.createdAt));
+  const shown=[...actions,...fieldActions].filter(item=>(tagFilter==="all"||(item.tag||"Diğer")===tagFilter)&&(!filter.trim()||`${item.text} ${item.authorName} ${item.tag||""}`.toLocaleLowerCase("tr-TR").includes(filter.trim().toLocaleLowerCase("tr-TR")))).sort((a,b)=>new Date(b.actionAt||b.createdAt)-new Date(a.actionAt||a.createdAt));
   return <div style={{flex:1,overflow:"auto",padding:"clamp(16px,3vw,26px)",maxWidth:1050,width:"100%",display:"flex",flexDirection:"column"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:17}}><div><h3 style={{margin:0,fontSize:17,display:"flex",alignItems:"center",gap:8}}><Icon name="activity" size={19}/>Proje Aksiyonları</h3><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Görüşme, arama, e-posta ve beklenen dönüşleri kronolojik olarak kaydedin.</p></div><div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}><input style={{...iStyle,width:240}} value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Aksiyonlarda ara..."/>{canManage&&<Btn onClick={()=>{setEditingId(null);setText("");setEffortHours("");setActionAt(new Date().toISOString().slice(0,16));setShowActionForm(value=>!value);}}>{showActionForm?"Formu Kapat":"+ Aksiyon Ekle"}</Btn>}</div></div>
-    {personalTodos.length>0&&<div style={{background:"#FDF2F8",border:"1px solid #FBCFE8",borderRadius:13,padding:13,marginBottom:14,order:2}}><div style={{fontSize:11,fontWeight:850,color:"#BE185D",marginBottom:8}}>BU PROJEYE BAĞLI KİŞİSEL TO-DO'LARIM</div><div style={{display:"grid",gap:7}}>{personalTodos.map(todo=><div key={todo.id} style={{display:"flex",alignItems:"center",gap:8,background:"#fff",borderRadius:9,padding:"8px 10px"}}><span style={{fontSize:11,fontWeight:700,flex:1}}>{todo.action||todo.text}</span><input type="number" min="0" step=".25" title="Efor saati" value={todoEfforts[todo.id]||""} onChange={event=>setTodoEfforts(current=>({...current,[todo.id]:event.target.value}))} placeholder="Efor" style={{...iStyle,width:75,padding:"5px 7px",fontSize:10}}/><button onClick={()=>sendTodoToActions(todo)} style={{border:0,background:"#DB2777",color:"#fff",borderRadius:7,padding:"6px 8px",fontSize:9,fontWeight:800,cursor:"pointer"}}>Aksiyona Gönder</button></div>)}</div></div>}
-    {canManage&&showActionForm&&<div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:16,marginBottom:17,boxShadow:"0 5px 18px #0f172a0a",order:3}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:17}}><div><h3 style={{margin:0,fontSize:17,display:"flex",alignItems:"center",gap:8}}><Icon name="activity" size={19}/>Proje Aksiyonları</h3><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Görüşme, arama, yazışma ve sistem kontrollerini kolayca kaydedin.</p></div><div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}><select style={{...iStyle,width:175}} value={tagFilter} onChange={e=>setTagFilter(e.target.value)}><option value="all">Tüm aksiyon türleri</option>{actionTags.map(tag=><option key={tag}>{tag}</option>)}</select><input style={{...iStyle,width:220}} value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Aksiyonlarda ara..."/>{canManage&&<Btn onClick={()=>{setEditingId(null);setSelectedTag(actionTags[0]||"Diğer");setText("");setEffortHours("");setActionAt(new Date().toISOString().slice(0,16));setShowActionForm(value=>!value);}}>{showActionForm?"Formu Kapat":"+ Aksiyon Ekle"}</Btn>}</div></div>
+    {canManage&&showActionForm&&<div style={{background:"#fff",border:"1.5px solid #C7D2FE",borderRadius:14,padding:16,marginBottom:17,boxShadow:"0 7px 22px #4f46e512",order:1}}>
+      <div style={{display:"grid",gridTemplateColumns:"minmax(190px,260px) 1fr",gap:10,alignItems:"end",marginBottom:10}}><Field label="Aksiyon Türü"><select style={iStyle} value={selectedTag} onChange={e=>setSelectedTag(e.target.value)}>{actionTags.map(tag=><option key={tag}>{tag}</option>)}</select></Field><div style={{display:"flex",gap:7,alignItems:"flex-end"}}><Field label="Yeni tür ekle"><input style={iStyle} value={newTag} onChange={e=>setNewTag(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTag()} placeholder="Örn. Eğitim"/></Field><Btn small variant="secondary" onClick={addTag}>Ekle</Btn></div></div>
       <Field label="Aksiyon"><textarea style={{...iStyle,minHeight:82,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>setText(e.target.value)} placeholder="Örn. Müşteriyle görüştüm, revize teklif mailini ilettim. Teknik ekipten dönüş bekliyorum."/></Field>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:10,flexWrap:"wrap"}}><div style={{display:"flex",gap:10,flexWrap:"wrap"}}><div style={{width:230}}><Field label="Aksiyon Tarihi"><input type="datetime-local" style={iStyle} value={actionAt} onChange={e=>setActionAt(e.target.value)}/></Field></div><div style={{width:170}}><Field label="Efor (Saat, isteğe bağlı)"><input type="number" min="0" step="0.25" style={iStyle} value={effortHours} onChange={e=>setEffortHours(e.target.value)} placeholder="Örn. 1.5"/></Field></div></div><div style={{display:"flex",gap:7,marginBottom:13}}>{editingId&&<Btn variant="ghost" onClick={()=>{setEditingId(null);setText("");setEffortHours("");setActionAt(new Date().toISOString().slice(0,16));}}>İptal</Btn>}<Btn disabled={!text.trim()} onClick={submit}>{editingId?"Aksiyonu Güncelle":"Aksiyon Ekle"}</Btn></div></div>
     </div>}
-    {!canManage&&<div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 13px",fontSize:11,color:"#64748B",marginBottom:14,order:2}}>Aksiyon ekleme yetkisi proje yöneticileri ve sistem yöneticilerindedir.</div>}
-    <div style={{position:"relative",paddingLeft:24,order:1,marginBottom:16}}>
+    {!canManage&&<div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 13px",fontSize:11,color:"#64748B",marginBottom:14,order:1}}>Aksiyon ekleme yetkisi proje yöneticileri ve sistem yöneticilerindedir.</div>}
+    <div style={{position:"relative",paddingLeft:24,order:2,marginBottom:16}}>
       <div style={{position:"absolute",left:7,top:8,bottom:8,width:2,background:"#E2E8F0"}}/>
       {shown.map(item=>{const canEdit=item.source!=="field_visit"&&(isAdmin||item.authorId===currentUser.id);return <div key={item.id} style={{position:"relative",background:"#fff",border:`1.5px solid ${item.source==="field_visit"?"#A7F3D0":"#E2E8F0"}`,borderRadius:12,padding:"13px 15px",marginBottom:10}}>
         <span style={{position:"absolute",left:-22,top:18,width:12,height:12,borderRadius:"50%",background:item.source==="field_visit"?"#059669":project.color,border:"3px solid #F8FAFC"}}/>
-        {item.source==="field_visit"&&<span style={{display:"inline-block",fontSize:9,fontWeight:850,color:item.completed?"#047857":"#0369A1",background:item.completed?"#ECFDF5":"#F0F9FF",borderRadius:6,padding:"3px 6px",marginBottom:7}}>{item.completed?"SAHA ZİYARETİ":"SAHA PLANI"}</span>}
+        <span style={{display:"inline-block",fontSize:9,fontWeight:850,color:item.source==="field_visit"?(item.completed?"#047857":"#0369A1"):"#4338CA",background:item.source==="field_visit"?(item.completed?"#ECFDF5":"#F0F9FF"):"#EEF2FF",borderRadius:6,padding:"3px 6px",marginBottom:7}}>{item.source==="field_visit"?(item.completed?"SAHA ZİYARETİ":"SAHA PLANI"):(item.tag||"Diğer").toLocaleUpperCase("tr-TR")}</span>
         <div style={{fontSize:13,color:"#1E293B",lineHeight:1.55,whiteSpace:"pre-wrap"}}>{item.text}</div>
         {item.source!=="field_visit"&&Number(item.effortHours)>0&&<span style={{display:"inline-block",marginTop:8,background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"3px 7px",fontSize:10,fontWeight:800}}>Efor: {item.effortHours} saat</span>}
         <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginTop:9,fontSize:10,color:"#94A3B8"}}><span style={{fontWeight:700,color:"#64748B"}}>{item.authorName}</span><span>·</span><span>{new Date(item.actionAt||item.createdAt).toLocaleString("tr-TR")}</span>{item.updatedAt&&<span>· Düzenlendi</span>}{item.source==="field_visit"&&(isAdmin||item.authorId===currentUser.id)&&<button onClick={()=>setVisitPlan(item.plan)} style={{marginLeft:"auto",border:0,background:"#ECFDF5",color:"#047857",borderRadius:7,padding:"5px 8px",fontSize:9,fontWeight:850,cursor:"pointer"}}>{item.completed?"Ziyaret ve eforu düzenle":"Not ve efor gir"}</button>}{canEdit&&<span style={{marginLeft:item.source==="field_visit"?0:"auto",display:"flex",gap:8}}><button onClick={()=>edit(item)} style={{border:0,background:"transparent",color:"#4A6CF7",fontSize:10,fontWeight:700,cursor:"pointer"}}>Düzenle</button><button onClick={()=>confirm("Aksiyon silinsin mi?")&&remove(item.id)} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,fontWeight:700,cursor:"pointer"}}>Sil</button></span>}</div>
       </div>})}
       {!shown.length&&<div style={{padding:38,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8",fontSize:12}}>Henüz proje aksiyonu kaydedilmedi.</div>}
     </div>
+    {personalTodos.length>0&&<div style={{background:"#FDF2F8",border:"1px solid #FBCFE8",borderRadius:13,padding:13,marginBottom:14,order:3}}><div style={{fontSize:11,fontWeight:850,color:"#BE185D",marginBottom:8}}>BU PROJEYE BAĞLI KİŞİSEL TO-DO'LARIM</div><div style={{display:"grid",gap:7}}>{personalTodos.map(todo=><div key={todo.id} style={{display:"flex",alignItems:"center",gap:8,background:"#fff",borderRadius:9,padding:"8px 10px"}}><span style={{fontSize:11,fontWeight:700,flex:1}}>{todo.action||todo.text}</span><input type="number" min="0" step=".25" title="Efor saati" value={todoEfforts[todo.id]||""} onChange={event=>setTodoEfforts(current=>({...current,[todo.id]:event.target.value}))} placeholder="Efor" style={{...iStyle,width:75,padding:"5px 7px",fontSize:10}}/><button onClick={()=>sendTodoToActions(todo)} style={{border:0,background:"#DB2777",color:"#fff",borderRadius:7,padding:"6px 8px",fontSize:9,fontWeight:800,cursor:"pointer"}}>Aksiyona Gönder</button></div>)}</div></div>}
     {visitPlan&&<FieldVisitModal plan={visitPlan} project={project} currentUser={currentUser} onClose={()=>setVisitPlan(null)} onSave={data=>{setState(s=>({...s,fieldPlans:(s.fieldPlans||[]).map(plan=>plan.id===visitPlan.id?{...plan,...data,status:"completed",completedAt:plan.completedAt||now(),updatedAt:now()}:plan)}));setVisitPlan(null);}}/>}
   </div>;
 }
@@ -2623,6 +2753,19 @@ const GlobalStyle = () => (
   `}</style>
 );
 
+function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor"}) {
+  const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
+  return <div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:20,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 50% 30%,#312E81 0,#172033 42%,#0F172A 100%)",color:"#fff",zIndex:9999,overflow:"hidden"}}>
+    <div style={{width:"min(430px,100%)",textAlign:"center"}}>
+      <img src={corjectLogo} alt="Corject" style={{width:66,height:66,objectFit:"contain",filter:"drop-shadow(0 12px 30px rgba(99,102,241,.45))"}}/>
+      <div style={{fontSize:14,fontWeight:900,letterSpacing:4,color:"#A5B4FC",marginTop:9}}>CORJECT</div>
+      <div style={{fontSize:12,color:"#CBD5E1",margin:"25px 0 10px"}}>{status}</div>
+      <div style={{height:9,borderRadius:20,background:"rgba(255,255,255,.1)",overflow:"hidden",border:"1px solid rgba(255,255,255,.08)"}}><div style={{height:"100%",width:`${safeProgress}%`,borderRadius:20,background:"linear-gradient(90deg,#4A6CF7,#8B5CF6,#22D3EE)",transition:"width .35s ease"}}/></div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#64748B",marginTop:7}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"#C4B5FD"}}>%{safeProgress}</b></div>
+    </div>
+  </div>;
+}
+
 export default function App() {
   const deepLink=typeof window!=="undefined"?new URLSearchParams(window.location.search):null;
   const [state,setState]=useState(load);
@@ -2633,6 +2776,7 @@ export default function App() {
   const [modal,setModal]=useState(null);
   const [showDoneTasks,setShowDoneTasks]=useState(false);
   const [dataLoaded,setDataLoaded]=useState(false);
+  const [loadProgress,setLoadProgress]=useState(REQUIRE_AUTH?8:20);
   const [syncStatus,setSyncStatus]=useState({ s:"idle", msg:"" });
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
   const [projectScope,setProjectScope]=useState("all");
@@ -2650,6 +2794,12 @@ export default function App() {
   useEffect(()=>{
     if(USE_DATA_API)fetch(apiUrl("/health")).catch(()=>{});
   },[]);
+
+  useEffect(()=>{
+    if(dataLoaded)return;
+    const timer=setInterval(()=>setLoadProgress(value=>value<55?value+7:value<82?value+3:Math.min(94,value+1)),260);
+    return ()=>clearInterval(timer);
+  },[dataLoaded]);
 
   // Mobil algilama
   useEffect(()=>{
@@ -2681,8 +2831,10 @@ export default function App() {
     (async()=>{
       try{
         setLoadError("");
+        setLoadProgress(value=>Math.max(value,48));
         const remote=await loadFromSupabase();
         if(cancelled)return;
+        setLoadProgress(90);
         skipNextSave.current=true;
         // currentUserId'yi localStorage'dan koru, Supabase'den geleni kullanma
         let savedUid="";
@@ -2774,7 +2926,7 @@ export default function App() {
   const login=(id)=>{ setState(s=>({...s,currentUserId:id})); setView("dashboard"); try{localStorage.setItem("corject_uid",id);}catch(e){} };
   const logout=()=>{ if(REQUIRE_AUTH)supabase.auth.signOut();setState(s=>({...s,currentUserId:null})); try{localStorage.removeItem("corject_uid");}catch(e){} setView("dashboard"); setSelProject(null); };
 
-  if(REQUIRE_AUTH&&!authReady)return <div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#94A3B8"}}>Oturum kontrol ediliyor...</div>;
+  if(REQUIRE_AUTH&&!authReady)return <AppLoadingScreen progress={loadProgress} status="Oturum kontrol ediliyor"/>;
   if(REQUIRE_AUTH&&!authSession)return <AuthLoginScreen/>;
   if(loadError)return <div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#F8FAFC",padding:20,fontFamily:"Inter,Segoe UI,sans-serif"}}>
     <div style={{maxWidth:520,textAlign:"center"}}>
@@ -2783,10 +2935,7 @@ export default function App() {
       <button onClick={()=>window.location.reload()} style={{border:0,borderRadius:10,padding:"10px 16px",background:"#4A6CF7",color:"#fff",fontWeight:800,cursor:"pointer"}}>Tekrar Dene</button>
     </div>
   </div>;
-  if(!dataLoaded||(REQUIRE_AUTH&&loadedAuthUserId!==authSession?.user?.id)) return <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,sans-serif", background:"#1E293B", color:"#94A3B8", flexDirection:"column", gap:12 }}>
-    <div style={{ fontSize:14, fontWeight:800, color:"#4A6CF7", letterSpacing:3 }}>CORJECT</div>
-    <div style={{ fontSize:13 }}>Veriler yükleniyor...</div>
-  </div>;
+  if(!dataLoaded||(REQUIRE_AUTH&&loadedAuthUserId!==authSession?.user?.id)) return <AppLoadingScreen progress={loadProgress} status={loadProgress<45?"Güvenli bağlantı kuruluyor":loadProgress<82?"Projeler ve görevler yükleniyor":"Arayüz hazırlanıyor"}/>;
   if(!currentUser)return REQUIRE_AUTH?<div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#FCA5A5",padding:20,textAlign:"center"}}>Bu e-posta için aktif Corject profili bulunamadı.</div>:<LoginScreen people={state.people} onLogin={login} />;
 
   // Project visibility filter
@@ -3023,6 +3172,8 @@ export default function App() {
     {id:"fieldops",icon:"calendar",label:"Saha Y\u00f6netimi"},
     {id:"deadlines",icon:"clock",label:`Termin Uyar\u0131lar\u0131${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},
     {id:"tickets",icon:"ticket",label:"Ticketlar"},
+    {id:"ai",icon:"activity",label:"AI Asistan"},
+    ...(isAdmin?[{id:"import",icon:"reports",label:"Import Merkezi"}]:[]),
     {id:"reports",icon:"reports",label:"Raporlar"},
     {id:"people",icon:"people",label:"Ekip"},
     {id:"logs",icon:"activity",label:"Aktivite"},
@@ -3073,6 +3224,8 @@ export default function App() {
       {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&<DashboardPage state={state} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("mine");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>}
       {view==="admin"&&isAdmin&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
+      {view==="ai"&&!selProject&&<AIWorkspace projects={visibleProjects}/>}
+      {view==="import"&&isAdmin&&!selProject&&<ImportCenter setState={setState} currentUser={currentUser}/>}
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
