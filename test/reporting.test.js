@@ -26,6 +26,9 @@ test("project status report renders progress and milestone details", () => {
   assert.match(html, /Analiz/);
   assert.match(html, /Project Intelligence/i);
   assert.match(html, />Corject</);
+  assert.match(html, /charset=UTF-8/i);
+  assert.match(html, /OTOMATİK PROJE RAPORU/);
+  assert.doesNotMatch(html, /�|Ã|Å/);
 });
 
 test("Jira newsletter includes recently completed work", () => {

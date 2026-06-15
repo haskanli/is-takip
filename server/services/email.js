@@ -1,13 +1,7 @@
 import { getEmailConfig } from "../config.js";
 import { logger } from "../logger.js";
 import { withRetry } from "../retry.js";
-
-const escapeHtml = (value) =>
-  String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+import { emailButton, emailFrame, escapeHtml } from "./emailTemplate.js";
 
 export const userTaskUrl = (userId, taskId = "") => {
   const { appBaseUrl } = getEmailConfig();
@@ -17,15 +11,6 @@ export const userTaskUrl = (userId, taskId = "") => {
   url.searchParams.set("view", "mytasks");
   if (taskId) url.searchParams.set("task", taskId);
   return url.toString();
-};
-
-export const sendTaskAssignedEmail = ({ assignee, task, assigner }) => {
-  const link = userTaskUrl(assignee.id, task.id);
-  return sendEmail({
-    to: assignee.email,
-    subject: `[Corject] ${assigner.name} size bir görev atadı: ${task.title}`,
-    html: `<div style="margin:0;background:#eef2ff;padding:28px 12px;font-family:Arial,sans-serif;color:#172033"><div style="max-width:620px;margin:auto;background:#fff;border-radius:18px;padding:26px;box-shadow:0 12px 32px rgba(49,46,129,.12)"><div style="font-size:12px;letter-spacing:2px;color:#4A6CF7;font-weight:800">CORJECT</div><h2 style="margin:8px 0 12px">Yeni görev ataması</h2><p><b>${escapeHtml(assigner.name)}</b> size şu görevi atadı:</p><div style="border-left:5px solid #4A6CF7;background:#f8fafc;border-radius:10px;padding:16px;margin:16px 0"><b>${escapeHtml(task.title)}</b><p style="color:#64748b;line-height:1.5">${escapeHtml(task.notes||"Açıklama girilmedi.")}</p><span style="font-size:11px;color:#c2410c">Termin: ${escapeHtml(task.dueDate||"Belirtilmedi")}</span></div>${link?`<a href="${link}" style="display:inline-block;background:#4A6CF7;color:#fff;padding:11px 17px;border-radius:9px;text-decoration:none;font-weight:700">Görevi Aç</a>`:""}</div></div>`,
-  });
 };
 
 export const userTicketUrl = (userId, projectId, ticketId) => {
@@ -45,82 +30,109 @@ export const sendEmail = async ({ to, subject, html }, { fetchImpl = fetch } = {
     logger.warn("email.skipped.not-configured", { to, subject });
     return { skipped: true };
   }
-
   const response = await withRetry(
-    () =>
-      fetchImpl("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ from: config.from, to: [to], subject, html }),
-      }),
+    () => fetchImpl("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify({ from: config.from, to: [to], subject, html }),
+    }),
     {
       retries: 3,
       shouldRetry: (error) => !error?.status || error.status === 429 || error.status >= 500,
     },
   );
-
   if (!response.ok) {
     const message = await response.text();
     throw Object.assign(new Error(`Email could not be sent (${response.status}): ${message}`), {
       status: response.status,
     });
   }
-
   const result = await response.json();
   logger.info("email.sent", { id: result.id, to, subject });
   return result;
 };
 
+export const sendTaskAssignedEmail = ({ assignee, task, assigner }) => {
+  const link = userTaskUrl(assignee.id, task.id);
+  return sendEmail({
+    to: assignee.email,
+    subject: `[Corject] ${assigner.name} size bir görev atadı: ${task.title}`,
+    html: emailFrame({
+      eyebrow: "YENİ GÖREV ATAMASI",
+      title: "Yeni bir göreviniz var",
+      intro: `${assigner.name} tarafından size yeni bir görev atandı.`,
+      accent: "#22c55e",
+      content: `
+        <p style="margin:0 0 18px;font-size:15px;line-height:24px;color:#475569">Merhaba <strong style="color:#172033">${escapeHtml(assignee.name)}</strong>, görevinizin ayrıntıları aşağıdadır.</p>
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#f0fdf4" style="border:1px solid #bbf7d0;border-left:6px solid #22c55e;border-radius:16px">
+          <tr><td style="padding:22px">
+            <div style="font-size:20px;line-height:27px;font-weight:900;color:#172033">${escapeHtml(task.title)}</div>
+            <p style="margin:10px 0 18px;font-size:14px;line-height:23px;color:#475569">${escapeHtml(task.notes || "Açıklama girilmedi.")}</p>
+            <span style="display:inline-block;padding:7px 11px;background:#ffffff;border-radius:9px;font-size:12px;font-weight:800;color:#166534">Termin: ${escapeHtml(task.dueDate || "Belirtilmedi")}</span>
+          </td></tr>
+        </table>
+        ${emailButton("Görevi Aç", link)}`,
+    }),
+  });
+};
+
 export const sendTicketAssignedEmail = ({ assignee, ticket, project }) => {
   const link = userTicketUrl(assignee.id, project.id, ticket.id);
-  const { appBaseUrl } = getEmailConfig();
-  const logoUrl = appBaseUrl ? `${appBaseUrl}/corject-logo.png` : "";
   return sendEmail({
     to: assignee.email,
     subject: `[Corject] Yeni ticket atandı: ${ticket.title}`,
-    html: `<div style="margin:0;background:#eef2ff;padding:28px 12px;font-family:Arial,sans-serif;color:#172033">
-      <div style="max-width:620px;margin:auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 32px rgba(49,46,129,.12)">
-        <div style="background:linear-gradient(135deg,#172554,#4338ca 60%,#7c3aed);padding:24px 28px;color:#fff">
-          <div style="display:flex;align-items:center;gap:12px">
-            ${logoUrl ? `<img src="${logoUrl}" width="52" height="52" alt="Corject" style="display:block">` : ""}
-            <div><div style="font-size:12px;letter-spacing:2px;color:#c7d2fe">CORJECT</div><div style="font-size:22px;font-weight:800;margin-top:3px">Yeni ticket ataması</div></div>
-          </div>
-        </div>
-        <div style="padding:26px 28px">
-          <p style="margin:0 0 18px;color:#475569">Merhaba ${escapeHtml(assignee.name)}, <b>${escapeHtml(project.name)}</b> projesinde size yeni bir ticket atandı.</p>
-          <div style="padding:18px;border:1px solid #e2e8f0;border-left:5px solid #4A6CF7;border-radius:12px;background:#f8fafc">
-            <div style="font-size:17px;font-weight:800">${escapeHtml(ticket.title)}</div>
-            <p style="color:#64748b;line-height:1.6;margin:9px 0 14px">${escapeHtml(ticket.description || "Açıklama girilmedi.")}</p>
-            <span style="display:inline-block;background:#fff7ed;color:#c2410c;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700">Öncelik: ${escapeHtml(ticket.priority)}</span>
-            <span style="display:inline-block;background:#eef2ff;color:#4338ca;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;margin-left:5px">Durum: ${escapeHtml(ticket.status)}</span>
-          </div>
-          ${link ? `<p style="margin:22px 0 4px"><a href="${link}" style="display:inline-block;background:#4A6CF7;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">Ticketı Aç</a></p>` : ""}
-          <p style="font-size:11px;color:#94a3b8;margin-top:22px">Bu bildirim Corject proje yönetim sistemi tarafından gönderildi.</p>
-        </div>
-      </div>
-    </div>`,
+    html: emailFrame({
+      eyebrow: "YENİ TICKET ATAMASI",
+      title: "Yeni bir ticket size atandı",
+      intro: `${project.name} projesindeki ticket için aksiyonunuz bekleniyor.`,
+      accent: "#f97316",
+      content: `
+        <p style="margin:0 0 18px;font-size:15px;line-height:24px;color:#475569">Merhaba <strong style="color:#172033">${escapeHtml(assignee.name)}</strong>, ticket ayrıntıları aşağıdadır.</p>
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#fff7ed" style="border:1px solid #fed7aa;border-left:6px solid #f97316;border-radius:16px">
+          <tr><td style="padding:22px">
+            <div style="font-size:12px;font-weight:900;letter-spacing:1px;color:#c2410c">${escapeHtml(project.name)}</div>
+            <div style="margin-top:6px;font-size:20px;line-height:27px;font-weight:900;color:#172033">${escapeHtml(ticket.title)}</div>
+            <p style="margin:10px 0 18px;font-size:14px;line-height:23px;color:#475569">${escapeHtml(ticket.description || "Açıklama girilmedi.")}</p>
+            <span style="display:inline-block;padding:7px 11px;background:#ffffff;border-radius:9px;font-size:12px;font-weight:800;color:#c2410c">Öncelik: ${escapeHtml(ticket.priority || "-")}</span>
+            <span style="display:inline-block;margin-left:6px;padding:7px 11px;background:#ffffff;border-radius:9px;font-size:12px;font-weight:800;color:#4338ca">Durum: ${escapeHtml(ticket.status || "-")}</span>
+          </td></tr>
+        </table>
+        ${emailButton("Ticket'ı Aç", link)}`,
+    }),
   });
 };
 
 export const sendOverdueReminderEmail = ({ assignee, tasks }) => {
   const link = userTaskUrl(assignee.id);
-  const rows = tasks
-    .map(
-      ({ title, projectName, dueDate, days }) =>
-        `<tr><td style="padding:8px;border-bottom:1px solid #e2e8f0">${escapeHtml(title)}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">${escapeHtml(projectName)}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0">${escapeHtml(dueDate)}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#dc2626;font-weight:bold">${days} gün</td></tr>`,
-    )
-    .join("");
+  const rows = tasks.map(({ title, projectName, dueDate, days }, index) => `
+    <tr bgcolor="${index % 2 ? "#ffffff" : "#fff1f2"}">
+      <td style="padding:12px 10px;border-bottom:1px solid #fecdd3;font-weight:700;color:#172033">${escapeHtml(title)}</td>
+      <td style="padding:12px 10px;border-bottom:1px solid #fecdd3;color:#475569">${escapeHtml(projectName)}</td>
+      <td style="padding:12px 10px;border-bottom:1px solid #fecdd3;color:#475569">${escapeHtml(dueDate)}</td>
+      <td style="padding:12px 10px;border-bottom:1px solid #fecdd3;color:#be123c;font-weight:900">${escapeHtml(days)} gün</td>
+    </tr>`).join("");
   return sendEmail({
     to: assignee.email,
     subject: `[Corject] ${tasks.length} geciken göreviniz var`,
-    html: `<div style="font-family:Arial,sans-serif;color:#172033">
-      <h2 style="color:#dc2626">Geciken görev hatırlatması</h2>
-      <p>Aşağıdaki görevlerin termin tarihi geçti:</p>
-      <table style="width:100%;border-collapse:collapse"><thead><tr><th>Görev</th><th>Proje</th><th>Termin</th><th>Gecikme</th></tr></thead><tbody>${rows}</tbody></table>
-      ${link ? `<p><a href="${link}" style="display:inline-block;background:#4A6CF7;color:#fff;padding:10px 15px;border-radius:8px;text-decoration:none">Görevlerimi Aç</a></p>` : ""}
-    </div>`,
+    html: emailFrame({
+      eyebrow: "TERMİN UYARISI",
+      title: `${tasks.length} görevinizin termini geçti`,
+      intro: "Aksiyon bekleyen gecikmiş görevleriniz aşağıda listelenmiştir.",
+      accent: "#e11d48",
+      content: `
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;border:1px solid #fecdd3;border-radius:14px;overflow:hidden;font-size:12px">
+          <thead><tr bgcolor="#be123c">
+            <th align="left" style="padding:12px 10px;color:#ffffff">Görev</th>
+            <th align="left" style="padding:12px 10px;color:#ffffff">Proje</th>
+            <th align="left" style="padding:12px 10px;color:#ffffff">Termin</th>
+            <th align="left" style="padding:12px 10px;color:#ffffff">Gecikme</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${emailButton("Görevlerimi Aç", link)}`,
+    }),
   });
 };

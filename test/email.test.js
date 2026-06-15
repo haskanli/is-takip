@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sendEmail, userTaskUrl, userTicketUrl } from "../server/services/email.js";
+import {
+  sendEmail,
+  sendTaskAssignedEmail,
+  userTaskUrl,
+  userTicketUrl,
+} from "../server/services/email.js";
 import { assignTasksWithNotification, createTicketWithNotification, notifyTicketAssignment } from "../src/email.js";
 
 process.env.RESEND_API_KEY = "resend-test-key";
@@ -44,6 +49,38 @@ test("sendEmail calls Resend without exposing the API key in the body", async ()
   assert.equal(request.options.headers.Authorization, "Bearer resend-test-key");
   assert.doesNotMatch(request.options.body, /resend-test-key/);
   assert.equal(result.id, "email-1");
+});
+
+test("task email preserves Turkish text and uses the branded frame", async () => {
+  const originalFetch = global.fetch;
+  let payload;
+  global.fetch = async (_url, options) => {
+    payload = JSON.parse(options.body);
+    return new Response(JSON.stringify({ id: "email-2" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+  try {
+    await sendTaskAssignedEmail({
+      assignee: { id: "person-1", name: "Çağrı Şen", email: "user@example.com" },
+      assigner: { name: "Hakan Haskanlı" },
+      task: {
+        id: "task-1",
+        title: "Üretim görüşmesi",
+        notes: "Çözüm önerisini görüş.",
+        dueDate: "2026-06-20",
+      },
+    });
+    assert.match(payload.subject, /görev atadı/);
+    assert.match(payload.html, /Çağrı Şen/);
+    assert.match(payload.html, /Üretim görüşmesi/);
+    assert.match(payload.html, /charset=UTF-8/i);
+    assert.match(payload.html, /width="66"/);
+    assert.doesNotMatch(payload.html, /�|Ã|Å/);
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
 
 test("createTicketWithNotification creates the ticket through the server endpoint", async () => {
