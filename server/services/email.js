@@ -6,6 +6,18 @@ import {
   resolveEmailTemplates,
 } from "./emailTemplate.js";
 
+const EMAIL_ADDRESS_PATTERN = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
+
+export const normalizeReplyTo = (value) => {
+  const replyTo = String(value || "").trim();
+  if (!replyTo) return "";
+  if (EMAIL_ADDRESS_PATTERN.test(replyTo)) return replyTo;
+  const named = replyTo.match(/^([^<>\r\n]+)\s*<([^<>]+)>$/);
+  if (!named || !EMAIL_ADDRESS_PATTERN.test(named[2].trim())) return "";
+  const name = named[1].replace(/["\r\n]/g, "").trim();
+  return name ? `${name} <${named[2].trim()}>` : named[2].trim();
+};
+
 export const userTaskUrl = (userId, taskId = "") => {
   const { appBaseUrl } = getEmailConfig();
   if (!appBaseUrl) return "";
@@ -44,6 +56,10 @@ export const sendEmail = async (
   const from = safeSenderName
     ? `${safeSenderName} via Corject <${senderAddress}>`
     : config.from;
+  const validReplyTo = normalizeReplyTo(replyTo);
+  if (replyTo && !validReplyTo) {
+    logger.warn("email.reply-to.invalid-skipped", { replyTo: String(replyTo) });
+  }
   const response = await withRetry(
     () => fetchImpl("https://api.resend.com/emails", {
       method: "POST",
@@ -56,7 +72,7 @@ export const sendEmail = async (
         to: [to],
         subject,
         html,
-        ...(replyTo ? { reply_to: replyTo } : {}),
+        ...(validReplyTo ? { reply_to: validReplyTo } : {}),
       }),
     }),
     {

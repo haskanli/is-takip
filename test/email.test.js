@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   sendEmail,
   sendTaskAssignedEmail,
+  normalizeReplyTo,
   userTaskUrl,
   userTicketUrl,
 } from "../server/services/email.js";
@@ -50,6 +51,36 @@ test("sendEmail calls Resend without exposing the API key in the body", async ()
   assert.equal(request.options.headers.Authorization, "Bearer resend-test-key");
   assert.doesNotMatch(request.options.body, /resend-test-key/);
   assert.equal(result.id, "email-1");
+});
+
+test("reply-to accepts valid formats and skips invalid values", async () => {
+  assert.equal(normalizeReplyTo("info@example.com"), "info@example.com");
+  assert.equal(
+    normalizeReplyTo("Örnek Firma <info@example.com>"),
+    "Örnek Firma <info@example.com>",
+  );
+  assert.equal(normalizeReplyTo("info@example"), "");
+  assert.equal(normalizeReplyTo("firma adı"), "");
+
+  let payload;
+  await sendEmail(
+    {
+      to: "user@example.com",
+      subject: "Reply test",
+      html: "<b>Test</b>",
+      replyTo: "geçersiz adres",
+    },
+    {
+      fetchImpl: async (_url, options) => {
+        payload = JSON.parse(options.body);
+        return new Response(JSON.stringify({ id: "email-reply" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+    },
+  );
+  assert.equal(payload.reply_to, undefined);
 });
 
 test("task email preserves Turkish text and uses the branded frame", async () => {
