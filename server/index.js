@@ -209,11 +209,12 @@ const handleRemoteAccess = async ({
   recordId,
 }) => {
   const state = await loadState();
-  assertProjectManagement(state, auth, projectId);
   if (request.method === "GET") {
+    assertProjectAccess(state, auth, projectId);
     json(response, 200, { records: await getRemoteAccessRecords(projectId) });
     return;
   }
+  assertProjectManagement(state, auth, projectId);
   if (request.method === "DELETE") {
     const result = await deleteRemoteAccessRecord({ projectId, recordId });
     json(response, 200, result);
@@ -519,6 +520,7 @@ const runScheduledReportCycle = async () => {
           scheduleId: schedule.id,
           sentAt: current.toISOString(),
           nextRunAt: nextScheduledRun(schedule, current),
+          recipients: schedule.recipients || [],
         });
         results.push({ projectId: project.id, scheduleId: schedule.id, sent: true });
       } catch (error) {
@@ -528,6 +530,7 @@ const runScheduledReportCycle = async () => {
           sentAt: current.toISOString(),
           nextRunAt: schedule.nextRunAt,
           error: error.message,
+          recipients: schedule.recipients || [],
         });
         logger.error("reports.scheduled.failed", error, {
           projectId: project.id,
@@ -857,6 +860,6 @@ recurringTimer.unref();
 
 const reportTimer = setInterval(
   () => runScheduledReportCycle().catch((error) => logger.error("reports.scheduled.failed", error)),
-  60 * 60 * 1000,
+  60 * 1000,
 );
 reportTimer.unref();

@@ -129,6 +129,35 @@ export const templateBodyHtml = (value, variables = {}) =>
     )
     .join("");
 
+const detailRow = (label, value) =>
+  value
+    ? `<tr><td style="padding:8px 0;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">${escapeHtml(label)}</td><td align="right" style="padding:8px 0;font-size:13px;font-weight:800;color:#172033">${escapeHtml(value)}</td></tr>`
+    : "";
+
+const templateDetailsHtml = (templateId, variables = {}, accent = "#5b4df7") => {
+  const rows = templateId === "task_assignment"
+    ? [
+        ["Görev", variables.task_title],
+        ["Termin", variables.due_date],
+        ["Atayan", variables.assigner_name],
+        ["Proje", variables.project_name],
+      ]
+    : templateId === "ticket_assignment"
+      ? [
+          ["Ticket", variables.ticket_title],
+          ["Proje", variables.project_name],
+          ["Öncelik", variables.priority],
+          ["Durum", variables.status],
+        ]
+      : [];
+  const content = rows.map(([label, value]) => detailRow(label, value)).join("");
+  return content
+    ? `<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 22px;background:#f8fafc;border:1px solid #e2e8f0;border-left:5px solid ${safeColor(accent)};border-radius:14px">
+        <tr><td style="padding:12px 16px"><table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">${content}</table></td></tr>
+      </table>`
+    : "";
+};
+
 export const emailButton = (label, href, accent = "#5b4df7") =>
   href && label
     ? `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top:24px">
@@ -216,7 +245,7 @@ export const renderManagedTemplate = ({
       title: fillTemplate(template.title, variables),
       intro: fillTemplate(template.intro, variables),
       accent,
-      content: `${templateBodyHtml(template.body, variables)}${emailButton(
+      content: `${templateDetailsHtml(template.id, variables, accent)}${templateBodyHtml(template.body, variables)}${emailButton(
         fillTemplate(template.buttonLabel, variables),
         actionUrl,
         accent,

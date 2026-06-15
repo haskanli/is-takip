@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.22.1";
+const APP_VERSION = "v1.23.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -90,15 +90,21 @@ const remainingResponsibility = (project) => {
   return Object.entries(totals).sort((a,b)=>b[1]-a[1]).map(([group,value])=>({group,value,percent:Math.round(value/all*100)}));
 };
 const nextReportRunAt = (schedule, from=new Date()) => {
-  const next=new Date(from);
+  const localParts=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(from);
+  const part=type=>Number(localParts.find(item=>item.type===type)?.value||0);
+  const calendar=new Date(Date.UTC(part("year"),part("month")-1,part("day"),12));
   const [hour,minute]=String(schedule.time||"09:00").split(":").map(Number);
-  next.setHours(hour||0,minute||0,0,0);
-  if(schedule.frequency==="monthly") next.setMonth(next.getMonth()+1,1);
+  if(schedule.frequency==="monthly") calendar.setUTCMonth(calendar.getUTCMonth()+1,1);
   else {
     const target=Number(schedule.weekday||1);
-    let days=(target-next.getDay()+7)%7;
-    if(days===0&&next<=from)days=7;
-    next.setDate(next.getDate()+days);
+    calendar.setUTCDate(calendar.getUTCDate()+(target-calendar.getUTCDay()+7)%7);
+  }
+  const toDate=()=>`${calendar.getUTCFullYear()}-${String(calendar.getUTCMonth()+1).padStart(2,"0")}-${String(calendar.getUTCDate()).padStart(2,"0")}`;
+  let next=new Date(`${toDate()}T${String(hour||0).padStart(2,"0")}:${String(minute||0).padStart(2,"0")}:00+03:00`);
+  if(next<=from){
+    if(schedule.frequency==="monthly") calendar.setUTCMonth(calendar.getUTCMonth()+1,1);
+    else calendar.setUTCDate(calendar.getUTCDate()+7);
+    next=new Date(`${toDate()}T${String(hour||0).padStart(2,"0")}:${String(minute||0).padStart(2,"0")}:00+03:00`);
   }
   return next.toISOString();
 };
@@ -471,10 +477,21 @@ function PeopleMultiSelect({people,value,onChange}) {
   </div>;
 }
 
-function StakeholderEditor({people,value,onChange}) {
-  const add=()=>onChange([...value,{id:uid(),userId:"",role:"Ürün Yöneticisi"}]);
+function MultiChoiceFilter({label,options,value,onChange}) {
+  const [open,setOpen]=useState(false);
+  return <div style={{position:"relative"}}>
+    <button type="button" onClick={()=>setOpen(current=>!current)} style={{...iStyle,width:"auto",minWidth:170,background:value.length?"#EEF2FF":"#fff",color:value.length?"#4338CA":"#475569",cursor:"pointer",fontWeight:750,textAlign:"left"}}>{label}{value.length?` (${value.length})`:""}</button>
+    {open&&<div style={{position:"absolute",top:"calc(100% + 5px)",left:0,zIndex:30,minWidth:230,maxHeight:280,overflow:"auto",background:"#fff",border:"1px solid #CBD5E1",borderRadius:11,padding:8,boxShadow:"0 16px 35px rgba(15,23,42,.16)"}}>
+      {options.map(option=><label key={option.value} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 8px",fontSize:11,cursor:"pointer",borderRadius:7}}><input type="checkbox" checked={value.includes(option.value)} onChange={event=>onChange(event.target.checked?[...value,option.value]:value.filter(item=>item!==option.value))}/><span>{option.label}</span></label>)}
+      {value.length>0&&<button type="button" onClick={()=>onChange([])} style={{width:"100%",border:0,borderTop:"1px solid #E2E8F0",background:"transparent",color:"#E11D48",padding:"8px 4px 2px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Seçimi temizle</button>}
+    </div>}
+  </div>;
+}
+
+function StakeholderEditor({people,roles=[],value,onChange}) {
+  const add=()=>onChange([...value,{id:uid(),userId:"",role:roles[0]?.label||"Ürün Yöneticisi"}]);
   const update=(id,data)=>onChange(value.map(item=>item.id===id?{...item,...data}:item));
-  return <div><div style={{display:"flex",flexDirection:"column",gap:7}}>{value.map(item=><div key={item.id} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:7}}><select style={iStyle} value={item.userId} onChange={e=>update(item.id,{userId:e.target.value})}><option value="">Kişi seçin</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><input style={iStyle} value={item.role} onChange={e=>update(item.id,{role:e.target.value})} placeholder="Rol: Ürün Yöneticisi"/><button type="button" onClick={()=>onChange(value.filter(x=>x.id!==item.id))} style={{border:0,borderRadius:8,background:"#FFF1F2",color:"#E11D48",padding:"0 10px",cursor:"pointer"}}>×</button></div>)}</div><Btn small variant="secondary" style={{marginTop:7}} onClick={add}>+ Bilgi Amaçlı Rol</Btn></div>;
+  return <div><div style={{display:"flex",flexDirection:"column",gap:7}}>{value.map(item=><div key={item.id} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:7}}><select style={iStyle} value={item.userId} onChange={e=>update(item.id,{userId:e.target.value})}><option value="">Kişi seçin</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><select style={iStyle} value={item.role} onChange={e=>update(item.id,{role:e.target.value})}>{item.role&&!roles.some(role=>role.label===item.role)&&<option>{item.role}</option>}{roles.map(role=><option key={role.id} value={role.label}>{role.label}</option>)}</select><button type="button" onClick={()=>onChange(value.filter(x=>x.id!==item.id))} style={{border:0,borderRadius:8,background:"#FFF1F2",color:"#E11D48",padding:"0 10px",cursor:"pointer"}}>×</button></div>)}</div><Btn small variant="secondary" style={{marginTop:7}} onClick={add}>+ Proje Rolü Ata</Btn></div>;
 }
 
 function CustomerContactEditor({value=[],onChange}) {
@@ -589,7 +606,7 @@ function RemoteAccessPanel({project,setState,isAdmin,canManage}) {
   };
   return <div style={{flex:1,overflow:"auto",padding:"18px 22px"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:14}}>
-      <div><h3 style={{margin:0,fontSize:16}}>Uzaktan Erişim Kasası</h3><p style={{margin:"3px 0 0",fontSize:11,color:"#64748B"}}>Parolalar şifreli saklanır ve yalnızca proje yöneticileri ile adminler tarafından görüntülenir.</p></div>
+      <div><h3 style={{margin:0,fontSize:16}}>Uzaktan Erişim Kasası</h3><p style={{margin:"3px 0 0",fontSize:11,color:"#64748B"}}>Parolalar şifreli saklanır; projeye dahil kullanıcılar görüntüleyebilir, yalnızca proje yöneticileri ve adminler düzenleyebilir.</p></div>
       {canEdit&&<Btn small onClick={openAdd}>+ Erişim Ekle</Btn>}
     </div>
     {error&&<div style={{background:"#FFF1F2",color:"#BE123C",borderRadius:9,padding:"9px 11px",fontSize:11,fontWeight:700,marginBottom:10}}>{error}</div>}
@@ -2155,11 +2172,37 @@ function ImportCenter({state,setState,currentUser}) {
   </div></div>;
 }
 
+const reportScheduleStatus = (item) => {
+  if(item.lastError)return `Son hata: ${item.lastError}`;
+  if(item.lastSentAt)return `Son gönderim: ${new Date(item.lastSentAt).toLocaleString("tr-TR",{timeZone:"Europe/Istanbul"})}`;
+  return `Sonraki gönderim: ${item.nextRunAt?new Date(item.nextRunAt).toLocaleString("tr-TR",{timeZone:"Europe/Istanbul"}):"-"}`;
+};
+
+function ReportScheduleCard({item,canEdit,onToggle,onDelete}) {
+  return <details style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:13}}>
+    <summary style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",cursor:"pointer",listStyle:"none"}}>
+      <div style={{flex:1,minWidth:180}}>
+        <b style={{fontSize:12}}>{item.name}</b>
+        <div style={{fontSize:10,color:"#64748B",marginTop:3}}>{item.reportType==="jira_newsletter"?"Jira Done geliştirme bülteni":"Proje durum raporu"} · {item.frequency==="weekly"?"Haftalık":"Aylık"} · {item.time} (İstanbul) · {(item.recipients||[]).join(", ")}</div>
+        <div style={{fontSize:9,color:item.lastError?"#BE123C":"#64748B",marginTop:4}}>{reportScheduleStatus(item)}</div>
+      </div>
+      <button onClick={event=>{event.preventDefault();onToggle();}} style={{border:0,borderRadius:8,padding:"6px 9px",cursor:"pointer",background:item.enabled?"#ECFDF5":"#F1F5F9",color:item.enabled?"#047857":"#64748B"}}>{item.enabled?"Aktif":"Pasif"}</button>
+      {canEdit&&<button onClick={event=>{event.preventDefault();onDelete();}} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer"}}>Sil</button>}
+    </summary>
+    <div style={{borderTop:"1px solid #E2E8F0",marginTop:10,paddingTop:10}}>
+      <b style={{fontSize:10}}>Gönderim Logu</b>
+      <div style={{display:"grid",gap:5,marginTop:7}}>
+        {(item.deliveryLog||[]).length?(item.deliveryLog||[]).map(log=><div key={log.id||log.at} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:9,background:log.success?"#ECFDF5":"#FFF1F2",color:log.success?"#047857":"#BE123C",borderRadius:7,padding:"6px 8px"}}><span>{new Date(log.at).toLocaleString("tr-TR",{timeZone:"Europe/Istanbul"})} · {(log.recipients||item.recipients||[]).join(", ")}</span><b>{log.success?"Gönderildi":log.error||"Başarısız"}</b></div>):<div style={{fontSize:9,color:"#94A3B8"}}>Henüz gönderim denemesi yok.</div>}
+      </div>
+    </div>
+  </details>;
+}
+
 function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,isAdmin}) {
   const [section,setSection]=useState("readiness");
   const [contact,setContact]=useState({side:"M\u00fc\u015fteri",name:"",title:"",company:"",department:"",email:"",phone:"",raci:"C",scope:""});
   const [document,setDocument]=useState({name:"",purpose:"",tags:"",url:"",owner:"",version:"1.0"});
-  const emptySchedule={name:"",reportType:"project_status",recipients:"",frequency:"weekly",weekday:"1",time:"09:00",enabled:true};
+  const emptySchedule={name:"",reportType:"project_status",recipients:"",frequency:"weekly",weekday:"1",time:"09:00",timezone:"Europe/Istanbul",enabled:true};
   const [schedule,setSchedule]=useState(emptySchedule);
   const checklist=project.readinessChecklist||createReadinessChecklist();
   const score=readinessScore({...project,readinessChecklist:checklist});
@@ -2200,16 +2243,22 @@ function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,
       {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginTop:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:8}}>{["name","purpose","tags","url","owner","version"].map(key=><input key={key} style={iStyle} value={document[key]} onChange={e=>setDocument({...document,[key]:e.target.value})} placeholder={({name:"Doküman adı",purpose:"Amaç / kategori",tags:"Etiketler (virgüllü)",url:"OneDrive linki",owner:"Doküman sahibi",version:"Versiyon"})[key]}/>)}<Btn onClick={addDocument}>Doküman Ekle</Btn></div>}
     </div>}
     {section==="automation"&&<div>
-      <div style={{display:"grid",gap:8}}>{(project.reportSchedules||[]).map(item=><div key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:13,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}><div style={{flex:1,minWidth:180}}><b style={{fontSize:12}}>{item.name}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{item.reportType==="jira_newsletter"?"Jira Done geli\u015ftirme b\u00fclteni":"Proje durum raporu"} \u00b7 {item.frequency==="weekly"?"Haftal\u0131k":"Ayl\u0131k"} \u00b7 {(item.recipients||[]).join(", ")}</div></div><button onClick={()=>onChange({reportSchedules:(project.reportSchedules||[]).map(x=>x.id===item.id?{...x,enabled:!x.enabled}:x)})} style={{border:0,borderRadius:8,padding:"6px 9px",cursor:"pointer",background:item.enabled?"#ECFDF5":"#F1F5F9",color:item.enabled?"#047857":"#64748B"}}>{item.enabled?"Aktif":"Pasif"}</button>{canEdit&&<button onClick={()=>onChange({reportSchedules:(project.reportSchedules||[]).filter(x=>x.id!==item.id)})} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer"}}>Sil</button>}</div>)}</div>
-      {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginTop:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}><input style={iStyle} value={schedule.name} onChange={e=>setSchedule({...schedule,name:e.target.value})} placeholder="Plan adı"/><select style={iStyle} value={schedule.reportType} onChange={e=>setSchedule({...schedule,reportType:e.target.value})}><option value="project_status">Proje Durum Raporu</option><option value="jira_newsletter">Jira Done Newsletter</option></select><input style={iStyle} value={schedule.recipients} onChange={e=>setSchedule({...schedule,recipients:e.target.value})} placeholder="Alıcı e-postaları"/><select style={iStyle} value={schedule.frequency} onChange={e=>setSchedule({...schedule,frequency:e.target.value})}><option value="weekly">Haftalık</option><option value="monthly">Aylık</option></select>{schedule.frequency==="weekly"&&<select style={iStyle} value={schedule.weekday} onChange={e=>setSchedule({...schedule,weekday:e.target.value})}>{["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"].map((day,index)=><option key={day} value={index}>{day}</option>)}</select>}<input type="time" style={iStyle} value={schedule.time} onChange={e=>setSchedule({...schedule,time:e.target.value})}/><Btn onClick={addSchedule}>Planla</Btn></div>}
+      <div style={{display:"grid",gap:8}}>{(project.reportSchedules||[]).map(item=><ReportScheduleCard key={item.id} item={item} canEdit={canEdit} onToggle={()=>onChange({reportSchedules:(project.reportSchedules||[]).map(x=>x.id===item.id?{...x,enabled:!x.enabled}:x)})} onDelete={()=>onChange({reportSchedules:(project.reportSchedules||[]).filter(x=>x.id!==item.id)})}/>)}</div>
+      {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginTop:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}><input style={iStyle} value={schedule.name} onChange={e=>setSchedule({...schedule,name:e.target.value})} placeholder="Plan adı"/><select style={iStyle} value={schedule.reportType} onChange={e=>setSchedule({...schedule,reportType:e.target.value})}><option value="project_status">Proje Durum Raporu</option><option value="jira_newsletter">Jira Done Newsletter</option></select><input style={iStyle} value={schedule.recipients} onChange={e=>setSchedule({...schedule,recipients:e.target.value})} placeholder="Alıcı e-postaları"/><select style={iStyle} value={schedule.frequency} onChange={e=>setSchedule({...schedule,frequency:e.target.value})}><option value="weekly">Haftalık</option><option value="monthly">Aylık</option></select>{schedule.frequency==="weekly"&&<select style={iStyle} value={schedule.weekday} onChange={e=>setSchedule({...schedule,weekday:e.target.value})}>{["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"].map((day,index)=><option key={day} value={index}>{day}</option>)}</select>}<input type="time" title="Europe/Istanbul saat dilimi" style={iStyle} value={schedule.time} onChange={e=>setSchedule({...schedule,time:e.target.value})}/><Btn onClick={addSchedule}>Planla</Btn></div>}
     </div>}
     {section==="ai"&&<AIWorkspace projects={[project]} initialProjectId={project.id} embedded/>}
   </div>;
 }
 
-function ResponsibilitySummary({project}) {
+function ResponsibilityFilterRow({item,index,active,onClick}) {
+  const color=COLORS[index%COLORS.length];
+  return <button type="button" onClick={onClick} style={{border:"1px solid "+(active?color:"#E2E8F0"),background:active?color+"12":"#fff",borderRadius:9,padding:8,cursor:"pointer",textAlign:"left"}}><div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:4}}><b>{item.group}</b><span>%{item.percent}</span></div><div style={{height:7,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:item.percent+"%",background:color}}/></div></button>;
+}
+
+function ResponsibilitySummary({project,selected=[],onChange}) {
   const items=remainingResponsibility(project);
-  return <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginBottom:12}}><div style={{fontSize:12,fontWeight:850,marginBottom:9}}>Kalan İşin Sorumluluk Dağılımı</div>{items.length?<div style={{display:"grid",gap:7}}>{items.map((item,index)=><div key={item.group}><div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:3}}><b>{item.group}</b><span>%{item.percent}</span></div><div style={{height:7,background:"#F1F5F9",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:`${item.percent}%`,background:COLORS[index%COLORS.length]}}/></div></div>)}</div>:<div style={{fontSize:11,color:"#059669"}}>Kalan görev bulunmuyor.</div>}</div>;
+  const toggle=group=>onChange(selected.includes(group)?selected.filter(item=>item!==group):[...selected,group]);
+  return <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:9}}><div><div style={{fontSize:12,fontWeight:850}}>Kalan İşin Sorumluluk Dağılımı</div><div style={{fontSize:9,color:"#94A3B8",marginTop:2}}>Bir veya birden fazla ekibe tıklayarak görevleri filtreleyin.</div></div>{selected.length>0&&<button onClick={()=>onChange([])} style={{border:0,background:"#FFF1F2",color:"#BE123C",borderRadius:7,padding:"5px 8px",fontSize:9,fontWeight:800,cursor:"pointer"}}>Filtreyi temizle</button>}</div>{items.length?<div style={{display:"grid",gap:7}}>{items.map((item,index)=><ResponsibilityFilterRow key={item.group} item={item} index={index} active={selected.includes(item.group)} onClick={()=>toggle(item.group)}/>)}</div>:<div style={{fontSize:11,color:"#059669"}}>Kalan görev bulunmuyor.</div>}</div>;
 }
 
 function MilestoneTaskPanel({ milestone, project, people, isAdmin, showDone, setShowDone, onEdit, onDelete, onAddTask, onEditTask, onDeleteTask, onCheckTask, onTimeTask }) {
@@ -2660,6 +2709,13 @@ const EMAIL_SAMPLE_VARIABLES = {
   task_list:"• Haftalık rapor · 2 gün gecikme\n• Sunucu kontrolü · 1 gün gecikme",
 };
 
+const EMAIL_VARIABLE_CATALOG = [
+  ["recipient_name","Alıcı adı"],["assigner_name","Atayan kişi"],["project_name","Proje adı"],
+  ["task_title","Görev başlığı"],["task_description","Görev açıklaması"],["due_date","Termin"],
+  ["ticket_title","Ticket başlığı"],["ticket_description","Ticket açıklaması"],["priority","Öncelik"],
+  ["status","Durum"],["task_count","Görev sayısı"],["task_list","Görev listesi"],
+];
+
 function MailCenterPage({state,setState}) {
   const tenant=resolveTenantProfile(state.tenantProfile);
   const templates=resolveEmailTemplates(state.emailTemplates);
@@ -2667,12 +2723,19 @@ function MailCenterPage({state,setState}) {
   const [draft,setDraft]=useState(templates.find(item=>item.id===selectedId)||templates[0]);
   const [recipient,setRecipient]=useState("");
   const [variablesText,setVariablesText]=useState(JSON.stringify(EMAIL_SAMPLE_VARIABLES,null,2));
+  const [variableTarget,setVariableTarget]=useState("body");
+  const [selectedVariable,setSelectedVariable]=useState("recipient_name");
   const [sendStatus,setSendStatus]=useState({loading:false,message:"",error:false});
   const fileInput=useRef();
   const selected=templates.find(item=>item.id===selectedId)||templates[0];
   const selectTemplate=(item)=>{setSelectedId(item.id);setDraft(item);setSendStatus({loading:false,message:"",error:false});};
   const variables=(()=>{try{return JSON.parse(variablesText||"{}");}catch{return EMAIL_SAMPLE_VARIABLES;}})();
   const preview=renderManagedTemplate({template:draft||selected,tenantProfile:tenant,variables,actionUrl:"https://www.corject.com"});
+  const insertVariable=()=>{
+    if(!draft)return;
+    const token=`{{${selectedVariable}}}`;
+    setDraft({...draft,[variableTarget]:`${draft[variableTarget]||""}${draft[variableTarget]?" ":""}${token}`});
+  };
   const updateTenant=(patch)=>setState(current=>({...current,tenantProfile:{...resolveTenantProfile(current.tenantProfile),...patch}}));
   const saveTemplate=()=>{
     if(!draft?.name?.trim())return;
@@ -2748,7 +2811,7 @@ function MailCenterPage({state,setState}) {
           <Field label="Giriş"><input style={iStyle} value={draft?.intro||""} onChange={e=>setDraft({...draft,intro:e.target.value})}/></Field>
           <Field label="İçerik"><textarea style={{...iStyle,minHeight:120,resize:"vertical"}} value={draft?.body||""} onChange={e=>setDraft({...draft,body:e.target.value})}/></Field>
           <Field label="Buton Metni"><input style={iStyle} value={draft?.buttonLabel||""} onChange={e=>setDraft({...draft,buttonLabel:e.target.value})}/></Field>
-          <div style={{fontSize:9,color:"#64748B",background:"#F8FAFC",padding:9,borderRadius:8}}>Değişkenler: <code>{"{{recipient_name}}, {{project_name}}, {{task_title}}, {{ticket_title}}, {{due_date}}"}</code></div>
+          <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",padding:10,borderRadius:10}}><div style={{fontSize:10,fontWeight:850,color:"#475569",marginBottom:7}}>Dinamik alan ekle</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:7}}><select style={iStyle} value={selectedVariable} onChange={event=>setSelectedVariable(event.target.value)}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select><select style={iStyle} value={variableTarget} onChange={event=>setVariableTarget(event.target.value)}>{[["subject","Konu"],["eyebrow","Üst etiket"],["title","Başlık"],["intro","Giriş"],["body","İçerik"],["buttonLabel","Buton"]].map(([key,label])=><option key={key} value={key}>{label}</option>)}</select><Btn small variant="secondary" onClick={insertVariable}>Ekle</Btn></div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:8}}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><button key={key} onClick={()=>{setSelectedVariable(key);setDraft({...draft,[variableTarget]:`${draft[variableTarget]||""}${draft[variableTarget]?" ":""}{{${key}}}`});}} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"4px 7px",fontSize:8,fontWeight:800,cursor:"pointer"}}>{label}</button>)}</div></div>
           <div style={{display:"flex",gap:8,marginTop:12}}><Btn onClick={saveTemplate}>Şablonu Kaydet</Btn><Btn variant="secondary" onClick={removeTemplate}>Sil</Btn></div>
         </Card>
         <Card>
@@ -2758,7 +2821,7 @@ function MailCenterPage({state,setState}) {
         <Card>
           <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Manuel Gönderim</div>
           <Field label="Alıcı"><input type="email" style={iStyle} value={recipient} onChange={e=>setRecipient(e.target.value)} placeholder="alici@firma.com"/></Field>
-          <Field label="Test Değişkenleri (JSON)"><textarea style={{...iStyle,minHeight:170,fontFamily:"Consolas,monospace",fontSize:10}} value={variablesText} onChange={e=>setVariablesText(e.target.value)}/></Field>
+          <Field label="Önizleme ve test verileri"><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:7}}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><label key={key} style={{fontSize:9,color:"#64748B"}}>{label}<input style={{...iStyle,marginTop:3}} value={variables[key]||""} onChange={event=>setVariablesText(JSON.stringify({...variables,[key]:event.target.value},null,2))}/></label>)}</div><details style={{marginTop:8}}><summary style={{fontSize:9,color:"#64748B",cursor:"pointer"}}>Gelişmiş JSON görünümü</summary><textarea style={{...iStyle,minHeight:150,marginTop:6,fontFamily:"Consolas,monospace",fontSize:10}} value={variablesText} onChange={e=>setVariablesText(e.target.value)}/></details></Field>
           <Btn onClick={send} disabled={sendStatus.loading}>Gönder</Btn>
           {sendStatus.message&&<div style={{marginTop:9,fontSize:10,color:sendStatus.error?"#E11D48":"#059669"}}>{sendStatus.message}</div>}
         </Card>
@@ -2820,8 +2883,9 @@ function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false}){
   const linkedProject=ticketLink?.get("project")||"";
   const linkedTicket=ticketLink?.get("ticket")||"";
   const linkedTicketData=linkedProject&&linkedTicket?((state.projectTickets||{})[linkedProject]||[]).find(ticket=>ticket.id===linkedTicket):null;
-  const [projectFilter,setProjectFilter]=useState(linkedProject||"all");
-  const [statusFilter,setStatusFilter]=useState("all");
+  const [activeTab,setActiveTab]=useState("tickets");
+  const [projectFilters,setProjectFilters]=useState(linkedProject?[linkedProject]:[]);
+  const [statusFilters,setStatusFilters]=useState([]);
   const [search,setSearch]=useState("");
   const [mailNotice,setMailNotice]=useState("");
   const [mineOnly,setMineOnly]=useState(initialMine);
@@ -2834,7 +2898,7 @@ function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false}){
   });
   const filtered=all.filter(({ticket,projectId,project})=>{
     const haystack=`${ticket.ticketNo||""} ${ticket.title||""} ${ticket.description||""} ${project?.name||""} ${state.people.find(p=>p.id===ticket.assignedTo)?.name||""}`.toLocaleLowerCase("tr-TR");
-    return (projectFilter==="all"||projectId===projectFilter)&&(statusFilter==="all"||ticket.status===statusFilter)&&(!mineOnly||ticket.assignedTo===currentUser.id||ticket.author===currentUser.name)&&(!search.trim()||haystack.includes(search.trim().toLocaleLowerCase("tr-TR")));
+    return (!projectFilters.length||projectFilters.includes(projectId))&&(!statusFilters.length||statusFilters.includes(ticket.status))&&(!mineOnly||ticket.assignedTo===currentUser.id||ticket.author===currentUser.name)&&(!search.trim()||haystack.includes(search.trim().toLocaleLowerCase("tr-TR")));
   });
   const save=(projectId,tickets)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[projectId]:tickets}}));
   const add=async(projectId,data)=>{
@@ -2860,19 +2924,23 @@ function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false}){
       <div><h2 style={{margin:0,fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#1E293B"}}><Icon name="ticket" size={20}/>Ticketlar</h2><p style={{margin:"3px 0 0",fontSize:12,color:"#64748B"}}>{filtered.length} kayıt gösteriliyor</p></div>
       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{isAdmin&&<Btn variant="secondary" onClick={()=>generateTicketStatusReport(state,state.people)}>Durum Raporu</Btn>}<Btn onClick={()=>setModal({type:"add",projectId:state.projects[0]?.id||""})}>+ Ticket Ekle</Btn></div>
     </div>
-    <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
+    <div style={{display:"flex",gap:6,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
+      {[["tickets","Ticket Takibi"],["recurring","Tekrar Eden Problemler"]].map(([id,label])=><button key={id} onClick={()=>setActiveTab(id)} style={{border:0,borderBottom:`3px solid ${activeTab===id?"#4F46E5":"transparent"}`,background:"transparent",color:activeTab===id?"#4338CA":"#64748B",padding:"9px 12px",fontSize:11,fontWeight:850,cursor:"pointer"}}>{label}</button>)}
+    </div>
+    {activeTab==="tickets"&&<><div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
       <input style={{...iStyle,width:"auto",minWidth:220,flex:"1 1 220px"}} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Ticket, proje veya sorumlu ara..."/>
       <button onClick={()=>setMineOnly(v=>!v)} style={{border:0,borderRadius:8,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:700,background:mineOnly?"#4A6CF7":"#F1F5FF",color:mineOnly?"#fff":"#64748B"}}>Ticketlarım</button>
-      <select style={{...iStyle,width:"auto",minWidth:210}} value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="all">Tüm Projeler</option>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-      <select style={{...iStyle,width:"auto",minWidth:180}} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">Tüm Durumlar</option>{TICKET_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
+      <MultiChoiceFilter label="Projeler" options={state.projects.map(project=>({value:project.id,label:project.name}))} value={projectFilters} onChange={setProjectFilters}/>
+      <MultiChoiceFilter label="Durumlar" options={TICKET_STATUSES.map(status=>({value:status,label:status}))} value={statusFilters} onChange={setStatusFilters}/>
     </div>
     {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"#ECFDF5":"#FFF7ED",color:mailNotice.includes("gönderildi")?"#047857":"#C2410C",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
-    <RecurringProblemsPanel entries={all}/>
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>{filtered.map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderLeft:`4px solid ${project?.color||"#4A6CF7"}`,borderRadius:12,padding:"13px 15px",cursor:"pointer"}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(360px,100%),1fr))",gap:10}}>{filtered.map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${project?.color||"#4A6CF7"}`,borderRadius:13,padding:"14px 15px",cursor:"pointer",boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
       <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontSize:10,fontWeight:850,color:"#4338CA",background:"#EEF2FF",padding:"3px 7px",borderRadius:7}}>{ticketNumber(ticket)}</span><b style={{fontSize:13}}>{ticket.title}</b><select value={ticket.status||"Açık"} onClick={event=>event.stopPropagation()} onChange={event=>update(projectId,ticket.id,{status:event.target.value})} style={{fontSize:10,border:"1px solid #CBD5E1",borderRadius:7,padding:"3px 6px",background:"#fff"}}>{TICKET_STATUSES.map(status=><option key={status}>{status}</option>)}</select><span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span><span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
       <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"#64748B"}}><span>Sorumlu: <b>{assignee?.name||"Atanmamış"}</b></span><span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span>{(isAdmin||ticket.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();if(confirm("Ticket silinsin mi?"))remove(projectId,ticket.id);}} style={{marginLeft:"auto",border:0,background:"transparent",color:"#E11D48",fontSize:11,fontWeight:700,cursor:"pointer"}}>Sil</button>}</div>
     </div>})}</div>
     {!filtered.length&&<div style={{padding:40,textAlign:"center",background:"#fff",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Filtreye uygun ticket yok.</div>}
+    </>}
+    {activeTab==="recurring"&&<RecurringProblemsPanel entries={all}/>}
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}><Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><TicketForm types={TYPES} prios={PRIOS} people={state.people} onClose={()=>setModal(null)} onSave={async data=>{if(!modal.projectId)return;await add(modal.projectId,data);setModal(null);}}/></Modal>}
     {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} canEdit={isAdmin||modal.data.author===currentUser.name} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)} onResend={()=>notifyTicketAssignment(modal.projectId,((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data)}/>}
   </div>;
@@ -2964,6 +3032,7 @@ export default function App() {
   const [projectScope,setProjectScope]=useState("all");
   const [ticketMineOnly,setTicketMineOnly]=useState(false);
   const [taskToOpen,setTaskToOpen]=useState("");
+  const [responsibilityFilters,setResponsibilityFilters]=useState([]);
   const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<768);
   const [authSession,setAuthSession]=useState(null);
   const [authReady,setAuthReady]=useState(!REQUIRE_AUTH);
@@ -3142,7 +3211,7 @@ export default function App() {
   const canManageProjectActions=isAdmin||(project?projectPmIds(project).includes(currentUser.id):false);
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
 
-  const addProject=(data)=>{ const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,members:[],pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));setSelProject(p.id);setView("projects");setProjectTab("setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
+  const addProject=(data)=>{ const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,members:[...new Set([...(data.members||[]),...assigned])],pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));setSelProject(p.id);setView("projects");setProjectTab("setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
   const addPerson=(data)=>{
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
     setState(s=>({...s,people:[...s.people,{id:uid(),avatar,...data}]}));
@@ -3158,7 +3227,7 @@ export default function App() {
     projects:s.projects.map(p=>({...p,pm:p.pm===id?"":p.pm,pmIds:projectPmIds(p).filter(pmId=>pmId!==id),stakeholders:projectStakeholders(p).filter(item=>item.userId!==id),members:(p.members||[]).filter(memberId=>memberId!==id),milestones:p.milestones.map(ms=>({...ms,tasks:ms.tasks.map(t=>t.assignee===id?{...t,assignee:""}:t)}))})),
     personalTasks:(s.personalTasks||[]).map(t=>t.assignee===id?{...t,assignee:""}:t)
   }));
-  const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>p.id===id?{...p,...data,pm:data.pmIds?.[0]||""}:p)}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
+  const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>{if(p.id!==id)return p;const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);return {...p,...data,members:[...new Set([...(p.members||[]),...assigned])],pm:data.pmIds?.[0]||""};})}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
   const deleteProject=(id)=>{ if(!isAdmin)return; const name=state.projects.find(p=>p.id===id)?.name; setState(s=>{const projectActions={...(s.projectActions||{})};delete projectActions[id];return {...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id),projectActions};}); setSelProject(null); setSelMilestone(null); addLog(currentUser.name,"general","Proje silindi: "+name); };
   const addRisk=(data)=>{ mutProject(p=>({...p,risks:[...(p.risks||[]),{id:uid(),...data}]})); addLog(currentUser.name,"risk_add",data.title,project?.name); };
   const updateRisk=(rId,data)=>mutProject(p=>({...p,risks:(p.risks||[]).map(r=>r.id===rId?{...r,...data}:r)}));
@@ -3443,13 +3512,13 @@ export default function App() {
 
         {projectTab==="setup"&&<ProjectSetupPanel project={project} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>}
         {projectTab==="tasks"&&<div style={{ flex:1, overflow:"auto", padding:isMobile?"12px":"18px 22px" }}>
-          <ResponsibilitySummary project={project}/>
+          <ResponsibilitySummary project={project} selected={responsibilityFilters} onChange={setResponsibilityFilters}/>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><h3 style={{margin:0,fontSize:15}}>Milestonelar</h3><span style={{fontSize:11,color:"#64748B"}}>Görevleri görmek için milestone seçin.</span></div>{isAdmin&&<Btn small onClick={()=>setModal({type:"addMilestone"})}>+ Milestone</Btn>}</div>
-          {project.milestones.map(ms=>{const open=selMilestone===ms.id;const done=ms.tasks.filter(t=>t.status==="Tamamland\u0131").length;return <div key={ms.id} style={{background:"#fff",border:`1.5px solid ${open?project.color:"#E2E8F0"}`,borderRadius:12,marginBottom:9,overflow:"hidden"}}>
+          {project.milestones.map(ms=>{const visibleTasks=responsibilityFilters.length?ms.tasks.filter(task=>responsibilityFilters.includes(task.responsibilityGroup||"Proje Ekibi")):ms.tasks;const filteredMilestone={...ms,tasks:visibleTasks};const open=selMilestone===ms.id;const done=visibleTasks.filter(t=>t.status==="Tamamland\u0131").length;if(responsibilityFilters.length&&!visibleTasks.length)return null;return <div key={ms.id} style={{background:"#fff",border:`1.5px solid ${open?project.color:"#E2E8F0"}`,borderRadius:12,marginBottom:9,overflow:"hidden"}}>
             <button onClick={()=>{setSelMilestone(open?null:ms.id);setShowDoneTasks(false);}} style={{width:"100%",border:"none",background:open?project.color+"0D":"#fff",padding:"13px 15px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",fontFamily:"inherit"}}>
-              <span style={{color:project.color,display:"flex"}}><Icon name="tasks" size={17}/></span><div style={{flex:1,minWidth:0}}><div style={{fontWeight:800,fontSize:13}}>{ms.name}</div><div style={{fontSize:11,color:"#64748B",marginTop:3}}>{fmt(ms.startDate)} - {fmt(ms.dueDate)} · {done}/{ms.tasks.length} tamamlandı</div></div><Badge label={ms.status}/><span style={{fontSize:17,color:"#64748B"}}>{open?"−":"+"}</span>
+              <span style={{color:project.color,display:"flex"}}><Icon name="tasks" size={17}/></span><div style={{flex:1,minWidth:0}}><div style={{fontWeight:800,fontSize:13}}>{ms.name}</div><div style={{fontSize:11,color:"#64748B",marginTop:3}}>{fmt(ms.startDate)} - {fmt(ms.dueDate)} · {done}/{visibleTasks.length} tamamlandı</div></div><Badge label={ms.status}/><span style={{fontSize:17,color:"#64748B"}}>{open?"−":"+"}</span>
             </button>
-            {open&&<div style={{padding:"13px 15px",borderTop:"1px solid #E2E8F0"}}><MilestoneTaskPanel milestone={ms} project={project} people={state.people} isAdmin={isAdmin} showDone={showDoneTasks} setShowDone={setShowDoneTasks} onEdit={(item)=>setModal({type:"editMilestone",data:item})} onDelete={(id)=>{if(confirm("Silinsin mi?"))deleteMilestone(id);}} onAddTask={(msId)=>setModal({type:"addTask",msId})} onEditTask={(msId,task)=>setModal({type:"editTask",msId,data:task})} onDeleteTask={(msId,taskId)=>{if(confirm("Silinsin mi?"))deleteTask(msId,taskId);}} onCheckTask={(msId,taskId,c)=>updateTask(msId,taskId,{status:c?"Tamamland\u0131":"Bekliyor"})} onTimeTask={(msId,task)=>setModal({type:"timeLog",msId,data:task})}/></div>}
+            {open&&<div style={{padding:"13px 15px",borderTop:"1px solid #E2E8F0"}}><MilestoneTaskPanel milestone={filteredMilestone} project={project} people={state.people} isAdmin={isAdmin} showDone={showDoneTasks} setShowDone={setShowDoneTasks} onEdit={(item)=>setModal({type:"editMilestone",data:item})} onDelete={(id)=>{if(confirm("Silinsin mi?"))deleteMilestone(id);}} onAddTask={(msId)=>setModal({type:"addTask",msId})} onEditTask={(msId,task)=>setModal({type:"editTask",msId,data:task})} onDeleteTask={(msId,taskId)=>{if(confirm("Silinsin mi?"))deleteTask(msId,taskId);}} onCheckTask={(msId,taskId,c)=>updateTask(msId,taskId,{status:c?"Tamamland\u0131":"Bekliyor"})} onTimeTask={(msId,task)=>setModal({type:"timeLog",msId,data:task})}/></div>}
           </div>;})}
           {!project.milestones.length&&<div style={{padding:40,textAlign:"center",color:"#94A3B8",border:"1.5px dashed #CBD5E1",borderRadius:12}}>Milestone yok.</div>}
         </div>}
@@ -3595,8 +3664,8 @@ export default function App() {
     </div>
 
     {/* MODALS */}
-    {modal?.type==="addProject"&&<AddProjectModal onClose={()=>setModal(null)} onSave={addProject} people={state.people} />}
-    {modal?.type==="editProject"&&<ProjectModal title="Projeyi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(data)=>updateProjectById(modal.data.id,data)} people={state.people} />}
+    {modal?.type==="addProject"&&<AddProjectModal onClose={()=>setModal(null)} onSave={addProject} people={state.people} roles={organizationRoles(state)} />}
+    {modal?.type==="editProject"&&<ProjectModal title="Projeyi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(data)=>updateProjectById(modal.data.id,data)} people={state.people} roles={organizationRoles(state)} />}
     {modal?.type==="addMilestone"&&<MilestoneModal title="Yeni Milestone" onClose={()=>setModal(null)} onSave={addMilestone} />}
     {modal?.type==="editMilestone"&&<MilestoneModal title="Milestone Duzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateMilestone(modal.data.id,d)} />}
     {modal?.type==="addTask"&&<TaskModal title="Yeni Görev" onClose={()=>setModal(null)} onSave={(d)=>addTask(modal.msId,d)} people={state.people} />}
@@ -3810,10 +3879,10 @@ function RecurringProblemsPanel({entries=[]}) {
     groups.set(key,current);
   });
   const repeated=[...groups.values()].filter(group=>group.items.length>1).sort((a,b)=>b.effort-a.effort||b.items.length-a.items.length);
-  if(!repeated.length)return null;
-  return <div style={{background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:12,padding:13,marginBottom:13}}>
-    <div style={{fontSize:12,fontWeight:850,color:"#9A3412",marginBottom:8}}>Tekrar Eden Problemler</div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:8}}>{repeated.slice(0,6).map(group=><div key={`${group.label}-${group.items.length}`} style={{background:"#fff",borderRadius:9,padding:"9px 10px",fontSize:10,color:"#475569"}}><b style={{display:"block",fontSize:11,color:"#7C2D12",marginBottom:4}}>{group.label}</b><span>{group.items.length} ticket · {group.effort.toFixed(1)} saat · {[...group.projects].length} proje</span><span style={{display:"block",color:"#94A3B8",marginTop:3}}>{group.explicit?"Ortak problem koduyla eşleşti":"Başlık benzerliğine göre aday"}</span></div>)}</div>
+  if(!repeated.length)return <div style={{padding:42,textAlign:"center",background:"#fff",border:"1px dashed #CBD5E1",borderRadius:14,color:"#64748B"}}><b>Tekrar eden problem bulunmuyor.</b><div style={{fontSize:10,marginTop:5}}>Problem kodu veya benzer başlıkla eşleşen en az iki ticket burada görünür.</div></div>;
+  return <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:16,marginBottom:13}}>
+    <div style={{fontSize:14,fontWeight:900,color:"#172033",marginBottom:3}}>Tekrar Eden Problemler</div><div style={{fontSize:10,color:"#64748B",marginBottom:12}}>Yeniden efor harcanan konuları kök neden ve çözüm standardı için izleyin.</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:9}}>{repeated.map(group=><div key={`${group.label}-${group.items.length}`} style={{background:"linear-gradient(145deg,#FFF7ED,#fff)",border:"1px solid #FED7AA",borderRadius:11,padding:"12px 13px",fontSize:10,color:"#475569"}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:12,color:"#7C2D12"}}>{group.label}</b><span style={{background:"#FFEDD5",color:"#C2410C",borderRadius:12,padding:"2px 7px",fontWeight:900}}>{group.items.length} kez</span></div><div style={{marginTop:8}}>{group.effort.toFixed(1)} saat efor · {[...group.projects].length} proje</div><span style={{display:"block",color:"#94A3B8",marginTop:4}}>{group.explicit?"Ortak problem koduyla eşleşti":"Başlık benzerliğine göre aday"}</span></div>)}</div>
   </div>;
 }
 function TicketForm({ onSave, onClose, types, prios, people }) {
@@ -4013,7 +4082,7 @@ function NotificationsPage({ notifications, currentUser, setState }) {
 }
 
 // ─── Modals ──────────────────────────────────────────────────────────────────
-function AddProjectModal({ onClose, onSave, people }) {
+function AddProjectModal({ onClose, onSave, people, roles }) {
   const [step,setStep]=useState("template");
   const [tplData,setTplData]=useState(null);
   const [f,setF]=useState({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:todayStr(), endDate:"", pmIds:[], stakeholders:[], customerContacts:[], commissioningTracking:false });
@@ -4031,7 +4100,7 @@ function AddProjectModal({ onClose, onSave, people }) {
       <Field label="Proje Adı *"><input style={iStyle} value={f.name} onChange={e=>upd("name",e.target.value)} placeholder="Proje adi" /></Field>
       <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
       <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
-      <Field label="Bilgi Amaçlı Roller"><StakeholderEditor people={people} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
+      <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
       <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)}/></Field>
       <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
       <Field label="Renk"><div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
@@ -4044,14 +4113,14 @@ function AddProjectModal({ onClose, onSave, people }) {
     </div>}
   </Modal>;
 }
-function ProjectModal({ title, initial, onClose, onSave, people }) {
+function ProjectModal({ title, initial, onClose, onSave, people, roles }) {
   const [f,setF]=useState(()=>({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:"", endDate:"", ...initial, pmIds:projectPmIds(initial||{}), stakeholders:projectStakeholders(initial||{}) }));
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   return <Modal title={title} onClose={onClose}>
     <Field label="Proje Adı *"><input style={iStyle} value={f.name} onChange={e=>upd("name",e.target.value)} /></Field>
     <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
     <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
-    <Field label="Bilgi Amaçlı Roller"><StakeholderEditor people={people} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
+    <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
     <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)}/></Field>
     <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
     <Field label="Renk"><div style={{ display:"flex", gap:7 }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>

@@ -173,6 +173,7 @@ export const markReportScheduleSent = async ({
   sentAt,
   nextRunAt,
   error = "",
+  recipients = [],
 }) =>
   mutateState((state) => {
     const project = state.projects?.find((item) => item.id === projectId);
@@ -183,6 +184,16 @@ export const markReportScheduleSent = async ({
     if (!schedule) throw Object.assign(new Error("Report schedule not found"), { status: 404 });
     schedule.lastAttemptAt = sentAt;
     schedule.lastError = error;
+    schedule.deliveryLog = [
+      {
+        id: `${scheduleId}:${sentAt}`,
+        at: sentAt,
+        success: !error,
+        error,
+        recipients,
+      },
+      ...(schedule.deliveryLog || []),
+    ].slice(0, 30);
     if (!error) {
       schedule.lastSentAt = sentAt;
       schedule.nextRunAt = nextRunAt;
