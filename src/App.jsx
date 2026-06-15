@@ -6,7 +6,7 @@ import { apiHeaders, apiUrl, isPublicCorjectHost } from "./api";
 import * as XLSX from "xlsx";
 import corjectLogo from "./assets/corject-logo.png";
 
-const APP_VERSION = "v1.20.0";
+const APP_VERSION = "v1.21.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -613,7 +613,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
   const [visitPlan,setVisitPlan]=useState(null);
-  const [form,setForm]=useState({userId:currentUser.id,projectId:"",date:todayStr(),startTime:"09:00",endTime:"17:00",note:""});
+  const [form,setForm]=useState({userId:currentUser.id,projectId:"",workType:"field",date:todayStr(),startTime:"09:00",endTime:"17:00",note:""});
   const plans=state.fieldPlans||[];
   const monday=new Date();
   const day=monday.getDay()||7;
@@ -625,7 +625,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const visible=plans.filter(p=>scope==="team"&&isAdmin?(personFilter?p.userId===personFilter:true):p.userId===currentUser.id);
   const openForm=(date=todayStr(),plan=null)=>{
     setEditingId(plan?.id||null);
-    setForm(plan?{userId:plan.userId,projectId:plan.projectId,date:plan.date,startTime:plan.startTime||"09:00",endTime:plan.endTime||"17:00",note:plan.note||""}:{userId:currentUser.id,projectId:"",date,startTime:"09:00",endTime:"17:00",note:""});
+    setForm(plan?{userId:plan.userId,projectId:plan.projectId,workType:plan.workType||"field",date:plan.date,startTime:plan.startTime||"09:00",endTime:plan.endTime||"17:00",note:plan.note||""}:{userId:currentUser.id,projectId:"",workType:"field",date,startTime:"09:00",endTime:"17:00",note:""});
     setShowForm(true);
   };
   const save=()=>{
@@ -638,18 +638,19 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const monthLabel=`${monday.toLocaleDateString("tr-TR",{day:"numeric",month:"short"})} - ${weekEnd.toLocaleDateString("tr-TR",{day:"numeric",month:"short",year:"numeric"})}`;
   return <div style={{padding:"22px clamp(14px,4vw,28px)",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:18}}>
-      <div><h2 style={{margin:0,fontSize:20,fontWeight:800,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>Saha Planım</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Müşteri ziyaretlerini haftalık olarak planlayın.</p></div>
+      <div><h2 style={{margin:0,fontSize:20,fontWeight:800,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>Haftalık Çalışma Planım</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Saha ziyaretlerini ve proje bazlı uzaktan çalışmaları haftalık planlayın.</p></div>
       <Btn onClick={()=>showForm?(setShowForm(false),setEditingId(null)):openForm()}>{showForm?"Kapat":"+ Plan Ekle"}</Btn>
     </div>
     {showForm&&<div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:16,marginBottom:16,boxShadow:"0 8px 24px rgba(15,23,42,.05)"}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,alignItems:"end"}}>
         {isAdmin&&<Field label="Personel"><select style={iStyle} value={form.userId} onChange={e=>setForm({...form,userId:e.target.value})}>{state.people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>}
+        <Field label="Çalışma Türü"><select style={iStyle} value={form.workType} onChange={e=>setForm({...form,workType:e.target.value})}><option value="field">Saha Ziyareti</option><option value="remote">Uzaktan Çalışma</option></select></Field>
         <Field label="Müşteri / Proje"><select style={iStyle} value={form.projectId} onChange={e=>setForm({...form,projectId:e.target.value})}><option value="">Proje seçin</option>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
         <Field label="Tarih"><input type="date" style={iStyle} value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></Field>
         <Field label="Başlangıç"><input type="time" style={iStyle} value={form.startTime} onChange={e=>setForm({...form,startTime:e.target.value})}/></Field>
         <Field label="Bitiş"><input type="time" style={iStyle} value={form.endTime} onChange={e=>setForm({...form,endTime:e.target.value})}/></Field>
       </div>
-      <Field label="Plan Notu"><textarea style={{...iStyle,minHeight:70,resize:"vertical"}} value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder="Ziyaret amacı, görüşülecek kişiler veya hazırlık notu..."/></Field>
+      <Field label="Plan Notu"><textarea style={{...iStyle,minHeight:70,resize:"vertical"}} value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder={form.workType==="remote"?"Uzaktan yapılacak çalışma, hedef ve beklenen çıktı...":"Ziyaret amacı, görüşülecek kişiler veya hazırlık notu..."}/></Field>
       <div style={{display:"flex",justifyContent:"flex-end"}}><Btn disabled={!form.projectId||!form.date} onClick={save}>{editingId?"Değişiklikleri Kaydet":"Planı Kaydet"}</Btn></div>
     </div>}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
@@ -659,12 +660,12 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(165px,1fr))",gap:9}}>
       {days.map(d=>{const key=dateKey(d);const dayPlans=visible.filter(p=>p.date===key).sort((a,b)=>(a.startTime||"").localeCompare(b.startTime||""));const today=key===todayStr();return <div key={key} style={{background:today?"#F1F5FF":"#fff",border:`1.5px solid ${today?"#A5B4FC":"#E2E8F0"}`,borderRadius:13,minHeight:190,padding:11}}>
         <button title="Bu güne plan ekle" onClick={()=>openForm(key)} style={{width:"100%",border:0,background:"transparent",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,cursor:"pointer",padding:0}}><div style={{fontSize:11,fontWeight:800,color:today?"#4A6CF7":"#64748B",textTransform:"uppercase"}}>{d.toLocaleDateString("tr-TR",{weekday:"short"})}<span style={{display:"block",fontSize:9,fontWeight:600,color:"#94A3B8",textTransform:"none",marginTop:2}}>+ plan ekle</span></div><div style={{width:28,height:28,borderRadius:9,display:"grid",placeItems:"center",fontWeight:800,fontSize:12,background:today?"#4A6CF7":"#F8FAFC",color:today?"#fff":"#1E293B"}}>{d.getDate()}</div></button>
-        {dayPlans.map(plan=>{const project=state.projects.find(p=>p.id===plan.projectId);const person=state.people.find(p=>p.id===plan.userId);return <div key={plan.id} onClick={()=>openForm(key,plan)} style={{background:"#fff",border:`1px solid ${project?.color||"#CBD5E1"}55`,borderLeft:`4px solid ${project?.color||"#4A6CF7"}`,borderRadius:9,padding:"9px 8px",marginBottom:7,boxShadow:"0 2px 8px #0f172a0c",cursor:"pointer"}}>
-          <div style={{fontSize:11,fontWeight:800,lineHeight:1.35}}>{project?.name||"Silinmiş proje"}</div><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{plan.startTime} - {plan.endTime}</div>
+        {dayPlans.map(plan=>{const project=state.projects.find(p=>p.id===plan.projectId);const person=state.people.find(p=>p.id===plan.userId);const remote=plan.workType==="remote";return <div key={plan.id} onClick={()=>openForm(key,plan)} style={{background:"#fff",border:`1px solid ${remote?"#C4B5FD":project?.color||"#CBD5E1"}55`,borderLeft:`4px solid ${remote?"#7C3AED":project?.color||"#4A6CF7"}`,borderRadius:9,padding:"9px 8px",marginBottom:7,boxShadow:"0 2px 8px #0f172a0c",cursor:"pointer"}}>
+          <div style={{display:"flex",justifyContent:"space-between",gap:5,alignItems:"flex-start"}}><div style={{fontSize:11,fontWeight:800,lineHeight:1.35}}>{project?.name||"Silinmiş proje"}</div><span style={{fontSize:8,fontWeight:850,color:remote?"#6D28D9":"#047857",background:remote?"#F5F3FF":"#ECFDF5",borderRadius:5,padding:"2px 5px",whiteSpace:"nowrap"}}>{remote?"UZAKTAN":"SAHA"}</span></div><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{plan.startTime} - {plan.endTime}</div>
           {scope==="team"&&person&&<div style={{display:"flex",alignItems:"center",gap:5,marginTop:6}}><Avatar initials={person.avatar} imageUrl={person.avatarUrl} size={20}/><span style={{fontSize:10,fontWeight:700,color:"#475569"}}>{person.name}</span></div>}
           {plan.note&&<div style={{fontSize:10,color:"#64748B",lineHeight:1.4,marginTop:6,wordBreak:"break-word"}}>{plan.note}</div>}
           {plan.status==="completed"&&<div style={{fontSize:9,fontWeight:800,color:"#059669",background:"#ECFDF5",borderRadius:6,padding:"3px 6px",marginTop:6,display:"inline-block"}}>GERÇEKLEŞTİ · {fieldPlanHours(plan)} SA</div>}
-          {(isAdmin||plan.userId===currentUser.id)&&<div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>{plan.status!=="completed"&&<button onClick={e=>{e.stopPropagation();setVisitPlan(plan);}} style={{border:0,background:"transparent",color:"#059669",fontSize:10,fontWeight:800,cursor:"pointer",padding:0}}>Ziyareti Tamamla</button>}<button onClick={e=>{e.stopPropagation();openForm(key,plan);}} style={{border:0,background:"transparent",color:"#4A6CF7",fontSize:10,cursor:"pointer",padding:0}}>Düzenle</button><button onClick={e=>{e.stopPropagation();if(confirm("Plan silinsin mi?"))remove(plan.id);}} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,cursor:"pointer",padding:0}}>Sil</button></div>}
+          {(isAdmin||plan.userId===currentUser.id)&&<div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>{plan.status!=="completed"&&<button onClick={e=>{e.stopPropagation();setVisitPlan(plan);}} style={{border:0,background:"transparent",color:remote?"#7C3AED":"#059669",fontSize:10,fontWeight:800,cursor:"pointer",padding:0}}>{remote?"Çalışmayı Tamamla":"Ziyareti Tamamla"}</button>}<button onClick={e=>{e.stopPropagation();openForm(key,plan);}} style={{border:0,background:"transparent",color:"#4A6CF7",fontSize:10,cursor:"pointer",padding:0}}>Düzenle</button><button onClick={e=>{e.stopPropagation();if(confirm("Plan silinsin mi?"))remove(plan.id);}} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,cursor:"pointer",padding:0}}>Sil</button></div>}
         </div>})}
         {!dayPlans.length&&<div style={{fontSize:10,color:"#CBD5E1",textAlign:"center",paddingTop:38}}>Plan yok</div>}
       </div>})}
@@ -674,6 +675,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
 }
 
 function FieldVisitModal({plan,project,currentUser,onClose,onSave}) {
+  const remote=plan.workType==="remote";
   const suggested=fieldPlanHours(plan);
   const [form,setForm]=useState({
     actualStartTime:plan.actualStartTime||plan.startTime||"09:00",
@@ -686,18 +688,18 @@ function FieldVisitModal({plan,project,currentUser,onClose,onSave}) {
   const save=()=>{
     const hours=parseFloat(form.effortHours)||calculated;
     if(hours<=0){alert("Geçerli bir efor süresi girin.");return;}
-    if(!form.visitNotes.trim()){alert("Ziyarette yapılanları yazın.");return;}
+    if(!form.visitNotes.trim()){alert(remote?"Uzaktan çalışmada yapılanları yazın.":"Ziyarette yapılanları yazın.");return;}
     onSave({...form,effortHours:hours,visitNotes:form.visitNotes.trim(),completedBy:currentUser.id,completedByName:currentUser.name});
   };
-  return <Modal title={`Saha Ziyareti · ${project?.name||"Proje"}`} onClose={onClose} wide>
+  return <Modal title={`${remote?"Uzaktan Çalışma":"Saha Ziyareti"} · ${project?.name||"Proje"}`} onClose={onClose} wide>
     <div style={{background:"#ECFDF5",border:"1px solid #A7F3D0",borderRadius:11,padding:"11px 13px",marginBottom:14,fontSize:11,color:"#047857"}}><b>{fmt(plan.date)}</b> · Planlanan {plan.startTime} - {plan.endTime}{suggested?` · ${suggested} saat`:""}</div>
     <div className="visit-time-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:10}}>
       <Field label="Gerçek Başlangıç"><input type="time" style={iStyle} value={form.actualStartTime} onChange={e=>update("actualStartTime",e.target.value)}/></Field>
       <Field label="Gerçek Bitiş"><input type="time" style={iStyle} value={form.actualEndTime} onChange={e=>update("actualEndTime",e.target.value)}/></Field>
       <Field label="Proje Eforu (Saat)"><input type="number" min="0.5" step="0.5" style={iStyle} value={form.effortHours} onChange={e=>update("effortHours",e.target.value)} placeholder={String(calculated||"")}/></Field>
     </div>
-    <Field label="Ziyarette Yapılanlar"><textarea style={{...iStyle,minHeight:115,resize:"vertical",lineHeight:1.5}} value={form.visitNotes} onChange={e=>update("visitNotes",e.target.value)} placeholder="Görüşülen konular, yapılan kontroller, alınan kararlar ve sonraki aksiyonlar..."/></Field>
-    <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={save}>Ziyareti Tamamla ve Eforu Kaydet</Btn></div>
+    <Field label={remote?"Uzaktan Çalışmada Yapılanlar":"Ziyarette Yapılanlar"}><textarea style={{...iStyle,minHeight:115,resize:"vertical",lineHeight:1.5}} value={form.visitNotes} onChange={e=>update("visitNotes",e.target.value)} placeholder={remote?"Yapılan analiz, kontrol, geliştirme, görüşme ve sonraki aksiyonlar...":"Görüşülen konular, yapılan kontroller, alınan kararlar ve sonraki aksiyonlar..."}/></Field>
+    <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={save}>{remote?"Çalışmayı":"Ziyareti"} Tamamla ve Eforu Kaydet</Btn></div>
   </Modal>;
 }
 
@@ -706,33 +708,35 @@ function FieldVisitsPage({state,setState,currentUser,isAdmin,onOpenProject}) {
   const [scope,setScope]=useState("mine");
   const [projectFilter,setProjectFilter]=useState("all");
   const [personFilter,setPersonFilter]=useState("");
+  const [typeFilter,setTypeFilter]=useState("all");
   const [editing,setEditing]=useState(null);
   const completed=(state.fieldPlans||[]).filter(plan=>plan.status==="completed"||plan.completedAt);
   const visible=completed.filter(plan=>{
     const inScope=scope==="mine"?plan.userId===currentUser.id:responsibleIds.has(plan.projectId);
-    return inScope&&(projectFilter==="all"||plan.projectId===projectFilter)&&(!personFilter||plan.userId===personFilter);
+    return inScope&&(typeFilter==="all"||(plan.workType||"field")===typeFilter)&&(projectFilter==="all"||plan.projectId===projectFilter)&&(!personFilter||plan.userId===personFilter);
   }).sort((a,b)=>`${b.date} ${b.actualStartTime||b.startTime||""}`.localeCompare(`${a.date} ${a.actualStartTime||a.startTime||""}`));
   const hours=visible.reduce((total,plan)=>total+fieldPlanHours(plan),0);
   const projects=state.projects.filter(project=>scope==="mine"?(state.fieldPlans||[]).some(plan=>plan.userId===currentUser.id&&plan.projectId===project.id):responsibleIds.has(project.id));
   return <div style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:18}}>
-      <div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>Saha Ziyaretlerim</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Gerçekleşen müşteri ziyaretleri, ziyaret notları ve proje eforları.</p></div>
+      <div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>Gerçekleşen Çalışmalar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Saha ziyaretleri ve uzaktan çalışmaların notları ile proje eforları.</p></div>
       <div style={{display:"flex",gap:7,background:"#E2E8F0",padding:3,borderRadius:10}}>{[["mine","Benim Ziyaretlerim"],["responsible",isAdmin?"Tüm Ekip":"Sorumlu Projeler"]].map(([id,label])=><button key={id} onClick={()=>{setScope(id);setProjectFilter("all");setPersonFilter("");}} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontSize:11,fontWeight:800,background:scope===id?"#fff":"transparent",color:scope===id?"#4A6CF7":"#64748B"}}>{label}</button>)}</div>
     </div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(145px,1fr))",gap:9,marginBottom:14}}>{[["Gerçekleşen Ziyaret",visible.length,"#059669"],["Toplam Saha Eforu",`${hours} sa`,"#7C3AED"],["Ziyaret Edilen Proje",new Set(visible.map(plan=>plan.projectId)).size,"#0369A1"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${color}`,borderRadius:12,padding:13}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><div style={{fontSize:23,fontWeight:900,color,marginTop:3}}>{value}</div></div>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(145px,1fr))",gap:9,marginBottom:14}}>{[["Saha Ziyareti",visible.filter(plan=>(plan.workType||"field")==="field").length,"#059669"],["Uzaktan Çalışma",visible.filter(plan=>plan.workType==="remote").length,"#7C3AED"],["Toplam Efor",`${hours} sa`,"#0369A1"],["Çalışılan Proje",new Set(visible.map(plan=>plan.projectId)).size,"#EA6C00"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${color}`,borderRadius:12,padding:13}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><div style={{fontSize:23,fontWeight:900,color,marginTop:3}}>{value}</div></div>)}</div>
     <div style={{display:"flex",gap:9,flexWrap:"wrap",marginBottom:14}}>
+      <select style={{...iStyle,width:"auto",minWidth:180}} value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option value="all">Tüm Çalışma Türleri</option><option value="field">Saha Ziyaretleri</option><option value="remote">Uzaktan Çalışmalar</option></select>
       <select style={{...iStyle,width:"auto",minWidth:220}} value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="all">Tüm Projeler</option>{projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select>
       {(isAdmin||scope==="responsible")&&<select style={{...iStyle,width:"auto",minWidth:190}} value={personFilter} onChange={e=>setPersonFilter(e.target.value)}><option value="">Tüm Kişiler</option>{state.people.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}</select>}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(320px,100%),1fr))",gap:11}}>
-      {visible.map(plan=>{const project=state.projects.find(item=>item.id===plan.projectId);const person=state.people.find(item=>item.id===plan.userId);const canEdit=isAdmin||plan.userId===currentUser.id;return <div key={plan.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`4px solid ${project?.color||"#4A6CF7"}`,borderRadius:14,padding:15,boxShadow:"0 4px 14px rgba(15,23,42,.04)"}}>
+      {visible.map(plan=>{const project=state.projects.find(item=>item.id===plan.projectId);const person=state.people.find(item=>item.id===plan.userId);const canEdit=isAdmin||plan.userId===currentUser.id;const remote=plan.workType==="remote";return <div key={plan.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`4px solid ${remote?"#7C3AED":project?.color||"#4A6CF7"}`,borderRadius:14,padding:15,boxShadow:"0 4px 14px rgba(15,23,42,.04)"}}>
         <div style={{display:"flex",alignItems:"flex-start",gap:9}}><div style={{flex:1}}><button onClick={()=>onOpenProject(project?.id)} style={{border:0,background:"transparent",padding:0,fontSize:13,fontWeight:850,cursor:"pointer",textAlign:"left"}}>{project?.name||"Silinmiş proje"}</button><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{fmt(plan.date)} · {plan.actualStartTime||plan.startTime} - {plan.actualEndTime||plan.endTime}</div></div><span style={{background:"#ECFDF5",color:"#047857",borderRadius:8,padding:"4px 7px",fontSize:10,fontWeight:850}}>{fieldPlanHours(plan)} SA</span></div>
         {person&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:10}}><Avatar initials={person.avatar} imageUrl={person.avatarUrl} size={23}/><span style={{fontSize:10,fontWeight:750,color:"#475569"}}>{person.name}</span></div>}
-        <div style={{fontSize:11,lineHeight:1.55,color:"#334155",whiteSpace:"pre-wrap",background:"#F8FAFC",borderRadius:9,padding:"9px 10px",marginTop:10}}>{plan.visitNotes||"Ziyaret notu girilmedi."}</div>
-        {canEdit&&<button onClick={()=>setEditing(plan)} style={{marginTop:9,border:0,background:"transparent",color:"#4A6CF7",fontSize:10,fontWeight:800,cursor:"pointer",padding:0}}>Ziyaret ve eforu düzenle</button>}
+        <div style={{fontSize:9,fontWeight:850,color:remote?"#6D28D9":"#047857",marginTop:9}}>{remote?"UZAKTAN ÇALIŞMA":"SAHA ZİYARETİ"}</div><div style={{fontSize:11,lineHeight:1.55,color:"#334155",whiteSpace:"pre-wrap",background:"#F8FAFC",borderRadius:9,padding:"9px 10px",marginTop:6}}>{plan.visitNotes||(remote?"Çalışma notu girilmedi.":"Ziyaret notu girilmedi.")}</div>
+        {canEdit&&<button onClick={()=>setEditing(plan)} style={{marginTop:9,border:0,background:"transparent",color:"#4A6CF7",fontSize:10,fontWeight:800,cursor:"pointer",padding:0}}>Çalışma ve eforu düzenle</button>}
       </div>})}
     </div>
-    {!visible.length&&<div style={{padding:45,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:13,color:"#94A3B8",background:"#fff"}}>Bu kapsamda gerçekleşmiş saha ziyareti bulunmuyor.</div>}
+    {!visible.length&&<div style={{padding:45,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:13,color:"#94A3B8",background:"#fff"}}>Bu kapsamda gerçekleşmiş çalışma bulunmuyor.</div>}
     {editing&&<FieldVisitModal plan={editing} project={state.projects.find(project=>project.id===editing.projectId)} currentUser={currentUser} onClose={()=>setEditing(null)} onSave={data=>{setState(s=>({...s,fieldPlans:(s.fieldPlans||[]).map(plan=>plan.id===editing.id?{...plan,...data,status:"completed",updatedAt:now()}:plan)}));setEditing(null);}}/>}
   </div>;
 }
@@ -741,7 +745,7 @@ function FieldOperationsPage({state,setState,currentUser,isAdmin,onOpenProject})
   const [section,setSection]=useState("plan");
   return <div style={{flex:1,overflow:"auto",background:"#F8FAFC"}}>
     <div style={{position:"sticky",top:0,zIndex:5,display:"flex",gap:7,padding:"12px clamp(16px,4vw,28px)",background:"#fff",borderBottom:"1px solid #E2E8F0"}}>
-      {[["plan","calendar","Saha Planı"],["visits","activity","Gerçekleşen Ziyaretler"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"8px 13px",background:section===id?"#0F766E":"#F1F5F9",color:section===id?"#fff":"#64748B",fontSize:12,fontWeight:800,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}><Icon name={icon} size={14}/>{label}</button>)}
+      {[["plan","calendar","Haftalık Plan"],["visits","activity","Gerçekleşen Çalışmalar"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"8px 13px",background:section===id?"#0F766E":"#F1F5F9",color:section===id?"#fff":"#64748B",fontSize:12,fontWeight:800,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}><Icon name={icon} size={14}/>{label}</button>)}
     </div>
     {section==="plan"?<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>:<FieldVisitsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={onOpenProject}/>}
   </div>;
@@ -778,7 +782,7 @@ function ProjectEffortPanel({project,state,people}) {
     id:`action-${action.id}`,source:"Aksiyon",item:action.text||"Proje aksiyonu",person:action.authorName||people.find(person=>person.id===action.authorId)?.name||"Bilinmiyor",date:action.actionAt||action.createdAt,hours:Number(action.effortHours)||0,note:action.text||"",planned:0,
   }));
   const visitRows=(state.fieldPlans||[]).filter(plan=>plan.projectId===project.id&&(plan.status==="completed"||plan.completedAt)).map(plan=>({
-    id:`visit-${plan.id}`,source:"Saha Ziyareti",item:plan.customer||project.name,person:people.find(person=>person.id===plan.userId)?.name||"Bilinmiyor",date:plan.date||plan.completedAt,hours:fieldPlanHours(plan),note:plan.visitNotes||"",planned:0,
+    id:`visit-${plan.id}`,source:plan.workType==="remote"?"Uzaktan Çalışma":"Saha Ziyareti",item:plan.customer||project.name,person:people.find(person=>person.id===plan.userId)?.name||"Bilinmiyor",date:plan.date||plan.completedAt,hours:fieldPlanHours(plan),note:plan.visitNotes||"",planned:0,
   }));
   const rows=[...taskRows,...actionRows,...visitRows].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
   const total=rows.reduce((sum,row)=>sum+row.hours,0);
@@ -809,6 +813,7 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
   const plans=(state.fieldPlans||[]).filter(p=>p.userId===currentUser.id&&p.date>=todayStr()).sort((a,b)=>a.date.localeCompare(b.date));
   const visits=(state.fieldPlans||[]).filter(p=>p.userId===currentUser.id&&(p.status==="completed"||p.completedAt));
   const todos=((state.userNotes||{})[currentUser.id]?.todos||[]).filter(t=>!t.done);
+  const upcomingTodos=[...todos].sort((a,b)=>(a.dueDate||"9999").localeCompare(b.dueDate||"9999"));
   const cards=[
     {label:"To-Do",value:todos.length,desc:"Müşteri aksiyonlarım",icon:"ticket",color:"#DB2777",view:"todos"},
     {label:"Projelerim",value:myProjects.length,desc:"Dahil olduğum projeler",icon:"projects",color:"#4A6CF7",view:"projects"},
@@ -828,8 +833,9 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
       </button>)}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:14}}>
-      <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{fontWeight:800,fontSize:13,marginBottom:10}}>Yaklaşan Saha Planları</div>{plans.slice(0,4).map(plan=>{const p=state.projects.find(x=>x.id===plan.projectId);return <div key={plan.id} style={{display:"flex",gap:9,alignItems:"center",padding:"8px 0",borderBottom:"1px solid #F1F5F9"}}><span style={{width:8,height:8,borderRadius:"50%",background:p?.color||"#4A6CF7"}}/><div style={{flex:1}}><div style={{fontSize:11,fontWeight:700}}>{p?.name||"Proje"}</div><div style={{fontSize:10,color:"#94A3B8"}}>{fmt(plan.date)} · {plan.startTime}</div></div></div>})}{!plans.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Yaklaşan saha planı yok.</div>}</div>
+      <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{fontWeight:800,fontSize:13,marginBottom:10}}>Yaklaşan Çalışma Planları</div>{plans.slice(0,4).map(plan=>{const p=state.projects.find(x=>x.id===plan.projectId);const remote=plan.workType==="remote";return <div key={plan.id} style={{display:"flex",gap:9,alignItems:"center",padding:"8px 0",borderBottom:"1px solid #F1F5F9"}}><span style={{width:8,height:8,borderRadius:"50%",background:remote?"#7C3AED":p?.color||"#4A6CF7"}}/><div style={{flex:1}}><div style={{fontSize:11,fontWeight:700}}>{p?.name||"Proje"}</div><div style={{fontSize:10,color:"#94A3B8"}}>{remote?"Uzaktan":"Saha"} · {fmt(plan.date)} · {plan.startTime}</div></div></div>})}{!plans.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Yaklaşan çalışma planı yok.</div>}</div>
       <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{fontWeight:800,fontSize:13,marginBottom:10}}>Projelerim</div>{myProjects.slice(0,4).map(p=><button key={p.id} onClick={()=>onOpenProject(p.id)} style={{width:"100%",display:"flex",gap:9,alignItems:"center",padding:"9px 0",border:0,borderBottom:"1px solid #F1F5F9",background:"transparent",cursor:"pointer",textAlign:"left"}}><span style={{width:8,height:8,borderRadius:"50%",background:p.color}}/><span style={{fontSize:11,fontWeight:700}}>{p.name}</span></button>)}{!myProjects.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Atanmış proje yok.</div>}</div>
+      <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><div style={{fontWeight:800,fontSize:13}}>Yaklaşan To-Do'larım</div><button onClick={()=>onNavigate("todos")} style={{border:0,background:"#FDF2F8",color:"#BE185D",borderRadius:7,padding:"5px 7px",fontSize:9,fontWeight:800,cursor:"pointer"}}>Tümünü aç</button></div>{upcomingTodos.slice(0,5).map(todo=>{const project=state.projects.find(item=>item.id===todo.projectId);const late=todo.dueDate&&daysDiff(todo.dueDate)>0;return <button key={todo.id} onClick={()=>onNavigate("todos")} style={{width:"100%",border:0,borderBottom:"1px solid #F1F5F9",background:"transparent",padding:"8px 0",textAlign:"left",cursor:"pointer",display:"flex",gap:8,alignItems:"flex-start"}}><span style={{width:7,height:7,borderRadius:"50%",background:late?"#E11D48":"#DB2777",marginTop:4,flexShrink:0}}/><span style={{minWidth:0,flex:1}}><b style={{display:"block",fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{todo.action||todo.text}</b><span style={{display:"block",fontSize:9,color:late?"#E11D48":"#94A3B8",marginTop:2}}>{project?.name||todo.customer||"Genel"}{todo.dueDate?` · ${fmt(todo.dueDate)}`:""}{late?` · ${daysDiff(todo.dueDate)} gün gecikti`:""}</span></span></button>})}{!upcomingTodos.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Açık To-Do bulunmuyor.</div>}</div>
     </div>
   </div>;
 }
@@ -1514,7 +1520,8 @@ function downloadEffortReport(state,people){
   (state.fieldPlans||[]).filter(plan=>plan.status==="completed"||plan.completedAt).forEach(plan=>{
     const project=state.projects.find(item=>item.id===plan.projectId);
     const person=people.find(item=>item.id===plan.userId);
-    rows.push([project?.name||"Silinmiş proje","Saha Ziyareti",`Saha ziyareti · ${plan.date}`,person?.name||"Atanmamış","",fieldPlanHours(plan),"",plan.date||"",person?.name||"",plan.visitNotes||""]);
+    const workLabel=plan.workType==="remote"?"Uzaktan Çalışma":"Saha Ziyareti";
+    rows.push([project?.name||"Silinmiş proje",workLabel,`${workLabel} · ${plan.date}`,person?.name||"Atanmamış","",fieldPlanHours(plan),"",plan.date||"",person?.name||"",plan.visitNotes||""]);
   });
   Object.entries(state.projectActions||{}).forEach(([projectId,actions])=>{
     const project=state.projects.find(item=>item.id===projectId);
@@ -2011,22 +2018,45 @@ const importSheetRows=(workbook,name)=>workbook.Sheets[name]?XLSX.utils.sheet_to
 const importText=(value)=>String(value??"").trim();
 const importBool=(value)=>["evet","true","1","yes"].includes(importText(value).toLocaleLowerCase("tr-TR"));
 
-function ImportCenter({setState,currentUser}) {
+function ImportCenter({state,setState,currentUser}) {
   const [preview,setPreview]=useState(null);
   const [fileName,setFileName]=useState("");
   const [message,setMessage]=useState("");
-  const downloadTemplate=()=>{
+  const [importType,setImportType]=useState("all");
+  const importModules=[
+    ["all","Tüm Veriler","Tüm modülleri tek çalışma kitabında taşıyın."],
+    ["projects","Projeler","Proje temel bilgileri ve tarihleri."],
+    ["people","Kişiler","Ekip üyeleri ve iletişim bilgileri."],
+    ["tasks","Görevler","Milestone, görev, sorumlu ve efor."],
+    ["tickets","Ticketlar","Ticket içeriği, durum ve atamalar."],
+    ["machines","Makineler","Fiziksel/sanal makine envanteri."],
+    ["actions","Aksiyonlar","Proje aksiyonları, etiket ve efor."],
+    ["risks","Riskler","Proje riskleri ve takip durumları."],
+    ["contacts","RACI ve Kontaklar","İç/dış paydaş ve RACI bilgileri."],
+    ["documents","Dokümanlar","OneDrive bağlantısı ve doküman metadatası."],
+    ["plans","Çalışma Planları","Saha ve uzaktan haftalık planlar."],
+    ["todos","Kişisel To-Do","Kullanıcıya özel müşteri aksiyonları."],
+    ["personalTasks","Yönetici Görevleri","Kişilere atanan bağımsız görevler."],
+  ];
+  const sheetDefinitions={
+    projects:["Projeler",[["Proje Kodu","Proje Adı","Açıklama","Durum","Başlangıç","Bitiş","Renk"],["PRJ-001","Örnek MES Projesi","Kapsam açıklaması","Devam Ediyor","2026-07-01","2026-12-31","#4A6CF7"]]],
+    people:["Kişiler",[["E-posta","Ad Soyad","Telefon","Rol"],["kullanici@sirket.com","Örnek Kullanıcı","+90 5xx","Proje Yöneticisi"]]],
+    tasks:["Görevler",[["Proje Kodu","Milestone","Görev","Başlangıç","Termin","Durum","Öncelik","Sorumlu E-posta","Sorumluluk Grubu","Planlanan Efor"],["PRJ-001","Analiz","Süreç analizi","2026-07-01","2026-07-10","Başlamadı","Yüksek","kullanici@sirket.com","Proje Ekibi",8]]],
+    tickets:["Ticketlar",[["Proje Kodu","Başlık","Açıklama","Kategori","Öncelik","Durum","Atanan E-posta","Açılış Tarihi"],["PRJ-001","Örnek ticket","Detay","Bug","Orta","Açık","kullanici@sirket.com","2026-07-02"]]],
+    machines:["Makineler",[["Proje Kodu","Makine Kodu","Makine Adı","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"],["PRJ-001","MC-01","Paketleme Makinesi","Fiziksel","Hayır","","Bağlantı bekleniyor"]]],
+    actions:["Aksiyonlar",[["Proje Kodu","Tarih","Etiket","Aksiyon","Efor","Yapan E-posta"],["PRJ-001","2026-07-03 10:00","Toplantı","Kapsam toplantısı yapıldı",1.5,"kullanici@sirket.com"]]],
+    risks:["Riskler",[["Proje Kodu","Risk","Seviye","Durum","Açıklama"],["PRJ-001","PLC erişimi gecikebilir","Yüksek","Açık","Teknik ekipten dönüş bekleniyor"]]],
+    contacts:["RACI ve Kontaklar",[["Proje Kodu","Taraf","Ad Soyad","Unvan","Şirket","Departman","E-posta","Telefon","RACI","Sorumluluk Kapsamı"],["PRJ-001","Müşteri","Örnek Kontak","Üretim Müdürü","Müşteri A.Ş.","Üretim","kontak@musteri.com","+90 5xx","A","Kabul ve önceliklendirme"]]],
+    documents:["Dokümanlar",[["Proje Kodu","Doküman Adı","Amaç","Etiketler","OneDrive URL","Sahibi","Versiyon"],["PRJ-001","Teknik Tasarım","Teknik mimari","tasarım,mimari","https://...","Örnek Kullanıcı","1.0"]]],
+    plans:["Çalışma Planları",[["Proje Kodu","Kullanıcı E-posta","Çalışma Türü","Tarih","Başlangıç","Bitiş","Plan Notu","Durum","Gerçekleşen Efor","Gerçekleşme Notu"],["PRJ-001","kullanici@sirket.com","Uzaktan","2026-07-06","09:00","12:00","Entegrasyon kontrolü","Planlandı","",""]]],
+    todos:["Kişisel To-Do",[["Kullanıcı E-posta","Proje Kodu","Müşteri","Termin","Aksiyon","Tamamlandı"],["kullanici@sirket.com","PRJ-001","Örnek Müşteri","2026-07-10","Müşteriden veri bekleniyor","Hayır"]]],
+    personalTasks:["Yönetici Görevleri",[["Atanan E-posta","Atayan E-posta","Görev","Başlangıç","Termin","Durum","Öncelik","Planlanan Efor","Not"],["kullanici@sirket.com","yonetici@sirket.com","Haftalık raporu hazırla","2026-07-06","2026-07-10","Bekliyor","Orta",2,""]]],
+  };
+  const downloadTemplate=(type="all")=>{
     const workbook=XLSX.utils.book_new();
-    const sheets={
-      "Projeler":[["Proje Kodu","Proje Adı","Açıklama","Durum","Başlangıç","Bitiş","Renk"],["PRJ-001","Örnek MES Projesi","Kapsam açıklaması","Devam Ediyor","2026-07-01","2026-12-31","#4A6CF7"]],
-      "Kişiler":[["E-posta","Ad Soyad","Telefon","Rol"],["kullanici@sirket.com","Örnek Kullanıcı","+90 5xx","Proje Yöneticisi"]],
-      "Görevler":[["Proje Kodu","Milestone","Görev","Başlangıç","Termin","Durum","Öncelik","Sorumlu E-posta","Sorumluluk Grubu","Planlanan Efor"],["PRJ-001","Analiz","Süreç analizi","2026-07-01","2026-07-10","Başlamadı","Yüksek","kullanici@sirket.com","Proje Ekibi",8]],
-      "Ticketlar":[["Proje Kodu","Başlık","Açıklama","Kategori","Öncelik","Durum","Atanan E-posta","Açılış Tarihi"],["PRJ-001","Örnek ticket","Detay","Bug","Orta","Açık","kullanici@sirket.com","2026-07-02"]],
-      "Makineler":[["Proje Kodu","Makine Kodu","Makine Adı","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"],["PRJ-001","MC-01","Paketleme Makinesi","Fiziksel","Hayır","","Bağlantı bekleniyor"]],
-      "Aksiyonlar":[["Proje Kodu","Tarih","Etiket","Aksiyon","Efor","Yapan E-posta"],["PRJ-001","2026-07-03 10:00","Toplantı","Kapsam toplantısı yapıldı",1.5,"kullanici@sirket.com"]],
-    };
-    Object.entries(sheets).forEach(([name,rows])=>{const sheet=XLSX.utils.aoa_to_sheet(rows);sheet["!cols"]=rows[0].map((_,index)=>({wch:index<2?22:18}));XLSX.utils.book_append_sheet(workbook,sheet,name);});
-    XLSX.writeFile(workbook,"corject-import-sablonu.xlsx");
+    const definitions=type==="all"?Object.values(sheetDefinitions):[sheetDefinitions[type]];
+    definitions.filter(Boolean).forEach(([name,rows])=>{const sheet=XLSX.utils.aoa_to_sheet(rows);sheet["!cols"]=rows[0].map((_,index)=>({wch:index<2?22:18}));XLSX.utils.book_append_sheet(workbook,sheet,name);});
+    XLSX.writeFile(workbook,type==="all"?"corject-tum-veriler-import-sablonu.xlsx":`corject-${type}-import-sablonu.xlsx`);
   };
   const readFile=event=>{
     const file=event.target.files?.[0];if(!file)return;
@@ -2035,10 +2065,17 @@ function ImportCenter({setState,currentUser}) {
     reader.onload=()=>{
       try{
         const workbook=XLSX.read(reader.result,{type:"array",cellDates:false});
-        const data={projects:importSheetRows(workbook,"Projeler"),people:importSheetRows(workbook,"Kişiler"),tasks:importSheetRows(workbook,"Görevler"),tickets:importSheetRows(workbook,"Ticketlar"),machines:importSheetRows(workbook,"Makineler"),actions:importSheetRows(workbook,"Aksiyonlar")};
+        const data=Object.fromEntries(Object.keys(sheetDefinitions).map(key=>[key,[]]));
+        if(importType==="all")Object.entries(sheetDefinitions).forEach(([key,[name]])=>{data[key]=importSheetRows(workbook,name);});
+        else data[importType]=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{defval:""});
         const errors=[];
+        const knownProjectCodes=new Set([...(state.projects||[]).map(project=>project.importCode).filter(Boolean),...data.projects.map(row=>importText(row["Proje Kodu"])).filter(Boolean)]);
+        const knownEmails=new Set([...(state.people||[]).map(person=>person.email?.toLocaleLowerCase("tr-TR")).filter(Boolean),...data.people.map(row=>importText(row["E-posta"]).toLocaleLowerCase("tr-TR")).filter(Boolean)]);
         data.projects.forEach((row,index)=>{if(!importText(row["Proje Kodu"])||!importText(row["Proje Adı"]))errors.push(`Projeler satır ${index+2}: Proje Kodu ve Proje Adı zorunlu.`);});
-        ["tasks","tickets","machines","actions"].forEach(key=>data[key].forEach((row,index)=>{if(!importText(row["Proje Kodu"]))errors.push(`${key} satır ${index+2}: Proje Kodu zorunlu.`);}));
+        ["tasks","tickets","machines","actions","risks","contacts","documents","plans"].forEach(key=>data[key].forEach((row,index)=>{const code=importText(row["Proje Kodu"]);if(!code)errors.push(`${sheetDefinitions[key][0]} satır ${index+2}: Proje Kodu zorunlu.`);else if(!knownProjectCodes.has(code))errors.push(`${sheetDefinitions[key][0]} satır ${index+2}: ${code} proje kodu sistemde veya Projeler sayfasında bulunmuyor.`);}));
+        data.plans.forEach((row,index)=>{const email=importText(row["Kullanıcı E-posta"]).toLocaleLowerCase("tr-TR");if(!knownEmails.has(email))errors.push(`Çalışma Planları satır ${index+2}: ${email||"Kullanıcı e-postası"} ekipte bulunmuyor.`);});
+        data.todos.forEach((row,index)=>{const email=importText(row["Kullanıcı E-posta"]).toLocaleLowerCase("tr-TR");if(!knownEmails.has(email))errors.push(`Kişisel To-Do satır ${index+2}: ${email||"Kullanıcı e-postası"} ekipte bulunmuyor.`);});
+        data.personalTasks.forEach((row,index)=>{const email=importText(row["Atanan E-posta"]).toLocaleLowerCase("tr-TR");if(!knownEmails.has(email))errors.push(`Yönetici Görevleri satır ${index+2}: ${email||"Atanan e-posta"} ekipte bulunmuyor.`);});
         setPreview({...data,errors});
         setFileName(file.name);
       }catch(error){setPreview(null);setMessage(`Dosya okunamadı: ${error.message}`);}
@@ -2078,18 +2115,28 @@ function ImportCenter({setState,currentUser}) {
         Object.assign(milestone,normalizeMilestone(milestone));
       });
       preview.machines.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const name=importText(row["Makine Adı"]);if(!project||!name||project.machines.some(machine=>machine.code&&machine.code===importText(row["Makine Kodu"])))return;project.machines.push({id:uid(),code:importText(row["Makine Kodu"]),name,type:importText(row.Tip).toLocaleLowerCase("tr-TR")==="sanal"?"virtual":"physical",commissioned:importBool(row["Devreye Alındı"]),commissionedAt:importText(row["Devreye Alma Tarihi"]),note:importText(row["Açıklama"])});});
+      preview.risks.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const title=importText(row.Risk);if(!project||!title||(project.risks||[]).some(risk=>risk.title===title))return;project.risks=[...(project.risks||[]),{id:uid(),title,level:importText(row.Seviye)||"Orta",status:importText(row.Durum)||"Açık",note:importText(row.Açıklama)}];});
+      preview.contacts.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const name=importText(row["Ad Soyad"]);const email=importText(row["E-posta"]);if(!project||!name||(project.raciContacts||[]).some(contact=>contact.name===name&&contact.email===email))return;project.raciContacts=[...(project.raciContacts||[]),{id:uid(),side:importText(row.Taraf)||"Müşteri",name,title:importText(row.Unvan),company:importText(row.Şirket),department:importText(row.Departman),email,phone:importText(row.Telefon),raci:importText(row.RACI)||"I",scope:importText(row["Sorumluluk Kapsamı"])}];});
+      preview.documents.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const name=importText(row["Doküman Adı"]);const url=importText(row["OneDrive URL"]);if(!project||!name||(project.documents||[]).some(document=>document.name===name&&document.url===url))return;project.documents=[...(project.documents||[]),{id:uid(),name,purpose:importText(row.Amaç),tags:importText(row.Etiketler).split(",").map(item=>item.trim()).filter(Boolean),url,owner:importText(row.Sahibi),version:importText(row.Versiyon)||"1.0",createdAt:now()}];});
       const projectTickets={...(current.projectTickets||{})};
       preview.tickets.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const title=importText(row.Başlık);const openedAt=importText(row["Açılış Tarihi"]);if(!project||!title||(projectTickets[project.id]||[]).some(ticket=>ticket.title===title&&String(ticket.ts||"").slice(0,10)===openedAt.slice(0,10)))return;const person=personByEmail.get(importText(row["Atanan E-posta"]).toLocaleLowerCase("tr-TR"));projectTickets[project.id]=[...(projectTickets[project.id]||[]),{id:uid(),title,description:importText(row.Açıklama),category:importText(row.Kategori)||"Diğer",priority:importText(row.Öncelik)||"Orta",status:importText(row.Durum)||"Açık",assignedTo:person?.id||"",author:currentUser.name,ts:openedAt||now(),updatedAt:now(),history:[]}];});
       const projectActions={...(current.projectActions||{})};
       preview.actions.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const text=importText(row.Aksiyon);const actionAt=importText(row.Tarih);if(!project||!text||(projectActions[project.id]||[]).some(action=>action.text===text&&String(action.actionAt||"").slice(0,16)===actionAt.slice(0,16)))return;const person=personByEmail.get(importText(row["Yapan E-posta"]).toLocaleLowerCase("tr-TR"))||currentUser;projectActions[project.id]=[...(projectActions[project.id]||[]),{id:uid(),tag:importText(row.Etiket)||"Diğer",text,effortHours:Number(row.Efor)||0,actionAt:actionAt||now(),createdAt:now(),authorId:person.id,authorName:person.name}];});
-      return {...current,people,projects,projectTickets,projectActions};
+      const fieldPlans=[...(current.fieldPlans||[])];
+      preview.plans.forEach(row=>{const project=projectByCode.get(importText(row["Proje Kodu"]));const person=personByEmail.get(importText(row["Kullanıcı E-posta"]).toLocaleLowerCase("tr-TR"));const date=importText(row.Tarih);const startTime=importText(row.Başlangıç);if(!project||!person||!date||fieldPlans.some(plan=>plan.projectId===project.id&&plan.userId===person.id&&plan.date===date&&plan.startTime===startTime))return;const completed=importText(row.Durum).toLocaleLowerCase("tr-TR").includes("gerçek");fieldPlans.push({id:uid(),projectId:project.id,userId:person.id,workType:importText(row["Çalışma Türü"]).toLocaleLowerCase("tr-TR").includes("uzak")?"remote":"field",date,startTime:startTime||"09:00",endTime:importText(row.Bitiş)||"17:00",note:importText(row["Plan Notu"]),status:completed?"completed":"planned",effortHours:Number(row["Gerçekleşen Efor"])||0,visitNotes:importText(row["Gerçekleşme Notu"]),createdAt:now(),...(completed?{completedAt:now()}: {})});});
+      const userNotes={...(current.userNotes||{})};
+      preview.todos.forEach(row=>{const person=personByEmail.get(importText(row["Kullanıcı E-posta"]).toLocaleLowerCase("tr-TR"));if(!person)return;const action=importText(row.Aksiyon);if(!action)return;const existing=userNotes[person.id]||{};const todos=[...(existing.todos||[])];if(todos.some(todo=>todo.action===action&&todo.dueDate===importText(row.Termin)))return;const project=projectByCode.get(importText(row["Proje Kodu"]));todos.push({id:uid(),projectId:project?.id||"",customer:importText(row.Müşteri)||project?.name||"",dueDate:importText(row.Termin),action,text:action,done:importBool(row.Tamamlandı),createdAt:now()});userNotes[person.id]={...existing,todos};});
+      const personalTasks=[...(current.personalTasks||[])];
+      preview.personalTasks.forEach(row=>{const assignee=personByEmail.get(importText(row["Atanan E-posta"]).toLocaleLowerCase("tr-TR"));const assigner=personByEmail.get(importText(row["Atayan E-posta"]).toLocaleLowerCase("tr-TR"))||currentUser;const title=importText(row.Görev);const dueDate=importText(row.Termin);if(!assignee||!title||personalTasks.some(task=>task.assignee===assignee.id&&task.title===title&&task.dueDate===dueDate))return;personalTasks.push({id:uid(),title,startDate:importText(row.Başlangıç),dueDate,status:STATUSES.includes(importText(row.Durum))?importText(row.Durum):"Bekliyor",priority:PRIORITIES.includes(importText(row.Öncelik))?importText(row.Öncelik):"Orta",estimatedHours:Number(row["Planlanan Efor"])||0,notes:importText(row.Not),assignee:assignee.id,createdBy:assigner.id,createdByName:assigner.name,createdAt:now(),comments:[]});});
+      return {...current,people,projects,projectTickets,projectActions,fieldPlans,userNotes,personalTasks};
     });
     setMessage("Import tamamlandı. Yeni kayıtlar mevcut verilerle birleştirildi.");
     setPreview(null);setFileName("");
   };
-  const counts=preview&&[["Projeler",preview.projects.length],["Kişiler",preview.people.length],["Görevler",preview.tasks.length],["Ticketlar",preview.tickets.length],["Makineler",preview.machines.length],["Aksiyonlar",preview.actions.length]];
-  return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}><div style={{maxWidth:980,margin:"0 auto"}}><div style={{marginBottom:18}}><h2 style={{margin:0,fontSize:22}}>Import Merkezi</h2><p style={{margin:"5px 0 0",fontSize:12,color:"#64748B"}}>Başka uygulamalardaki temel operasyon verilerini kontrollü olarak Corject'e taşıyın.</p></div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12,marginBottom:14}}><div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17}}><b style={{fontSize:13}}>1. Şablonu indirin</b><p style={{fontSize:11,color:"#64748B",lineHeight:1.55}}>Sayfa ve kolon adlarını değiştirmeden mevcut sisteminizden verileri doldurun.</p><Btn variant="secondary" onClick={downloadTemplate}>XLSX Şablonu İndir</Btn></div><div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17}}><b style={{fontSize:13}}>2. Dolu dosyayı seçin</b><p style={{fontSize:11,color:"#64748B",lineHeight:1.55}}>Önce önizleme yapılır; onay vermeden hiçbir kayıt değiştirilmez.</p><label style={{display:"inline-flex",background:"#4A6CF7",color:"#fff",borderRadius:9,padding:"9px 12px",fontSize:11,fontWeight:800,cursor:"pointer"}}>XLSX Seç<input type="file" accept=".xlsx,.xls" onChange={readFile} style={{display:"none"}}/></label></div></div>
+  const counts=preview&&Object.entries(sheetDefinitions).map(([key,[label]])=>[label,preview[key].length]).filter(([,value])=>value>0);
+  return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}><div style={{maxWidth:980,margin:"0 auto"}}><div style={{marginBottom:18}}><h2 style={{margin:0,fontSize:22}}>Import Merkezi</h2><p style={{margin:"5px 0 0",fontSize:12,color:"#64748B"}}>Başka uygulamalardaki temel operasyon verilerini kontrollü olarak Corject'e taşıyın.</p><div style={{marginTop:9,display:"inline-block",background:"#FFF7ED",color:"#9A3412",borderRadius:8,padding:"6px 9px",fontSize:9,fontWeight:700}}>Güvenlik nedeniyle parola ve uzaktan erişim sırları Excel importuna dahil edilmez.</div></div>
+    <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17,marginBottom:14}}><div style={{fontSize:13,fontWeight:850,marginBottom:10}}>Import edilecek veri grubunu seçin</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8}}>{importModules.map(([id,label,description])=><button key={id} onClick={()=>{setImportType(id);setPreview(null);setMessage("");}} style={{border:`1.5px solid ${importType===id?"#4A6CF7":"#E2E8F0"}`,background:importType===id?"#EEF2FF":"#fff",borderRadius:11,padding:11,textAlign:"left",cursor:"pointer"}}><b style={{display:"block",fontSize:11,color:importType===id?"#4338CA":"#1E293B"}}>{label}</b><span style={{display:"block",fontSize:9,color:"#64748B",lineHeight:1.4,marginTop:3}}>{description}</span></button>)}</div></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12,marginBottom:14}}><div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17}}><b style={{fontSize:13}}>1. Şablonu indirin</b><p style={{fontSize:11,color:"#64748B",lineHeight:1.55}}>Seçili veri grubunun kolonlarını değiştirmeden doldurun.</p><Btn variant="secondary" onClick={()=>downloadTemplate(importType)}>Seçili XLSX Şablonunu İndir</Btn></div><div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17}}><b style={{fontSize:13}}>2. Dolu dosyayı seçin</b><p style={{fontSize:11,color:"#64748B",lineHeight:1.55}}>Önce önizleme yapılır; onay vermeden hiçbir kayıt değiştirilmez.</p><label style={{display:"inline-flex",background:"#4A6CF7",color:"#fff",borderRadius:9,padding:"9px 12px",fontSize:11,fontWeight:800,cursor:"pointer"}}>XLSX Seç<input type="file" accept=".xlsx,.xls" onChange={readFile} style={{display:"none"}}/></label></div></div>
     {preview&&<div style={{background:"#fff",border:`1.5px solid ${preview.errors.length?"#FDA4AF":"#C7D2FE"}`,borderRadius:15,padding:17}}><div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap"}}><div><b>{fileName}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>Import önizlemesi</div></div><Btn disabled={preview.errors.length>0} onClick={applyImport}>Importu Uygula</Btn></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:13}}>{counts.map(([label,value])=><div key={label} style={{background:"#F8FAFC",borderRadius:10,padding:10}}><b style={{fontSize:20,color:"#4F46E5"}}>{value}</b><div style={{fontSize:9,color:"#64748B"}}>{label}</div></div>)}</div>{preview.errors.length>0&&<div style={{marginTop:12,background:"#FFF1F2",color:"#BE123C",borderRadius:10,padding:11,fontSize:10,lineHeight:1.6}}>{preview.errors.map(error=><div key={error}>{error}</div>)}</div>}</div>}
     {message&&<div style={{marginTop:12,background:message.startsWith("Import")?"#ECFDF5":"#FFF1F2",color:message.startsWith("Import")?"#047857":"#BE123C",borderRadius:10,padding:12,fontSize:11}}>{message}</div>}
   </div></div>;
@@ -2310,13 +2357,13 @@ function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canMana
     return {
       id:`field-${plan.id}`,
       source:"field_visit",
-      tag:"Saha Ziyareti",
+      tag:plan.workType==="remote"?"Uzaktan Çalışma":"Saha Ziyareti",
       authorId:plan.userId,
       authorName:person?.name||"Kullanıcı",
       actionAt:`${plan.date}T${plan.actualStartTime||plan.startTime||"09:00"}:00`,
       text:completed
-        ?`Saha ziyareti gerçekleştirildi (${time}, ${fieldPlanHours(plan)} saat efor).\n${plan.visitNotes||"Ziyaret notu girilmedi."}`
-        :`Saha ziyareti planlandı (${time}).${plan.note?`\n${plan.note}`:""}`,
+        ?`${plan.workType==="remote"?"Uzaktan çalışma":"Saha ziyareti"} gerçekleştirildi (${time}, ${fieldPlanHours(plan)} saat efor).\n${plan.visitNotes||"Çalışma notu girilmedi."}`
+        :`${plan.workType==="remote"?"Uzaktan çalışma":"Saha ziyareti"} planlandı (${time}).${plan.note?`\n${plan.note}`:""}`,
       completed,
       plan,
     };
@@ -2377,7 +2424,7 @@ function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canMana
       <div style={{position:"absolute",left:7,top:8,bottom:8,width:2,background:"#E2E8F0"}}/>
       {shown.map(item=>{const canEdit=item.source!=="field_visit"&&(isAdmin||item.authorId===currentUser.id);return <div key={item.id} style={{position:"relative",background:"#fff",border:`1.5px solid ${item.source==="field_visit"?"#A7F3D0":"#E2E8F0"}`,borderRadius:12,padding:"13px 15px",marginBottom:10}}>
         <span style={{position:"absolute",left:-22,top:18,width:12,height:12,borderRadius:"50%",background:item.source==="field_visit"?"#059669":project.color,border:"3px solid #F8FAFC"}}/>
-        <span style={{display:"inline-block",fontSize:9,fontWeight:850,color:item.source==="field_visit"?(item.completed?"#047857":"#0369A1"):"#4338CA",background:item.source==="field_visit"?(item.completed?"#ECFDF5":"#F0F9FF"):"#EEF2FF",borderRadius:6,padding:"3px 6px",marginBottom:7}}>{item.source==="field_visit"?(item.completed?"SAHA ZİYARETİ":"SAHA PLANI"):(item.tag||"Diğer").toLocaleUpperCase("tr-TR")}</span>
+        <span style={{display:"inline-block",fontSize:9,fontWeight:850,color:item.source==="field_visit"?(item.completed?"#047857":"#0369A1"):"#4338CA",background:item.source==="field_visit"?(item.completed?"#ECFDF5":"#F0F9FF"):"#EEF2FF",borderRadius:6,padding:"3px 6px",marginBottom:7}}>{item.source==="field_visit"?(item.plan?.workType==="remote"?(item.completed?"UZAKTAN ÇALIŞMA":"UZAKTAN PLAN"):(item.completed?"SAHA ZİYARETİ":"SAHA PLANI")):(item.tag||"Diğer").toLocaleUpperCase("tr-TR")}</span>
         <div style={{fontSize:13,color:"#1E293B",lineHeight:1.55,whiteSpace:"pre-wrap"}}>{item.text}</div>
         {item.source!=="field_visit"&&Number(item.effortHours)>0&&<span style={{display:"inline-block",marginTop:8,background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"3px 7px",fontSize:10,fontWeight:800}}>Efor: {item.effortHours} saat</span>}
         <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginTop:9,fontSize:10,color:"#94A3B8"}}><span style={{fontWeight:700,color:"#64748B"}}>{item.authorName}</span><span>·</span><span>{new Date(item.actionAt||item.createdAt).toLocaleString("tr-TR")}</span>{item.updatedAt&&<span>· Düzenlendi</span>}{item.source==="field_visit"&&(isAdmin||item.authorId===currentUser.id)&&<button onClick={()=>setVisitPlan(item.plan)} style={{marginLeft:"auto",border:0,background:"#ECFDF5",color:"#047857",borderRadius:7,padding:"5px 8px",fontSize:9,fontWeight:850,cursor:"pointer"}}>{item.completed?"Ziyaret ve eforu düzenle":"Not ve efor gir"}</button>}{canEdit&&<span style={{marginLeft:item.source==="field_visit"?0:"auto",display:"flex",gap:8}}><button onClick={()=>edit(item)} style={{border:0,background:"transparent",color:"#4A6CF7",fontSize:10,fontWeight:700,cursor:"pointer"}}>Düzenle</button><button onClick={()=>confirm("Aksiyon silinsin mi?")&&remove(item.id)} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,fontWeight:700,cursor:"pointer"}}>Sil</button></span>}</div>
@@ -3184,7 +3231,7 @@ export default function App() {
     {/* Mobil ust bar */}
     {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:50, background:"#1E293B", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
       <button onClick={()=>setMobileMenuOpen(v=>!v)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", padding:4 }}>☰</button>
-      <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:27,height:27,objectFit:"contain"}}/><span style={{ fontSize:13, fontWeight:800, color:"#4A6CF7", letterSpacing:2 }}>CORJECT</span></button>
+      <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:32,height:32,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:15,fontWeight:850,color:"#A5B4FC",letterSpacing:1.2}}>Corject</span></button>
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
         <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
         <div style={{fontSize:10,fontWeight:800,color:"#fff",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:"28px"}}>{currentUser.name}</div>
@@ -3195,9 +3242,9 @@ export default function App() {
     {/* Sidebar */}
     <div style={{ width:isMobile?220:244, background:"#1E293B", display:"flex", flexDirection:"column", flexShrink:0,
       ...(isMobile?{ position:"fixed", top:0, left:mobileMenuOpen?0:-240, bottom:0, zIndex:960, transition:"left .25s ease", boxShadow:mobileMenuOpen?"4px 0 20px rgba(0,0,0,0.3)":"none" }:{}) }}>
-      <div style={{ padding:"18px 16px 12px", borderBottom:"1px solid #334155" }}>
+      <div style={{ padding:"18px 16px 14px", borderBottom:"1px solid #334155" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <button onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:26,height:26,objectFit:"contain"}}/><span style={{ fontSize:11, fontWeight:800, color:"#4A6CF7", letterSpacing:2, textTransform:"uppercase" }}>CORJECT</span></button>
+            <button onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}><img src={corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgba(99,102,241,.3))"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:20,fontWeight:850,color:"#C7D2FE",letterSpacing:.8,lineHeight:1}}>Corject</span></button>
             <button onClick={()=>{ setView("notifications"); setSelProject(null); setMobileMenuOpen(false); markAllRead(); }} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
               <span style={{ color:"#94A3B8", display:"flex" }}><Icon name="bell" size={17} /></span>
               {(state.notifications||[]).filter(n=>n.userId===currentUser?.id&&!n.read).length>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
@@ -3225,7 +3272,7 @@ export default function App() {
       {view==="admin"&&isAdmin&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
       {view==="ai"&&!selProject&&<AIWorkspace projects={visibleProjects}/>}
-      {view==="import"&&isAdmin&&!selProject&&<ImportCenter setState={setState} currentUser={currentUser}/>}
+      {view==="import"&&isAdmin&&!selProject&&<ImportCenter state={state} setState={setState} currentUser={currentUser}/>}
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>

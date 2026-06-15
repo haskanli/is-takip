@@ -24,11 +24,12 @@ const frame = ({ eyebrow, title, intro, content }) => `
   <div style="margin:0;background:#eef2ff;padding:30px 12px;font-family:Arial,sans-serif;color:#172033">
     <div style="max-width:720px;margin:auto;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 16px 38px rgba(49,46,129,.14)">
       <div style="background:linear-gradient(135deg,#172554,#4338ca 55%,#7c3aed);padding:30px;color:#fff">
-        <div style="font-size:11px;letter-spacing:2px;color:#c7d2fe;font-weight:800">${escapeHtml(eyebrow)}</div>
-        <h1 style="font-size:25px;margin:8px 0">${escapeHtml(title)}</h1>
+        <table role="presentation" style="border-collapse:collapse;margin-bottom:22px"><tr><td style="vertical-align:middle;padding-right:13px"><div style="width:58px;height:58px;border-radius:16px;background:#fff;text-align:center;box-shadow:0 8px 20px rgba(15,23,42,.24)"><img src="https://www.corject.com/corject-logo.png" width="50" height="50" alt="Corject" style="display:block;margin:4px;border:0"></div></td><td style="vertical-align:middle"><div style="font-size:27px;font-weight:900;letter-spacing:.5px;color:#fff">Corject</div><div style="font-size:10px;letter-spacing:1.7px;color:#c7d2fe;font-weight:800;margin-top:3px">PROJECT INTELLIGENCE</div></td></tr></table>
+        <div style="font-size:11px;letter-spacing:1.5px;color:#c7d2fe;font-weight:800">${escapeHtml(eyebrow)}</div>
+        <h1 style="font-size:26px;margin:8px 0">${escapeHtml(title)}</h1>
         <p style="margin:0;color:#e0e7ff;line-height:1.55">${escapeHtml(intro)}</p>
       </div>
-      <div style="padding:26px">${content}</div>
+      <div style="padding:26px">${content}<div style="border-top:1px solid #e2e8f0;margin-top:26px;padding-top:16px;font-size:10px;color:#94a3b8;text-align:center"><b style="color:#4f46e5">Corject</b> · Proje ve operasyon yönetim platformu</div></div>
     </div>
   </div>`;
 
