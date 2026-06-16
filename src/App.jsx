@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.24.4";
+const APP_VERSION = "v1.24.5";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -2570,6 +2570,80 @@ function ResponsibilitySummary({project,selected=[],onChange}) {
   return <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:9}}><div><div style={{fontSize:12,fontWeight:850}}>Kalan İşin Sorumluluk Dağılımı</div><div style={{fontSize:9,color:"#94A3B8",marginTop:2}}>Bir veya birden fazla ekibe tıklayarak görevleri filtreleyin.</div></div>{selected.length>0&&<button onClick={()=>onChange([])} style={{border:0,background:"#FFF1F2",color:"#BE123C",borderRadius:7,padding:"5px 8px",fontSize:9,fontWeight:800,cursor:"pointer"}}>Filtreyi temizle</button>}</div>{items.length?<div style={{display:"grid",gap:7}}>{items.map((item,index)=><ResponsibilityFilterRow key={item.group} item={item} index={index} active={selected.includes(item.group)} onClick={()=>toggle(item.group)}/>)}</div>:<div style={{fontSize:11,color:"#059669"}}>Kalan görev bulunmuyor.</div>}</div>;
 }
 
+function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,progress,doneT,totalT,currentMs,readiness,commissioningPercent,overdueC,criticalC,canEdit,onChange,onOpenSetup}) {
+  const [editing,setEditing]=useState(false);
+  const fileInput=useRef(null);
+  const customer=project.customerProfile||{};
+  const location=project.location||{city:"",district:"",address:""};
+  const modules=project.activeModules||[];
+  const customerName=customer.name||project.customerName||project.name;
+  const accent=customer.accentColor||project.color||"#4A6CF7";
+  const url=mapsUrl(location);
+  const updateCustomer=(data)=>onChange({customerProfile:{...customer,...data}});
+  const updateLocation=(key,value)=>onChange({location:{...location,[key]:value}});
+  const toggleModule=(module)=>onChange({activeModules:modules.includes(module)?modules.filter(item=>item!==module):[...modules,module]});
+  const uploadLogo=(file)=>{
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>updateCustomer({logoUrl:String(reader.result||"")});
+    reader.readAsDataURL(file);
+  };
+  const website=customer.website?customer.website.startsWith("http")?customer.website:`https://${customer.website}`:"";
+  return <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"12px clamp(12px,2.2vw,22px) 10px"}}>
+    <div style={{position:"relative",overflow:"hidden",borderRadius:22,background:`linear-gradient(135deg,${accent} 0%,#111827 72%)`,color:"#fff",padding:"clamp(14px,2.4vw,20px)",boxShadow:`0 18px 45px ${accent}30`}}>
+      <div style={{position:"absolute",right:-55,top:-70,width:190,height:190,borderRadius:"50%",background:"rgba(255,255,255,.12)"}}/>
+      <div style={{position:"relative",zIndex:1,display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:14,alignItems:"center"}}>
+        <button type="button" onClick={()=>canEdit&&fileInput.current?.click()} title={canEdit?"Logo yükle":"Müşteri logosu"} style={{width:76,height:76,border:0,borderRadius:22,background:"rgba(255,255,255,.18)",display:"grid",placeItems:"center",overflow:"hidden",cursor:canEdit?"pointer":"default",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.24)"}}>
+          {customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"contain",background:"#fff",padding:6}}/>:<b style={{fontSize:26,color:"#fff"}}>{customerName.slice(0,2).toUpperCase()}</b>}
+        </button>
+        <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={event=>uploadLogo(event.target.files?.[0])}/>
+        <div style={{minWidth:0}}>
+          <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap",marginBottom:5}}><span style={{fontSize:10,fontWeight:950,letterSpacing:1,color:"rgba(255,255,255,.72)",textTransform:"uppercase"}}>Müşteri Kartviziti</span><Badge label={project.status}/></div>
+          <h2 style={{margin:0,fontSize:"clamp(21px,3vw,30px)",lineHeight:1.08,letterSpacing:"-.02em",overflowWrap:"anywhere"}}>{customerName}</h2>
+          <div style={{marginTop:7,display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
+            <span style={{fontSize:11,fontWeight:850,background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"5px 9px"}}>{project.name}</span>
+            {website&&<a href={website} target="_blank" rel="noreferrer" style={{fontSize:11,fontWeight:850,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"5px 9px",textDecoration:"none"}}>{customer.website}</a>}
+            {url&&<a href={url} target="_blank" rel="noreferrer" style={{fontSize:11,fontWeight:850,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"5px 9px",textDecoration:"none"}}>Yol tarifi</a>}
+            {modules.slice(0,5).map(module=><span key={module} style={{fontSize:10,fontWeight:850,background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.16)",borderRadius:999,padding:"4px 8px"}}>{module}</span>)}
+          </div>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:9,fontSize:11,color:"rgba(255,255,255,.78)"}}>
+            {activePMs.length>0&&<span>PM: <b style={{color:"#fff"}}>{activePMs.map(p=>p.name).join(", ")}</b></span>}
+            {activeStakeholders.slice(0,3).map(item=><span key={item.id}>{item.role}: <b style={{color:"#fff"}}>{item.person.name}</b></span>)}
+            <span>{fmt(project.startDate)} - {fmt(project.endDate)}</span>
+            <span>{doneT}/{totalT} görev</span>
+            {currentMs&&<span>Aktif: <b style={{color:"#fff"}}>{currentMs.name}</b></span>}
+          </div>
+        </div>
+        <div style={{display:"grid",gap:7,minWidth:116,justifyItems:"end"}}>
+          <b style={{fontSize:25,lineHeight:1}}>{progress}%</b>
+          <span style={{fontSize:10,color:"rgba(255,255,255,.75)",fontWeight:850}}>Tamamlama</span>
+          {canEdit&&<button onClick={()=>setEditing(value=>!value)} style={{border:0,background:"#fff",color:accent,borderRadius:11,padding:"7px 10px",fontSize:10,fontWeight:950,cursor:"pointer"}}>{editing?"Kapat":"Düzenle"}</button>}
+        </div>
+      </div>
+      {totalT>0&&<div style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",gap:9,marginTop:13}}><div style={{flex:1,height:6,background:"rgba(255,255,255,.2)",borderRadius:10,overflow:"hidden"}}><div style={{width:`${progress}%`,height:"100%",background:"#fff",borderRadius:10}}/></div><span style={{fontSize:11,fontWeight:900}}>{progress}%</span></div>}
+    </div>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:9,fontSize:11}}>
+      <button onClick={onOpenSetup} style={{border:0,background:readiness>=Number(project.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readiness>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:12,padding:"5px 9px",fontSize:11,fontWeight:850,cursor:"pointer"}}>Başlangıç: {readiness}/100</button>
+      {commissioningPercent!==null&&<span style={{background:"#ECFDF5",color:"#047857",borderRadius:12,padding:"5px 9px",fontWeight:850}}>Devreye Alma: %{commissioningPercent}</span>}
+      {overdueC>0&&<span style={{background:"#FFF7ED",color:"#EA6C00",borderRadius:12,padding:"5px 9px",fontWeight:850}}>Gecikmiş: {overdueC}</span>}
+      {criticalC>0&&<span style={{background:"#FFF1F2",color:"#E11D48",borderRadius:12,padding:"5px 9px",fontWeight:850}}>Kritik: {criticalC}</span>}
+      {contacts.slice(0,3).map(contact=><span key={contact.id} style={{background:"#F0F9FF",color:"#0369A1",borderRadius:12,padding:"5px 9px",fontWeight:800}}>{contact.name}{contact.title?` · ${contact.title}`:""}</span>)}
+    </div>
+    {editing&&canEdit&&<div style={{marginTop:10,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:16,padding:13,display:"grid",gap:10}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:9}}>
+        <Field label="Müşteri Adı"><input style={iStyle} value={customer.name||""} onChange={event=>updateCustomer({name:event.target.value})} placeholder="Firma adı"/></Field>
+        <Field label="Web Adresi"><input style={iStyle} value={customer.website||""} onChange={event=>updateCustomer({website:event.target.value})} placeholder="https://firma.com"/></Field>
+        <Field label="Logo URL"><input style={iStyle} value={(customer.logoUrl||"").startsWith("data:")?"":customer.logoUrl||""} onChange={event=>updateCustomer({logoUrl:event.target.value})} placeholder="https://.../logo.png"/></Field>
+        <Field label="Kart Rengi"><input type="color" style={{...iStyle,padding:4,height:42}} value={accent} onChange={event=>updateCustomer({accentColor:event.target.value})}/></Field>
+        <Field label="İl"><input style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)}/></Field>
+        <Field label="İlçe"><input style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)}/></Field>
+        <Field label="Adres"><input style={iStyle} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Açık adres"/></Field>
+      </div>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{DEFAULT_ACTIVE_MODULES.map(module=><button key={module} onClick={()=>toggleModule(module)} style={{border:"1px solid "+(modules.includes(module)?accent:"#E2E8F0"),background:modules.includes(module)?accent+"18":"#fff",color:modules.includes(module)?accent:"#64748B",borderRadius:999,padding:"7px 10px",fontSize:10,fontWeight:850,cursor:"pointer"}}>{module}</button>)}</div>
+    </div>}
+  </div>;
+}
+
 function MilestoneTaskPanel({ milestone, project, people, isAdmin, showDone, setShowDone, onEdit, onDelete, onAddTask, onEditTask, onDeleteTask, onCheckTask, onTimeTask }) {
   const active=milestone.tasks.filter(t=>t.status!=="Tamamland\u0131");
   const done=milestone.tasks.filter(t=>t.status==="Tamamland\u0131");
@@ -3833,7 +3907,13 @@ export default function App() {
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <div style={{ background:"#fff", borderBottom:"1px solid #E2E8F0", padding:"13px 20px" }}>
+        <ProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={project.customerContacts||[]} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>setProjectTab("setup")}/>
+        <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"0 clamp(12px,2.2vw,22px) 10px"}}>
+          <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:3,scrollbarWidth:"thin"}}>
+            {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje Planı"],["tasks","tasks","Görevler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{padding:"7px 11px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:600,fontSize:12,background:projectTab===id?(project.customerProfile?.accentColor||project.color):"#F1F5FF",color:projectTab===id?"#fff":"#64748B",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",flexShrink:0}}><Icon name={icon} size={14}/>{label}</button>)}
+          </div>
+        </div>
+        {false&&<div style={{ background:"#fff", borderBottom:"1px solid #E2E8F0", padding:"13px 20px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:5, flexWrap:"wrap" }}>
             <span style={{ width:11, height:11, borderRadius:"50%", background:project.color }} />
             <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"#1E293B", background:"#fff", borderRadius:6, padding:"2px 4px" }}>{project.name}</h2>
@@ -3858,7 +3938,7 @@ export default function App() {
           <div style={{ display:"flex", gap:5, marginTop:10, overflowX:"auto", paddingBottom:3, scrollbarWidth:"thin" }}>
             {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje Planı"],["tasks","tasks","Görevler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
-        </div>
+        </div>}
 
         {projectTab==="setup"&&<ProjectSetupPanel project={project} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>}
         {projectTab==="tasks"&&<div style={{ flex:1, overflow:"auto", padding:isMobile?"12px":"18px 22px" }}>
