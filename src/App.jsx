@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.24.6";
+const APP_VERSION = "v1.24.7";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -2415,7 +2415,7 @@ function ProjectOverviewPanel({project,onChange,canEdit}) {
   const toggleModule=(module)=>onChange({activeModules:modules.includes(module)?modules.filter(item=>item!==module):[...modules,module]});
   const statCards=[["Tamamlama",`%${progress}`,"#4F46E5",`${doneTasks}/${totalTasks} görev`],["Başlangıç",`${readinessScore(project)}/100`,readinessScore(project)>=Number(project.readinessThreshold||80)?"#059669":"#E11D48","proje sağlığı"],["Geciken",lateTasks,"#EA6C00","açık termin"],["Risk",openRisks,"#E11D48","açık risk"]];
   return <div style={{display:"grid",gap:14}}>
-    <div style={{background:"linear-gradient(135deg,#0F172A,#4338CA 58%,#06B6D4)",borderRadius:22,padding:"clamp(18px,3vw,28px)",color:"#fff",boxShadow:"0 22px 48px rgba(67,56,202,.2)",overflow:"hidden",position:"relative"}}>
+    <div style={{display:"none",background:"linear-gradient(135deg,#0F172A,#4338CA 58%,#06B6D4)",borderRadius:22,padding:"clamp(18px,3vw,28px)",color:"#fff",boxShadow:"0 22px 48px rgba(67,56,202,.2)",overflow:"hidden",position:"relative"}}>
       <div style={{position:"absolute",right:-60,top:-70,width:220,height:220,borderRadius:"50%",background:"rgba(255,255,255,.13)"}}/>
       <div style={{display:"flex",gap:16,alignItems:"center",position:"relative",zIndex:1,flexWrap:"wrap"}}>
         <div style={{width:78,height:78,borderRadius:24,background:"rgba(255,255,255,.16)",display:"grid",placeItems:"center",overflow:"hidden",border:"1px solid rgba(255,255,255,.2)",boxShadow:"0 16px 34px rgba(15,23,42,.2)"}}>{customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<b style={{fontSize:29}}>{customerName.slice(0,1).toUpperCase()}</b>}</div>
@@ -2599,16 +2599,16 @@ function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,prog
         </button>
         <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={event=>uploadLogo(event.target.files?.[0])}/>
         <div style={{minWidth:0}}>
-          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:2}}><span style={{fontSize:9,fontWeight:950,letterSpacing:.8,color:"rgba(255,255,255,.68)",textTransform:"uppercase"}}>Müşteri</span><Badge label={project.status}/></div>
+          <div style={{fontSize:9,fontWeight:950,letterSpacing:.8,color:"rgba(255,255,255,.68)",textTransform:"uppercase",marginBottom:2}}>Müşteri</div>
           <h2 style={{margin:0,fontSize:"clamp(16px,2.1vw,20px)",lineHeight:1.08,letterSpacing:"-.02em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customerName}</h2>
-          <div style={{marginTop:5,display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
-            <span style={{fontSize:10,fontWeight:850,background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"3px 7px",maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{project.name}</span>
-            {website&&<a href={website} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:850,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"3px 7px",textDecoration:"none",maxWidth:190,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customer.website}</a>}
-            {expanded&&url&&<a href={url} target="_blank" rel="noreferrer" style={{fontSize:11,fontWeight:850,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"5px 9px",textDecoration:"none"}}>Yol tarifi</a>}
-            {expanded&&modules.slice(0,5).map(module=><span key={module} style={{fontSize:10,fontWeight:850,background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.16)",borderRadius:999,padding:"4px 8px"}}>{module}</span>)}
+          <div style={{marginTop:5,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",fontSize:10,color:"rgba(255,255,255,.82)",lineHeight:1.35}}>
+            {activePMs.length>0&&<span>PM: <b style={{color:"#fff"}}>{activePMs.map(p=>p.name).join(", ")}</b></span>}
+            {website&&<a href={website} target="_blank" rel="noreferrer" style={{color:"#fff",textDecoration:"none",fontWeight:850,maxWidth:190,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customer.website}</a>}
+            {expanded&&<span>{project.name}</span>}
+            {expanded&&url&&<a href={url} target="_blank" rel="noreferrer" style={{color:"#fff",textDecoration:"none",fontWeight:850}}>Yol tarifi</a>}
+            {expanded&&modules.slice(0,5).map(module=><span key={module}>{module}</span>)}
           </div>
           {expanded&&<div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:8,fontSize:11,color:"rgba(255,255,255,.78)"}}>
-            {activePMs.length>0&&<span>PM: <b style={{color:"#fff"}}>{activePMs.map(p=>p.name).join(", ")}</b></span>}
             {activeStakeholders.slice(0,3).map(item=><span key={item.id}>{item.role}: <b style={{color:"#fff"}}>{item.person.name}</b></span>)}
             <span>{fmt(project.startDate)} - {fmt(project.endDate)}</span>
             <span>{doneT}/{totalT} görev</span>
