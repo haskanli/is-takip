@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.24.3";
+const APP_VERSION = "v1.24.4";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -938,6 +938,9 @@ function QuickActionModal({projects,onClose,onSave}) {
 
 function MobileHomePage({state,setState,currentUser,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
   const [quick,setQuick]=useState(null);
+  const dailyKey=`corject_daily_flow_${currentUser.id}_${todayStr()}`;
+  const [showDailySummary,setShowDailySummary]=useState(()=>{try{return localStorage.getItem(dailyKey)!=="seen";}catch{return true;}});
+  useEffect(()=>{if(showDailySummary){try{localStorage.setItem(dailyKey,"seen");}catch{}}},[showDailySummary,dailyKey]);
   const todos=((state.userNotes||{})[currentUser.id]?.todos||[]).filter(todo=>!todo.done).sort((a,b)=>String(a.dueDate||"9999").localeCompare(String(b.dueDate||"9999")));
   const plans=(state.fieldPlans||[]).filter(plan=>plan.userId===currentUser.id&&plan.date>=todayStr()).sort((a,b)=>`${a.date} ${a.startTime||""}`.localeCompare(`${b.date} ${b.startTime||""}`)).slice(0,5);
   const tickets=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>(list||[]).map(ticket=>({ticket,project:state.projects.find(item=>item.id===projectId)}))).filter(({ticket})=>ticket.assignedTo===currentUser.id||ticket.author===currentUser.name).slice(0,5);
@@ -954,48 +957,57 @@ function MobileHomePage({state,setState,currentUser,myProjects,deadlineWarnings,
     setQuick(null);
     onOpenProject(data.projectId);
   };
+  const closeDailySummary=()=>{try{localStorage.setItem(dailyKey,"seen");}catch{}setShowDailySummary(false);};
+  const todayPlans=plans.filter(plan=>plan.date===todayStr());
+  const overdueTodos=todos.filter(todo=>todo.dueDate&&daysDiff(todo.dueDate)>0);
+  const urgentTodos=todos.filter(todo=>todo.dueDate&&!overdueTodos.includes(todo)&&daysDiff(todo.dueDate)>=-2);
+  const dailyLines=[
+    todayPlans.length?`Bugün ${todayPlans.length} çalışma planınız var.`:plans.length?`Yaklaşan ilk planınız ${fmt(plans[0].date)} tarihinde.`:"Bugün planlı saha/uzaktan çalışma görünmüyor.",
+    overdueTodos.length?`${overdueTodos.length} To-Do gecikmiş; önce bunlara bakmak iyi olur.`:urgentTodos.length?`${urgentTodos.length} To-Do yakın terminli.`:"Acil To-Do görünmüyor.",
+    deadlineWarnings.length?`${deadlineWarnings.length} termin uyarısı takip bekliyor.`:"Termin tarafı sakin görünüyor.",
+  ];
   const storyItems=[
     {id:"todo",label:"To-Do",value:todos.length,color:"#DB2777",icon:"ticket",action:()=>onNavigate("todos")},
     {id:"plan",label:"Plan",value:plans.length,color:"#0F766E",icon:"calendar",action:()=>onNavigate("fieldops")},
     {id:"late",label:"Termin",value:deadlineWarnings.length,color:"#E11D48",icon:"clock",action:()=>onNavigate("deadlines")},
     {id:"ticket",label:"Ticket",value:tickets.length,color:"#EA6C00",icon:"ticket",action:()=>onNavigate("tickets")},
     {id:"ai",label:"AI",value:"",color:"#7C3AED",icon:"activity",action:()=>onNavigate("ai")},
+    {id:"modules",label:"Modüller",value:"",color:"#0369A1",icon:"reports",action:()=>onNavigate("reports")},
   ];
   return <div style={{minHeight:"100%",background:"linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)",padding:"12px 13px 92px",overflow:"auto"}}>
-    <div style={{display:"flex",gap:12,overflowX:"auto",padding:"4px 0 14px",scrollbarWidth:"none"}}>
-      {storyItems.map(item=><button key={item.id} onClick={item.action} style={{border:0,background:"transparent",padding:0,cursor:"pointer",minWidth:76,textAlign:"center"}}>
-        <span style={{width:64,height:58,borderRadius:18,display:"grid",placeItems:"center",margin:"0 auto 6px",background:item.color+"14",border:`1px solid ${item.color}26`,color:item.color,position:"relative"}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:9,padding:"4px 0 14px"}}>
+      {storyItems.map(item=><button key={item.id} onClick={item.action} style={{border:"1px solid #E2E8F0",background:"#fff",borderRadius:18,padding:"10px 7px",cursor:"pointer",textAlign:"center",minWidth:0,boxShadow:"0 6px 16px rgba(15,23,42,.04)"}}>
+        <span style={{width:46,height:42,borderRadius:14,display:"grid",placeItems:"center",margin:"0 auto 7px",background:item.color+"14",border:`1px solid ${item.color}24`,color:item.color,position:"relative"}}>
           <Icon name={item.icon} size={22}/>{item.value!==""&&<b style={{position:"absolute",right:5,top:5,minWidth:18,height:18,borderRadius:9,display:"grid",placeItems:"center",background:item.color,color:"#fff",fontSize:9,border:"2px solid #fff"}}>{item.value}</b>}
         </span>
-        <span style={{fontSize:10,fontWeight:800,color:"#475569"}}>{item.label}</span>
+        <span style={{fontSize:10,fontWeight:900,color:"#475569",whiteSpace:"nowrap"}}>{item.label}</span>
       </button>)}
     </div>
-    <div style={{background:"linear-gradient(135deg,#EFF6FF,#F5F3FF)",border:"1px solid #DBEAFE",borderRadius:24,padding:18,color:"#172033",boxShadow:"0 18px 40px rgba(67,56,202,.12)",marginBottom:13}}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={42}/><div><div style={{fontSize:11,color:"#4F46E5",fontWeight:900}}>Bugünün akışı</div><h2 style={{margin:"2px 0 0",fontSize:20,color:"#111827"}}>Merhaba, {currentUser.name.split(" ")[0]}</h2></div></div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginTop:16}}>
-        <button onClick={()=>setQuick("todo")} style={{border:0,borderRadius:14,padding:"12px 10px",background:"#fff",color:"#4338CA",fontWeight:900,cursor:"pointer",boxShadow:"0 8px 18px rgba(67,56,202,.08)"}}>+ To-Do</button>
-        <button onClick={()=>setQuick("action")} style={{border:0,borderRadius:14,padding:"12px 10px",background:"#fff",color:"#0369A1",fontWeight:900,cursor:"pointer",boxShadow:"0 8px 18px rgba(14,165,233,.08)"}}>+ Aksiyon</button>
-      </div>
-    </div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10,marginBottom:13}}>
-      {myProjects.slice(0,4).map(project=>{const total=project.milestones.reduce((sum,ms)=>sum+ms.tasks.length,0);const done=project.milestones.reduce((sum,ms)=>sum+ms.tasks.filter(task=>task.status==="Tamamlandı").length,0);const progress=total?Math.round(done/total*100):0;return <button key={project.id} onClick={()=>onOpenProject(project.id)} style={{border:0,borderRadius:18,background:"#fff",padding:13,textAlign:"left",boxShadow:"0 8px 24px rgba(15,23,42,.06)",cursor:"pointer"}}>
-        <span style={{width:28,height:28,borderRadius:10,background:project.color+"18",color:project.color,display:"grid",placeItems:"center",marginBottom:10}}><Icon name="projects" size={15}/></span>
-        <b style={{display:"block",fontSize:12,lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{project.name}</b>
-        <span style={{display:"block",fontSize:10,color:"#94A3B8",marginTop:3}}>%{progress} ilerleme</span>
-        <span style={{display:"block",height:5,background:"#E2E8F0",borderRadius:8,overflow:"hidden",marginTop:8}}><i style={{display:"block",height:"100%",width:`${progress}%`,background:project.color}}/></span>
-      </button>;})}
-    </div>
-    <MobileFeedCard title="Yaklaşan Planlar" actionLabel="Tümü" onAction={()=>onNavigate("fieldops")}>
-      {plans.map(plan=>{const project=state.projects.find(item=>item.id===plan.projectId);return <MobileFeedRow key={plan.id} color={plan.workType==="remote"?"#7C3AED":project?.color||"#0F766E"} icon="calendar" title={project?.name||"Plan"} meta={`${fmt(plan.date)} · ${plan.startTime||""} - ${plan.endTime||""}`} onClick={()=>onNavigate("fieldops")}/>;})}
-      {!plans.length&&<EmptyMobileRow text="Yaklaşan saha/uzaktan çalışma yok."/>}
-    </MobileFeedCard>
-    <MobileFeedCard title="To-Do" actionLabel="Ekle" onAction={()=>setQuick("todo")}>
+    {showDailySummary&&<div style={{background:"linear-gradient(135deg,#EFF6FF,#F5F3FF)",border:"1px solid #DBEAFE",borderRadius:24,padding:18,color:"#172033",boxShadow:"0 18px 40px rgba(67,56,202,.12)",marginBottom:13}}>
+      <div style={{display:"flex",alignItems:"flex-start",gap:10}}><span style={{width:42,height:42,borderRadius:15,background:"#EEF2FF",color:"#4338CA",display:"grid",placeItems:"center",flexShrink:0}}><Icon name="activity" size={20}/></span><div style={{flex:1}}><div style={{fontSize:11,color:"#4F46E5",fontWeight:900}}>AI · Bugünün Akışı</div><h2 style={{margin:"2px 0 6px",fontSize:18,color:"#111827"}}>Merhaba, {currentUser.name.split(" ")[0]}</h2><div style={{display:"grid",gap:5}}>{dailyLines.map(line=><div key={line} style={{fontSize:12,color:"#475569",lineHeight:1.45}}>• {line}</div>)}</div></div><button onClick={closeDailySummary} style={{border:0,background:"#fff",borderRadius:10,width:30,height:30,cursor:"pointer",color:"#64748B",fontWeight:900}}>×</button></div>
+    </div>}
+    <MobileFeedCard title="To-Do" actionLabel="Tümü" onAction={()=>onNavigate("todos")}>
       {todos.slice(0,4).map(todo=><MobileFeedRow key={todo.id} color={todo.dueDate&&daysDiff(todo.dueDate)>0?"#E11D48":"#DB2777"} icon="ticket" title={todo.action||todo.text} meta={`${todo.customer||state.projects.find(item=>item.id===todo.projectId)?.name||"Genel"}${todo.dueDate?` · ${fmt(todo.dueDate)}`:""}`} onClick={()=>onNavigate("todos")}/>)}
       {!todos.length&&<EmptyMobileRow text="Açık To-Do yok."/>}
     </MobileFeedCard>
-    <MobileFeedCard title="Son Aksiyonlar" actionLabel="Aksiyon Ekle" onAction={()=>setQuick("action")}>
-      {actions.map(({action,project})=><MobileFeedRow key={action.id} color={project?.color||"#4A6CF7"} icon="activity" title={action.text||"Aksiyon"} meta={`${project?.name||"Proje"} · ${action.authorName||""}`} onClick={()=>project&&onOpenProject(project.id)}/>)}
+    <MobileFeedCard title="Yaklaşan Planlar" actionLabel="Tümü" onAction={()=>onNavigate("fieldops")}>
+      {plans.map(plan=>{const project=state.projects.find(item=>item.id===plan.projectId);const dayName=plan.date?new Date(plan.date).toLocaleDateString("tr-TR",{weekday:"long"}):"";return <MobileFeedRow key={plan.id} color={plan.workType==="remote"?"#7C3AED":project?.color||"#0F766E"} icon="calendar" title={project?.name||"Plan"} meta={`${dayName?`${dayName} · `:""}${fmt(plan.date)} · ${plan.startTime||""} - ${plan.endTime||""}`} onClick={()=>onNavigate("fieldops")}/>;})}
+      {!plans.length&&<EmptyMobileRow text="Yaklaşan saha/uzaktan çalışma yok."/>}
+    </MobileFeedCard>
+    <MobileFeedCard title="Son Aksiyonlar" actionLabel="Tümü" onAction={()=>onNavigate("projects")}>
+      {actions.slice(0,4).map(({action,project})=><MobileFeedRow key={action.id} color={project?.color||"#4A6CF7"} icon="activity" title={action.text||"Aksiyon"} meta={`${project?.name||"Proje"} · ${action.authorName||""}`} onClick={()=>project&&onOpenProject(project.id)}/>)}
       {!actions.length&&<EmptyMobileRow text="Henüz aksiyon kaydı yok."/>}
+    </MobileFeedCard>
+    <MobileFeedCard title="Projeler" actionLabel="Tümü" onAction={()=>onNavigate("projects")}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10}}>
+        {myProjects.slice(0,4).map(project=>{const total=project.milestones.reduce((sum,ms)=>sum+ms.tasks.length,0);const done=project.milestones.reduce((sum,ms)=>sum+ms.tasks.filter(task=>task.status==="Tamamlandı").length,0);const progress=total?Math.round(done/total*100):0;return <button key={project.id} onClick={()=>onOpenProject(project.id)} style={{border:0,borderRadius:16,background:"#F8FAFC",padding:12,textAlign:"left",cursor:"pointer"}}>
+          <span style={{width:28,height:28,borderRadius:10,background:project.color+"18",color:project.color,display:"grid",placeItems:"center",marginBottom:10}}><Icon name="projects" size={15}/></span>
+          <b style={{display:"block",fontSize:12,lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{project.name}</b>
+          <span style={{display:"block",fontSize:10,color:"#94A3B8",marginTop:3}}>%{progress} ilerleme</span>
+          <span style={{display:"block",height:5,background:"#E2E8F0",borderRadius:8,overflow:"hidden",marginTop:8}}><i style={{display:"block",height:"100%",width:`${progress}%`,background:project.color}}/></span>
+        </button>;})}
+      </div>
+      {!myProjects.length&&<EmptyMobileRow text="Atanmış proje yok."/>}
     </MobileFeedCard>
     {quick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickTodo}/>}
     {quick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickAction}/>}
@@ -2389,6 +2401,7 @@ function ProjectOverviewPanel({project,onChange,canEdit}) {
   const [editing,setEditing]=useState(false);
   const location=project.location||{city:"",district:"",address:""};
   const customer=project.customerProfile||{};
+  const customerName=customer.name||project.customerName||project.name;
   const modules=project.activeModules||[];
   const contacts=[...(project.customerContacts||[]),...(project.raciContacts||[]).filter(item=>item.side==="Müşteri")];
   const totalTasks=project.milestones.flatMap(milestone=>milestone.tasks||[]).length;
@@ -2405,16 +2418,16 @@ function ProjectOverviewPanel({project,onChange,canEdit}) {
     <div style={{background:"linear-gradient(135deg,#0F172A,#4338CA 58%,#06B6D4)",borderRadius:22,padding:"clamp(18px,3vw,28px)",color:"#fff",boxShadow:"0 22px 48px rgba(67,56,202,.2)",overflow:"hidden",position:"relative"}}>
       <div style={{position:"absolute",right:-60,top:-70,width:220,height:220,borderRadius:"50%",background:"rgba(255,255,255,.13)"}}/>
       <div style={{display:"flex",gap:16,alignItems:"center",position:"relative",zIndex:1,flexWrap:"wrap"}}>
-        <div style={{width:74,height:74,borderRadius:22,background:"rgba(255,255,255,.16)",display:"grid",placeItems:"center",overflow:"hidden",border:"1px solid rgba(255,255,255,.2)"}}>{customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<b style={{fontSize:28}}>{project.name.slice(0,1).toUpperCase()}</b>}</div>
-        <div style={{flex:1,minWidth:220}}><div style={{fontSize:11,fontWeight:900,color:"#C7D2FE",letterSpacing:1,textTransform:"uppercase"}}>Proje Ana Sayfası</div><h2 style={{margin:"4px 0 6px",fontSize:"clamp(23px,4vw,34px)",lineHeight:1.1}}>{project.name}</h2><div style={{fontSize:12,color:"#DBEAFE",lineHeight:1.55}}>{project.description||"Proje açıklaması henüz girilmedi."}</div></div>
-        <div style={{display:"grid",gap:7,minWidth:170}}><span style={{fontSize:11,color:"#BFDBFE"}}>Başlangıç: <b style={{color:"#fff"}}>{fmt(project.startDate)}</b></span><span style={{fontSize:11,color:"#BFDBFE"}}>Hedef Bitiş: <b style={{color:"#fff"}}>{fmt(project.endDate)}</b></span>{url&&<a href={url} target="_blank" rel="noreferrer" style={{border:"1px solid rgba(255,255,255,.25)",background:"rgba(255,255,255,.12)",color:"#fff",borderRadius:12,padding:"9px 11px",fontSize:11,fontWeight:900,textDecoration:"none",textAlign:"center"}}>Yol Tarifi Al</a>}</div>
+        <div style={{width:78,height:78,borderRadius:24,background:"rgba(255,255,255,.16)",display:"grid",placeItems:"center",overflow:"hidden",border:"1px solid rgba(255,255,255,.2)",boxShadow:"0 16px 34px rgba(15,23,42,.2)"}}>{customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<b style={{fontSize:29}}>{customerName.slice(0,1).toUpperCase()}</b>}</div>
+        <div style={{flex:1,minWidth:220}}><div style={{fontSize:11,fontWeight:900,color:"#C7D2FE",letterSpacing:1,textTransform:"uppercase"}}>Müşteri / Proje Ana Sayfası</div><h2 style={{margin:"4px 0 6px",fontSize:"clamp(23px,4vw,34px)",lineHeight:1.1}}>{customerName}</h2><div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:8}}><span style={{fontSize:10,fontWeight:900,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.18)",borderRadius:999,padding:"5px 9px"}}>Proje: {project.name}</span>{customer.website&&<a href={customer.website.startsWith("http")?customer.website:`https://${customer.website}`} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:900,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.18)",borderRadius:999,padding:"5px 9px",textDecoration:"none"}}>Web sitesi</a>}{url&&<a href={url} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:900,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.18)",borderRadius:999,padding:"5px 9px",textDecoration:"none"}}>Yol tarifi</a>}</div><div style={{fontSize:12,color:"#DBEAFE",lineHeight:1.55}}>{project.description||"Proje açıklaması henüz girilmedi."}</div></div>
+        <div style={{display:"grid",gap:7,minWidth:190,background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.16)",borderRadius:18,padding:13}}><span style={{fontSize:11,color:"#BFDBFE"}}>Başlangıç: <b style={{color:"#fff"}}>{fmt(project.startDate)}</b></span><span style={{fontSize:11,color:"#BFDBFE"}}>Hedef Bitiş: <b style={{color:"#fff"}}>{fmt(project.endDate)}</b></span><span style={{fontSize:11,color:"#BFDBFE"}}>Konum: <b style={{color:"#fff"}}>{[location.district,location.city].filter(Boolean).join(" / ")||"-"}</b></span></div>
       </div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10}}>{statCards.map(([label,value,color,meta])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:15,boxShadow:"0 8px 24px rgba(15,23,42,.04)"}}><div style={{fontSize:10,color:"#64748B",fontWeight:850,textTransform:"uppercase"}}>{label}</div><div style={{fontSize:26,fontWeight:950,color,marginTop:4}}>{value}</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>{meta}</div></div>)}</div>
     <div className="admin-main-grid" style={{display:"grid",gridTemplateColumns:"1.15fr .85fr",gap:14}}>
       <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:18,padding:18}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:13}}><div><h3 style={{margin:0,fontSize:15}}>Müşteri Bilgileri</h3><p style={{margin:"4px 0 0",fontSize:11,color:"#64748B"}}>Logo, web sitesi, konum ve aktif modüller.</p></div><div style={{display:"flex",gap:7}}>{customer.website&&<a href={customer.website.startsWith("http")?customer.website:`https://${customer.website}`} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:850,color:"#2563EB",background:"#DBEAFE",borderRadius:9,padding:"7px 9px",textDecoration:"none"}}>Web Sitesi</a>}{canEdit&&<button onClick={()=>setEditing(value=>!value)} style={{border:0,borderRadius:9,padding:"7px 9px",background:editing?"#111827":"#EEF2FF",color:editing?"#fff":"#4338CA",fontSize:10,fontWeight:900,cursor:"pointer"}}>{editing?"Kapat":"Düzenle"}</button>}</div></div>
-        {editing&&canEdit&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:9,marginBottom:14}}><Field label="Müşteri Web Sitesi"><input style={iStyle} value={customer.website||""} onChange={event=>updateCustomer("website",event.target.value)} placeholder="https://firma.com"/></Field><Field label="Müşteri Logo URL"><input style={iStyle} value={customer.logoUrl||""} onChange={event=>updateCustomer("logoUrl",event.target.value)} placeholder="https://.../logo.png"/></Field><Field label="İl"><input style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)}/></Field><Field label="İlçe"><input style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)}/></Field><Field label="Adres"><input style={iStyle} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Açık adres"/></Field></div>}
+        {editing&&canEdit&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:9,marginBottom:14}}><Field label="Müşteri Adı"><input style={iStyle} value={customer.name||""} onChange={event=>updateCustomer("name",event.target.value)} placeholder="Firma adı"/></Field><Field label="Müşteri Web Sitesi"><input style={iStyle} value={customer.website||""} onChange={event=>updateCustomer("website",event.target.value)} placeholder="https://firma.com"/></Field><Field label="Müşteri Logo URL"><input style={iStyle} value={customer.logoUrl||""} onChange={event=>updateCustomer("logoUrl",event.target.value)} placeholder="https://.../logo.png"/></Field><Field label="İl"><input style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)}/></Field><Field label="İlçe"><input style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)}/></Field><Field label="Adres"><input style={iStyle} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Açık adres"/></Field></div>}
         <div style={{display:"grid",gap:8,marginBottom:13,fontSize:12,color:"#475569"}}><div><b>Web:</b> {customer.website||"-"}</div><div><b>Konum:</b> {[location.address,location.district,location.city].filter(Boolean).join(", ")||"-"}</div></div>
         <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{DEFAULT_ACTIVE_MODULES.map(module=><button key={module} disabled={!editing||!canEdit} onClick={()=>toggleModule(module)} style={{border:"1px solid "+(modules.includes(module)?"#4F46E5":"#E2E8F0"),background:modules.includes(module)?"#EEF2FF":"#F8FAFC",color:modules.includes(module)?"#4338CA":"#64748B",borderRadius:999,padding:"7px 10px",fontSize:10,fontWeight:850,cursor:editing&&canEdit?"pointer":"default"}}>{module}</button>)}</div>
       </div>
