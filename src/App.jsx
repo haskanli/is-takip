@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.24.8";
+const APP_VERSION = "v1.24.9";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -939,8 +939,7 @@ function QuickActionModal({projects,onClose,onSave}) {
 function MobileHomePage({state,setState,currentUser,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
   const [quick,setQuick]=useState(null);
   const dailyKey=`corject_daily_flow_${currentUser.id}_${todayStr()}`;
-  const [showDailySummary,setShowDailySummary]=useState(()=>{try{return localStorage.getItem(dailyKey)!=="seen";}catch{return true;}});
-  useEffect(()=>{if(showDailySummary){try{localStorage.setItem(dailyKey,"seen");}catch{}}},[showDailySummary,dailyKey]);
+  const [showDailySummary,setShowDailySummary]=useState(()=>{try{return localStorage.getItem(dailyKey)!=="dismissed";}catch{return true;}});
   const todos=((state.userNotes||{})[currentUser.id]?.todos||[]).filter(todo=>!todo.done).sort((a,b)=>String(a.dueDate||"9999").localeCompare(String(b.dueDate||"9999")));
   const plans=(state.fieldPlans||[]).filter(plan=>plan.userId===currentUser.id&&plan.date>=todayStr()).sort((a,b)=>`${a.date} ${a.startTime||""}`.localeCompare(`${b.date} ${b.startTime||""}`)).slice(0,5);
   const tickets=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>(list||[]).map(ticket=>({ticket,project:state.projects.find(item=>item.id===projectId)}))).filter(({ticket})=>ticket.assignedTo===currentUser.id||ticket.author===currentUser.name).slice(0,5);
@@ -957,7 +956,7 @@ function MobileHomePage({state,setState,currentUser,myProjects,deadlineWarnings,
     setQuick(null);
     onOpenProject(data.projectId);
   };
-  const closeDailySummary=()=>{try{localStorage.setItem(dailyKey,"seen");}catch{}setShowDailySummary(false);};
+  const closeDailySummary=()=>{try{localStorage.setItem(dailyKey,"dismissed");}catch{}setShowDailySummary(false);};
   const todayPlans=plans.filter(plan=>plan.date===todayStr());
   const overdueTodos=todos.filter(todo=>todo.dueDate&&daysDiff(todo.dueDate)>0);
   const urgentTodos=todos.filter(todo=>todo.dueDate&&!overdueTodos.includes(todo)&&daysDiff(todo.dueDate)>=-2);
@@ -2645,6 +2644,48 @@ function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,prog
   </div>;
 }
 
+function ProjectListCard({project,people,isAdmin,onOpen,onEdit,onReport,onDelete}) {
+  const total=project.milestones.reduce((a,m)=>a+m.tasks.length,0);
+  const done=project.milestones.reduce((a,m)=>a+m.tasks.filter(t=>t.status==="Tamamlandı").length,0);
+  const progress=total?Math.round(done/total*100):0;
+  const overdue=project.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,0);
+  const critical=project.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length,0);
+  const pms=projectPmIds(project).map(id=>people.find(person=>person.id===id)).filter(Boolean);
+  const stakeholders=projectStakeholders(project).map(item=>({...item,person:people.find(person=>person.id===item.userId)})).filter(item=>item.person);
+  const activeMs=project.milestones.find(milestone=>milestone.status!=="Tamamlandı");
+  const customer=project.customerProfile||{};
+  const customerName=customer.name||project.customerName||project.name;
+  const accent=customer.accentColor||project.color;
+  const website=customer.website?customer.website.startsWith("http")?customer.website:`https://${customer.website}`:"";
+  return <div onClick={onOpen}
+    style={{background:"#fff",borderRadius:16,border:"1px solid #E2E8F0",cursor:"pointer",boxShadow:"0 2px 6px rgba(0,0,0,0.04)",overflow:"hidden",transition:"box-shadow .15s, transform .15s"}}
+    onMouseEnter={event=>{event.currentTarget.style.boxShadow="0 6px 16px rgba(0,0,0,0.1)";event.currentTarget.style.transform="translateY(-2px)";}}
+    onMouseLeave={event=>{event.currentTarget.style.boxShadow="0 2px 6px rgba(0,0,0,0.04)";event.currentTarget.style.transform="none";}}>
+    <div style={{background:`linear-gradient(135deg,#0F172A 0%,${accent} 62%,#111827 100%)`,color:"#fff",padding:"12px 13px",display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:10,alignItems:"center"}}>
+      <span style={{width:42,height:42,borderRadius:12,background:"#fff",display:"grid",placeItems:"center",overflow:"hidden",boxShadow:"0 6px 18px rgba(0,0,0,.18)"}}>{customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"contain",padding:5}}/>:<b style={{fontSize:16,color:accent}}>{customerName.slice(0,2).toUpperCase()}</b>}</span>
+      <span style={{minWidth:0}}><h3 style={{margin:0,fontSize:15,fontWeight:950,lineHeight:1.15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textShadow:"0 2px 10px rgba(0,0,0,.45)"}}>{customerName}</h3><span style={{display:"flex",gap:8,marginTop:5,fontSize:10,color:"rgba(255,255,255,.82)",overflow:"hidden"}}>{pms.length>0&&<span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>PM: <b style={{color:"#fff"}}>{pms.map(pm=>pm.name).join(", ")}</b></span>}{website&&<a href={website} target="_blank" rel="noreferrer" onClick={event=>event.stopPropagation()} style={{color:"#fff",fontWeight:850,textDecoration:"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{customer.website}</a>}</span></span>
+      <span style={{fontSize:18,fontWeight:950,textAlign:"right"}}>{progress}%</span>
+    </div>
+    <div style={{padding:13}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><span style={{fontSize:11,color:"#64748B",fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{project.name}</span><Badge label={project.status}/></div>
+      {activeMs&&<div style={{fontSize:11,color:"#4A6CF7",marginBottom:7,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Aktif: {activeMs.name} - {fmt(activeMs.dueDate)}</div>}
+      <div style={{display:"flex",gap:7,marginBottom:8,flexWrap:"wrap"}}>
+        <span style={{color:readinessScore(project)>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",fontSize:10,fontWeight:850}}>Başlangıç {readinessScore(project)}/100</span>
+        {overdue>0&&<span style={{color:"#EA6C00",fontSize:10,fontWeight:800}}>Gecikmiş: {overdue}</span>}
+        {critical>0&&<span style={{color:"#E11D48",fontSize:10,fontWeight:800}}>Kritik: {critical}</span>}
+        {stakeholders.slice(0,2).map(item=><span key={item.id} style={{fontSize:10,color:"#64748B"}}>{item.role}: {item.person.name}</span>)}
+      </div>
+      <div style={{height:4,background:"#F1F5FF",borderRadius:10}}><div style={{width:`${progress}%`,height:"100%",background:accent,borderRadius:10}}/></div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginTop:7}}>
+        <div style={{fontSize:11,color:"#64748B"}}>{done}/{total} görev</div>
+        {isAdmin&&<div style={{display:"flex",gap:4}}>
+          {[["edit","#EEF2FF","#4A6CF7",onEdit,"Düzenle"],["download","#ECFDF5","#059669",onReport,"HTML rapor"],["trash","#FFF1F2","#E11D48",onDelete,"Sil"]].map(([icon,bg,color,action,title])=><button key={icon} title={title} aria-label={title} onClick={event=>{event.stopPropagation();action();}} style={{width:28,height:28,border:0,borderRadius:7,background:bg,color,display:"grid",placeItems:"center",cursor:"pointer"}}><Icon name={icon} size={13}/></button>)}
+        </div>}
+      </div>
+    </div>
+  </div>;
+}
+
 function MilestoneTaskPanel({ milestone, project, people, isAdmin, showDone, setShowDone, onEdit, onDelete, onAddTask, onEditTask, onDeleteTask, onCheckTask, onTimeTask }) {
   const active=milestone.tasks.filter(t=>t.status!=="Tamamland\u0131");
   const done=milestone.tasks.filter(t=>t.status==="Tamamland\u0131");
@@ -4003,7 +4044,8 @@ export default function App() {
           {isAdmin&&<Btn onClick={()=>setModal({type:"addProject"})}>+ Proje Oluştur</Btn>}
         </div>}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(265px,1fr))", gap:13 }}>
-          {listedProjects.map(p=>{
+          {listedProjects.map(p=><ProjectListCard key={p.id} project={p} people={state.people} isAdmin={isAdmin} onOpen={()=>{setSelProject(p.id);setSelMilestone(null);setProjectTab("setup");}} onEdit={()=>setModal({type:"editProject",data:p})} onReport={()=>generateHTMLReport(p,state.people,state.logs)} onDelete={()=>confirm("Projeyi sil?")&&deleteProject(p.id)}/>)}
+          {false&&listedProjects.map(p=>{
             const total=p.milestones.reduce((a,m)=>a+m.tasks.length,0);
             const done=p.milestones.reduce((a,m)=>a+m.tasks.filter(t=>t.status==="Tamamland\u0131").length,0);
             const prog=total?Math.round((done/total)*100):0;
