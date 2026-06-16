@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.24.7";
+const APP_VERSION = "v1.24.8";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -2424,7 +2424,7 @@ function ProjectOverviewPanel({project,onChange,canEdit}) {
       </div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10}}>{statCards.map(([label,value,color,meta])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:15,boxShadow:"0 8px 24px rgba(15,23,42,.04)"}}><div style={{fontSize:10,color:"#64748B",fontWeight:850,textTransform:"uppercase"}}>{label}</div><div style={{fontSize:26,fontWeight:950,color,marginTop:4}}>{value}</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>{meta}</div></div>)}</div>
-    <div className="admin-main-grid" style={{display:"grid",gridTemplateColumns:"1.15fr .85fr",gap:14}}>
+    <div className="admin-main-grid" style={{display:"none",gridTemplateColumns:"1.15fr .85fr",gap:14}}>
       <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:18,padding:18}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:13}}><div><h3 style={{margin:0,fontSize:15}}>Müşteri Bilgileri</h3><p style={{margin:"4px 0 0",fontSize:11,color:"#64748B"}}>Logo, web sitesi, konum ve aktif modüller.</p></div><div style={{display:"flex",gap:7}}>{customer.website&&<a href={customer.website.startsWith("http")?customer.website:`https://${customer.website}`} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:850,color:"#2563EB",background:"#DBEAFE",borderRadius:9,padding:"7px 9px",textDecoration:"none"}}>Web Sitesi</a>}{canEdit&&<button onClick={()=>setEditing(value=>!value)} style={{border:0,borderRadius:9,padding:"7px 9px",background:editing?"#111827":"#EEF2FF",color:editing?"#fff":"#4338CA",fontSize:10,fontWeight:900,cursor:"pointer"}}>{editing?"Kapat":"Düzenle"}</button>}</div></div>
         {editing&&canEdit&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:9,marginBottom:14}}><Field label="Müşteri Adı"><input style={iStyle} value={customer.name||""} onChange={event=>updateCustomer("name",event.target.value)} placeholder="Firma adı"/></Field><Field label="Müşteri Web Sitesi"><input style={iStyle} value={customer.website||""} onChange={event=>updateCustomer("website",event.target.value)} placeholder="https://firma.com"/></Field><Field label="Müşteri Logo URL"><input style={iStyle} value={customer.logoUrl||""} onChange={event=>updateCustomer("logoUrl",event.target.value)} placeholder="https://.../logo.png"/></Field><Field label="İl"><input style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)}/></Field><Field label="İlçe"><input style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)}/></Field><Field label="Adres"><input style={iStyle} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Açık adres"/></Field></div>}
@@ -2591,7 +2591,7 @@ function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,prog
   };
   const website=customer.website?customer.website.startsWith("http")?customer.website:`https://${customer.website}`:"";
   return <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"8px clamp(10px,2vw,18px) 8px"}}>
-    <div style={{position:"relative",overflow:"hidden",borderRadius:16,background:`linear-gradient(135deg,${accent} 0%,#111827 76%)`,color:"#fff",padding:"9px 12px",boxShadow:`0 10px 24px ${accent}24`}}>
+    <div style={{position:"relative",overflow:"hidden",borderRadius:16,background:`linear-gradient(135deg,#0F172A 0%,${accent} 58%,#111827 100%)`,color:"#fff",padding:"9px 12px",boxShadow:`0 10px 24px ${accent}24`}}>
       <div style={{position:"absolute",right:-45,top:-75,width:145,height:145,borderRadius:"50%",background:"rgba(255,255,255,.10)"}}/>
       <div style={{position:"relative",zIndex:1,display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:10,alignItems:"center"}}>
         <button type="button" onClick={()=>canEdit&&fileInput.current?.click()} title={canEdit?"Logo yükle":"Müşteri logosu"} style={{width:44,height:44,border:0,borderRadius:13,background:"rgba(255,255,255,.18)",display:"grid",placeItems:"center",overflow:"hidden",cursor:canEdit?"pointer":"default",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.24)"}}>
@@ -2599,8 +2599,7 @@ function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,prog
         </button>
         <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={event=>uploadLogo(event.target.files?.[0])}/>
         <div style={{minWidth:0}}>
-          <div style={{fontSize:9,fontWeight:950,letterSpacing:.8,color:"rgba(255,255,255,.68)",textTransform:"uppercase",marginBottom:2}}>Müşteri</div>
-          <h2 style={{margin:0,fontSize:"clamp(16px,2.1vw,20px)",lineHeight:1.08,letterSpacing:"-.02em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customerName}</h2>
+          <h2 style={{margin:0,fontSize:"clamp(17px,2.2vw,22px)",lineHeight:1.08,letterSpacing:"-.02em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#fff",fontWeight:950,textShadow:"0 2px 10px rgba(0,0,0,.6)"}}>{customerName}</h2>
           <div style={{marginTop:5,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",fontSize:10,color:"rgba(255,255,255,.82)",lineHeight:1.35}}>
             {activePMs.length>0&&<span>PM: <b style={{color:"#fff"}}>{activePMs.map(p=>p.name).join(", ")}</b></span>}
             {website&&<a href={website} target="_blank" rel="noreferrer" style={{color:"#fff",textDecoration:"none",fontWeight:850,maxWidth:190,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customer.website}</a>}
