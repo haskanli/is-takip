@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.24.9";
+const APP_VERSION = "v1.25.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -2598,7 +2598,7 @@ function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,prog
         </button>
         <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={event=>uploadLogo(event.target.files?.[0])}/>
         <div style={{minWidth:0}}>
-          <h2 style={{margin:0,fontSize:"clamp(17px,2.2vw,22px)",lineHeight:1.08,letterSpacing:"-.02em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#fff",fontWeight:950,textShadow:"0 2px 10px rgba(0,0,0,.6)"}}>{customerName}</h2>
+          <h2 style={{margin:0,fontSize:"clamp(19px,2.45vw,25px)",lineHeight:1.08,letterSpacing:"-.02em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#fff",fontWeight:950,textShadow:"0 2px 12px rgba(0,0,0,.75)"}}>{customerName}</h2>
           <div style={{marginTop:5,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",fontSize:10,color:"rgba(255,255,255,.82)",lineHeight:1.35}}>
             {activePMs.length>0&&<span>PM: <b style={{color:"#fff"}}>{activePMs.map(p=>p.name).join(", ")}</b></span>}
             {website&&<a href={website} target="_blank" rel="noreferrer" style={{color:"#fff",textDecoration:"none",fontWeight:850,maxWidth:190,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customer.website}</a>}
@@ -2663,7 +2663,7 @@ function ProjectListCard({project,people,isAdmin,onOpen,onEdit,onReport,onDelete
     onMouseLeave={event=>{event.currentTarget.style.boxShadow="0 2px 6px rgba(0,0,0,0.04)";event.currentTarget.style.transform="none";}}>
     <div style={{background:`linear-gradient(135deg,#0F172A 0%,${accent} 62%,#111827 100%)`,color:"#fff",padding:"12px 13px",display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:10,alignItems:"center"}}>
       <span style={{width:42,height:42,borderRadius:12,background:"#fff",display:"grid",placeItems:"center",overflow:"hidden",boxShadow:"0 6px 18px rgba(0,0,0,.18)"}}>{customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"contain",padding:5}}/>:<b style={{fontSize:16,color:accent}}>{customerName.slice(0,2).toUpperCase()}</b>}</span>
-      <span style={{minWidth:0}}><h3 style={{margin:0,fontSize:15,fontWeight:950,lineHeight:1.15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textShadow:"0 2px 10px rgba(0,0,0,.45)"}}>{customerName}</h3><span style={{display:"flex",gap:8,marginTop:5,fontSize:10,color:"rgba(255,255,255,.82)",overflow:"hidden"}}>{pms.length>0&&<span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>PM: <b style={{color:"#fff"}}>{pms.map(pm=>pm.name).join(", ")}</b></span>}{website&&<a href={website} target="_blank" rel="noreferrer" onClick={event=>event.stopPropagation()} style={{color:"#fff",fontWeight:850,textDecoration:"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{customer.website}</a>}</span></span>
+      <span style={{minWidth:0}}><h3 style={{margin:0,fontSize:18,fontWeight:950,lineHeight:1.12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#fff",textShadow:"0 2px 12px rgba(0,0,0,.75)"}}>{customerName}</h3><span style={{display:"flex",gap:8,marginTop:5,fontSize:10,color:"rgba(255,255,255,.86)",overflow:"hidden"}}>{pms.length>0&&<span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>PM: <b style={{color:"#fff"}}>{pms.map(pm=>pm.name).join(", ")}</b></span>}{website&&<a href={website} target="_blank" rel="noreferrer" onClick={event=>event.stopPropagation()} style={{color:"#fff",fontWeight:850,textDecoration:"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{customer.website}</a>}</span></span>
       <span style={{fontSize:18,fontWeight:950,textAlign:"right"}}>{progress}%</span>
     </div>
     <div style={{padding:13}}>
