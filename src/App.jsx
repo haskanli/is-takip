@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.23.0";
+const APP_VERSION = "v1.24.0";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -57,6 +57,21 @@ const PRIORITIES = Object.keys(PCOL);
 const WAIT = ["PM","M\u00fc\u015fteri","ERP","Tedarik\u00e7i","Teknik","\u00dcr\u00fcn-Teknoloji","Y\u00f6netim","Di\u011fer"];
 const DEFAULT_ACTION_TAGS = ["Toplantı","Telefon / Görüşme","Yazışma","Sistem Kontrolü","Saha Ziyareti","Takip","Karar","Bilgilendirme","Diğer"];
 const RESPONSIBILITY_GROUPS = ["Proje Ekibi","\u00dcr\u00fcn Ekibi","Yaz\u0131l\u0131m Ekibi","M\u00fc\u015fteri","Tedarik\u00e7i","Di\u011fer"];
+const TRAINING_SCOPES = ["Operatör Eğitimi","Yönetici Eğitimi","Hatırlatma Eğitimi","Proje Devri Eğitimi","Süper Kullanıcı Eğitimi","Teknik Eğitim","Diğer"];
+const COST_CATEGORIES = ["Saha Yakıt","Yetkili Servis İşçilik","Donanım","Lisans","Konaklama","Ulaşım","Diğer"];
+const DEFAULT_COST_SETTINGS = {fuelConsumptionLtPer100Km:6.5,fuelTryPerLt:45,usdTry:32};
+const mapsUrl = (location={}) => {
+  const query=[location.address,location.district,location.city].filter(Boolean).join(", ");
+  return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:"";
+};
+const escapeHtml = (value="") => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
+const projectCostSettings = (project) => ({...DEFAULT_COST_SETTINGS,...(project?.costSettings||{})});
+const fuelCost = ({roundTripKm=0,settings=DEFAULT_COST_SETTINGS}) => {
+  const liters=(Number(roundTripKm)||0)*(Number(settings.fuelConsumptionLtPer100Km)||6.5)/100;
+  const tryAmount=liters*(Number(settings.fuelTryPerLt)||0);
+  const usdAmount=tryAmount/(Number(settings.usdTry)||1);
+  return {liters:Math.round(liters*10)/10,tryAmount:Math.round(tryAmount),usdAmount:Math.round(usdAmount*100)/100};
+};
 const MES_READINESS_TEMPLATE = [
   {id:"scope",category:"Y\u00f6neti\u015fim",text:"Proje kapsam\u0131, hedef KPI'lar, ba\u015far\u0131 \u00f6l\u00e7\u00fctleri ve kapsam d\u0131\u015f\u0131 konular onayland\u0131.",weight:8},
   {id:"sponsor",category:"Y\u00f6neti\u015fim",text:"Proje sponsoru, karar mekanizmas\u0131, RACI ve eskalasyon yolu belirlendi.",weight:7},
@@ -707,27 +722,33 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
 function FieldVisitModal({plan,project,currentUser,onClose,onSave}) {
   const remote=plan.workType==="remote";
   const suggested=fieldPlanHours(plan);
+  const costSettings=projectCostSettings(project||{});
   const [form,setForm]=useState({
     actualStartTime:plan.actualStartTime||plan.startTime||"09:00",
     actualEndTime:plan.actualEndTime||plan.endTime||"17:00",
     effortHours:plan.effortHours||suggested||"",
     visitNotes:plan.visitNotes||"",
+    roundTripKm:plan.roundTripKm||"",
   });
   const update=(key,value)=>setForm(current=>({...current,[key]:value}));
   const calculated=fieldPlanHours({...plan,...form,effortHours:""});
+  const tripKm=parseFloat(form.roundTripKm)||0;
+  const tripCost=fuelCost({roundTripKm:tripKm,settings:costSettings});
   const save=()=>{
     const hours=parseFloat(form.effortHours)||calculated;
     if(hours<=0){alert("Geçerli bir efor süresi girin.");return;}
     if(!form.visitNotes.trim()){alert(remote?"Uzaktan çalışmada yapılanları yazın.":"Ziyarette yapılanları yazın.");return;}
-    onSave({...form,effortHours:hours,visitNotes:form.visitNotes.trim(),completedBy:currentUser.id,completedByName:currentUser.name});
+    onSave({...form,effortHours:hours,roundTripKm:tripKm||"",fuelCostUsd:tripKm?tripCost.usdAmount:"",fuelCostTry:tripKm?tripCost.tryAmount:"",visitNotes:form.visitNotes.trim(),completedBy:currentUser.id,completedByName:currentUser.name});
   };
   return <Modal title={`${remote?"Uzaktan Çalışma":"Saha Ziyareti"} · ${project?.name||"Proje"}`} onClose={onClose} wide>
     <div style={{background:"#ECFDF5",border:"1px solid #A7F3D0",borderRadius:11,padding:"11px 13px",marginBottom:14,fontSize:11,color:"#047857"}}><b>{fmt(plan.date)}</b> · Planlanan {plan.startTime} - {plan.endTime}{suggested?` · ${suggested} saat`:""}</div>
-    <div className="visit-time-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:10}}>
+    <div className="visit-time-grid" style={{display:"grid",gridTemplateColumns:`repeat(${remote?3:4},minmax(0,1fr))`,gap:10}}>
       <Field label="Gerçek Başlangıç"><input type="time" style={iStyle} value={form.actualStartTime} onChange={e=>update("actualStartTime",e.target.value)}/></Field>
       <Field label="Gerçek Bitiş"><input type="time" style={iStyle} value={form.actualEndTime} onChange={e=>update("actualEndTime",e.target.value)}/></Field>
       <Field label="Proje Eforu (Saat)"><input type="number" min="0.5" step="0.5" style={iStyle} value={form.effortHours} onChange={e=>update("effortHours",e.target.value)} placeholder={String(calculated||"")}/></Field>
+      {!remote&&<Field label="Gidiş-Dönüş KM"><input type="number" min="0" step="1" style={iStyle} value={form.roundTripKm} onChange={e=>update("roundTripKm",e.target.value)} placeholder="örn. 180"/></Field>}
     </div>
+    {!remote&&tripKm>0&&<div style={{fontSize:11,color:"#64748B",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:9,padding:"8px 10px",marginTop:8,marginBottom:4}}>Yakıt maliyeti tahmini: <b>${tripCost.usdAmount}</b> / <b>{tripCost.tryAmount} TL</b> · {costSettings.fuelConsumptionLtPer100Km} L/100km, {costSettings.fuelTryPerLt} TL/L, kur {costSettings.usdTry}</div>}
     <Field label={remote?"Uzaktan Çalışmada Yapılanlar":"Ziyarette Yapılanlar"}><textarea style={{...iStyle,minHeight:115,resize:"vertical",lineHeight:1.5}} value={form.visitNotes} onChange={e=>update("visitNotes",e.target.value)} placeholder={remote?"Yapılan analiz, kontrol, geliştirme, görüşme ve sonraki aksiyonlar...":"Görüşülen konular, yapılan kontroller, alınan kararlar ve sonraki aksiyonlar..."}/></Field>
     <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={save}>{remote?"Çalışmayı":"Ziyareti"} Tamamla ve Eforu Kaydet</Btn></div>
   </Modal>;
@@ -836,7 +857,8 @@ function ProjectEffortPanel({project,state,people}) {
   </div>;
 }
 
-function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
+function DashboardPage({state,setState,currentUser,isAdmin,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
+  const [quick,setQuick]=useState(null);
   const myTasks=state.projects.flatMap(p=>p.milestones.flatMap(m=>m.tasks.filter(t=>t.assignee===currentUser.id&&t.status!=="Tamamlandı")));
   const personal=(state.personalTasks||[]).filter(t=>t.assignee===currentUser.id&&t.status!=="Tamamlandı");
   const tickets=Object.values(state.projectTickets||{}).flat().filter(t=>t.assignedTo===currentUser.id||t.author===currentUser.name);
@@ -854,8 +876,25 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
     {label:"AI Asistan",value:"",desc:"Projeleri yorumla ve aksiyon çıkar",icon:"activity",color:"#6D28D9",view:"ai"},
     {label:"Raporlar",value:"",desc:"Proje çıktılarını görüntüle",icon:"reports",color:"#0369A1",view:"reports"},
   ];
+  const saveQuickTodo=(data)=>{
+    const todo={id:uid(),customer:data.customer||"",projectId:data.projectId||"",dueDate:data.dueDate||"",action:data.action,text:data.action,done:false,createdAt:now()};
+    setState(current=>({...current,userNotes:{...(current.userNotes||{}),[currentUser.id]:{...((current.userNotes||{})[currentUser.id]||{}),todos:[...(((current.userNotes||{})[currentUser.id]?.todos)||[]),todo]}}}));
+    setQuick(null);
+  };
+  const saveQuickAction=(data)=>{
+    if(!data.projectId)return;
+    const project=state.projects.find(item=>item.id===data.projectId);
+    const action={id:uid(),tag:data.tag||"Takip",text:data.text,effortHours:parseFloat(data.effortHours)||0,actionAt:now(),createdAt:now(),authorId:currentUser.id,authorName:currentUser.name};
+    setState(current=>({...current,projectActions:{...(current.projectActions||{}),[data.projectId]:[action,...(((current.projectActions||{})[data.projectId])||[])]}}));
+    setQuick(null);
+    if(project)onOpenProject(project.id);
+  };
   return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}>
     <div style={{marginBottom:22}}><h2 style={{margin:0,fontSize:22}}>Merhaba, {currentUser.name}</h2><p style={{margin:"5px 0 0",color:"#64748B",fontSize:13}}>Bugün neye odaklanmak istersiniz?</p></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:12,marginBottom:18}}>
+      <button onClick={()=>setQuick("todo")} style={{border:0,borderRadius:16,padding:16,textAlign:"left",cursor:"pointer",background:"linear-gradient(135deg,#DB2777,#7C3AED)",color:"#fff",boxShadow:"0 12px 28px rgba(124,58,237,.18)"}}><b style={{display:"block",fontSize:16}}>+ Hızlı To-Do</b><span style={{fontSize:11,color:"#FCE7F3"}}>Müşteri, termin ve aksiyonu hemen kaydet</span></button>
+      <button onClick={()=>setQuick("action")} style={{border:0,borderRadius:16,padding:16,textAlign:"left",cursor:"pointer",background:"linear-gradient(135deg,#2563EB,#0891B2)",color:"#fff",boxShadow:"0 12px 28px rgba(37,99,235,.18)"}}><b style={{display:"block",fontSize:16}}>+ Hızlı Aksiyon</b><span style={{fontSize:11,color:"#DBEAFE"}}>Proje görüşmesi, yazışma veya saha notu gir</span></button>
+    </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:13,marginBottom:24}}>
       {cards.map(card=><button key={card.view} onClick={()=>onNavigate(card.view)} style={{aspectRatio:"1.15/1",minHeight:145,border:"1.5px solid #E2E8F0",borderRadius:17,background:"#fff",padding:17,textAlign:"left",cursor:"pointer",boxShadow:"0 5px 18px rgba(15,23,42,.05)",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
         <span style={{width:38,height:38,borderRadius:12,display:"grid",placeItems:"center",background:card.color+"15",color:card.color}}><Icon name={card.icon} size={20}/></span>
@@ -867,7 +906,33 @@ function DashboardPage({state,currentUser,isAdmin,myProjects,deadlineWarnings,on
       <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{fontWeight:800,fontSize:13,marginBottom:10}}>Projelerim</div>{myProjects.slice(0,4).map(p=><button key={p.id} onClick={()=>onOpenProject(p.id)} style={{width:"100%",display:"flex",gap:9,alignItems:"center",padding:"9px 0",border:0,borderBottom:"1px solid #F1F5F9",background:"transparent",cursor:"pointer",textAlign:"left"}}><span style={{width:8,height:8,borderRadius:"50%",background:p.color}}/><span style={{fontSize:11,fontWeight:700}}>{p.name}</span></button>)}{!myProjects.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Atanmış proje yok.</div>}</div>
       <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><div style={{fontWeight:800,fontSize:13}}>Yaklaşan To-Do'larım</div><button onClick={()=>onNavigate("todos")} style={{border:0,background:"#FDF2F8",color:"#BE185D",borderRadius:7,padding:"5px 7px",fontSize:9,fontWeight:800,cursor:"pointer"}}>Tümünü aç</button></div>{upcomingTodos.slice(0,5).map(todo=>{const project=state.projects.find(item=>item.id===todo.projectId);const late=todo.dueDate&&daysDiff(todo.dueDate)>0;return <button key={todo.id} onClick={()=>onNavigate("todos")} style={{width:"100%",border:0,borderBottom:"1px solid #F1F5F9",background:"transparent",padding:"8px 0",textAlign:"left",cursor:"pointer",display:"flex",gap:8,alignItems:"flex-start"}}><span style={{width:7,height:7,borderRadius:"50%",background:late?"#E11D48":"#DB2777",marginTop:4,flexShrink:0}}/><span style={{minWidth:0,flex:1}}><b style={{display:"block",fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{todo.action||todo.text}</b><span style={{display:"block",fontSize:9,color:late?"#E11D48":"#94A3B8",marginTop:2}}>{project?.name||todo.customer||"Genel"}{todo.dueDate?` · ${fmt(todo.dueDate)}`:""}{late?` · ${daysDiff(todo.dueDate)} gün gecikti`:""}</span></span></button>})}{!upcomingTodos.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Açık To-Do bulunmuyor.</div>}</div>
     </div>
+    {quick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickTodo}/>}
+    {quick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickAction}/>}
   </div>;
+}
+
+function QuickTodoModal({projects,onClose,onSave}) {
+  const [form,setForm]=useState({projectId:"",customer:"",dueDate:"",action:""});
+  const update=(key,value)=>setForm(current=>({...current,[key]:value}));
+  const selected=projects.find(project=>project.id===form.projectId);
+  return <Modal title="Hızlı To-Do" onClose={onClose}>
+    <Field label="Proje / Müşteri"><select style={iStyle} value={form.projectId} onChange={event=>update("projectId",event.target.value)}><option value="">Genel / proje yok</option>{projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></Field>
+    {!selected&&<Field label="Müşteri"><input style={iStyle} value={form.customer} onChange={event=>update("customer",event.target.value)} placeholder="Müşteri adı"/></Field>}
+    <Field label="Termin"><input type="date" style={iStyle} value={form.dueDate} onChange={event=>update("dueDate",event.target.value)}/></Field>
+    <Field label="Aksiyon"><textarea style={{...iStyle,minHeight:100,resize:"vertical"}} value={form.action} onChange={event=>update("action",event.target.value)} placeholder="Ne yapılacak?"/></Field>
+    <div style={{display:"flex",justifyContent:"flex-end",gap:7}}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn disabled={!form.action.trim()} onClick={()=>onSave({...form,customer:selected?.name||form.customer})}>Kaydet</Btn></div>
+  </Modal>;
+}
+
+function QuickActionModal({projects,onClose,onSave}) {
+  const [form,setForm]=useState({projectId:projects[0]?.id||"",tag:"Takip",text:"",effortHours:""});
+  const update=(key,value)=>setForm(current=>({...current,[key]:value}));
+  return <Modal title="Hızlı Aksiyon" onClose={onClose}>
+    <Field label="Proje"><select style={iStyle} value={form.projectId} onChange={event=>update("projectId",event.target.value)}>{projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></Field>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Aksiyon Türü"><select style={iStyle} value={form.tag} onChange={event=>update("tag",event.target.value)}>{DEFAULT_ACTION_TAGS.map(tag=><option key={tag}>{tag}</option>)}</select></Field><Field label="Efor (opsiyonel)"><input type="number" min="0" step=".25" style={iStyle} value={form.effortHours} onChange={event=>update("effortHours",event.target.value)}/></Field></div>
+    <Field label="Not"><textarea style={{...iStyle,minHeight:120,resize:"vertical"}} value={form.text} onChange={event=>update("text",event.target.value)} placeholder="Ne yaptınız, kiminle görüştünüz, sonraki aksiyon nedir?"/></Field>
+    <div style={{display:"flex",justifyContent:"flex-end",gap:7}}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn disabled={!form.projectId||!form.text.trim()} onClick={()=>onSave(form)}>Kaydet</Btn></div>
+  </Modal>;
 }
 
 function AdminBoardCard({id,size="medium",draggedId,onDragStart,onDragEnd,onDrop,onResize,children,style={}}) {
@@ -1841,7 +1906,7 @@ function PersonDetailModal({ person, projects, personalTasks, onClose }) {
 // ─── My Tasks + Notes ────────────────────────────────────────────────────────
 function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTaskId="", onTaskOpened }) {
   const [showDone,setShowDone]=useState(false);
-  const [section,setSection]=useState("assigned");
+  const [section,setSection]=useState("all");
   const [modal,setModal]=useState(null);
   const [assignmentNotice,setAssignmentNotice]=useState("");
   const [noteText,setNoteText]=useState((state.userNotes||{})[currentUser.id]?.notes||"");
@@ -1857,7 +1922,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
   const active=allMy.filter(t=>t.status!=="Tamamland\u0131");
   const completed=allMy.filter(t=>t.status==="Tamamland\u0131");
   const overdue=active.filter(t=>delayLvl(t.dueDate,t.status));
-  const sectionAll=section==="project"?myProjT.map(t=>({...t,source:"project"})):myP.map(t=>({...t,source:"personal"}));
+  const sectionAll=section==="all"?allMy:section==="project"?myProjT.map(t=>({...t,source:"project"})):myP.map(t=>({...t,source:"personal"}));
   const sectionActive=sectionAll.filter(t=>t.status!=="Tamamland\u0131");
   const sectionCompleted=sectionAll.filter(t=>t.status==="Tamamland\u0131");
   const linkedTaskId=initialTaskId||new URLSearchParams(window.location.search).get("task");
@@ -1906,15 +1971,15 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
         {overdue.map(t=><div key={t.id} style={{ fontSize:12, color:"#1E293B", display:"flex", gap:8, marginBottom:3 }}><DelayBadge dateStr={t.dueDate} status={t.status} /><span>{t.title}</span><span style={{ color:"#94A3B8" }}>— {fmt(t.dueDate)}</span></div>)}
       </div>}
       <div style={{display:"flex",gap:6,overflowX:"auto",margin:"14px 0 4px"}}>
-        {[["assigned","tasks","Yöneticinin Atadıkları"],["project","projects","Projeden Gelenler"],["todos","ticket","Kendi To-Do'larım"],["notes","notes","Notlarım"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 13px",background:section===id?"#4A6CF7":"#F1F5FF",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
+        {[["all","tasks","Tümü"],["assigned","tasks","Yöneticinin Atadıkları"],["project","projects","Projeden Gelenler"],["todos","ticket","Kendi To-Do'larım"],["notes","notes","Notlarım"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 13px",background:section===id?"#4A6CF7":"#F1F5FF",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
       </div>
     </div>
 
     <div style={{ flex:1, overflow:"auto" }}>
       {/* Tasks column */}
-      {(section==="assigned"||section==="project")&&<div style={{ padding:"12px clamp(14px, 4vw, 28px)",maxWidth:1100,width:"100%" }}>
+      {(section==="all"||section==="assigned"||section==="project")&&<div style={{ padding:"12px clamp(14px, 4vw, 28px)",maxWidth:1100,width:"100%" }}>
         {sectionActive.length>0&&<div style={{ marginBottom:16 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
+          <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{section==="all"?"Tüm Görevler":section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {sectionActive.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel Görev"} canEdit
               onOpen={()=>setModal({type:"taskDetail",data:t})}
@@ -2198,8 +2263,75 @@ function ReportScheduleCard({item,canEdit,onToggle,onDelete}) {
   </details>;
 }
 
+function ProjectOverviewPanel({project,onChange,canEdit}) {
+  const location=project.location||{city:"",district:"",address:""};
+  const updateLocation=(key,value)=>onChange({location:{...location,[key]:value}});
+  const url=mapsUrl(location);
+  return <div style={{display:"grid",gridTemplateColumns:"minmax(260px,1fr) minmax(260px,1fr)",gap:14}} className="admin-main-grid">
+    <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:18}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:12}}><div><h3 style={{margin:0,fontSize:15}}>Proje Özeti</h3><p style={{margin:"4px 0 0",fontSize:11,color:"#64748B"}}>Temel bilgiler, müşteri konumu ve hızlı erişim.</p></div>{url&&<a href={url} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:850,color:"#2563EB",background:"#DBEAFE",borderRadius:8,padding:"6px 8px",textDecoration:"none"}}>Maps'te Aç</a>}</div>
+      <div style={{display:"grid",gap:9}}>
+        <Field label="İl"><input disabled={!canEdit} style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)} placeholder="İstanbul"/></Field>
+        <Field label="İlçe"><input disabled={!canEdit} style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)} placeholder="Tuzla"/></Field>
+        <Field label="Adres"><textarea disabled={!canEdit} style={{...iStyle,minHeight:82,resize:"vertical"}} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Müşteri açık adresi"/></Field>
+      </div>
+    </div>
+    <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:18}}>
+      <h3 style={{margin:"0 0 12px",fontSize:15}}>Sade Kullanım Haritası</h3>
+      <div style={{display:"grid",gap:9}}>
+        {[["Proje Planı","Milestone ve görev tarihlerini takip edin."],["Görevler","Ekip sorumluluklarını ve kalan işi görün."],["Ticketlar","Müşteri talepleri ve Jira ilişkisini izleyin."],["Aksiyon","Günlük görüşme, saha, yazışma ve kararları kaydedin."],["Proje Bilgileri","Eğitim, maliyet, doküman, erişim ve ayarlar burada."]].map(([title,desc])=><div key={title} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:11,padding:"10px 12px"}}><b style={{fontSize:12}}>{title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{desc}</div></div>)}
+      </div>
+    </div>
+  </div>;
+}
+
+function TrainingPanel({project,onChange,canEdit,people}) {
+  const trainings=project.trainings||[];
+  const empty={scope:TRAINING_SCOPES[0],title:"",date:todayStr(),trainerId:"",participants:"",notes:""};
+  const [form,setForm]=useState(empty);
+  const [search,setSearch]=useState("");
+  const update=(key,value)=>setForm(current=>({...current,[key]:value}));
+  const save=()=>{
+    if(!form.title.trim())return;
+    onChange({trainings:[{...form,id:uid(),createdAt:now(),title:form.title.trim(),participants:form.participants.split(",").map(item=>item.trim()).filter(Boolean)},...trainings]});
+    setForm(empty);
+  };
+  const filtered=trainings.filter(item=>`${item.scope} ${item.title} ${item.notes}`.toLocaleLowerCase("tr-TR").includes(search.toLocaleLowerCase("tr-TR")));
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}><div><h3 style={{margin:0,fontSize:15}}>Eğitimler</h3><p style={{margin:"4px 0 0",fontSize:11,color:"#64748B"}}>Proje kapsamındaki eğitimleri, katılımcıları ve devir notlarını takip edin.</p></div><input style={{...iStyle,width:240}} value={search} onChange={event=>setSearch(event.target.value)} placeholder="Eğitimlerde ara..."/></div>
+    {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:15,marginBottom:13,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:9}}><Field label="Kapsam"><select style={iStyle} value={form.scope} onChange={event=>update("scope",event.target.value)}>{TRAINING_SCOPES.map(scope=><option key={scope}>{scope}</option>)}</select></Field><Field label="Başlık"><input style={iStyle} value={form.title} onChange={event=>update("title",event.target.value)} placeholder="Örn. Operatör vardiya eğitimi"/></Field><Field label="Tarih"><input type="date" style={iStyle} value={form.date} onChange={event=>update("date",event.target.value)}/></Field><Field label="Eğitmen"><select style={iStyle} value={form.trainerId} onChange={event=>update("trainerId",event.target.value)}><option value="">- Seç -</option>{people.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}</select></Field><Field label="Katılımcılar"><input style={iStyle} value={form.participants} onChange={event=>update("participants",event.target.value)} placeholder="Virgül ile yazın"/></Field><Field label="Not"><input style={iStyle} value={form.notes} onChange={event=>update("notes",event.target.value)} placeholder="Kapsam, eksik kalanlar, sonraki eğitim"/></Field><div style={{alignSelf:"end"}}><Btn onClick={save}>Eğitimi Kaydet</Btn></div></div>}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(300px,100%),1fr))",gap:10}}>{filtered.map(item=>{const trainer=people.find(person=>person.id===item.trainerId);return <div key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:"3px solid #7C3AED",borderRadius:13,padding:14}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:13}}>{item.title}</b><span style={{fontSize:9,fontWeight:850,color:"#6D28D9",background:"#F5F3FF",borderRadius:7,padding:"3px 6px"}}>{item.scope}</span></div><div style={{fontSize:11,color:"#64748B",lineHeight:1.6,marginTop:8}}>{fmt(item.date)}{trainer?` · ${trainer.name}`:""}{item.participants?.length?` · ${item.participants.length} katılımcı`:""}{item.notes?` · ${item.notes}`:""}</div>{canEdit&&<button onClick={()=>onChange({trainings:trainings.filter(entry=>entry.id!==item.id)})} style={{marginTop:9,border:0,background:"transparent",color:"#E11D48",fontSize:10,fontWeight:800,cursor:"pointer"}}>Sil</button>}</div>;})}</div>
+    {!filtered.length&&<div style={{padding:36,textAlign:"center",border:"1px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Eğitim kaydı bulunmuyor.</div>}
+  </div>;
+}
+
+function ProjectCostPanel({project,onChange,state,canEdit}) {
+  const settings=projectCostSettings(project);
+  const costs=project.costItems||[];
+  const empty={category:"Yetkili Servis İşçilik",description:"",date:todayStr(),amountUsd:"",amountTry:"",note:""};
+  const [form,setForm]=useState(empty);
+  const updateSettings=(key,value)=>onChange({costSettings:{...settings,[key]:Number(value)||0}});
+  const save=()=>{
+    if(!form.description.trim())return;
+    const amountUsd=form.amountUsd?Number(form.amountUsd):(Number(form.amountTry)||0)/(settings.usdTry||1);
+    onChange({costItems:[{...form,id:uid(),amountUsd:Math.round(amountUsd*100)/100,amountTry:form.amountTry?Number(form.amountTry):Math.round(amountUsd*(settings.usdTry||1)),createdAt:now()},...costs]});
+    setForm(empty);
+  };
+  const visitCosts=(state.fieldPlans||[]).filter(plan=>plan.projectId===project.id&&(plan.status==="completed"||plan.completedAt)&&Number(plan.roundTripKm)>0).map(plan=>{const c=fuelCost({roundTripKm:plan.roundTripKm,settings});const person=state.people.find(item=>item.id===plan.userId);return {id:`visit-${plan.id}`,category:"Saha Yakıt",description:`${person?.name||"Kullanıcı"} · ${fmt(plan.date)} saha ziyareti`,amountUsd:c.usdAmount,amountTry:c.tryAmount,meta:`${plan.roundTripKm} km · ${c.liters} L`};});
+  const manual=costs.map(item=>({...item,amountUsd:Number(item.amountUsd)||0,amountTry:item.amountTry?Number(item.amountTry):Math.round((Number(item.amountUsd)||0)*(settings.usdTry||1))}));
+  const rows=[...visitCosts,...manual];
+  const totalUsd=rows.reduce((sum,item)=>sum+(Number(item.amountUsd)||0),0);
+  const totalTry=rows.reduce((sum,item)=>sum+(Number(item.amountTry)||0),0);
+  return <div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9,marginBottom:13}}>{[["Toplam USD",`$${totalUsd.toFixed(2)}`,"#0369A1"],["Toplam TL",`${Math.round(totalTry).toLocaleString("tr-TR")} TL`,"#059669"],["Yakıt Kaydı",visitCosts.length,"#EA6C00"],["Manuel Kalem",manual.length,"#7C3AED"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${color}`,borderRadius:12,padding:13}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><b style={{fontSize:22,color}}>{value}</b></div>)}</div>
+    {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:15,marginBottom:13}}><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9}}><Field label="Yakıt L/100km"><input type="number" step=".1" style={iStyle} value={settings.fuelConsumptionLtPer100Km} onChange={event=>updateSettings("fuelConsumptionLtPer100Km",event.target.value)}/></Field><Field label="Benzin TL/L"><input type="number" step=".01" style={iStyle} value={settings.fuelTryPerLt} onChange={event=>updateSettings("fuelTryPerLt",event.target.value)}/></Field><Field label="USD/TL"><input type="number" step=".01" style={iStyle} value={settings.usdTry} onChange={event=>updateSettings("usdTry",event.target.value)}/></Field></div><div style={{marginTop:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:9}}><Field label="Kategori"><select style={iStyle} value={form.category} onChange={event=>setForm({...form,category:event.target.value})}>{COST_CATEGORIES.filter(item=>item!=="Saha Yakıt").map(item=><option key={item}>{item}</option>)}</select></Field><Field label="Açıklama"><input style={iStyle} value={form.description} onChange={event=>setForm({...form,description:event.target.value})}/></Field><Field label="Tarih"><input type="date" style={iStyle} value={form.date} onChange={event=>setForm({...form,date:event.target.value})}/></Field><Field label="Tutar USD"><input type="number" step=".01" style={iStyle} value={form.amountUsd} onChange={event=>setForm({...form,amountUsd:event.target.value})}/></Field><Field label="veya Tutar TL"><input type="number" step=".01" style={iStyle} value={form.amountTry} onChange={event=>setForm({...form,amountTry:event.target.value})}/></Field><Field label="Not"><input style={iStyle} value={form.note} onChange={event=>setForm({...form,note:event.target.value})}/></Field><div style={{alignSelf:"end"}}><Btn onClick={save}>Maliyet Ekle</Btn></div></div></div>}
+    <div style={{display:"grid",gap:7}}>{rows.map(row=><div key={row.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:11,padding:"11px 13px",display:"grid",gridTemplateColumns:"130px 1fr 110px 110px auto",gap:9,alignItems:"center"}}><span style={{fontSize:9,fontWeight:850,color:"#4338CA",background:"#EEF2FF",borderRadius:7,padding:"4px 6px",textAlign:"center"}}>{row.category}</span><div><b style={{fontSize:11}}>{row.description}</b>{row.meta&&<div style={{fontSize:9,color:"#94A3B8",marginTop:2}}>{row.meta}</div>}</div><span style={{fontSize:10,color:"#64748B"}}>{fmt(row.date)}</span><b style={{fontSize:12,color:"#0369A1"}}>${Number(row.amountUsd||0).toFixed(2)}</b>{canEdit&&row.id&&!String(row.id).startsWith("visit-")?<button onClick={()=>onChange({costItems:costs.filter(item=>item.id!==row.id)})} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,fontWeight:800,cursor:"pointer"}}>Sil</button>:<span/>}</div>)}</div>
+    {!rows.length&&<div style={{padding:36,textAlign:"center",border:"1px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Maliyet kaydı bulunmuyor.</div>}
+  </div>;
+}
+
 function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,isAdmin}) {
-  const [section,setSection]=useState("readiness");
+  const [section,setSection]=useState("overview");
   const [contact,setContact]=useState({side:"M\u00fc\u015fteri",name:"",title:"",company:"",department:"",email:"",phone:"",raci:"C",scope:""});
   const [document,setDocument]=useState({name:"",purpose:"",tags:"",url:"",owner:"",version:"1.0"});
   const emptySchedule={name:"",reportType:"project_status",recipients:"",frequency:"weekly",weekday:"1",time:"09:00",timezone:"Europe/Istanbul",enabled:true};
@@ -2211,9 +2343,10 @@ function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,
   const addContact=()=>{if(!contact.name.trim())return;onChange({raciContacts:[...(project.raciContacts||[]),{...contact,id:uid()}]});setContact({side:"M\u00fc\u015fteri",name:"",title:"",company:"",department:"",email:"",phone:"",raci:"C",scope:""});};
   const addDocument=()=>{if(!document.name.trim())return;onChange({documents:[...(project.documents||[]),{...document,id:uid(),tags:document.tags.split(",").map(x=>x.trim()).filter(Boolean),createdAt:now()}]});setDocument({name:"",purpose:"",tags:"",url:"",owner:"",version:"1.0"});};
   const addSchedule=()=>{if(!schedule.name.trim()||!schedule.recipients.trim())return;onChange({reportSchedules:[...(project.reportSchedules||[]),{...schedule,id:uid(),recipients:schedule.recipients.split(",").map(x=>x.trim()).filter(Boolean),createdAt:now(),nextRunAt:nextReportRunAt(schedule)}]});setSchedule(emptySchedule);};
-  const tabs=[["readiness","Başlangıç Sağlığı"],["raci","RACI ve Kontaklar"],["access","Uzaktan Erişim"],["machines","Makineler"],...(project.commissioningTracking?[["commissioning","Devreye Alma"]]:[]),["effort","Efor"],["documents","Dokümanlar"],["automation","Rapor Otomasyonu"],["ai","AI Proje Yorumu"]];
+  const tabs=[["overview","Özet"],["readiness","Başlangıç Sağlığı"],["training","Eğitimler"],["cost","Proje Maliyeti"],["raci","RACI ve Kontaklar"],["access","Uzaktan Erişim"],["machines","Makineler"],...(project.commissioningTracking?[["commissioning","Devreye Alma"]]:[]),["effort","Efor"],["documents","Dokümanlar"],["automation","Ayarlar / Rapor"],["ai","AI Proje Yorumu"]];
   return <div style={{flex:1,overflow:"auto",padding:"clamp(14px,3vw,24px)"}}>
     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>{tabs.map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:800,background:section===id?project.color:"#F1F5F9",color:section===id?"#fff":"#64748B"}}>{label}</button>)}</div>
+    {section==="overview"&&<ProjectOverviewPanel project={project} onChange={onChange} canEdit={canEdit}/>}
     {section==="readiness"&&<div>
       <div className="readiness-summary" style={{display:"grid",gridTemplateColumns:"minmax(170px,240px) 1fr",gap:14,marginBottom:15}}>
         <div style={{background:"#fff",border:`2px solid ${score>=threshold?"#10B981":"#E11D48"}`,borderRadius:16,padding:20,textAlign:"center"}}><div style={{fontSize:10,fontWeight:900,color:"#64748B",letterSpacing:1}}>BAŞLANGIÇ SAĞLIĞI</div><div style={{fontSize:42,fontWeight:900,color:score>=threshold?"#059669":"#E11D48"}}>{score}</div><div style={{fontSize:11,color:"#64748B"}}>Eşik: {threshold}/100</div></div>
@@ -2228,6 +2361,8 @@ function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,
       </div>)}</div>
       {canEdit&&<div style={{display:"flex",gap:7,marginTop:12}}><Btn small onClick={()=>onChange({readinessChecklist:[...checklist,{id:uid(),category:"Özel",text:"Yeni kontrol maddesi",weight:1,status:"unanswered",note:""}]})}>+ Kontrol Maddesi</Btn><Btn small variant="secondary" onClick={()=>onChange({readinessChecklist:createReadinessChecklist()})}>MES Şablonunu Sıfırla</Btn></div>}
     </div>}
+    {section==="training"&&<TrainingPanel project={project} onChange={onChange} canEdit={canEdit} people={state.people}/>}
+    {section==="cost"&&<ProjectCostPanel project={project} onChange={onChange} state={state} canEdit={canEdit}/>}
     {section==="raci"&&<div>
       <div style={{background:"#EEF2FF",color:"#4338CA",borderRadius:11,padding:"10px 13px",fontSize:11,marginBottom:12}}><b>R</b> yapan, <b>A</b> nihai hesap veren, <b>C</b> görüşü alınan, <b>I</b> bilgilendirilen. Her kapsam için tek bir A belirlenmesi önerilir.</div>
       <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",background:"#fff",fontSize:11}}><thead><tr>{["Taraf","Ad Soyad","Unvan / Departman","RACI","Sorumluluk Kapsam\u0131","Kontak",""].map(x=><th key={x} style={{textAlign:"left",padding:10,background:"#F8FAFC",borderBottom:"1px solid #E2E8F0"}}>{x}</th>)}</tr></thead><tbody>{(project.raciContacts||[]).map(item=><tr key={item.id}><td style={{padding:9}}>{item.side}</td><td style={{padding:9,fontWeight:750}}>{item.name}</td><td style={{padding:9}}>{item.title}{item.department?` / ${item.department}`:""}</td><td style={{padding:9,color:"#4F46E5",fontWeight:850}}>{item.raci}</td><td style={{padding:9}}>{item.scope}</td><td style={{padding:9}}>{item.email}<br/>{item.phone}</td><td>{canEdit&&<button onClick={()=>onChange({raciContacts:(project.raciContacts||[]).filter(x=>x.id!==item.id)})} style={{border:0,background:"transparent",color:"#E11D48",cursor:"pointer"}}>Sil</button>}</td></tr>)}</tbody></table></div>
@@ -2677,6 +2812,34 @@ function generateRiskPortfolioReport(state){
   downloadTextFile(html,`risk-portfoyu-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
 }
 
+function generateSteercoReport(project,state,people){
+  if(!project)return;
+  const tasks=project.milestones.flatMap(milestone=>milestone.tasks.map(task=>({task,milestone})));
+  const done=tasks.filter(({task})=>task.status==="Tamamlandı").length;
+  const progress=tasks.length?Math.round(done/tasks.length*100):0;
+  const delayed=tasks.filter(({task})=>delayLvl(task.dueDate,task.status));
+  const risks=(project.risks||[]).filter(risk=>!["Kapalı","Kapal\u0131"].includes(risk.status));
+  const criticalRisks=risks.filter(risk=>["Yüksek","Kritik"].includes(risk.level));
+  const actions=((state.projectActions||{})[project.id]||[]).slice().sort((a,b)=>String(b.actionAt||b.createdAt||"").localeCompare(String(a.actionAt||a.createdAt||""))).slice(0,8);
+  const tickets=((state.projectTickets||{})[project.id]||[]);
+  const openTickets=tickets.filter(ticket=>!["Tamamlandı","İptal Edildi","Done"].includes(ticket.status));
+  const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];
+  const commissioned=machines.filter(machine=>machine.commissioned).length;
+  const machineProgress=machines.length?Math.round(commissioned/machines.length*100):0;
+  const fieldHours=(state.fieldPlans||[]).filter(plan=>plan.projectId===project.id&&(plan.status==="completed"||plan.completedAt)).reduce((sum,plan)=>sum+fieldPlanHours(plan),0);
+  const taskHours=tasks.reduce((sum,{task})=>sum+(task.timeEntries||[]).reduce((total,entry)=>total+(parseFloat(entry.hours)||0),0),0);
+  const actionHours=actions.reduce((sum,action)=>sum+(parseFloat(action.effortHours)||0),0);
+  const totalHours=Math.round((fieldHours+taskHours+actionHours)*10)/10;
+  const health=progress>=75&&criticalRisks.length===0&&delayed.length<3?"Sağlıklı":criticalRisks.length||delayed.length>5?"Yönetici Aksiyonu Gerekli":"Dikkat";
+  const statusColor=health==="Sağlıklı"?"#059669":health==="Dikkat"?"#EA6C00":"#E11D48";
+  const nextTasks=tasks.filter(({task})=>task.status!=="Tamamlandı").sort((a,b)=>String(a.task.dueDate||"9999").localeCompare(String(b.task.dueDate||"9999"))).slice(0,8);
+  const rows=nextTasks.map(({task,milestone})=>`<tr><td><b>${escapeHtml(task.title)}</b><small>${escapeHtml(milestone.name)}</small></td><td>${escapeHtml(people.find(person=>person.id===task.assignee)?.name||"-")}</td><td>${fmt(task.dueDate)}</td><td>${escapeHtml(task.status||"-")}</td></tr>`).join("");
+  const actionRows=actions.map(action=>`<li><b>${fmt(action.actionAt||action.createdAt)}</b><span>${escapeHtml(action.text||"")}</span></li>`).join("");
+  const riskRows=risks.slice(0,6).map(risk=>`<li><b>${escapeHtml(risk.level||"Risk")}</b><span>${escapeHtml(risk.title||"")} ${risk.note?`<small>${escapeHtml(risk.note)}</small>`:""}</span></li>`).join("");
+  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Steerco Raporu - ${escapeHtml(project.name)}</title><style>*{box-sizing:border-box}body{margin:0;padding:30px;background:#eef2ff;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1180px;margin:auto}.hero{background:linear-gradient(125deg,#0f172a,#4338ca,#06b6d4);color:#fff;padding:30px;border-radius:24px;margin-bottom:16px;box-shadow:0 24px 60px rgba(30,41,59,.18)}.hero h1{margin:0;font-size:32px}.hero p{color:#dbeafe;margin:8px 0 0}.print{float:right;border:0;border-radius:12px;background:#fff;color:#4338ca;padding:10px 16px;font-weight:900}.badge{display:inline-block;background:${statusColor};color:#fff;border-radius:999px;padding:7px 12px;font-weight:900;margin-bottom:14px}.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}.stat{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px}.stat b{display:block;font-size:25px;color:#4338ca}.stat span{font-size:11px;color:#64748b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:19px}.card h2{font-size:16px;margin:0 0 12px}.bar{height:12px;background:#e2e8f0;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#4f46e5,#06b6d4)}ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}li{display:flex;gap:10px;font-size:12px;line-height:1.45}li b{min-width:92px;color:#4338ca}li small{display:block;color:#94a3b8;margin-top:3px}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:12px}th{background:#f8fafc;color:#64748b}td small{display:block;color:#94a3b8;margin-top:3px}.wide{grid-column:1/-1}@media(max-width:820px){body{padding:14px}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.hero h1{font-size:24px}}@media print{body{background:#fff;padding:0}.print{display:none}.hero{box-shadow:none}}</style></head><body><div class="wrap"><section class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><span class="badge">${health}</span><h1>Steerco Proje Durum Raporu</h1><p>${escapeHtml(project.name)} · ${new Date().toLocaleDateString("tr-TR")} · Yönetici karar toplantısı çıktısı</p></section><section class="stats"><div class="stat"><span>Genel İlerleme</span><b>%${progress}</b></div><div class="stat"><span>Devreye Alma</span><b>%${machineProgress}</b></div><div class="stat"><span>Geciken İş</span><b>${delayed.length}</b></div><div class="stat"><span>Açık Risk</span><b>${risks.length}</b></div><div class="stat"><span>Açık Ticket</span><b>${openTickets.length}</b></div><div class="stat"><span>Toplam Efor</span><b>${totalHours} sa</b></div></section><section class="grid"><div class="card"><h2>Proje İlerleme Özeti</h2><div class="bar"><i style="width:${progress}%"></i></div><p style="font-size:12px;color:#64748b;line-height:1.6">Tamamlanan görev sayısı ${done}/${tasks.length}. Makine/devreye alma kapsamı ${commissioned}/${machines.length||0}. Yönetim odağı: ${health}.</p></div><div class="card"><h2>Karar / Dikkat Gerektiren Konular</h2><ul>${riskRows||"<li><b>Risk</b><span>Açık kritik risk bulunmuyor.</span></li>"}${delayed.length?`<li><b>Termin</b><span>${delayed.length} geciken görev için aksiyon gerekli.</span></li>`:""}</ul></div><div class="card"><h2>Son Aksiyonlar</h2><ul>${actionRows||"<li><b>Aksiyon</b><span>Henüz aksiyon kaydı yok.</span></li>"}</ul></div><div class="card"><h2>Ticket ve Ürün Takibi</h2><ul><li><b>Açık</b><span>${openTickets.length} ticket açık durumda.</span></li><li><b>Jira</b><span>${tickets.filter(ticket=>ticket.jiraKey).length} ticket Jira ile ilişkilendirilmiş.</span></li><li><b>Müşteri Onayı</b><span>${tickets.filter(ticket=>String(ticket.status||"").toLocaleLowerCase("tr-TR").includes("müşteri")).length} kayıt müşteri aksiyonu bekliyor.</span></li></ul></div><div class="card wide"><h2>Yaklaşan / Açık İşler</h2><table><thead><tr><th>İş</th><th>Sorumlu</th><th>Termin</th><th>Durum</th></tr></thead><tbody>${rows||"<tr><td colspan='4'>Açık görev bulunmuyor.</td></tr>"}</tbody></table></div></section></div></body></html>`;
+  downloadTextFile(html,`steerco-raporu-${safeFileName(project.name)}-${todayStr()}.html`,"text/html;charset=utf-8");
+}
+
 function downloadProjectActionsReport(state){
   const rows=[["Proje","Aksiyon Tarihi","Aksiyon","Efor (Saat)","Girişi Yapan"]];
   Object.entries(state.projectActions||{}).forEach(([projectId,actions])=>{
@@ -2849,6 +3012,7 @@ function ReportsPage({ state, people, isAdmin }) {
     {group:"technical",title:"Makine Devreye Alma",desc:"Fiziksel/sanal makineler, devre durumu ve devreye alınamama açıklamaları.",color:"#059669",action:()=>downloadMachineReport(state),label:"XLSX İndir"},
     {group:"project",title:"İç Operasyon Raporu",desc:"Grafikler, efor, gecikme, sorumlu, görev ve makine detaylarını içeren yönetim raporu.",color:"#0369A1",action:()=>project&&generateVisualReport(project,people,{fieldHours}),label:"HTML / PDF"},
     {group:"project",title:"Müşteri İlerleme Raporu",desc:"Renkli ilerleme grafikleri, teslim tarihleri ve makine durumunu sade müşteri görünümünde sunar.",color:"#EA6C00",action:()=>project&&generateVisualReport(project,people,{customer:true,fieldHours}),label:"HTML / PDF"},
+    {group:"project",title:"Steerco Toplantı Raporu",desc:"Yönetim toplantısı için karar, risk, gecikme, ticket, efor ve sonraki adımları high-level özetler.",color:"#0F766E",action:()=>project&&generateSteercoReport(project,state,people),label:"HTML / PDF"},
     ...(isAdmin?[{group:"management",title:"Genel Durum Raporu",desc:"Tüm projeleri ilerleme, gecikme, makine ve efor göstergeleriyle karşılaştırır.",color:"#4338CA",action:()=>generatePortfolioReport(state,people),label:"HTML / PDF"}]:[]),
     ...(isAdmin?[{group:"management",title:"Ticket Durum Raporu",desc:"Ticket yaşı, son aksiyon, sorumlu, proje ve Jira durumlarını tüm portföyde gösterir.",color:"#BE123C",action:()=>generateTicketStatusReport(state,people),label:"HTML / PDF"}]:[]),
     ...(isAdmin?[{group:"management",title:"Ekip Kapasite Raporu",desc:"Kişi bazlı aktif iş yükü, gecikme yoğunluğu ve gerçekleşen eforu görselleştirir.",color:"#4F46E5",action:()=>generateTeamCapacityReport(state,people),label:"HTML / PDF"}]:[]),
@@ -3191,12 +3355,7 @@ export default function App() {
   if(!currentUser)return REQUIRE_AUTH?<div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#FCA5A5",padding:20,textAlign:"center"}}>Bu e-posta için aktif Corject profili bulunamadı.</div>:<LoginScreen people={state.people} onLogin={login} />;
 
   // Project visibility filter
-  const visibleProjects=isAdmin?state.projects:state.projects.filter(p=>{
-    if(projectPmIds(p).includes(currentUser.id))return true;
-    if(projectStakeholders(p).some(item=>item.userId===currentUser.id))return true;
-    if((p.members||[]).includes(currentUser.id))return true;
-    return p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id));
-  });
+  const visibleProjects=state.projects;
   const myProjects=state.projects.filter(p=>projectPmIds(p).includes(currentUser.id)||projectStakeholders(p).some(item=>item.userId===currentUser.id)||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
   const listedProjects=projectScope==="mine"?myProjects:visibleProjects;
   const taskDeadlineWarnings=visibleProjects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectId:proj.id,projectName:proj.name,projectColor:proj.color,level:delayLvl(t.dueDate,t.status),days:daysDiff(t.dueDate)}))));
@@ -3446,9 +3605,9 @@ export default function App() {
     {/* Mobil overlay arka plan */}
     {isMobile&&mobileMenuOpen&&<div onClick={()=>setMobileMenuOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:950 }} />}
     {/* Sidebar */}
-    <div style={{ width:isMobile?220:244, background:"#1E293B", display:"flex", flexDirection:"column", flexShrink:0,
+    <div style={{ width:isMobile?220:254, background:"linear-gradient(180deg,#111827 0%,#172033 48%,#0F172A 100%)", display:"flex", flexDirection:"column", flexShrink:0,
       ...(isMobile?{ position:"fixed", top:0, left:mobileMenuOpen?0:-240, bottom:0, zIndex:960, transition:"left .25s ease", boxShadow:mobileMenuOpen?"4px 0 20px rgba(0,0,0,0.3)":"none" }:{}) }}>
-      <div style={{ padding:"18px 16px 14px", borderBottom:"1px solid #334155" }}>
+      <div style={{ padding:"20px 16px 15px", borderBottom:"1px solid rgba(148,163,184,.18)", background:"radial-gradient(circle at top left,rgba(99,102,241,.28),transparent 42%)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <button onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",minWidth:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgba(99,102,241,.3))"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:850,color:"#fff",letterSpacing:.3,lineHeight:1,maxWidth:135,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
             <button onClick={()=>{ setView("notifications"); setSelProject(null); setMobileMenuOpen(false); markAllRead(); }} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
@@ -3464,17 +3623,17 @@ export default function App() {
           <button onClick={logout} style={{ background:"none", border:"none", cursor:"pointer", color:"#475569", fontSize:12, padding:2 }}>Çıkış</button>
         </div>
       </div>
-      <nav className="sidebar-nav" style={{ padding:"10px 9px", flex:1, overflowY:"auto" }}>
+      <nav className="sidebar-nav" style={{ padding:"12px 10px", flex:1, overflowY:"auto" }}>
         {nav.map(n=><button key={n.id} onClick={()=>{ setView(n.id); setSelProject(null); setSelMilestone(null); setMobileMenuOpen(false); if(n.id==="tickets")setTicketMineOnly(false); }}
-          style={{ display:"flex", alignItems:"center", gap:9, width:"100%", padding:"9px 10px", borderRadius:8, border:"none", cursor:"pointer", background:view===n.id&&!selProject?"#4A6CF7":"transparent", color:view===n.id&&!selProject?"#fff":"#94A3B8", fontSize:13, fontWeight:600, textAlign:"left", marginBottom:2 }}>
-          <span style={{ display:"flex", flexShrink:0 }}><Icon name={n.icon} size={15} /></span> {n.label}
+          style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"10px 11px", borderRadius:11, border:"1px solid "+(view===n.id&&!selProject?"rgba(255,255,255,.22)":"transparent"), cursor:"pointer", background:view===n.id&&!selProject?"linear-gradient(135deg,#4A6CF7,#7C3AED)":"transparent", color:view===n.id&&!selProject?"#fff":"#CBD5E1", fontSize:13, fontWeight:700, textAlign:"left", marginBottom:4, boxShadow:view===n.id&&!selProject?"0 10px 24px rgba(79,70,229,.28)":"none" }}>
+          <span style={{ display:"flex", flexShrink:0, opacity:view===n.id&&!selProject?1:.82 }}><Icon name={n.icon} size={16} /></span> {n.label}
         </button>)}
       </nav>
     </div>
 
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?50:0 }}>
-      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&<DashboardPage state={state} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("mine");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>}
+      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&<DashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>}
       {view==="admin"&&isAdmin&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
       {view==="ai"&&!selProject&&<AIWorkspace projects={visibleProjects}/>}
@@ -4030,6 +4189,8 @@ function UserEditModal({ person, people=[], roles=ORG_LEVELS, onClose, onSave, t
   const [name, setName] = useState(person.name);
   const [email,setEmail]=useState(person.email||"");
   const [phone,setPhone]=useState(person.phone||"");
+  const [city,setCity]=useState(person.location?.city||person.city||"");
+  const [district,setDistrict]=useState(person.location?.district||person.district||"");
   const [whatsappEnabled,setWhatsappEnabled]=useState(person.whatsappEnabled!==false);
   const [orgLevel,setOrgLevel]=useState(person.orgLevel||"");
   const [managerId,setManagerId]=useState(person.managerId||"");
@@ -4039,6 +4200,10 @@ function UserEditModal({ person, people=[], roles=ORG_LEVELS, onClose, onSave, t
     <Field label="Ad Soyad *"><input style={iStyle} value={name} onChange={e=>setName(e.target.value)} /></Field>
     <Field label="E-posta"><input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" /></Field>
     <Field label="WhatsApp Telefonu"><input type="tel" style={iStyle} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="905551234567" /></Field>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <Field label="İl"><input style={iStyle} value={city} onChange={e=>setCity(e.target.value)} placeholder="İstanbul"/></Field>
+      <Field label="İlçe"><input style={iStyle} value={district} onChange={e=>setDistrict(e.target.value)} placeholder="Kadıköy"/></Field>
+    </div>
     <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={whatsappEnabled} onChange={e=>setWhatsappEnabled(e.target.checked)}/> WhatsApp görev bildirimlerini al</label>
     {allowAdmin&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
       <Field label="Organizasyon Seviyesi"><select style={iStyle} value={orgLevel} onChange={e=>setOrgLevel(e.target.value)}><option value="">- Atanmamış -</option>{roles.map(level=><option key={level.id} value={level.id}>{level.label}</option>)}</select></Field>
@@ -4046,7 +4211,7 @@ function UserEditModal({ person, people=[], roles=ORG_LEVELS, onClose, onSave, t
     </div>}
     {allowAdmin&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={isAdmin} onChange={e=>setIsAdmin(e.target.checked)}/> Yönetici yetkisi</label>}
     {allowAdmin&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={ticketOnly} onChange={e=>setTicketOnly(e.target.checked)}/> Yalnızca ticket modülünü kullanabilir</label>}
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),phone:phone.replace(/\D/g,""),whatsappEnabled,...(allowAdmin?{isAdmin,orgLevel,managerId,ticketOnly,role:roles.find(item=>item.id===orgLevel)?.label||"Atanmamış"}:{})}); onClose(); }}>Kaydet</Btn></div>
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),phone:phone.replace(/\D/g,""),city:city.trim(),district:district.trim(),location:{...(person.location||{}),city:city.trim(),district:district.trim()},whatsappEnabled,...(allowAdmin?{isAdmin,orgLevel,managerId,ticketOnly,role:roles.find(item=>item.id===orgLevel)?.label||"Atanmamış"}:{})}); onClose(); }}>Kaydet</Btn></div>
   </Modal>;
 }
 
@@ -4246,6 +4411,8 @@ function PersonModal({ people=[], roles=ORG_LEVELS, onClose, onSave }) {
   const [name, setName] = useState("");
   const [email,setEmail]=useState("");
   const [phone,setPhone]=useState("");
+  const [city,setCity]=useState("");
+  const [district,setDistrict]=useState("");
   const [whatsappEnabled,setWhatsappEnabled]=useState(true);
   const [orgLevel,setOrgLevel]=useState("");
   const [managerId,setManagerId]=useState("");
@@ -4264,6 +4431,10 @@ function PersonModal({ people=[], roles=ORG_LEVELS, onClose, onSave }) {
       <Field label="WhatsApp Telefonu">
         <input type="tel" style={iStyle} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="905551234567" />
       </Field>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        <Field label="İl"><input style={iStyle} value={city} onChange={e=>setCity(e.target.value)} placeholder="İstanbul"/></Field>
+        <Field label="İlçe"><input style={iStyle} value={district} onChange={e=>setDistrict(e.target.value)} placeholder="Kadıköy"/></Field>
+      </div>
       <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={whatsappEnabled} onChange={e=>setWhatsappEnabled(e.target.checked)}/> WhatsApp görev bildirimlerini al</label>
       <Field label="Yetki">
         <div style={{ display:"flex", gap:10 }}>
@@ -4278,7 +4449,7 @@ function PersonModal({ people=[], roles=ORG_LEVELS, onClose, onSave }) {
       <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={ticketOnly} onChange={e=>setTicketOnly(e.target.checked)}/> Yalnızca ticket modülünü kullanabilir</label>
       <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}>
         <Btn variant="ghost" onClick={onClose}>İptal</Btn>
-        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,email:email.trim(),phone:phone.replace(/\D/g,""),whatsappEnabled,orgLevel,managerId,ticketOnly,role:roles.find(item=>item.id===orgLevel)?.label||"Atanmamış",isAdmin}); onClose(); }}>Kaydet</Btn>
+        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,email:email.trim(),phone:phone.replace(/\D/g,""),city:city.trim(),district:district.trim(),location:{city:city.trim(),district:district.trim()},whatsappEnabled,orgLevel,managerId,ticketOnly,role:roles.find(item=>item.id===orgLevel)?.label||"Atanmamış",isAdmin}); onClose(); }}>Kaydet</Btn>
       </div>
     </Modal>
   );
