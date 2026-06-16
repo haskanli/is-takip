@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.24.0";
+const APP_VERSION = "v1.24.2";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -59,6 +59,7 @@ const DEFAULT_ACTION_TAGS = ["Toplantı","Telefon / Görüşme","Yazışma","Sis
 const RESPONSIBILITY_GROUPS = ["Proje Ekibi","\u00dcr\u00fcn Ekibi","Yaz\u0131l\u0131m Ekibi","M\u00fc\u015fteri","Tedarik\u00e7i","Di\u011fer"];
 const TRAINING_SCOPES = ["Operatör Eğitimi","Yönetici Eğitimi","Hatırlatma Eğitimi","Proje Devri Eğitimi","Süper Kullanıcı Eğitimi","Teknik Eğitim","Diğer"];
 const COST_CATEGORIES = ["Saha Yakıt","Yetkili Servis İşçilik","Donanım","Lisans","Konaklama","Ulaşım","Diğer"];
+const DEFAULT_ACTIVE_MODULES = ["Üretim Takibi","Kalite","Bakım","OEE","Enerji","Depo","Planlama","Raporlama","Entegrasyon","Mobil"];
 const DEFAULT_COST_SETTINGS = {fuelConsumptionLtPer100Km:6.5,fuelTryPerLt:45,usdTry:32};
 const mapsUrl = (location={}) => {
   const query=[location.address,location.district,location.city].filter(Boolean).join(", ");
@@ -933,6 +934,107 @@ function QuickActionModal({projects,onClose,onSave}) {
     <Field label="Not"><textarea style={{...iStyle,minHeight:120,resize:"vertical"}} value={form.text} onChange={event=>update("text",event.target.value)} placeholder="Ne yaptınız, kiminle görüştünüz, sonraki aksiyon nedir?"/></Field>
     <div style={{display:"flex",justifyContent:"flex-end",gap:7}}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn disabled={!form.projectId||!form.text.trim()} onClick={()=>onSave(form)}>Kaydet</Btn></div>
   </Modal>;
+}
+
+function MobileHomePage({state,setState,currentUser,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
+  const [quick,setQuick]=useState(null);
+  const todos=((state.userNotes||{})[currentUser.id]?.todos||[]).filter(todo=>!todo.done).sort((a,b)=>String(a.dueDate||"9999").localeCompare(String(b.dueDate||"9999")));
+  const plans=(state.fieldPlans||[]).filter(plan=>plan.userId===currentUser.id&&plan.date>=todayStr()).sort((a,b)=>`${a.date} ${a.startTime||""}`.localeCompare(`${b.date} ${b.startTime||""}`)).slice(0,5);
+  const tickets=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>(list||[]).map(ticket=>({ticket,project:state.projects.find(item=>item.id===projectId)}))).filter(({ticket})=>ticket.assignedTo===currentUser.id||ticket.author===currentUser.name).slice(0,5);
+  const actions=Object.entries(state.projectActions||{}).flatMap(([projectId,list])=>(list||[]).map(action=>({action,project:state.projects.find(item=>item.id===projectId)}))).sort((a,b)=>String(b.action.actionAt||b.action.createdAt||"").localeCompare(String(a.action.actionAt||a.action.createdAt||""))).slice(0,8);
+  const saveQuickTodo=(data)=>{
+    const todo={id:uid(),customer:data.customer||"",projectId:data.projectId||"",dueDate:data.dueDate||"",action:data.action,text:data.action,done:false,createdAt:now()};
+    setState(current=>({...current,userNotes:{...(current.userNotes||{}),[currentUser.id]:{...((current.userNotes||{})[currentUser.id]||{}),todos:[...(((current.userNotes||{})[currentUser.id]?.todos)||[]),todo]}}}));
+    setQuick(null);
+  };
+  const saveQuickAction=(data)=>{
+    if(!data.projectId)return;
+    const action={id:uid(),tag:data.tag||"Takip",text:data.text,effortHours:parseFloat(data.effortHours)||0,actionAt:now(),createdAt:now(),authorId:currentUser.id,authorName:currentUser.name};
+    setState(current=>({...current,projectActions:{...(current.projectActions||{}),[data.projectId]:[action,...(((current.projectActions||{})[data.projectId])||[])]}}));
+    setQuick(null);
+    onOpenProject(data.projectId);
+  };
+  const storyItems=[
+    {id:"todo",label:"To-Do",value:todos.length,color:"#DB2777",icon:"ticket",action:()=>onNavigate("todos")},
+    {id:"plan",label:"Plan",value:plans.length,color:"#0F766E",icon:"calendar",action:()=>onNavigate("fieldops")},
+    {id:"late",label:"Termin",value:deadlineWarnings.length,color:"#E11D48",icon:"clock",action:()=>onNavigate("deadlines")},
+    {id:"ticket",label:"Ticket",value:tickets.length,color:"#EA6C00",icon:"ticket",action:()=>onNavigate("tickets")},
+    {id:"ai",label:"AI",value:"",color:"#7C3AED",icon:"activity",action:()=>onNavigate("ai")},
+  ];
+  return <div style={{minHeight:"100%",background:"linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)",padding:"12px 13px 92px",overflow:"auto"}}>
+    <div style={{display:"flex",gap:12,overflowX:"auto",padding:"4px 0 14px",scrollbarWidth:"none"}}>
+      {storyItems.map(item=><button key={item.id} onClick={item.action} style={{border:0,background:"transparent",padding:0,cursor:"pointer",minWidth:68,textAlign:"center"}}>
+        <span style={{width:58,height:58,borderRadius:"50%",display:"grid",placeItems:"center",margin:"0 auto 6px",background:`conic-gradient(${item.color},#8B5CF6,#06B6D4,${item.color})`,padding:3}}>
+          <span style={{width:"100%",height:"100%",borderRadius:"50%",background:"#fff",display:"grid",placeItems:"center",color:item.color,position:"relative"}}><Icon name={item.icon} size={22}/>{item.value!==""&&<b style={{position:"absolute",right:-2,top:-2,minWidth:18,height:18,borderRadius:9,display:"grid",placeItems:"center",background:item.color,color:"#fff",fontSize:9,border:"2px solid #fff"}}>{item.value}</b>}</span>
+        </span>
+        <span style={{fontSize:10,fontWeight:800,color:"#475569"}}>{item.label}</span>
+      </button>)}
+    </div>
+    <div style={{background:"linear-gradient(135deg,#111827,#4338CA 58%,#06B6D4)",borderRadius:24,padding:18,color:"#fff",boxShadow:"0 18px 40px rgba(67,56,202,.24)",marginBottom:13}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={42}/><div><div style={{fontSize:11,color:"#C7D2FE",fontWeight:800}}>Bugünün akışı</div><h2 style={{margin:"2px 0 0",fontSize:20}}>Merhaba, {currentUser.name.split(" ")[0]}</h2></div></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginTop:16}}>
+        <button onClick={()=>setQuick("todo")} style={{border:0,borderRadius:14,padding:"12px 10px",background:"rgba(255,255,255,.15)",color:"#fff",fontWeight:900,cursor:"pointer"}}>+ To-Do</button>
+        <button onClick={()=>setQuick("action")} style={{border:0,borderRadius:14,padding:"12px 10px",background:"rgba(255,255,255,.15)",color:"#fff",fontWeight:900,cursor:"pointer"}}>+ Aksiyon</button>
+      </div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10,marginBottom:13}}>
+      {myProjects.slice(0,4).map(project=>{const total=project.milestones.reduce((sum,ms)=>sum+ms.tasks.length,0);const done=project.milestones.reduce((sum,ms)=>sum+ms.tasks.filter(task=>task.status==="Tamamlandı").length,0);const progress=total?Math.round(done/total*100):0;return <button key={project.id} onClick={()=>onOpenProject(project.id)} style={{border:0,borderRadius:18,background:"#fff",padding:13,textAlign:"left",boxShadow:"0 8px 24px rgba(15,23,42,.06)",cursor:"pointer"}}>
+        <span style={{width:28,height:28,borderRadius:10,background:project.color+"18",color:project.color,display:"grid",placeItems:"center",marginBottom:10}}><Icon name="projects" size={15}/></span>
+        <b style={{display:"block",fontSize:12,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{project.name}</b>
+        <span style={{display:"block",fontSize:10,color:"#94A3B8",marginTop:3}}>%{progress} ilerleme</span>
+        <span style={{display:"block",height:5,background:"#E2E8F0",borderRadius:8,overflow:"hidden",marginTop:8}}><i style={{display:"block",height:"100%",width:`${progress}%`,background:project.color}}/></span>
+      </button>;})}
+    </div>
+    <MobileFeedCard title="Yaklaşan Planlar" actionLabel="Tümü" onAction={()=>onNavigate("fieldops")}>
+      {plans.map(plan=>{const project=state.projects.find(item=>item.id===plan.projectId);return <MobileFeedRow key={plan.id} color={plan.workType==="remote"?"#7C3AED":project?.color||"#0F766E"} icon="calendar" title={project?.name||"Plan"} meta={`${fmt(plan.date)} · ${plan.startTime||""} - ${plan.endTime||""}`} onClick={()=>onNavigate("fieldops")}/>;})}
+      {!plans.length&&<EmptyMobileRow text="Yaklaşan saha/uzaktan çalışma yok."/>}
+    </MobileFeedCard>
+    <MobileFeedCard title="To-Do" actionLabel="Ekle" onAction={()=>setQuick("todo")}>
+      {todos.slice(0,4).map(todo=><MobileFeedRow key={todo.id} color={todo.dueDate&&daysDiff(todo.dueDate)>0?"#E11D48":"#DB2777"} icon="ticket" title={todo.action||todo.text} meta={`${todo.customer||state.projects.find(item=>item.id===todo.projectId)?.name||"Genel"}${todo.dueDate?` · ${fmt(todo.dueDate)}`:""}`} onClick={()=>onNavigate("todos")}/>)}
+      {!todos.length&&<EmptyMobileRow text="Açık To-Do yok."/>}
+    </MobileFeedCard>
+    <MobileFeedCard title="Son Aksiyonlar" actionLabel="Aksiyon Ekle" onAction={()=>setQuick("action")}>
+      {actions.map(({action,project})=><MobileFeedRow key={action.id} color={project?.color||"#4A6CF7"} icon="activity" title={action.text||"Aksiyon"} meta={`${project?.name||"Proje"} · ${action.authorName||""}`} onClick={()=>project&&onOpenProject(project.id)}/>)}
+      {!actions.length&&<EmptyMobileRow text="Henüz aksiyon kaydı yok."/>}
+    </MobileFeedCard>
+    {quick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickTodo}/>}
+    {quick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickAction}/>}
+  </div>;
+}
+
+function MobileFeedCard({title,actionLabel,onAction,children}) {
+  return <section style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:20,padding:14,marginBottom:12,boxShadow:"0 8px 24px rgba(15,23,42,.05)"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}><h3 style={{margin:0,fontSize:14}}>{title}</h3>{actionLabel&&<button onClick={onAction} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:10,padding:"6px 9px",fontSize:10,fontWeight:900,cursor:"pointer"}}>{actionLabel}</button>}</div>
+    <div style={{display:"grid",gap:8}}>{children}</div>
+  </section>;
+}
+
+function MobileFeedRow({color,icon,title,meta,onClick}) {
+  return <button onClick={onClick} style={{border:0,background:"#F8FAFC",borderRadius:14,padding:10,display:"flex",gap:10,alignItems:"center",textAlign:"left",cursor:"pointer"}}>
+    <span style={{width:34,height:34,borderRadius:12,background:color+"16",color,display:"grid",placeItems:"center",flexShrink:0}}><Icon name={icon} size={16}/></span>
+    <span style={{minWidth:0,flex:1}}><b style={{display:"block",fontSize:12,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</b><small style={{display:"block",fontSize:10,color:"#94A3B8",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{meta}</small></span>
+  </button>;
+}
+
+function EmptyMobileRow({text}) {
+  return <div style={{padding:"14px 10px",fontSize:11,color:"#94A3B8",textAlign:"center",background:"#F8FAFC",borderRadius:14}}>{text}</div>;
+}
+
+function MobileBottomNav({view,onNavigate,onQuick,onProfile,deadlineCount,taskCount}) {
+  const items=[
+    ["dashboard","home","Ana"],
+    ["projects","projects","Projeler"],
+    ["quick","plus","Ekle"],
+    ["mytasks","tasks","İşler",taskCount],
+    ["tickets","ticket","Ticket"],
+  ];
+  return <div style={{position:"fixed",left:10,right:10,bottom:10,zIndex:920,background:"rgba(255,255,255,.92)",backdropFilter:"blur(18px)",border:"1px solid rgba(226,232,240,.9)",borderRadius:24,padding:"8px 9px",display:"grid",gridTemplateColumns:"repeat(5,1fr)",boxShadow:"0 18px 45px rgba(15,23,42,.18)"}}>
+    {items.map(([id,icon,label,badge])=>{const active=view===id;return <button key={id} onClick={()=>id==="quick"?onQuick():onNavigate(id)} style={{border:0,background:"transparent",display:"grid",placeItems:"center",gap:3,color:active?"#4338CA":"#64748B",fontSize:9,fontWeight:900,cursor:"pointer",position:"relative",padding:0}}>
+      <span style={{width:id==="quick"?44:34,height:id==="quick"?44:34,borderRadius:id==="quick"?16:14,display:"grid",placeItems:"center",background:id==="quick"?"linear-gradient(135deg,#4A6CF7,#7C3AED)":active?"#EEF2FF":"transparent",color:id==="quick"?"#fff":active?"#4338CA":"#64748B",transform:id==="quick"?"translateY(-8px)":"none",boxShadow:id==="quick"?"0 10px 22px rgba(79,70,229,.28)":"none"}}>{id==="quick"?"+":<Icon name={icon} size={17}/>}</span>
+      <span style={{marginTop:id==="quick"?-8:0}}>{label}</span>
+      {badge>0&&<b style={{position:"absolute",top:2,right:"24%",minWidth:16,height:16,borderRadius:8,display:"grid",placeItems:"center",background:"#E11D48",color:"#fff",fontSize:8,border:"2px solid #fff"}}>{badge}</b>}
+    </button>;})}
+  </div>;
 }
 
 function AdminBoardCard({id,size="medium",draggedId,onDragStart,onDragEnd,onDrop,onResize,children,style={}}) {
@@ -2265,23 +2367,74 @@ function ReportScheduleCard({item,canEdit,onToggle,onDelete}) {
 
 function ProjectOverviewPanel({project,onChange,canEdit}) {
   const location=project.location||{city:"",district:"",address:""};
-  const updateLocation=(key,value)=>onChange({location:{...location,[key]:value}});
+  const customer=project.customerProfile||{};
+  const modules=project.activeModules||[];
+  const contacts=[...(project.customerContacts||[]),...(project.raciContacts||[]).filter(item=>item.side==="Müşteri")];
+  const totalTasks=project.milestones.flatMap(milestone=>milestone.tasks||[]).length;
+  const doneTasks=project.milestones.flatMap(milestone=>milestone.tasks||[]).filter(task=>task.status==="Tamamlandı").length;
+  const progress=totalTasks?Math.round(doneTasks/totalTasks*100):0;
+  const lateTasks=project.milestones.flatMap(milestone=>milestone.tasks||[]).filter(task=>delayLvl(task.dueDate,task.status)).length;
+  const openRisks=(project.risks||[]).filter(risk=>!["Kapalı","Kapal\u0131"].includes(risk.status)).length;
   const url=mapsUrl(location);
-  return <div style={{display:"grid",gridTemplateColumns:"minmax(260px,1fr) minmax(260px,1fr)",gap:14}} className="admin-main-grid">
-    <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:18}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:12}}><div><h3 style={{margin:0,fontSize:15}}>Proje Özeti</h3><p style={{margin:"4px 0 0",fontSize:11,color:"#64748B"}}>Temel bilgiler, müşteri konumu ve hızlı erişim.</p></div>{url&&<a href={url} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:850,color:"#2563EB",background:"#DBEAFE",borderRadius:8,padding:"6px 8px",textDecoration:"none"}}>Maps'te Aç</a>}</div>
-      <div style={{display:"grid",gap:9}}>
-        <Field label="İl"><input disabled={!canEdit} style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)} placeholder="İstanbul"/></Field>
-        <Field label="İlçe"><input disabled={!canEdit} style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)} placeholder="Tuzla"/></Field>
-        <Field label="Adres"><textarea disabled={!canEdit} style={{...iStyle,minHeight:82,resize:"vertical"}} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Müşteri açık adresi"/></Field>
+  const updateLocation=(key,value)=>onChange({location:{...location,[key]:value}});
+  const updateCustomer=(key,value)=>onChange({customerProfile:{...customer,[key]:value}});
+  const toggleModule=(module)=>onChange({activeModules:modules.includes(module)?modules.filter(item=>item!==module):[...modules,module]});
+  const statCards=[["Tamamlama",`%${progress}`,"#4F46E5",`${doneTasks}/${totalTasks} görev`],["Başlangıç",`${readinessScore(project)}/100`,readinessScore(project)>=Number(project.readinessThreshold||80)?"#059669":"#E11D48","proje sağlığı"],["Geciken",lateTasks,"#EA6C00","açık termin"],["Risk",openRisks,"#E11D48","açık risk"]];
+  return <div style={{display:"grid",gap:14}}>
+    <div style={{background:"linear-gradient(135deg,#0F172A,#4338CA 58%,#06B6D4)",borderRadius:22,padding:"clamp(18px,3vw,28px)",color:"#fff",boxShadow:"0 22px 48px rgba(67,56,202,.2)",overflow:"hidden",position:"relative"}}>
+      <div style={{position:"absolute",right:-60,top:-70,width:220,height:220,borderRadius:"50%",background:"rgba(255,255,255,.13)"}}/>
+      <div style={{display:"flex",gap:16,alignItems:"center",position:"relative",zIndex:1,flexWrap:"wrap"}}>
+        <div style={{width:74,height:74,borderRadius:22,background:"rgba(255,255,255,.16)",display:"grid",placeItems:"center",overflow:"hidden",border:"1px solid rgba(255,255,255,.2)"}}>{customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<b style={{fontSize:28}}>{project.name.slice(0,1).toUpperCase()}</b>}</div>
+        <div style={{flex:1,minWidth:220}}><div style={{fontSize:11,fontWeight:900,color:"#C7D2FE",letterSpacing:1,textTransform:"uppercase"}}>Proje Ana Sayfası</div><h2 style={{margin:"4px 0 6px",fontSize:"clamp(23px,4vw,34px)",lineHeight:1.1}}>{project.name}</h2><div style={{fontSize:12,color:"#DBEAFE",lineHeight:1.55}}>{project.description||"Proje açıklaması henüz girilmedi."}</div></div>
+        <div style={{display:"grid",gap:7,minWidth:170}}><span style={{fontSize:11,color:"#BFDBFE"}}>Başlangıç: <b style={{color:"#fff"}}>{fmt(project.startDate)}</b></span><span style={{fontSize:11,color:"#BFDBFE"}}>Hedef Bitiş: <b style={{color:"#fff"}}>{fmt(project.endDate)}</b></span>{url&&<a href={url} target="_blank" rel="noreferrer" style={{border:"1px solid rgba(255,255,255,.25)",background:"rgba(255,255,255,.12)",color:"#fff",borderRadius:12,padding:"9px 11px",fontSize:11,fontWeight:900,textDecoration:"none",textAlign:"center"}}>Yol Tarifi Al</a>}</div>
       </div>
     </div>
-    <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:18}}>
-      <h3 style={{margin:"0 0 12px",fontSize:15}}>Sade Kullanım Haritası</h3>
-      <div style={{display:"grid",gap:9}}>
-        {[["Proje Planı","Milestone ve görev tarihlerini takip edin."],["Görevler","Ekip sorumluluklarını ve kalan işi görün."],["Ticketlar","Müşteri talepleri ve Jira ilişkisini izleyin."],["Aksiyon","Günlük görüşme, saha, yazışma ve kararları kaydedin."],["Proje Bilgileri","Eğitim, maliyet, doküman, erişim ve ayarlar burada."]].map(([title,desc])=><div key={title} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:11,padding:"10px 12px"}}><b style={{fontSize:12}}>{title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{desc}</div></div>)}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10}}>{statCards.map(([label,value,color,meta])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:15,boxShadow:"0 8px 24px rgba(15,23,42,.04)"}}><div style={{fontSize:10,color:"#64748B",fontWeight:850,textTransform:"uppercase"}}>{label}</div><div style={{fontSize:26,fontWeight:950,color,marginTop:4}}>{value}</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>{meta}</div></div>)}</div>
+    <div className="admin-main-grid" style={{display:"grid",gridTemplateColumns:"1.15fr .85fr",gap:14}}>
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:18,padding:18}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:13}}><div><h3 style={{margin:0,fontSize:15}}>Müşteri Bilgileri</h3><p style={{margin:"4px 0 0",fontSize:11,color:"#64748B"}}>Logo, web sitesi, konum ve aktif modüller.</p></div>{customer.website&&<a href={customer.website.startsWith("http")?customer.website:`https://${customer.website}`} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:850,color:"#2563EB",background:"#DBEAFE",borderRadius:9,padding:"7px 9px",textDecoration:"none"}}>Web Sitesi</a>}</div>
+        {canEdit&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:9,marginBottom:14}}><Field label="Müşteri Web Sitesi"><input style={iStyle} value={customer.website||""} onChange={event=>updateCustomer("website",event.target.value)} placeholder="https://firma.com"/></Field><Field label="Müşteri Logo URL"><input style={iStyle} value={customer.logoUrl||""} onChange={event=>updateCustomer("logoUrl",event.target.value)} placeholder="https://.../logo.png"/></Field><Field label="İl"><input style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)}/></Field><Field label="İlçe"><input style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)}/></Field><Field label="Adres"><input style={iStyle} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Açık adres"/></Field></div>}
+        {!canEdit&&<div style={{display:"grid",gap:8,marginBottom:13,fontSize:12,color:"#475569"}}><div><b>Web:</b> {customer.website||"-"}</div><div><b>Konum:</b> {[location.address,location.district,location.city].filter(Boolean).join(", ")||"-"}</div></div>}
+        <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{DEFAULT_ACTIVE_MODULES.map(module=><button key={module} disabled={!canEdit} onClick={()=>toggleModule(module)} style={{border:"1px solid "+(modules.includes(module)?"#4F46E5":"#E2E8F0"),background:modules.includes(module)?"#EEF2FF":"#F8FAFC",color:modules.includes(module)?"#4338CA":"#64748B",borderRadius:999,padding:"7px 10px",fontSize:10,fontWeight:850,cursor:canEdit?"pointer":"default"}}>{module}</button>)}</div>
+      </div>
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:18,padding:18}}>
+        <h3 style={{margin:"0 0 12px",fontSize:15}}>Kontaklar</h3>
+        <div style={{display:"grid",gap:8}}>{contacts.slice(0,6).map((contact,index)=><div key={contact.id||index} style={{display:"flex",gap:10,alignItems:"center",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:13,padding:10}}><span style={{width:34,height:34,borderRadius:"50%",background:"#EEF2FF",color:"#4338CA",display:"grid",placeItems:"center",fontWeight:900,fontSize:11}}>{(contact.name||"?").split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase()}</span><span style={{minWidth:0,flex:1}}><b style={{display:"block",fontSize:12,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{contact.name}</b><small style={{display:"block",fontSize:10,color:"#64748B",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{contact.title||contact.raci||"Kontak"}{contact.email?` · ${contact.email}`:""}</small></span></div>)}</div>
+        {!contacts.length&&<div style={{padding:24,textAlign:"center",border:"1px dashed #CBD5E1",borderRadius:13,color:"#94A3B8",fontSize:11}}>Müşteri kontağı henüz eklenmedi.</div>}
       </div>
     </div>
+  </div>;
+}
+
+function ReadinessPanel({project,checklist,score,threshold,canEdit,onChange,updateItem}) {
+  const [category,setCategory]=useState("all");
+  const categories=["all",...Array.from(new Set(checklist.map(item=>item.category)))];
+  const filtered=category==="all"?checklist:checklist.filter(item=>item.category===category);
+  const statusMeta={
+    ready:["Hazır","#059669","#ECFDF5"],
+    partial:["Kısmi","#EA6C00","#FFF7ED"],
+    not_ready:["Hazır Değil","#E11D48","#FFF1F2"],
+    unanswered:["Bekliyor","#64748B","#F1F5F9"],
+  };
+  const counts=checklist.reduce((result,item)=>({...result,[item.status]:(result[item.status]||0)+1}),{});
+  const reset=()=>onChange({readinessChecklist:createReadinessChecklist()});
+  return <div style={{display:"grid",gap:14}}>
+    <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:20,padding:18,boxShadow:"0 10px 28px rgba(15,23,42,.04)"}}>
+      <div style={{display:"flex",gap:18,alignItems:"center",flexWrap:"wrap"}}>
+        <div style={{width:118,height:118,borderRadius:"50%",background:`conic-gradient(${score>=threshold?"#10B981":"#E11D48"} ${score*3.6}deg,#E2E8F0 0deg)`,display:"grid",placeItems:"center",flexShrink:0}}>
+          <div style={{width:92,height:92,borderRadius:"50%",background:"#fff",display:"grid",placeItems:"center",textAlign:"center"}}><b style={{fontSize:28,color:score>=threshold?"#059669":"#E11D48"}}>{score}</b><span style={{fontSize:9,color:"#94A3B8",fontWeight:850}}>/100</span></div>
+        </div>
+        <div style={{flex:1,minWidth:230}}><div style={{fontSize:11,fontWeight:900,color:"#64748B",letterSpacing:1,textTransform:"uppercase"}}>Başlangıç Sağlığı</div><h3 style={{margin:"5px 0 6px",fontSize:22}}>{score>=threshold?"Proje Başlangıca Hazır":"Başlamadan Önce Tamamlanmalı"}</h3><p style={{margin:0,fontSize:12,color:"#64748B",lineHeight:1.65}}>MES projeleri için kapsam, veri, entegrasyon, OT altyapı, saha hazırlığı ve kabul maddeleri tek yerde takip edilir. Eşik değer <b>{threshold}</b>; 80 altı projelerde saha uygulamasına geçmeden önce eksikler kapatılmalı.</p></div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,94px)",gap:8}}>{[["ready","Hazır"],["partial","Kısmi"],["not_ready","Eksik"],["unanswered","Bekleyen"]].map(([key,label])=>{const [,color,bg]=statusMeta[key];return <div key={key} style={{background:bg,borderRadius:13,padding:10,textAlign:"center"}}><b style={{display:"block",fontSize:20,color}}>{counts[key]||0}</b><span style={{fontSize:9,color,fontWeight:850}}>{label}</span></div>;})}</div>
+      </div>
+    </div>
+    <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:2}}>{categories.map(item=><button key={item} onClick={()=>setCategory(item)} style={{border:0,borderRadius:999,padding:"8px 12px",background:category===item?"#111827":"#F1F5F9",color:category===item?"#fff":"#64748B",fontSize:10,fontWeight:900,cursor:"pointer",whiteSpace:"nowrap"}}>{item==="all"?"Tüm Kategoriler":item}</button>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(360px,100%),1fr))",gap:10}}>{filtered.map(item=>{const [label,color,bg]=statusMeta[item.status]||statusMeta.unanswered;return <div key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:14,boxShadow:"0 6px 18px rgba(15,23,42,.035)"}}>
+      <div style={{display:"flex",gap:10,alignItems:"flex-start"}}><span style={{width:34,height:34,borderRadius:12,background:bg,color,display:"grid",placeItems:"center",flexShrink:0}}><Icon name={item.status==="ready"?"check":"clock"} size={16}/></span><div style={{flex:1,minWidth:0}}><div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}><span style={{fontSize:9,fontWeight:900,color:"#4338CA",background:"#EEF2FF",borderRadius:999,padding:"3px 7px"}}>{item.category}</span><span style={{fontSize:9,fontWeight:900,color,background:bg,borderRadius:999,padding:"3px 7px"}}>{label}</span><span style={{fontSize:9,color:"#94A3B8"}}>Ağırlık {item.weight}</span></div>{canEdit?<input style={{...iStyle,border:0,padding:"8px 0",fontWeight:850,fontSize:12,background:"transparent"}} value={item.text} onChange={event=>updateItem(item.id,{text:event.target.value})}/>:<b style={{display:"block",fontSize:12,marginTop:8,lineHeight:1.45}}>{item.text}</b>}</div></div>
+      {canEdit&&<div style={{display:"grid",gridTemplateColumns:"1fr 72px auto",gap:8,alignItems:"center",marginTop:10}}><select style={iStyle} value={item.status} onChange={event=>updateItem(item.id,{status:event.target.value})}><option value="unanswered">Bekliyor</option><option value="ready">Hazır</option><option value="partial">Kısmi</option><option value="not_ready">Hazır Değil</option></select><input type="number" min="1" max="100" style={iStyle} value={item.weight} onChange={event=>updateItem(item.id,{weight:event.target.value})}/><button title="Sil" onClick={()=>onChange({readinessChecklist:checklist.filter(entry=>entry.id!==item.id)})} style={{border:0,background:"#FFF1F2",color:"#E11D48",borderRadius:10,padding:"9px 11px",cursor:"pointer"}}>Sil</button></div>}
+      <textarea disabled={!canEdit} style={{...iStyle,minHeight:64,resize:"vertical",marginTop:9,fontSize:11,background:canEdit?"#F8FAFC":"#fff"}} value={item.note||""} onChange={event=>updateItem(item.id,{note:event.target.value})} placeholder="Kanıt, eksik veya aksiyon notu"/>
+    </div>;})}</div>
+    {canEdit&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}><Btn small onClick={()=>onChange({readinessChecklist:[...checklist,{id:uid(),category:"Özel",text:"Yeni kontrol maddesi",weight:1,status:"unanswered",note:""}]})}>+ Kontrol Maddesi</Btn><Btn small variant="secondary" onClick={reset}>MES Şablonunu Sıfırla</Btn></div>}
   </div>;
 }
 
@@ -2347,20 +2500,7 @@ function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,
   return <div style={{flex:1,overflow:"auto",padding:"clamp(14px,3vw,24px)"}}>
     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>{tabs.map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:800,background:section===id?project.color:"#F1F5F9",color:section===id?"#fff":"#64748B"}}>{label}</button>)}</div>
     {section==="overview"&&<ProjectOverviewPanel project={project} onChange={onChange} canEdit={canEdit}/>}
-    {section==="readiness"&&<div>
-      <div className="readiness-summary" style={{display:"grid",gridTemplateColumns:"minmax(170px,240px) 1fr",gap:14,marginBottom:15}}>
-        <div style={{background:"#fff",border:`2px solid ${score>=threshold?"#10B981":"#E11D48"}`,borderRadius:16,padding:20,textAlign:"center"}}><div style={{fontSize:10,fontWeight:900,color:"#64748B",letterSpacing:1}}>BAŞLANGIÇ SAĞLIĞI</div><div style={{fontSize:42,fontWeight:900,color:score>=threshold?"#059669":"#E11D48"}}>{score}</div><div style={{fontSize:11,color:"#64748B"}}>Eşik: {threshold}/100</div></div>
-        <div style={{background:score>=threshold?"#ECFDF5":"#FFF1F2",borderRadius:16,padding:18,color:score>=threshold?"#047857":"#BE123C"}}><b style={{fontSize:15}}>{score>=threshold?"Proje başlangıca elverişli":"Proje başlamaya elverişli değil"}</b><p style={{fontSize:12,lineHeight:1.6,margin:"7px 0 0"}}>{score>=threshold?"Kritik hazırlık alanları yeterli seviyede. Kısmi maddeleri proje risklerine ekleyerek ilerleyin.":"80 puan altında kapsam, veri, entegrasyon, OT altyapı veya kabul hazırlıkları tamamlanmadan saha uygulamasına geçilmemeli."}</p></div>
-      </div>
-      <div style={{display:"grid",gap:8}}>{checklist.map(item=><div className="readiness-row" key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:12,display:"grid",gridTemplateColumns:"110px minmax(220px,1fr) 125px 70px auto",gap:8,alignItems:"center"}}>
-        <span style={{fontSize:10,fontWeight:850,color:"#4F46E5"}}>{item.category}</span><input disabled={!canEdit} style={{...iStyle,fontWeight:650}} value={item.text} onChange={e=>updateItem(item.id,{text:e.target.value})}/>
-        <select disabled={!canEdit} style={iStyle} value={item.status} onChange={e=>updateItem(item.id,{status:e.target.value})}><option value="unanswered">Değerlendirilmedi</option><option value="ready">Hazır</option><option value="partial">Kısmi</option><option value="not_ready">Hazır Değil</option></select>
-        <input disabled={!canEdit} type="number" min="1" max="100" title="Ağırlık" style={iStyle} value={item.weight} onChange={e=>updateItem(item.id,{weight:e.target.value})}/>
-        {canEdit&&<button title="Sil" onClick={()=>onChange({readinessChecklist:checklist.filter(x=>x.id!==item.id)})} style={{border:0,background:"#FFF1F2",color:"#E11D48",borderRadius:7,padding:"7px 9px",cursor:"pointer"}}>x</button>}
-        <input disabled={!canEdit} style={{...iStyle,gridColumn:"2 / span 3"}} value={item.note||""} onChange={e=>updateItem(item.id,{note:e.target.value})} placeholder="Kanıt, eksik veya aksiyon notu"/>
-      </div>)}</div>
-      {canEdit&&<div style={{display:"flex",gap:7,marginTop:12}}><Btn small onClick={()=>onChange({readinessChecklist:[...checklist,{id:uid(),category:"Özel",text:"Yeni kontrol maddesi",weight:1,status:"unanswered",note:""}]})}>+ Kontrol Maddesi</Btn><Btn small variant="secondary" onClick={()=>onChange({readinessChecklist:createReadinessChecklist()})}>MES Şablonunu Sıfırla</Btn></div>}
-    </div>}
+    {section==="readiness"&&<ReadinessPanel project={project} checklist={checklist} score={score} threshold={threshold} canEdit={canEdit} onChange={onChange} updateItem={updateItem}/>}
     {section==="training"&&<TrainingPanel project={project} onChange={onChange} canEdit={canEdit} people={state.people}/>}
     {section==="cost"&&<ProjectCostPanel project={project} onChange={onChange} state={state} canEdit={canEdit}/>}
     {section==="raci"&&<div>
@@ -3193,6 +3333,7 @@ export default function App() {
   const [loadProgress,setLoadProgress]=useState(REQUIRE_AUTH?8:20);
   const [syncStatus,setSyncStatus]=useState({ s:"idle", msg:"" });
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
+  const [mobileQuick,setMobileQuick]=useState(null);
   const [projectScope,setProjectScope]=useState("all");
   const [ticketMineOnly,setTicketMineOnly]=useState(false);
   const [taskToOpen,setTaskToOpen]=useState("");
@@ -3573,6 +3714,20 @@ export default function App() {
   const projectCommissioningPercent=projectCommissioningMachines.length?Math.round(projectCommissioningDone/projectCommissioningMachines.length*100):0;
   const myOpenTaskCount=(state.personalTasks||[]).filter(task=>task.assignee===currentUser.id&&task.status!=="Tamamlandı").length
     +state.projects.flatMap(item=>item.milestones.flatMap(ms=>ms.tasks)).filter(task=>task.assignee===currentUser.id&&task.status!=="Tamamlandı").length;
+  const saveMobileQuickTodo=(data)=>{
+    const todo={id:uid(),customer:data.customer||"",projectId:data.projectId||"",dueDate:data.dueDate||"",action:data.action,text:data.action,done:false,createdAt:now()};
+    setState(current=>({...current,userNotes:{...(current.userNotes||{}),[currentUser.id]:{...((current.userNotes||{})[currentUser.id]||{}),todos:[...(((current.userNotes||{})[currentUser.id]?.todos)||[]),todo]}}}));
+    setMobileQuick(null);
+  };
+  const saveMobileQuickAction=(data)=>{
+    if(!data.projectId)return;
+    const action={id:uid(),tag:data.tag||"Takip",text:data.text,effortHours:parseFloat(data.effortHours)||0,actionAt:now(),createdAt:now(),authorId:currentUser.id,authorName:currentUser.name};
+    setState(current=>({...current,projectActions:{...(current.projectActions||{}),[data.projectId]:[action,...(((current.projectActions||{})[data.projectId])||[])]}}));
+    setMobileQuick(null);
+    setSelProject(data.projectId);
+    setView("projects");
+    setProjectTab("actions");
+  };
 
   const fullNav=[
     {id:"dashboard",icon:"home",label:"Dashboard"},
@@ -3594,18 +3749,18 @@ export default function App() {
 
   return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
-    {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:50, background:"#1E293B", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
-      <button onClick={()=>setMobileMenuOpen(v=>!v)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", padding:4 }}>☰</button>
-      <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:32,height:32,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:15,fontWeight:850,color:"#fff",letterSpacing:.3,maxWidth:145,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
-      <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
-        <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
-        <div style={{fontSize:10,fontWeight:800,color:"#fff",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:"28px"}}>{currentUser.name}</div>
+    {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:58, background:"rgba(255,255,255,.94)", backdropFilter:"blur(18px)", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
+      <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:34,height:34,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:950,color:"#111827",letterSpacing:.2,maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
+      <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={()=>{ setView("notifications"); setSelProject(null); markAllRead(); }} style={{ background:"#F8FAFC", border:"1px solid #E2E8F0", borderRadius:12, cursor:"pointer", position:"relative", padding:8, color:"#475569", display:"grid", placeItems:"center" }}>
+          <Icon name="bell" size={17}/>
+          {(state.notifications||[]).filter(n=>n.userId===currentUser?.id&&!n.read).length>0&&<span style={{ position:"absolute", top:5, right:5, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
+        </button>
+        <button title="Profil" onClick={()=>setModal({type:"editProfile"})} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={34} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
       </div>
     </div>}
-    {/* Mobil overlay arka plan */}
-    {isMobile&&mobileMenuOpen&&<div onClick={()=>setMobileMenuOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:950 }} />}
     {/* Sidebar */}
-    <div style={{ width:isMobile?220:254, background:"linear-gradient(180deg,#111827 0%,#172033 48%,#0F172A 100%)", display:"flex", flexDirection:"column", flexShrink:0,
+    {!isMobile&&<div style={{ width:isMobile?220:254, background:"linear-gradient(180deg,#111827 0%,#172033 48%,#0F172A 100%)", display:"flex", flexDirection:"column", flexShrink:0,
       ...(isMobile?{ position:"fixed", top:0, left:mobileMenuOpen?0:-240, bottom:0, zIndex:960, transition:"left .25s ease", boxShadow:mobileMenuOpen?"4px 0 20px rgba(0,0,0,0.3)":"none" }:{}) }}>
       <div style={{ padding:"20px 16px 15px", borderBottom:"1px solid rgba(148,163,184,.18)", background:"radial-gradient(circle at top left,rgba(99,102,241,.28),transparent 42%)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -3629,11 +3784,11 @@ export default function App() {
           <span style={{ display:"flex", flexShrink:0, opacity:view===n.id&&!selProject?1:.82 }}><Icon name={n.icon} size={16} /></span> {n.label}
         </button>)}
       </nav>
-    </div>
+    </div>}
 
     {/* Main */}
-    <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?50:0 }}>
-      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&<DashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>}
+    <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:isMobile?82:0 }}>
+      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&(isMobile?<MobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>:<DashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>)}
       {view==="admin"&&isAdmin&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
       {view==="ai"&&!selProject&&<AIWorkspace projects={visibleProjects}/>}
@@ -3822,6 +3977,8 @@ export default function App() {
       {view==="notifications"&&<NotificationsPage notifications={state.notifications||[]} currentUser={currentUser} setState={setState} />}
     </div>
 
+    {isMobile&&<MobileBottomNav view={view} taskCount={myOpenTaskCount} deadlineCount={deadlineWarnings.length} onQuick={()=>setMobileQuick("action")} onProfile={()=>setModal({type:"editProfile"})} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);setView(target);}}/>}
+
     {/* MODALS */}
     {modal?.type==="addProject"&&<AddProjectModal onClose={()=>setModal(null)} onSave={addProject} people={state.people} roles={organizationRoles(state)} />}
     {modal?.type==="editProject"&&<ProjectModal title="Projeyi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(data)=>updateProjectById(modal.data.id,data)} people={state.people} roles={organizationRoles(state)} />}
@@ -3835,6 +3992,8 @@ export default function App() {
     {modal?.type==="addRisk"&&<RiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
     {modal?.type==="editProfile"&&<UserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
     {modal?.type==="timeLog"&&<TimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
+    {mobileQuick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickTodo}/>}
+    {mobileQuick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickAction}/>}
   </div></>;
 }
 
