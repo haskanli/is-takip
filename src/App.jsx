@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.24.5";
+const APP_VERSION = "v1.24.6";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -2572,6 +2572,7 @@ function ResponsibilitySummary({project,selected=[],onChange}) {
 
 function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,progress,doneT,totalT,currentMs,readiness,commissioningPercent,overdueC,criticalC,canEdit,onChange,onOpenSetup}) {
   const [editing,setEditing]=useState(false);
+  const [expanded,setExpanded]=useState(false);
   const fileInput=useRef(null);
   const customer=project.customerProfile||{};
   const location=project.location||{city:"",district:"",address:""};
@@ -2589,47 +2590,48 @@ function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,prog
     reader.readAsDataURL(file);
   };
   const website=customer.website?customer.website.startsWith("http")?customer.website:`https://${customer.website}`:"";
-  return <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"12px clamp(12px,2.2vw,22px) 10px"}}>
-    <div style={{position:"relative",overflow:"hidden",borderRadius:22,background:`linear-gradient(135deg,${accent} 0%,#111827 72%)`,color:"#fff",padding:"clamp(14px,2.4vw,20px)",boxShadow:`0 18px 45px ${accent}30`}}>
-      <div style={{position:"absolute",right:-55,top:-70,width:190,height:190,borderRadius:"50%",background:"rgba(255,255,255,.12)"}}/>
-      <div style={{position:"relative",zIndex:1,display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:14,alignItems:"center"}}>
-        <button type="button" onClick={()=>canEdit&&fileInput.current?.click()} title={canEdit?"Logo yükle":"Müşteri logosu"} style={{width:76,height:76,border:0,borderRadius:22,background:"rgba(255,255,255,.18)",display:"grid",placeItems:"center",overflow:"hidden",cursor:canEdit?"pointer":"default",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.24)"}}>
+  return <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"8px clamp(10px,2vw,18px) 8px"}}>
+    <div style={{position:"relative",overflow:"hidden",borderRadius:16,background:`linear-gradient(135deg,${accent} 0%,#111827 76%)`,color:"#fff",padding:"9px 12px",boxShadow:`0 10px 24px ${accent}24`}}>
+      <div style={{position:"absolute",right:-45,top:-75,width:145,height:145,borderRadius:"50%",background:"rgba(255,255,255,.10)"}}/>
+      <div style={{position:"relative",zIndex:1,display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:10,alignItems:"center"}}>
+        <button type="button" onClick={()=>canEdit&&fileInput.current?.click()} title={canEdit?"Logo yükle":"Müşteri logosu"} style={{width:44,height:44,border:0,borderRadius:13,background:"rgba(255,255,255,.18)",display:"grid",placeItems:"center",overflow:"hidden",cursor:canEdit?"pointer":"default",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.24)"}}>
           {customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"contain",background:"#fff",padding:6}}/>:<b style={{fontSize:26,color:"#fff"}}>{customerName.slice(0,2).toUpperCase()}</b>}
         </button>
         <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={event=>uploadLogo(event.target.files?.[0])}/>
         <div style={{minWidth:0}}>
-          <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap",marginBottom:5}}><span style={{fontSize:10,fontWeight:950,letterSpacing:1,color:"rgba(255,255,255,.72)",textTransform:"uppercase"}}>Müşteri Kartviziti</span><Badge label={project.status}/></div>
-          <h2 style={{margin:0,fontSize:"clamp(21px,3vw,30px)",lineHeight:1.08,letterSpacing:"-.02em",overflowWrap:"anywhere"}}>{customerName}</h2>
-          <div style={{marginTop:7,display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
-            <span style={{fontSize:11,fontWeight:850,background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"5px 9px"}}>{project.name}</span>
-            {website&&<a href={website} target="_blank" rel="noreferrer" style={{fontSize:11,fontWeight:850,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"5px 9px",textDecoration:"none"}}>{customer.website}</a>}
-            {url&&<a href={url} target="_blank" rel="noreferrer" style={{fontSize:11,fontWeight:850,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"5px 9px",textDecoration:"none"}}>Yol tarifi</a>}
-            {modules.slice(0,5).map(module=><span key={module} style={{fontSize:10,fontWeight:850,background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.16)",borderRadius:999,padding:"4px 8px"}}>{module}</span>)}
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:2}}><span style={{fontSize:9,fontWeight:950,letterSpacing:.8,color:"rgba(255,255,255,.68)",textTransform:"uppercase"}}>Müşteri</span><Badge label={project.status}/></div>
+          <h2 style={{margin:0,fontSize:"clamp(16px,2.1vw,20px)",lineHeight:1.08,letterSpacing:"-.02em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customerName}</h2>
+          <div style={{marginTop:5,display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+            <span style={{fontSize:10,fontWeight:850,background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"3px 7px",maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{project.name}</span>
+            {website&&<a href={website} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:850,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"3px 7px",textDecoration:"none",maxWidth:190,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customer.website}</a>}
+            {expanded&&url&&<a href={url} target="_blank" rel="noreferrer" style={{fontSize:11,fontWeight:850,color:"#fff",background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.2)",borderRadius:999,padding:"5px 9px",textDecoration:"none"}}>Yol tarifi</a>}
+            {expanded&&modules.slice(0,5).map(module=><span key={module} style={{fontSize:10,fontWeight:850,background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.16)",borderRadius:999,padding:"4px 8px"}}>{module}</span>)}
           </div>
-          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:9,fontSize:11,color:"rgba(255,255,255,.78)"}}>
+          {expanded&&<div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:8,fontSize:11,color:"rgba(255,255,255,.78)"}}>
             {activePMs.length>0&&<span>PM: <b style={{color:"#fff"}}>{activePMs.map(p=>p.name).join(", ")}</b></span>}
             {activeStakeholders.slice(0,3).map(item=><span key={item.id}>{item.role}: <b style={{color:"#fff"}}>{item.person.name}</b></span>)}
             <span>{fmt(project.startDate)} - {fmt(project.endDate)}</span>
             <span>{doneT}/{totalT} görev</span>
             {currentMs&&<span>Aktif: <b style={{color:"#fff"}}>{currentMs.name}</b></span>}
-          </div>
+          </div>}
         </div>
-        <div style={{display:"grid",gap:7,minWidth:116,justifyItems:"end"}}>
-          <b style={{fontSize:25,lineHeight:1}}>{progress}%</b>
-          <span style={{fontSize:10,color:"rgba(255,255,255,.75)",fontWeight:850}}>Tamamlama</span>
-          {canEdit&&<button onClick={()=>setEditing(value=>!value)} style={{border:0,background:"#fff",color:accent,borderRadius:11,padding:"7px 10px",fontSize:10,fontWeight:950,cursor:"pointer"}}>{editing?"Kapat":"Düzenle"}</button>}
+        <div style={{display:"grid",gap:2,minWidth:70,justifyItems:"end"}}>
+          <b style={{fontSize:18,lineHeight:1}}>{progress}%</b>
+          <span style={{fontSize:9,color:"rgba(255,255,255,.75)",fontWeight:850}}>Tamamlama</span>
+          {expanded&&canEdit&&<button onClick={()=>setEditing(value=>!value)} style={{border:0,background:"#fff",color:accent,borderRadius:9,padding:"5px 8px",fontSize:9,fontWeight:950,cursor:"pointer"}}>{editing?"Kapat":"Düzenle"}</button>}
         </div>
       </div>
-      {totalT>0&&<div style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",gap:9,marginTop:13}}><div style={{flex:1,height:6,background:"rgba(255,255,255,.2)",borderRadius:10,overflow:"hidden"}}><div style={{width:`${progress}%`,height:"100%",background:"#fff",borderRadius:10}}/></div><span style={{fontSize:11,fontWeight:900}}>{progress}%</span></div>}
+      {expanded&&totalT>0&&<div style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",gap:9,marginTop:10}}><div style={{flex:1,height:5,background:"rgba(255,255,255,.2)",borderRadius:10,overflow:"hidden"}}><div style={{width:`${progress}%`,height:"100%",background:"#fff",borderRadius:10}}/></div><span style={{fontSize:10,fontWeight:900}}>{progress}%</span></div>}
     </div>
-    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:9,fontSize:11}}>
+    <button onClick={()=>setExpanded(value=>!value)} title={expanded?"Daralt":"Detayları aç"} style={{display:"grid",placeItems:"center",width:28,height:18,margin:"-2px auto 0",border:0,borderRadius:"0 0 10px 10px",background:"#F1F5F9",color:accent,cursor:"pointer",fontSize:13,fontWeight:950,lineHeight:1}}>{expanded?"⌃":"⌄"}</button>
+    {expanded&&<div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:7,fontSize:11}}>
       <button onClick={onOpenSetup} style={{border:0,background:readiness>=Number(project.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readiness>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:12,padding:"5px 9px",fontSize:11,fontWeight:850,cursor:"pointer"}}>Başlangıç: {readiness}/100</button>
       {commissioningPercent!==null&&<span style={{background:"#ECFDF5",color:"#047857",borderRadius:12,padding:"5px 9px",fontWeight:850}}>Devreye Alma: %{commissioningPercent}</span>}
       {overdueC>0&&<span style={{background:"#FFF7ED",color:"#EA6C00",borderRadius:12,padding:"5px 9px",fontWeight:850}}>Gecikmiş: {overdueC}</span>}
       {criticalC>0&&<span style={{background:"#FFF1F2",color:"#E11D48",borderRadius:12,padding:"5px 9px",fontWeight:850}}>Kritik: {criticalC}</span>}
       {contacts.slice(0,3).map(contact=><span key={contact.id} style={{background:"#F0F9FF",color:"#0369A1",borderRadius:12,padding:"5px 9px",fontWeight:800}}>{contact.name}{contact.title?` · ${contact.title}`:""}</span>)}
-    </div>
-    {editing&&canEdit&&<div style={{marginTop:10,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:16,padding:13,display:"grid",gap:10}}>
+    </div>}
+    {expanded&&editing&&canEdit&&<div style={{marginTop:10,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:16,padding:13,display:"grid",gap:10}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:9}}>
         <Field label="Müşteri Adı"><input style={iStyle} value={customer.name||""} onChange={event=>updateCustomer({name:event.target.value})} placeholder="Firma adı"/></Field>
         <Field label="Web Adresi"><input style={iStyle} value={customer.website||""} onChange={event=>updateCustomer({website:event.target.value})} placeholder="https://firma.com"/></Field>
