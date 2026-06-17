@@ -25,6 +25,7 @@ const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
 const now = () => new Date().toISOString();
 const todayStr = () => new Date().toISOString().slice(0, 10);
+const currentTimeStr = () => new Date().toTimeString().slice(0, 5);
 const slackAvatarUrl = (user) => {
   const metadata = user?.user_metadata || {};
   const identityData = (user?.identities || [])
@@ -1032,8 +1033,9 @@ function EmptyMobileRow({text}) {
   return <div style={{padding:"14px 10px",fontSize:11,color:"#94A3B8",textAlign:"center",background:"#F8FAFC",borderRadius:14}}>{text}</div>;
 }
 
-function MobileQuickSheet({onClose,onSelect}) {
+function MobileQuickSheet({onClose,onSelect,isAdminMode=false}) {
   const options=[
+    ...(isAdminMode?[["assign","tasks","Görev Ata","Ekip üyesine görev ve hedef saat ata","#111827"]]:[]),
     ["todo","ticket","To-Do","Kişisel aksiyon ve termin ekle","#DB2777"],
     ["action","activity","Aksiyon","Projeye görüşme, not veya efor gir","#2563EB"],
     ["ticket","ticket","Ticket","Müşteri talebi veya problem kaydı aç","#EA6C00"],
@@ -1052,12 +1054,12 @@ function MobileQuickSheet({onClose,onSelect}) {
   </div>;
 }
 
-function MobileBottomNav({view,onNavigate,onQuick,onProfile,deadlineCount,taskCount}) {
+function MobileBottomNav({view,onNavigate,onQuick,onProfile,deadlineCount,taskCount,isAdminMode=false}) {
   const items=[
     ["dashboard","home","Ana"],
     ["projects","projects","Projeler"],
-    ["quick","plus","Ekle"],
-    ["mytasks","tasks","İşler",taskCount],
+    ["quick","plus",isAdminMode?"Görev Ata":"Ekle"],
+    ["mytasks","tasks",isAdminMode?"Atadıklarım":"İşler",taskCount],
     ["tickets","ticket","Ticket"],
   ];
   return <div style={{position:"fixed",left:10,right:10,bottom:10,zIndex:920,background:"rgba(255,255,255,.92)",backdropFilter:"blur(18px)",border:"1px solid rgba(226,232,240,.9)",borderRadius:24,padding:"8px 9px",display:"grid",gridTemplateColumns:"repeat(5,1fr)",boxShadow:"0 18px 45px rgba(15,23,42,.18)"}}>
@@ -1155,10 +1157,57 @@ function ManagerAssignedTasks({state,currentUser}) {
   </div>;
 }
 
-function ManagementWorkspace({state,setState,currentUser,onOpenProject,onNavigate,onEditPerson}) {
-  const [section,setSection]=useState("overview");
+function ManagerAssignedTasksV2({state,setState,currentUser}) {
+  const [personFilter,setPersonFilter]=useState("all");
+  const [modal,setModal]=useState(null);
+  const tasks=(state.personalTasks||[]).filter(task=>task.createdBy===currentUser.id);
+  const peopleWithTasks=state.people.filter(person=>tasks.some(task=>task.assignee===person.id));
+  const rows=tasks
+    .filter(task=>personFilter==="all"||task.assignee===personFilter)
+    .map(task=>({...task,person:state.people.find(person=>person.id===task.assignee),source:"personal"}))
+    .sort((a,b)=>{
+      const ad=delayLvl(a.dueDate,a.status)?1:0,bd=delayLvl(b.dueDate,b.status)?1:0;
+      if(ad!==bd)return bd-ad;
+      if(a.status==="Tamamlandı"&&b.status!=="Tamamlandı")return 1;
+      if(b.status==="Tamamlandı"&&a.status!=="Tamamlandı")return -1;
+      return String(a.dueDate||"9999").localeCompare(String(b.dueDate||"9999"));
+    });
+  const active=tasks.filter(task=>task.status!=="Tamamlandı");
+  const updateTask=(id,data)=>setState(current=>{
+    const old=(current.personalTasks||[]).find(task=>task.id===id);
+    if(!old)return current;
+    const notices=[];
+    if(data.status&&old.status!==data.status){
+      [old.assignee,old.createdBy].filter(Boolean).filter((userId,index,array)=>array.indexOf(userId)===index&&userId!==currentUser.id).forEach(userId=>notices.push({id:uid(),ts:now(),userId,msg:`"${old.title}" görevinin durumu ${data.status} oldu.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_status",read:false}));
+    }
+    if(data.comments&&data.comments.length>(old.comments||[]).length&&old.assignee&&old.assignee!==currentUser.id){
+      notices.push({id:uid(),ts:now(),userId:old.assignee,msg:`"${old.title}" görevine yeni not eklendi.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_comment",read:false});
+    }
+    return {...current,personalTasks:(current.personalTasks||[]).map(task=>task.id===id?{...task,...data}:task),notifications:[...notices,...(current.notifications||[])]};
+  });
+  return <div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(135px,1fr))",gap:10,marginBottom:14}}>
+      {[["Toplam Atama",tasks.length,"#4A6CF7"],["Aktif",active.length,"#EA6C00"],["Geciken",active.filter(task=>delayLvl(task.dueDate,task.status)).length,"#E11D48"],["Tamamlanan",tasks.filter(task=>task.status==="Tamamlandı").length,"#059669"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${color}`,borderRadius:12,padding:13}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><b style={{fontSize:23,color}}>{value}</b></div>)}
+    </div>
+    <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:12}}>
+      <div style={{fontSize:12,color:"#64748B",fontWeight:800}}>Geciken görevler listede üstte görünür.</div>
+      <select style={{...iStyle,width:220,background:"#fff"}} value={personFilter} onChange={event=>setPersonFilter(event.target.value)}><option value="all">Tüm kişiler</option>{peopleWithTasks.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}</select>
+    </div>
+    <div style={{display:"grid",gap:8}}>{rows.map(task=><div key={task.id} style={{background:"#fff",border:`1.5px solid ${delayLvl(task.dueDate,task.status)?"#FCA5A5":"#E2E8F0"}`,borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
+      <Avatar initials={task.person?.avatar||"?"} imageUrl={task.person?.avatarUrl} size={30}/>
+      <button onClick={()=>setModal({type:"taskDetail",data:task})} style={{flex:1,minWidth:0,border:0,background:"transparent",textAlign:"left",cursor:"pointer",padding:0}}><b style={{fontSize:12,display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{task.person?.name||"Atanmamış"} · {fmt(task.dueDate)}{task.dueTime?` ${task.dueTime}`:""} · {task.status}</div>{task.notes&&<div style={{fontSize:10,color:"#94A3B8",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.notes}</div>}</button>
+      {delayLvl(task.dueDate,task.status)&&<DelayBadge dateStr={task.dueDate} status={task.status}/>}
+      <Btn small variant={task.status==="Tamamlandı"?"success":"secondary"} onClick={()=>updateTask(task.id,{status:task.status==="Tamamlandı"?"Bekliyor":"Tamamlandı"})}>{task.status==="Tamamlandı"?"Aç":"Bitir"}</Btn>
+    </div>)}{!rows.length&&<div style={{padding:35,textAlign:"center",color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px dashed #CBD5E1"}}>Bu filtrede yönetici ataması bulunmuyor.</div>}</div>
+    {modal?.type==="taskDetail"&&<TaskDetailModal task={(state.personalTasks||[]).find(task=>task.id===modal.data.id)||modal.data} people={state.people} currentUser={currentUser} onClose={()=>setModal(null)} onUpdate={data=>updateTask(modal.data.id,data)} />}
+  </div>;
+}
+
+function ManagementWorkspace({state,setState,currentUser,onOpenProject,onNavigate,onEditPerson,initialSection="overview"}) {
+  const [section,setSection]=useState(initialSection);
   const [newRole,setNewRole]=useState("");
   const roles=organizationRoles(state);
+  useEffect(()=>setSection(initialSection),[initialSection]);
   const addRole=()=>{
     const label=newRole.trim();
     if(!label)return;
@@ -1173,7 +1222,7 @@ function ManagementWorkspace({state,setState,currentUser,onOpenProject,onNavigat
       {tabs}
     </div>
     {section==="overview"&&<AdminDashboard state={state} setState={setState} currentUser={currentUser} onOpenProject={onOpenProject} onNavigate={onNavigate} showHeader={false}/>}
-    {section==="assigned"&&<ManagerAssignedTasks state={state} currentUser={currentUser}/>}
+    {section==="assigned"&&<ManagerAssignedTasksV2 state={state} setState={setState} currentUser={currentUser}/>}
     {section==="organization"&&<><div style={{display:"flex",justifyContent:"flex-end",gap:7,marginBottom:10}}><input style={{...iStyle,width:220}} value={newRole} onChange={event=>setNewRole(event.target.value)} onKeyDown={event=>event.key==="Enter"&&addRole()} placeholder="Yeni organizasyon rolü"/><Btn small onClick={addRole}>Rol Ekle</Btn></div><OrganizationPanel people={state.people} roles={roles} onEdit={onEditPerson}/></>}
   </div>;
 }
@@ -1182,6 +1231,7 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate,sho
   const [projectId,setProjectId]=useState("all");
   const [detailModal,setDetailModal]=useState(null);
   const [draggedCard,setDraggedCard]=useState(null);
+  const [aiSummaryRefresh,setAiSummaryRefresh]=useState(0);
   const projects=projectId==="all"?state.projects:state.projects.filter(project=>project.id===projectId);
   const projectIds=new Set(projects.map(project=>project.id));
   const scopedState={
@@ -1272,7 +1322,11 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate,sho
   const topRiskProject=projectRows[0];
   const topDeadline=[...criticalTasks,...dueSoon][0];
   const topStaleTicket=staleTickets[0];
+  const assignedByManager=(state.personalTasks||[]).filter(task=>task.createdBy===currentUser.id);
+  const delayedAssignedByManager=assignedByManager.filter(task=>task.status!=="Tamamlandı"&&delayLvl(task.dueDate,task.status));
+  const topDelayedAssigned=delayedAssignedByManager[0];
   const adminSummaryLines=[
+    delayedAssignedByManager.length?`Atadığınız ${delayedAssignedByManager.length} görev gecikmiş; ilk odak ${state.people.find(person=>person.id===topDelayedAssigned?.assignee)?.name||"atanan kişi"} / ${topDelayedAssigned?.title||"görev"}.`:"Atadığınız görevlerde gecikmiş kayıt görünmüyor.",
     criticalTasks.length?`${criticalTasks.length} kritik termin var; ilk odak ${topDeadline?.project?.name||"ilgili proje"} / ${topDeadline?.task?.title||"kritik görev"}.`:"Kritik termin görünmüyor, termin baskısı şu an kontrol altında.",
     staleTickets.length?`${staleTickets.length} ticket 7+ gündür aksiyonsuz; en eski kayıt ${ticketNumber(topStaleTicket?.ticket||{})}.`:"Ticket aksiyonları genel olarak güncel görünüyor.",
     highRisks.length?`${highRisks.length} yüksek/kritik risk açık; risk kapatma aksiyonları takip edilmeli.`:"Yüksek/kritik risk yoğunluğu düşük.",
@@ -1360,8 +1414,12 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate,sho
             <div style={{fontSize:11,color:"#64748B",lineHeight:1.45,marginTop:3}}>Genel durum için hızlı okuma. Detaylı analiz için AI çalışma alanına geçebilirsiniz.</div>
           </div>
         </div>
-        <button onClick={()=>onNavigate("ai")} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:10,padding:"8px 11px",fontSize:10,fontWeight:850,cursor:"pointer",whiteSpace:"nowrap"}}>AI'da Detaylandır</button>
+        <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
+          <button onClick={()=>setAiSummaryRefresh(value=>value+1)} style={{border:0,background:"#ECFDF5",color:"#047857",borderRadius:10,padding:"8px 10px",fontSize:10,fontWeight:850,cursor:"pointer",whiteSpace:"nowrap"}}>Yenile</button>
+          <button onClick={()=>onNavigate("ai")} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:10,padding:"8px 11px",fontSize:10,fontWeight:850,cursor:"pointer",whiteSpace:"nowrap"}}>AI'da Detaylandır</button>
+        </div>
       </div>
+      <div style={{fontSize:9,color:"#94A3B8",marginTop:8}}>Son güncelleme: {new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})}{aiSummaryRefresh?` · ${aiSummaryRefresh}. manuel yenileme`:""}</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:8,marginTop:13}}>
         {adminSummaryLines.map((line,index)=><div key={index} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,padding:"10px 11px",fontSize:11,color:"#475569",lineHeight:1.45,overflowWrap:"anywhere"}}>{line}</div>)}
       </div>
@@ -2026,8 +2084,8 @@ function TaskCard({ task, people, projectColor, onCheck, onEdit, onDelete, onTim
       </div>
       <div style={{ display:"flex", gap:10, marginTop:5, alignItems:"center", flexWrap:"wrap" }}>
         {assignee&&<div style={{ display:"flex", alignItems:"center", gap:4 }}><Avatar initials={assignee.avatar} imageUrl={assignee.avatarUrl} size={17} color={projectColor||"#4A6CF7"} /><span style={{ fontSize:11, color:"#64748B" }}>{assignee.name}</span></div>}
-        {task.startDate&&<span style={{ fontSize:11, color:"#94A3B8" }}>Başl: {fmt(task.startDate)}</span>}
-        {task.dueDate&&<span style={{ fontSize:11, color:dl?"#E11D48":"#94A3B8" }}>{task.startDate?"Bit:":"Termin:"} {fmt(task.dueDate)}</span>}
+        {task.startDate&&<span style={{ fontSize:11, color:"#94A3B8" }}>Başl: {fmt(task.startDate)}{task.startTime?` ${task.startTime}`:""}</span>}
+        {task.dueDate&&<span style={{ fontSize:11, color:dl?"#E11D48":"#94A3B8" }}>{task.startDate?"Bit:":"Termin:"} {fmt(task.dueDate)}{task.dueTime?` ${task.dueTime}`:""}</span>}
         {(task.timeEntries||[]).length>0&&<span style={{ fontSize:11, color:"#7C3AED", fontWeight:600, background:"#F5F3FF", borderRadius:6, padding:"1px 6px" }}>{(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0)} saat</span>}
         {task.estimatedHours&&<span style={{ fontSize:11, color:"#0369A1", fontWeight:600, background:"#F0F9FF", borderRadius:6, padding:"1px 6px" }}>Plan: {task.estimatedHours} sa</span>}
         {task.responsibilityGroup&&<span style={{ fontSize:11, color:"#4338CA", fontWeight:700, background:"#EEF2FF", borderRadius:6, padding:"1px 6px" }}>{task.responsibilityGroup}</span>}
@@ -2135,7 +2193,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
   const sectionCompleted=sectionAll.filter(t=>t.status==="Tamamland\u0131");
   const linkedTaskId=initialTaskId||new URLSearchParams(window.location.search).get("task");
 
-  const updatePersonal=(id,data)=>setState(s=>{const old=(s.personalTasks||[]).find(t=>t.id===id);const upd={...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...data}:t)};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
+  const updatePersonal=(id,data)=>setState(s=>{const old=(s.personalTasks||[]).find(t=>t.id===id);const notices=[];if(data.status&&old?.status!==data.status){addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);if(data.status==="Tamamlandı"){[old.assignee,old.createdBy].filter(Boolean).filter((userId,index,array)=>array.indexOf(userId)===index&&userId!==currentUser.id).forEach(userId=>notices.push({id:uid(),ts:now(),userId,msg:`"${old.title}" görevi tamamlandı.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_done",read:false}));}}if(data.comments&&data.comments.length>(old?.comments||[]).length&&old?.assignee&&old.assignee!==currentUser.id){notices.push({id:uid(),ts:now(),userId:old.assignee,msg:`"${old.title}" görevine yeni not eklendi.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_comment",read:false});}return {...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...data}:t),notifications:[...notices,...(s.notifications||[])]};});
   const updateProjTask=(pId,mId,tId,data)=>setState(s=>{const old=s.projects.find(p=>p.id===pId)?.milestones.find(m=>m.id===mId)?.tasks.find(t=>t.id===tId);const upd={...s,projects:s.projects.map(p=>p.id!==pId?p:{...p,milestones:p.milestones.map(m=>m.id!==mId?m:{...m,tasks:m.tasks.map(t=>t.id!==tId?t:{...t,...data})})})};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
   useEffect(()=>{
     if(!linkedTaskId)return;
@@ -2153,7 +2211,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
     if(isAdmin){
       const {assigneeIds,recurrence,...task}=data;
       const result=await assignTasksWithNotification({task,assigneeIds,recurrence,assignerId:currentUser.id,groupId:uid()});
-      setState(s=>({...s,personalTasks:[...(s.personalTasks||[]),...result.tasks.filter(t=>!(s.personalTasks||[]).some(x=>x.id===t.id))],recurringTasks:result.recurringTemplate?[...(s.recurringTasks||[]).filter(x=>x.id!==result.recurringTemplate.id),result.recurringTemplate]:(s.recurringTasks||[])}));
+      setState(s=>{const localNotices=result.tasks.map(task=>({id:uid(),ts:now(),userId:task.assignee,msg:`"${task.title}" görevi size atandı.`,projectName:"Yönetici Ataması",taskId:task.id,type:"task_assignment",read:false}));return {...s,personalTasks:[...(s.personalTasks||[]),...result.tasks.filter(t=>!(s.personalTasks||[]).some(x=>x.id===t.id))],recurringTasks:result.recurringTemplate?[...(s.recurringTasks||[]).filter(x=>x.id!==result.recurringTemplate.id),result.recurringTemplate]:(s.recurringTasks||[]),notifications:[...localNotices,...(s.notifications||[])]};});
       const whatsapp=result.notifications.filter(n=>n.sent&&n.channel==="whatsapp").length;
       const email=result.notifications.filter(n=>n.sent&&n.channel==="email").length;
       const failed=result.notifications.filter(n=>!n.sent).length;
@@ -3596,6 +3654,7 @@ export default function App() {
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
   const [mobileQuick,setMobileQuick]=useState(null);
   const [mobileQuickSheet,setMobileQuickSheet]=useState(false);
+  const [adminSection,setAdminSection]=useState("overview");
   const [projectScope,setProjectScope]=useState("all");
   const [projectSearch,setProjectSearch]=useState("");
   const [ticketMineOnly,setTicketMineOnly]=useState(false);
@@ -4038,6 +4097,16 @@ export default function App() {
   const projectCommissioningPercent=projectCommissioningMachines.length?Math.round(projectCommissioningDone/projectCommissioningMachines.length*100):0;
   const myOpenTaskCount=(state.personalTasks||[]).filter(task=>task.assignee===currentUser.id&&task.status!=="Tamamlandı").length
     +state.projects.flatMap(item=>item.milestones.flatMap(ms=>ms.tasks)).filter(task=>task.assignee===currentUser.id&&task.status!=="Tamamlandı").length;
+  const managerAssignedOpenCount=(state.personalTasks||[]).filter(task=>task.createdBy===currentUser.id&&task.status!=="Tamamlandı").length;
+  const saveAdminAssignedTask=async(data)=>{
+    const {assigneeIds,recurrence,...task}=data;
+    const result=await assignTasksWithNotification({task,assigneeIds,recurrence,assignerId:currentUser.id,groupId:uid()});
+    setState(current=>{
+      const localNotices=result.tasks.map(task=>({id:uid(),ts:now(),userId:task.assignee,msg:`"${task.title}" görevi size atandı.`,projectName:"Yönetici Ataması",taskId:task.id,type:"task_assignment",read:false}));
+      return {...current,personalTasks:[...(current.personalTasks||[]),...result.tasks.filter(task=>!(current.personalTasks||[]).some(existing=>existing.id===task.id))],recurringTasks:result.recurringTemplate?[...(current.recurringTasks||[]).filter(item=>item.id!==result.recurringTemplate.id),result.recurringTemplate]:(current.recurringTasks||[]),notifications:[...localNotices,...(current.notifications||[])]};
+    });
+    addLog(currentUser.name,"task_add",`${task.title} (${result.tasks.length} kişi)`);
+  };
   const saveMobileQuickTodo=(data)=>{
     const todo={id:uid(),customer:data.customer||"",projectId:data.projectId||"",dueDate:data.dueDate||"",action:data.action,text:data.action,done:false,createdAt:now()};
     setState(current=>({...current,userNotes:{...(current.userNotes||{}),[currentUser.id]:{...((current.userNotes||{})[currentUser.id]||{}),todos:[...(((current.userNotes||{})[currentUser.id]?.todos)||[]),todo]}}}));
@@ -4076,7 +4145,7 @@ export default function App() {
     {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:58, background:"rgba(255,255,255,.94)", backdropFilter:"blur(18px)", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
       <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:34,height:34,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:950,color:"#111827",letterSpacing:.2,maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={()=>{ setView("notifications"); setSelProject(null); markAllRead(); }} style={{ background:"#F8FAFC", border:"1px solid #E2E8F0", borderRadius:12, cursor:"pointer", position:"relative", padding:8, color:"#475569", display:"grid", placeItems:"center" }}>
+        <button onClick={()=>{ setView("notifications"); setSelProject(null); }} style={{ background:"#F8FAFC", border:"1px solid #E2E8F0", borderRadius:12, cursor:"pointer", position:"relative", padding:8, color:"#475569", display:"grid", placeItems:"center" }}>
           <Icon name="bell" size={17}/>
           {(state.notifications||[]).filter(n=>n.userId===currentUser?.id&&!n.read).length>0&&<span style={{ position:"absolute", top:5, right:5, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
         </button>
@@ -4090,7 +4159,7 @@ export default function App() {
       <div style={{ padding:"20px 16px 15px", borderBottom:"1px solid rgba(148,163,184,.18)", background:"radial-gradient(circle at top left,rgba(99,102,241,.28),transparent 42%)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <button onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",minWidth:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgba(99,102,241,.3))"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:850,color:"#fff",letterSpacing:.3,lineHeight:1,maxWidth:135,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
-            <button onClick={()=>{ setView("notifications"); setSelProject(null); setMobileMenuOpen(false); markAllRead(); }} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
+            <button onClick={()=>{ setView("notifications"); setSelProject(null); setMobileMenuOpen(false); }} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
               <span style={{ color:"#94A3B8", display:"flex" }}><Icon name="bell" size={17} /></span>
               {(state.notifications||[]).filter(n=>n.userId===currentUser?.id&&!n.read).length>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
             </button>
@@ -4114,7 +4183,7 @@ export default function App() {
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:isMobile?82:0 }}>
       {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(isMobile?<MobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>:<DashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>)}
-      {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
+      {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} initialSection={adminSection} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
       {view==="mobilemenu"&&<MobileFeatureMenuPage isAdmin={isAdmin} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);setView(target);}}/>}
       {view==="ai"&&!selProject&&<AIWorkspace projects={visibleProjects}/>}
@@ -4308,10 +4377,10 @@ export default function App() {
       </div>}
 
       {view==="logs"&&<LogPage logs={state.logs} projects={state.projects} />}
-      {view==="notifications"&&<NotificationsPage notifications={state.notifications||[]} currentUser={currentUser} setState={setState} />}
+      {view==="notifications"&&<NotificationsPage notifications={state.notifications||[]} currentUser={currentUser} setState={setState} onOpenTask={id=>{setTaskToOpen(id);setView("mytasks");setSelProject(null);}} />}
     </div>
 
-    {isMobile&&<MobileBottomNav view={view} taskCount={myOpenTaskCount} deadlineCount={deadlineWarnings.length} onQuick={()=>setMobileQuickSheet(true)} onProfile={()=>setModal({type:"editProfile"})} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);setView(target);}}/>}
+    {isMobile&&<MobileBottomNav view={view} isAdminMode={useAdminHome} taskCount={useAdminHome?managerAssignedOpenCount:myOpenTaskCount} deadlineCount={deadlineWarnings.length} onQuick={()=>setMobileQuickSheet(true)} onProfile={()=>setModal({type:"editProfile"})} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);if(target==="mytasks"&&useAdminHome){setAdminSection("assigned");setView("admin");return;}setView(target);}}/>}
 
     {/* MODALS */}
     {modal?.type==="addProject"&&<AddProjectModal onClose={()=>setModal(null)} onSave={addProject} people={state.people} roles={organizationRoles(state)} />}
@@ -4326,7 +4395,8 @@ export default function App() {
     {modal?.type==="addRisk"&&<RiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
     {modal?.type==="editProfile"&&<UserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
     {modal?.type==="timeLog"&&<TimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
-    {mobileQuickSheet&&<MobileQuickSheet onClose={()=>setMobileQuickSheet(false)} onSelect={target=>{setMobileQuickSheet(false);if(target==="todo"||target==="action")setMobileQuick(target);else{setSelProject(null);setSelMilestone(null);if(target==="ticket")setTicketMineOnly(true);setView(target==="ticket"?"tickets":target);}}}/>}
+    {modal?.type==="addPersonal"&&<PersonalTaskModal title="Görev Ata" people={state.people} isAdmin currentUser={currentUser} onClose={()=>setModal(null)} onSave={saveAdminAssignedTask} />}
+    {mobileQuickSheet&&<MobileQuickSheet isAdminMode={useAdminHome} onClose={()=>setMobileQuickSheet(false)} onSelect={target=>{setMobileQuickSheet(false);if(target==="assign"){setModal({type:"addPersonal"});return;}if(target==="todo"||target==="action")setMobileQuick(target);else{setSelProject(null);setSelMilestone(null);if(target==="ticket")setTicketMineOnly(true);setView(target==="ticket"?"tickets":target);}}}/>}
     {mobileQuick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickTodo}/>}
     {mobileQuick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickAction}/>}
   </div></>;
@@ -4713,7 +4783,7 @@ function UserEditModal({ person, people=[], roles=ORG_LEVELS, onClose, onSave, t
 }
 
 // ─── Notifications Page ──────────────────────────────────────────────────────
-function NotificationsPage({ notifications, currentUser, setState }) {
+function NotificationsPage({ notifications, currentUser, setState, onOpenTask }) {
   const mine=(notifications||[]).filter(n=>n.userId===currentUser.id);
   const markRead=(id)=>setState(s=>({...s,notifications:(s.notifications||[]).map(n=>n.id===id?{...n,read:true}:n)}));
   const deleteNotif=(id)=>setState(s=>({...s,notifications:(s.notifications||[]).filter(n=>n.id!==id)}));
@@ -4729,7 +4799,7 @@ function NotificationsPage({ notifications, currentUser, setState }) {
       <div style={{ color:"#94A3B8" }}>Bildirim yok</div>
     </div>}
     <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-      {mine.map(n=><div key={n.id} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:`1.5px solid ${n.read?"#E2E8F0":"#4A6CF7"}`, display:"flex", gap:12, alignItems:"flex-start", boxShadow:n.read?"none":"0 2px 8px rgba(74,108,247,0.1)" }} onClick={()=>markRead(n.id)}>
+      {mine.map(n=><div key={n.id} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:`1.5px solid ${n.read?"#E2E8F0":"#4A6CF7"}`, display:"flex", gap:12, alignItems:"flex-start", boxShadow:n.read?"none":"0 2px 8px rgba(74,108,247,0.1)", cursor:n.taskId?"pointer":"default" }} onClick={()=>{markRead(n.id);if(n.taskId)onOpenTask?.(n.taskId);}}>
         <div style={{ width:36, height:36, borderRadius:"50%", background:n.read?"#F1F5FF":"#EEF2FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>📋</div>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:13, fontWeight:n.read?400:600, color:"#1E293B" }}>{n.msg}</div>
@@ -4827,8 +4897,12 @@ function TaskModal({ title, initial, onClose, onSave, people }) {
     </div>
     <Field label="Planlanan Efor (Saat)"><input type="number" min="0" step="0.5" style={iStyle} value={f.estimatedHours||""} onChange={e=>upd("estimatedHours",e.target.value)} placeholder="Örn. 8" /></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Başlangıç Tarihi"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
-      <Field label="Termin Tarihi"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
+      <Field label="Hedef Başlangıç"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
+      <Field label="Başlangıç Saati"><input type="time" style={iStyle} value={f.startTime||""} onChange={e=>upd("startTime",e.target.value)} /></Field>
+    </div>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+      <Field label="Hedef Bitiş"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
+      <Field label="Hedef Saat"><input type="time" style={iStyle} value={f.dueTime||""} onChange={e=>upd("dueTime",e.target.value)} /></Field>
     </div>
     <Field label="Bekleme Kaynağı"><select style={iStyle} value={f.waitSource} onChange={e=>upd("waitSource",e.target.value)}><option value="">- Yok -</option>{WAIT.map(s=><option key={s}>{s}</option>)}</select></Field>
     {["Bekliyor","Engellendi"].includes(f.status)&&<Field label="Bekleme Sebebi"><textarea style={{...iStyle,minHeight:70,resize:"vertical"}} value={f.waitReason||""} onChange={e=>upd("waitReason",e.target.value)} placeholder="Neyi, kimden ve hangi tarihe kadar bekliyoruz?"/></Field>}
@@ -4839,7 +4913,7 @@ function TaskModal({ title, initial, onClose, onSave, people }) {
 }
 function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, currentUser }) {
   const editing=Boolean(initial?.id);
-  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:isAdmin?"":currentUser.id, assigneeIds:initial?.assignee?[initial.assignee]:[], dueDate:"", estimatedHours:"", notes:"", waitSource:"", recurring:false, frequency:"weekly", nextRunDate:"", ...initial });
+  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:isAdmin?"":currentUser.id, assigneeIds:initial?.assignee?[initial.assignee]:[], startDate:todayStr(), startTime:currentTimeStr(), dueDate:todayStr(), dueTime:currentTimeStr(), estimatedHours:"", notes:"", waitSource:"", recurring:false, frequency:"weekly", nextRunDate:"", ...initial });
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
@@ -4863,8 +4937,12 @@ function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, c
     {isAdmin?(editing?<Field label="Atanan Kişi"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>:<Field label="Atanacak Kişiler *"><PeopleMultiSelect people={people} value={f.assigneeIds} onChange={v=>upd("assigneeIds",v)}/></Field>):<div style={{ background:"#F1F5FF", borderRadius:8, padding:"8px 12px", marginBottom:13, fontSize:12, color:"#4A6CF7" }}>Görev size atanacak: <b>{currentUser.name}</b></div>}
     <Field label="Planlanan Efor (Saat)"><input type="number" min="0" step="0.5" style={iStyle} value={f.estimatedHours||""} onChange={e=>upd("estimatedHours",e.target.value)} placeholder="Örn. 4" /></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Başlangıç Tarihi"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
-      <Field label="Termin Tarihi"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
+      <Field label="Hedef Başlangıç"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
+      <Field label="Başlangıç Saati"><input type="time" style={iStyle} value={f.startTime||""} onChange={e=>upd("startTime",e.target.value)} /></Field>
+    </div>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+      <Field label="Hedef Bitiş"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
+      <Field label="Hedef Saat"><input type="time" style={iStyle} value={f.dueTime||""} onChange={e=>upd("dueTime",e.target.value)} /></Field>
     </div>
     <Field label="Bekleme Kaynağı"><select style={iStyle} value={f.waitSource} onChange={e=>upd("waitSource",e.target.value)}><option value="">- Yok -</option>{WAIT.map(s=><option key={s}>{s}</option>)}</select></Field>
     <Field label="Notlar"><input style={iStyle} value={f.notes} onChange={e=>upd("notes",e.target.value)} /></Field>
@@ -4891,7 +4969,7 @@ function TaskDetailModal({ task, people, currentUser, onClose, onUpdate }) {
   };
   return <Modal title="Görev Detayı" onClose={onClose} wide>
     <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",marginBottom:15}}>
-      <div><h2 style={{fontSize:18,margin:"0 0 5px"}}>{task.title}</h2><div style={{fontSize:11,color:"#64748B"}}>{assignee?.name||"Atanmamış"} · Termin: {fmt(task.dueDate)||"Belirtilmedi"}</div></div>
+      <div><h2 style={{fontSize:18,margin:"0 0 5px"}}>{task.title}</h2><div style={{fontSize:11,color:"#64748B"}}>{assignee?.name||"Atanmamış"} · Termin: {fmt(task.dueDate)||"Belirtilmedi"}{task.dueTime?` ${task.dueTime}`:""}</div></div>
       <select style={{...iStyle,width:180}} value={task.status||"Bekliyor"} onChange={e=>onUpdate({status:e.target.value})}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select>
     </div>
     {task.notes&&<div style={{background:"#F8FAFC",borderRadius:10,padding:13,fontSize:13,lineHeight:1.6,marginBottom:16}}>{task.notes}</div>}
