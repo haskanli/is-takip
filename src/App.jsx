@@ -1168,7 +1168,7 @@ function ManagerAssignedTasksV2({state,setState,currentUser}) {
   const peopleWithTasks=state.people.filter(person=>tasks.some(task=>task.assignee===person.id));
   const rows=tasks
     .filter(task=>personFilter==="all"||task.assignee===personFilter)
-    .map(task=>({...task,person:state.people.find(person=>person.id===task.assignee),source:"personal"}))
+    .map(task=>({...task,person:state.people.find(person=>person.id===task.assignee),project:state.projects.find(project=>project.id===task.projectId),source:"personal"}))
     .sort((a,b)=>{
       const ad=delayLvl(a.dueDate,a.status)?1:0,bd=delayLvl(b.dueDate,b.status)?1:0;
       if(ad!==bd)return bd-ad;
@@ -1199,7 +1199,7 @@ function ManagerAssignedTasksV2({state,setState,currentUser}) {
     </div>
     <div style={{display:"grid",gap:8}}>{rows.map(task=><div key={task.id} style={{background:"#fff",border:`1.5px solid ${delayLvl(task.dueDate,task.status)?"#FCA5A5":"#E2E8F0"}`,borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:10,minWidth:0}}>
       <Avatar initials={task.person?.avatar||"?"} imageUrl={task.person?.avatarUrl} size={30}/>
-      <button onClick={()=>setModal({type:"taskDetail",data:task})} style={{flex:1,minWidth:0,border:0,background:"transparent",textAlign:"left",cursor:"pointer",padding:0}}><b style={{fontSize:12,display:"block",lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3,lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.person?.name||"Atanmamış"} · {fmt(task.dueDate)}{task.dueTime?` ${task.dueTime}`:""} · {task.status}</div>{task.notes&&<div style={{fontSize:10,color:"#94A3B8",marginTop:3,lineHeight:1.4,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.notes}</div>}</button>
+      <button onClick={()=>setModal({type:"taskDetail",data:task})} style={{flex:1,minWidth:0,border:0,background:"transparent",textAlign:"left",cursor:"pointer",padding:0}}><b style={{fontSize:12,display:"block",lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3,lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.person?.name||"Atanmamış"} · {task.project?.name||"Projesiz"} · {fmt(task.dueDate)}{task.dueTime?` ${task.dueTime}`:""} · {task.status}</div>{task.firstSeenAt&&<div style={{fontSize:10,color:"#059669",marginTop:3,fontWeight:800}}>İlk görüntüleme: {new Date(task.firstSeenAt).toLocaleString("tr-TR")}</div>}{task.notes&&<div style={{fontSize:10,color:"#94A3B8",marginTop:3,lineHeight:1.4,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.notes}</div>}</button>
       {delayLvl(task.dueDate,task.status)&&<DelayBadge dateStr={task.dueDate} status={task.status}/>}
     </div>)}{!rows.length&&<div style={{padding:35,textAlign:"center",color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px dashed #CBD5E1"}}>Bu filtrede yönetici ataması bulunmuyor.</div>}</div>
     {modal?.type==="taskDetail"&&<TaskDetailModal task={(state.personalTasks||[]).find(task=>task.id===modal.data.id)||modal.data} people={state.people} currentUser={currentUser} onClose={()=>setModal(null)} onUpdate={data=>updateTask(modal.data.id,data)} />}
@@ -2185,7 +2185,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
   const toggleTodo=(id)=>setState(s=>({...s,userNotes:{...(s.userNotes||{}),[currentUser.id]:{...(s.userNotes||{})[currentUser.id],todos:todos.map(t=>t.id===id?{...t,done:!t.done}:t)}}}));
 
   const pt=state.personalTasks||[];
-  const myP=pt.filter(t=>t.assignee===currentUser.id);
+  const myP=pt.filter(t=>t.assignee===currentUser.id).map(t=>({...t,projectName:state.projects.find(project=>project.id===t.projectId)?.name||"Genel Görev",projectColor:state.projects.find(project=>project.id===t.projectId)?.color}));
   const myProjT=state.projects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>t.assignee===currentUser.id).map(t=>({...t,projectName:proj.name,projectColor:proj.color,msName:ms.name,projId:proj.id,msId:ms.id}))));
   const allMy=[...myP.map(t=>({...t,source:"personal"})),...myProjT.map(t=>({...t,source:"project"}))];
   const active=allMy.filter(t=>t.status!=="Tamamland\u0131");
@@ -2198,14 +2198,18 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
 
   const updatePersonal=(id,data)=>setState(s=>{const old=(s.personalTasks||[]).find(t=>t.id===id);const notices=[];if(data.status&&old?.status!==data.status){addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);if(data.status==="Tamamlandı"){[old.assignee,old.createdBy].filter(Boolean).filter((userId,index,array)=>array.indexOf(userId)===index&&userId!==currentUser.id).forEach(userId=>notices.push({id:uid(),ts:now(),userId,msg:`"${old.title}" görevi tamamlandı.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_done",read:false}));}}if(data.comments&&data.comments.length>(old?.comments||[]).length&&old?.assignee&&old.assignee!==currentUser.id){notices.push({id:uid(),ts:now(),userId:old.assignee,msg:`"${old.title}" görevine yeni not eklendi.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_comment",read:false});}return {...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...data}:t),notifications:[...notices,...(s.notifications||[])]};});
   const updateProjTask=(pId,mId,tId,data)=>setState(s=>{const old=s.projects.find(p=>p.id===pId)?.milestones.find(m=>m.id===mId)?.tasks.find(t=>t.id===tId);const upd={...s,projects:s.projects.map(p=>p.id!==pId?p:{...p,milestones:p.milestones.map(m=>m.id!==mId?m:{...m,tasks:m.tasks.map(t=>t.id!==tId?t:{...t,...data})})})};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
+  const openTaskDetail=t=>{
+    if(t.source==="personal"&&t.assignee===currentUser.id&&!t.firstSeenAt)updatePersonal(t.id,{firstSeenAt:now()});
+    setModal({type:"taskDetail",data:t});
+  };
   useEffect(()=>{
     if(!linkedTaskId)return;
     const personal=(state.personalTasks||[]).find(t=>t.id===linkedTaskId);
-    if(personal){setModal({type:"taskDetail",data:{...personal,source:"personal"}});onTaskOpened?.();return;}
+    if(personal){openTaskDetail({...personal,source:"personal"});onTaskOpened?.();return;}
     for(const project of state.projects){
       for(const milestone of project.milestones){
         const task=milestone.tasks.find(t=>t.id===linkedTaskId);
-        if(task){setModal({type:"taskDetail",data:{...task,source:"project",projId:project.id,msId:milestone.id}});onTaskOpened?.();return;}
+        if(task){openTaskDetail({...task,source:"project",projId:project.id,msId:milestone.id});onTaskOpened?.();return;}
       }
     }
   },[linkedTaskId,state.personalTasks,state.projects,onTaskOpened]);
@@ -2251,7 +2255,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
           <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{section==="all"?"Tüm Görevler":section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {sectionActive.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel Görev"} canEdit
-              onOpen={()=>setModal({type:"taskDetail",data:t})}
+              onOpen={()=>openTaskDetail(t)}
               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
@@ -2263,7 +2267,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
           <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({sectionCompleted.length})</button>
           {showDone&&<div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {sectionCompleted.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel"} canEdit
-              onOpen={()=>setModal({type:"taskDetail",data:t})}
+              onOpen={()=>openTaskDetail(t)}
               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
@@ -2276,7 +2280,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
           {(state.personalTasks||[]).length===0&&<div style={{ color:"#94A3B8", fontSize:12 }}>Genel görev yok.</div>}
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {(state.personalTasks||[]).map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={null} showProject canEdit
-              onOpen={()=>setModal({type:"taskDetail",data:{...t,source:"personal"}})}
+              onOpen={()=>openTaskDetail({...t,source:"personal"})}
               onCheck={(c)=>updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"})}
               onEdit={()=>setModal({type:"editPersonal",data:t})}
               onDelete={()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}}
@@ -2291,8 +2295,8 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
       {section==="todos"&&<div style={{padding:"16px clamp(14px, 4vw, 28px)",maxWidth:1000}}><div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:16}}><div style={{fontWeight:800,fontSize:14,marginBottom:12}}>Kendi To-Do'larım</div>{todos.filter(t=>!t.done).map(t=>{const p=state.projects.find(x=>x.id===t.projectId);const late=t.dueDate&&daysDiff(t.dueDate)>0;return <div key={t.id} style={{display:"flex",alignItems:"center",gap:9,padding:"10px 0",borderBottom:"1px solid #F1F5F9"}}><input type="checkbox" checked={false} onChange={()=>toggleTodo(t.id)}/><div style={{flex:1}}><div style={{fontSize:12,fontWeight:700}}>{t.action||t.text}</div><div style={{fontSize:10,color:late?"#E11D48":"#94A3B8",marginTop:2}}>{t.customer||p?.name||"Genel"}{t.dueDate?` · ${fmt(t.dueDate)}`:""}</div></div></div>})}{!todos.filter(t=>!t.done).length&&<div style={{fontSize:12,color:"#94A3B8"}}>Açık To-Do yok.</div>}</div></div>}
     </div>
 
-    {modal?.type==="addPersonal"&&<PersonalTaskModal title="Genel Görev Ekle" people={state.people} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={addPersonal} />}
-    {modal?.type==="editPersonal"&&<PersonalTaskModal title="Görevi Düzenle" initial={modal.data} people={state.people} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(d)=>{updatePersonal(modal.data.id,d);setModal(null);}} />}
+    {modal?.type==="addPersonal"&&<PersonalTaskModal title="Genel Görev Ekle" people={state.people} projects={state.projects} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={addPersonal} />}
+    {modal?.type==="editPersonal"&&<PersonalTaskModal title="Görevi Düzenle" initial={modal.data} people={state.people} projects={state.projects} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(d)=>{updatePersonal(modal.data.id,d);setModal(null);}} />}
     {modal?.type==="time"&&<TimeLogModal task={modal.data} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(entries)=>{const t=modal.data;if(t.source==="personal")updatePersonal(t.id,{timeEntries:entries});else updateProjTask(t.projId,t.msId,t.id,{timeEntries:entries});}} />}
     {modal?.type==="taskDetail"&&<TaskDetailModal task={modal.data.source==="personal"?(state.personalTasks||[]).find(t=>t.id===modal.data.id)||modal.data:state.projects.find(p=>p.id===modal.data.projId)?.milestones.find(m=>m.id===modal.data.msId)?.tasks.find(t=>t.id===modal.data.id)||modal.data} people={state.people} currentUser={currentUser} onClose={()=>setModal(null)} onUpdate={(data)=>{const t=modal.data;if(t.source==="personal")updatePersonal(t.id,data);else updateProjTask(t.projId,t.msId,t.id,data);}} />}
   </div>;
@@ -2678,7 +2682,7 @@ function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,
       {canEdit&&<div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginTop:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}><select style={iStyle} value={contact.side} onChange={e=>setContact({...contact,side:e.target.value})}>{["Bizim Taraf","Müşteri","Partner/Tedarikçi"].map(x=><option key={x}>{x}</option>)}</select>{["name","title","company","department","email","phone","scope"].map(key=><input key={key} style={iStyle} value={contact[key]} onChange={e=>setContact({...contact,[key]:e.target.value})} placeholder={({name:"Ad Soyad",title:"Unvan",company:"Şirket",department:"Departman",email:"E-posta",phone:"Telefon",scope:"Sorumluluk kapsamı"})[key]}/>)}<select style={iStyle} value={contact.raci} onChange={e=>setContact({...contact,raci:e.target.value})}>{["R","A","C","I"].map(x=><option key={x}>{x}</option>)}</select><Btn onClick={addContact}>Kontağı Ekle</Btn></div>}
     </div>}
     {section==="access"&&<RemoteAccessPanel project={project} state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} canManage={canEdit}/>}
-    {section==="machines"&&<MachinePanel project={project} canEdit={canEdit} onChange={machines=>onChange({machines})}/>}
+    {section==="machines"&&<MachinePanel project={project} canEdit={canEdit} currentUser={currentUser} onChange={machines=>onChange({machines})}/>}
     {section==="commissioning"&&project.commissioningTracking&&<CommissioningPanel project={project} canEdit={canEdit} onChange={commissioningTree=>onChange({commissioningTree})}/>}
     {section==="effort"&&<ProjectEffortPanel project={project} state={state} people={state.people}/>}
     {section==="documents"&&<div>
@@ -3059,28 +3063,34 @@ function ProjectActionsPanel({project,currentUser,state,setState,isAdmin,canMana
   </div>;
 }
 
-function MachinePanel({ project, canEdit, onChange }) {
+function MachinePanel({ project, canEdit, currentUser, onChange }) {
   const machines=project.machines||[];
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState("");
   const [viewMode,setViewMode]=useState("cards");
   const [search,setSearch]=useState("");
-  const [form,setForm]=useState({name:"",code:"",type:"physical",ip:"",osModel:"",extraLicense:"",commissioned:false,commissionedAt:"",note:""});
+  const blankMachineForm={name:"",code:"",type:"physical",ip:"",osModel:"",extraLicense:"",serialNo:"",location:"",dataSource:"",protocol:"",responsible:"",commissioned:false,commissionedAt:"",note:""};
+  const [form,setForm]=useState(blankMachineForm);
   const fileRef=useRef(null);
   const commissioned=machines.filter(m=>m.commissioned).length;
-  const visibleMachines=machines.filter(machine=>`${machine.name||""} ${machine.code||""} ${machine.ip||""} ${machine.osModel||""} ${machine.extraLicense||""}`.toLocaleLowerCase("tr-TR").includes(search.trim().toLocaleLowerCase("tr-TR")));
+  const visibleMachines=machines.filter(machine=>`${machine.name||""} ${machine.code||""} ${machine.ip||""} ${machine.osModel||""} ${machine.extraLicense||""} ${machine.serialNo||""} ${machine.location||""} ${machine.dataSource||""} ${machine.protocol||""}`.toLocaleLowerCase("tr-TR").includes(search.trim().toLocaleLowerCase("tr-TR")));
+  const commissionedMachines=visibleMachines.filter(machine=>machine.commissioned);
   const copyIp=async(ip)=>{if(!ip)return;try{await navigator.clipboard.writeText(ip);}catch{prompt("IP adresi",ip);}};
   const save=()=>{
     if(!form.name.trim())return;
-    const saved={...form,name:form.name.trim(),code:form.code.trim(),ip:form.ip.trim(),osModel:form.osModel.trim(),extraLicense:form.extraLicense.trim(),commissionedAt:form.commissioned?(form.commissionedAt||todayStr()):""};
+    const saved={...form,name:form.name.trim(),code:form.code.trim(),ip:form.ip.trim(),osModel:form.osModel.trim(),extraLicense:form.extraLicense.trim(),serialNo:form.serialNo.trim(),location:form.location.trim(),dataSource:form.dataSource.trim(),protocol:form.protocol.trim(),responsible:form.responsible.trim(),commissionedAt:form.commissioned?(form.commissionedAt||todayStr()):""};
     onChange(editingId?machines.map(machine=>machine.id===editingId?{...machine,...saved}:machine):[...machines,{...saved,id:uid()}]);
-    setForm({name:"",code:"",type:"physical",ip:"",osModel:"",extraLicense:"",commissioned:false,commissionedAt:"",note:""});
+    setForm(blankMachineForm);
     setEditingId("");
     setShowForm(false);
   };
-  const edit=machine=>{setEditingId(machine.id);setForm({name:machine.name||"",code:machine.code||"",type:machine.type||"physical",ip:machine.ip||"",osModel:machine.osModel||"",extraLicense:machine.extraLicense||"",commissioned:Boolean(machine.commissioned),commissionedAt:machine.commissionedAt||"",note:machine.note||""});setShowForm(true);};
+  const edit=machine=>{setEditingId(machine.id);setForm({name:machine.name||"",code:machine.code||"",type:machine.type||"physical",ip:machine.ip||"",osModel:machine.osModel||"",extraLicense:machine.extraLicense||"",serialNo:machine.serialNo||"",location:machine.location||"",dataSource:machine.dataSource||"",protocol:machine.protocol||"",responsible:machine.responsible||"",commissioned:Boolean(machine.commissioned),commissionedAt:machine.commissionedAt||"",note:machine.note||""});setShowForm(true);};
   const update=(id,data)=>onChange(machines.map(m=>m.id===id?{...m,...data}:m));
-  const exportExcel=()=>downloadXlsx([["Makine Kodu","Makine Adı","IP","İşletim Sistemi/Model","Ek Lisans","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"],...machines.map(machine=>[machine.code||"",machine.name,machine.ip||"",machine.osModel||"",machine.extraLicense||"",machine.type==="virtual"?"Sanal":"Fiziksel",machine.commissioned?"Evet":"Hayır",machine.commissionedAt||"",machine.note||""])],`${safeFileName(project.name)}-makineler.xlsx`,"Makineler");
+  const exportExcel=()=>downloadXlsx([["Makine Kodu","Makine Adı","Seri No","Lokasyon","IP","İşletim Sistemi/Model","Veri Kaynağı","Protokol","Ek Lisans","Sorumlu","Tip","Devreye Alındı","Perfect Veri","Son Kontrol","Devreye Alma Tarihi","Açıklama"],...machines.map(machine=>[machine.code||"",machine.name,machine.serialNo||"",machine.location||"",machine.ip||"",machine.osModel||"",machine.dataSource||"",machine.protocol||"",machine.extraLicense||"",machine.responsible||"",machine.type==="virtual"?"Sanal":"Fiziksel",machine.commissioned?"Evet":"Hayır",machine.lastPerfectData?"Evet":"Hayır",machine.lastControlAt||"",machine.commissionedAt||"",machine.note||""])],`${safeFileName(project.name)}-makineler.xlsx`,"Makineler");
+  const addMachineCheck=(machine,perfectData,note="")=>{
+    const check={id:uid(),ts:now(),userId:currentUser?.id||"",userName:currentUser?.name||"",perfectData,note};
+    update(machine.id,{lastPerfectData:perfectData,lastControlAt:check.ts,controlHistory:[check,...(machine.controlHistory||[])]});
+  };
   const importExcel=(event)=>{
     const file=event.target.files?.[0];if(!file)return;
     const reader=new FileReader();
@@ -3088,7 +3098,7 @@ function MachinePanel({ project, canEdit, onChange }) {
       try{
         const workbook=XLSX.read(reader.result,{type:"array"});
         const data=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{defval:""});
-        const imported=data.map(item=>({id:uid(),code:String(item["Makine Kodu"]||"").trim(),name:String(item["Makine Adı"]||item["Makine Adi"]||"").trim(),ip:String(item.IP||item.Ip||"").trim(),osModel:String(item["İşletim Sistemi/Model"]||item["Isletim Sistemi/Model"]||item.Model||"").trim(),extraLicense:String(item["Ek Lisans"]||"").trim(),type:String(item.Tip||"").toLocaleLowerCase("tr-TR")==="sanal"?"virtual":"physical",commissioned:["evet","true","1"].includes(String(item["Devreye Alındı"]||item["Devreye Alindi"]||"").toLocaleLowerCase("tr-TR")),commissionedAt:String(item["Devreye Alma Tarihi"]||""),note:String(item["Açıklama"]||item.Aciklama||"")})).filter(machine=>machine.name);
+        const imported=data.map(item=>({id:uid(),code:String(item["Makine Kodu"]||"").trim(),name:String(item["Makine Adı"]||item["Makine Adi"]||"").trim(),serialNo:String(item["Seri No"]||"").trim(),location:String(item.Lokasyon||"").trim(),ip:String(item.IP||item.Ip||"").trim(),osModel:String(item["İşletim Sistemi/Model"]||item["Isletim Sistemi/Model"]||item.Model||"").trim(),dataSource:String(item["Veri Kaynağı"]||item["Veri Kaynagi"]||"").trim(),protocol:String(item.Protokol||"").trim(),extraLicense:String(item["Ek Lisans"]||"").trim(),responsible:String(item.Sorumlu||"").trim(),type:String(item.Tip||"").toLocaleLowerCase("tr-TR")==="sanal"?"virtual":"physical",commissioned:["evet","true","1"].includes(String(item["Devreye Alındı"]||item["Devreye Alindi"]||"").toLocaleLowerCase("tr-TR")),lastPerfectData:["evet","true","1"].includes(String(item["Perfect Veri"]||"").toLocaleLowerCase("tr-TR")),lastControlAt:String(item["Son Kontrol"]||""),commissionedAt:String(item["Devreye Alma Tarihi"]||""),note:String(item["Açıklama"]||item.Aciklama||"")})).filter(machine=>machine.name);
         onChange([...machines,...imported]);
       }catch(error){alert(`Excel okunamadı: ${error.message}`);}
       event.target.value="";
@@ -3098,28 +3108,49 @@ function MachinePanel({ project, canEdit, onChange }) {
   return <div style={{flex:1,overflow:"auto",padding:"clamp(14px, 3vw, 24px)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
       <div><h3 style={{margin:0,fontSize:16,display:"flex",alignItems:"center",gap:7}}><Icon name="machines" size={18}/>Makine Devreye Alma</h3><div style={{fontSize:12,color:"#64748B",marginTop:3}}>{commissioned}/{machines.length} makine devrede</div></div>
-      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}><Btn variant="secondary" onClick={exportExcel}>Excel Dışa Aktar</Btn>{canEdit&&<><Btn variant="secondary" onClick={()=>fileRef.current?.click()}>Excel İçe Aktar</Btn><input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}} onChange={importExcel}/><Btn onClick={()=>{setEditingId("");setForm({name:"",code:"",type:"physical",ip:"",osModel:"",extraLicense:"",commissioned:false,commissionedAt:"",note:""});setShowForm(v=>!v);}}>{showForm?"Formu Kapat":"+ Makine Ekle"}</Btn></>}</div>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}><Btn variant="secondary" onClick={exportExcel}>Excel Dışa Aktar</Btn>{canEdit&&<><Btn variant="secondary" onClick={()=>fileRef.current?.click()}>Excel İçe Aktar</Btn><input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}} onChange={importExcel}/><Btn onClick={()=>{setEditingId("");setForm(blankMachineForm);setShowForm(v=>!v);}}>{showForm?"Formu Kapat":"+ Makine Ekle"}</Btn></>}</div>
     </div>
     <div style={{height:8,background:"#E2E8F0",borderRadius:8,marginBottom:16,overflow:"hidden"}}><div style={{height:"100%",width:`${machines.length?commissioned/machines.length*100:0}%`,background:"#059669"}} /></div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
       <input style={{...iStyle,width:260,maxWidth:"100%"}} value={search} onChange={event=>setSearch(event.target.value)} placeholder="Makine adı, kodu, IP veya OS/model ara..."/>
       <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
-        {[["cards","Kutucuk"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setViewMode(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:800,fontSize:11,background:viewMode===id?"#fff":"transparent",color:viewMode===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
+        {[["cards","Kutucuk"],["list","Liste"],["control","Kontrol"]].map(([id,label])=><button key={id} onClick={()=>setViewMode(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:800,fontSize:11,background:viewMode===id?"#fff":"transparent",color:viewMode===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
       </div>
     </div>
     {showForm&&<div style={{background:"#fff",border:"1.5px solid #DCE6F2",borderRadius:12,padding:16,marginBottom:16}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}><Field label="Makine Adı *"><input style={iStyle} value={form.name} onChange={e=>setForm(s=>({...s,name:e.target.value}))} /></Field><Field label="Kod / Hat No"><input style={iStyle} value={form.code} onChange={e=>setForm(s=>({...s,code:e.target.value}))} /></Field></div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}><Field label="IP Adresi"><input style={iStyle} value={form.ip} onChange={e=>setForm(s=>({...s,ip:e.target.value}))} placeholder="Örn. 192.168.1.10"/></Field><Field label="İşletim Sistemi / Model"><input style={iStyle} value={form.osModel} onChange={e=>setForm(s=>({...s,osModel:e.target.value}))} placeholder="Örn. Windows Server / IPC model"/></Field><Field label="Ek Lisans"><input style={iStyle} value={form.extraLicense} onChange={e=>setForm(s=>({...s,extraLicense:e.target.value}))} placeholder="Örn. OPC, historian, runtime"/></Field></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}><Field label="Seri No"><input style={iStyle} value={form.serialNo} onChange={e=>setForm(s=>({...s,serialNo:e.target.value}))}/></Field><Field label="Lokasyon"><input style={iStyle} value={form.location} onChange={e=>setForm(s=>({...s,location:e.target.value}))} placeholder="Hat / pano / alan"/></Field><Field label="IP Adresi"><input style={iStyle} value={form.ip} onChange={e=>setForm(s=>({...s,ip:e.target.value}))} placeholder="Örn. 192.168.1.10"/></Field></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}><Field label="İşletim Sistemi / Model"><input style={iStyle} value={form.osModel} onChange={e=>setForm(s=>({...s,osModel:e.target.value}))} placeholder="Örn. Windows Server / IPC model"/></Field><Field label="Veri Kaynağı"><input style={iStyle} value={form.dataSource} onChange={e=>setForm(s=>({...s,dataSource:e.target.value}))} placeholder="PLC, OPC, API..."/></Field><Field label="Protokol"><input style={iStyle} value={form.protocol} onChange={e=>setForm(s=>({...s,protocol:e.target.value}))} placeholder="OPC UA, Modbus, SQL..."/></Field></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}><Field label="Ek Lisans"><input style={iStyle} value={form.extraLicense} onChange={e=>setForm(s=>({...s,extraLicense:e.target.value}))} placeholder="Örn. OPC, historian, runtime"/></Field><Field label="Sorumlu"><input style={iStyle} value={form.responsible} onChange={e=>setForm(s=>({...s,responsible:e.target.value}))}/></Field></div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}><Field label="Makine Tipi"><select style={iStyle} value={form.type} onChange={e=>setForm(s=>({...s,type:e.target.value}))}><option value="physical">Fiziksel</option><option value="virtual">Sanal</option></select></Field><Field label="Devreye Alma Tarihi"><input type="date" style={iStyle} value={form.commissionedAt} onChange={e=>setForm(s=>({...s,commissionedAt:e.target.value}))} /></Field></div>
       <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:13}}><input type="checkbox" checked={form.commissioned} onChange={e=>setForm(s=>({...s,commissioned:e.target.checked}))} /> Devreye alındı</label>
       <Field label="Devreye Alınamama Açıklaması / Not"><textarea style={{...iStyle,height:70,resize:"vertical"}} value={form.note} onChange={e=>setForm(s=>({...s,note:e.target.value}))} /></Field>
       <div style={{display:"flex",justifyContent:"flex-end",gap:7}}>{editingId&&<Btn variant="ghost" onClick={()=>{setEditingId("");setShowForm(false);}}>İptal</Btn>}<Btn onClick={save}>{editingId?"Değişiklikleri Kaydet":"Makineyi Kaydet"}</Btn></div>
     </div>}
     {!machines.length&&<div style={{padding:40,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Henüz makine eklenmedi.</div>}
-    {viewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,marginBottom:12}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:780}}><thead><tr>{["Makine","Kod","İşletim Sistemi/Model","IP","Tip","Durum",""].map(label=><th key={label} style={{padding:"10px 9px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{visibleMachines.map(machine=><tr key={machine.id} style={{borderTop:"1px solid #EEF2F7"}}><td style={{padding:9,fontSize:11,fontWeight:850}}>{machine.name}</td><td style={{padding:9,fontSize:11,color:"#64748B"}}>{machine.code||"-"}</td><td style={{padding:9,fontSize:11,color:"#475569"}}>{machine.osModel||"-"}</td><td style={{padding:9,fontSize:11}}>{machine.ip?<button onClick={()=>copyIp(machine.ip)} title="IP kopyala" style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"5px 8px",fontSize:10,fontWeight:850,cursor:"pointer"}}>{machine.ip}</button>:"-"}</td><td style={{padding:9,fontSize:11}}>{machine.type==="virtual"?"Sanal":"Fiziksel"}</td><td style={{padding:9,fontSize:11,color:machine.commissioned?"#059669":"#EA6C00",fontWeight:850}}>{machine.commissioned?"Devrede":"Bekliyor"}</td><td style={{padding:9}}>{canEdit&&<div style={{display:"flex",gap:6}}><Btn small variant="secondary" onClick={()=>edit(machine)}>Düzenle</Btn><Btn small variant="danger" onClick={()=>onChange(machines.filter(m=>m.id!==machine.id))}>Sil</Btn></div>}</td></tr>)}</tbody></table>{!visibleMachines.length&&<div style={{padding:24,textAlign:"center",fontSize:12,color:"#94A3B8"}}>Aramaya uygun makine bulunamadı.</div>}</div>}
+    {viewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,marginBottom:12}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:1100}}><thead><tr>{["Makine","Kod","Seri/Lokasyon","OS/Model","IP","Veri Kaynağı","Protokol","Perfect Veri","Tip","Durum",""].map(label=><th key={label} style={{padding:"10px 9px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{visibleMachines.map(machine=><tr key={machine.id} style={{borderTop:"1px solid #EEF2F7"}}><td style={{padding:9,fontSize:11,fontWeight:850}}>{machine.name}</td><td style={{padding:9,fontSize:11,color:"#64748B"}}>{machine.code||"-"}</td><td style={{padding:9,fontSize:10,color:"#64748B"}}>{machine.serialNo||"-"}{machine.location?` · ${machine.location}`:""}</td><td style={{padding:9,fontSize:11,color:"#475569"}}>{machine.osModel||"-"}</td><td style={{padding:9,fontSize:11}}>{machine.ip?<button onClick={()=>copyIp(machine.ip)} title="IP kopyala" style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"5px 8px",fontSize:10,fontWeight:850,cursor:"pointer"}}>{machine.ip}</button>:"-"}</td><td style={{padding:9,fontSize:11,color:"#475569"}}>{machine.dataSource||"-"}</td><td style={{padding:9,fontSize:11,color:"#475569"}}>{machine.protocol||"-"}</td><td style={{padding:9,fontSize:11,color:machine.lastPerfectData?"#059669":"#EA6C00",fontWeight:850}}>{machine.lastControlAt?(machine.lastPerfectData?"Evet":"Hayır"):"Kontrol yok"}</td><td style={{padding:9,fontSize:11}}>{machine.type==="virtual"?"Sanal":"Fiziksel"}</td><td style={{padding:9,fontSize:11,color:machine.commissioned?"#059669":"#EA6C00",fontWeight:850}}>{machine.commissioned?"Devrede":"Bekliyor"}</td><td style={{padding:9}}>{canEdit&&<div style={{display:"flex",gap:6}}><Btn small variant="secondary" onClick={()=>edit(machine)}>Düzenle</Btn><Btn small variant="danger" onClick={()=>onChange(machines.filter(m=>m.id!==machine.id))}>Sil</Btn></div>}</td></tr>)}</tbody></table>{!visibleMachines.length&&<div style={{padding:24,textAlign:"center",fontSize:12,color:"#94A3B8"}}>Aramaya uygun makine bulunamadı.</div>}</div>}
+    {viewMode==="control"&&<div style={{display:"grid",gap:10,marginBottom:12}}>
+      <div style={{background:"#EEF2FF",border:"1px solid #C7D2FE",borderRadius:13,padding:12,fontSize:12,color:"#3730A3",lineHeight:1.5}}>Devredeki makineleri saha kontrolü sırasında hızlıca işaretleyin. Her işaretleme makinenin kontrol geçmişine kaydedilir.</div>
+      {commissionedMachines.map(machine=>{const last=(machine.controlHistory||[])[0];return <div key={machine.id} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:13}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",flexWrap:"wrap"}}>
+          <div style={{minWidth:0,flex:1}}><div style={{fontSize:13,fontWeight:900,wordBreak:"break-word"}}>{machine.name}</div><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{machine.code||"Kod yok"}{machine.ip?` · ${machine.ip}`:""}{machine.dataSource?` · ${machine.dataSource}`:""}</div></div>
+          <label style={{display:"inline-flex",alignItems:"center",gap:8,background:machine.lastPerfectData?"#ECFDF5":"#FFF7ED",color:machine.lastPerfectData?"#047857":"#EA6C00",borderRadius:10,padding:"8px 10px",fontSize:11,fontWeight:900,cursor:"pointer"}}><input type="checkbox" checked={Boolean(machine.lastPerfectData)} onChange={event=>addMachineCheck(machine,event.target.checked)}/> Perfect veri alıyor</label>
+        </div>
+        <div style={{display:"flex",gap:7,flexWrap:"wrap",marginTop:10}}><button onClick={()=>{const note=prompt("Kontrol notu",last?.note||"");if(note!==null)addMachineCheck(machine,Boolean(machine.lastPerfectData),note);}} style={{border:0,background:"#F1F5F9",color:"#475569",borderRadius:8,padding:"7px 9px",fontSize:10,fontWeight:850,cursor:"pointer"}}>Notlu Kontrol</button>{last&&<span style={{fontSize:10,color:"#64748B",alignSelf:"center"}}>Son kontrol: {new Date(last.ts).toLocaleString("tr-TR")} · {last.userName||"Kullanıcı"} · {last.perfectData?"Perfect":"Sorun var"}</span>}</div>
+        {(machine.controlHistory||[]).length>0&&<div style={{marginTop:10,borderTop:"1px solid #EEF2F7",paddingTop:8,display:"grid",gap:5}}>{(machine.controlHistory||[]).slice(0,4).map(item=><div key={item.id} style={{fontSize:10,color:"#64748B",display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}><span>{new Date(item.ts).toLocaleString("tr-TR")} · {item.userName||"Kullanıcı"}</span><b style={{color:item.perfectData?"#059669":"#E11D48"}}>{item.perfectData?"Perfect veri":"Sorun / eksik veri"}</b>{item.note&&<span style={{flexBasis:"100%",color:"#475569"}}>{item.note}</span>}</div>)}</div>}
+      </div>;})}
+      {!commissionedMachines.length&&<div style={{padding:34,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Kontrol edilecek devrede makine bulunamadı.</div>}
+    </div>}
     <div style={{display:viewMode==="cards"?"grid":"none",gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))",gap:10}}>
       {visibleMachines.map(machine=><div key={machine.id} style={{background:"#fff",borderRadius:12,padding:14,border:`1.5px solid ${machine.commissioned?"#A7F3D0":"#FED7AA"}`}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}><div><div style={{fontWeight:800,fontSize:13}}>{machine.name}</div><div style={{fontSize:11,color:"#64748B",marginTop:2}}>{machine.code||"Kod yok"} · {machine.type==="virtual"?"Sanal":"Fiziksel"}</div></div><span style={{background:machine.commissioned?"#ECFDF5":"#FFF7ED",color:machine.commissioned?"#059669":"#EA6C00",padding:"3px 8px",borderRadius:8,fontSize:10,fontWeight:800}}>{machine.commissioned?"DEVREDE":"BEKLİYOR"}</span></div>
+        {(machine.ip||machine.osModel||machine.dataSource||machine.protocol||machine.location)&&<div style={{display:"grid",gap:3,marginTop:9,fontSize:10,color:"#64748B",lineHeight:1.35}}>
+          {machine.ip&&<span>IP: <b style={{color:"#334155"}}>{machine.ip}</b></span>}
+          {machine.osModel&&<span>OS/Model: {machine.osModel}</span>}
+          {machine.dataSource&&<span>Veri: {machine.dataSource}{machine.protocol?` · ${machine.protocol}`:""}</span>}
+          {machine.location&&<span>Lokasyon: {machine.location}</span>}
+        </div>}
+        {machine.lastControlAt&&<div style={{fontSize:10,color:machine.lastPerfectData?"#059669":"#E11D48",fontWeight:850,marginTop:8}}>Son kontrol: {machine.lastPerfectData?"Perfect veri":"Sorun var"} · {new Date(machine.lastControlAt).toLocaleDateString("tr-TR")}</div>}
         {machine.commissionedAt&&<div style={{fontSize:11,color:"#64748B",marginTop:9}}>Devreye alma: {fmt(machine.commissionedAt)}</div>}
         {!machine.commissioned&&<textarea disabled={!canEdit} value={machine.note||""} onChange={e=>update(machine.id,{note:e.target.value})} placeholder="Neden devreye alınamadı?" style={{...iStyle,height:58,resize:"vertical",marginTop:9,fontSize:11}} />}
         {canEdit&&<div style={{display:"flex",justifyContent:"space-between",marginTop:10,gap:6,flexWrap:"wrap"}}><Btn small variant={machine.commissioned?"warning":"success"} onClick={()=>update(machine.id,{commissioned:!machine.commissioned,commissionedAt:!machine.commissioned?todayStr():""})}>{machine.commissioned?"Devreden Çıkar":"Devreye Al"}</Btn><div style={{display:"flex",gap:6}}><Btn small variant="secondary" onClick={()=>edit(machine)}>Düzenle</Btn><Btn small variant="danger" onClick={()=>onChange(machines.filter(m=>m.id!==machine.id))}>Sil</Btn></div></div>}
@@ -3660,6 +3691,7 @@ export default function App() {
   const [adminSection,setAdminSection]=useState("overview");
   const [projectScope,setProjectScope]=useState("all");
   const [projectSearch,setProjectSearch]=useState("");
+  const [projectViewMode,setProjectViewMode]=useState("cards");
   const [ticketMineOnly,setTicketMineOnly]=useState(false);
   const [taskToOpen,setTaskToOpen]=useState("");
   const [responsibilityFilters,setResponsibilityFilters]=useState([]);
@@ -3885,6 +3917,19 @@ export default function App() {
   const visibleProjects=state.projects;
   const myProjects=state.projects.filter(p=>projectPmIds(p).includes(currentUser.id)||projectStakeholders(p).some(item=>item.userId===currentUser.id)||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
   const listedProjects=(projectScope==="mine"?myProjects:visibleProjects).filter(item=>`${item.name||""} ${item.description||""} ${(item.customerProfile?.website)||""}`.toLocaleLowerCase("tr-TR").includes(projectSearch.trim().toLocaleLowerCase("tr-TR")));
+  const exportListedProjects=()=>downloadXlsx([
+    ["Proje","Müşteri","Durum","PM","Başlangıç","Hedef Bitiş","İlerleme %","Görev","Geciken","Ticket","Makine","Devrede"],
+    ...listedProjects.map(project=>{
+      const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);
+      const done=tasks.filter(task=>task.status==="Tamamlandı").length;
+      const progress=tasks.length?Math.round(done/tasks.length*100):0;
+      const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;
+      const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];
+      const commissioned=machines.filter(machine=>machine.commissioned).length;
+      const pms=projectPmIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");
+      return [project.name,project.customerProfile?.name||project.customerName||"",project.status||"",pms,project.startDate||"",project.endDate||"",progress,`${done}/${tasks.length}`,delayed,((state.projectTickets||{})[project.id]||[]).length,machines.length,commissioned];
+    })
+  ],`projeler-toplu-${todayStr()}.xlsx`,"Projeler");
   const taskDeadlineWarnings=visibleProjects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectId:proj.id,projectName:proj.name,projectColor:proj.color,level:delayLvl(t.dueDate,t.status),days:daysDiff(t.dueDate)}))));
   const todoDeadlineWarnings=(((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(t=>!t.done&&t.dueDate&&daysDiff(t.dueDate)>0).map(t=>({id:t.id,title:t.action||t.text,projectName:t.customer||"Kişisel To-Do",dueDate:t.dueDate,kind:"todo",level:daysDiff(t.dueDate)>=7?"critical":"normal",days:daysDiff(t.dueDate),status:"Bekliyor"}));
   const deadlineWarnings=[...taskDeadlineWarnings,...todoDeadlineWarnings].sort((a,b)=>b.days-a.days);
@@ -4278,9 +4323,13 @@ export default function App() {
           <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="projects" size={20}/>Projeler</h2><p style={{ margin:"3px 0 0", color:"#64748B", fontSize:13 }}>{listedProjects.length} proje</p></div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <input value={projectSearch} onChange={event=>setProjectSearch(event.target.value)} placeholder="Projelerde ara..." style={{...iStyle,width:220,maxWidth:"100%"}}/>
+            <Btn variant="secondary" onClick={exportListedProjects}>XLSX İndir</Btn>
             <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
               {isAdmin&&<button onClick={()=>setProjectScope("all")} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectScope==="all"?"#fff":"transparent",color:projectScope==="all"?"#4A6CF7":"#64748B"}}>Tüm Projeler</button>}
               <button onClick={()=>setProjectScope("mine")} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectScope==="mine"||!isAdmin?"#fff":"transparent",color:projectScope==="mine"||!isAdmin?"#4A6CF7":"#64748B"}}>Projelerim</button>
+            </div>
+            <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
+              {[["cards","Kart"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setProjectViewMode(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectViewMode===id?"#fff":"transparent",color:projectViewMode===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
             </div>
             {isAdmin&&<Btn onClick={()=>setModal({type:"addProject"})}>+ Yeni Proje</Btn>}
           </div>
@@ -4289,7 +4338,8 @@ export default function App() {
           <div style={{ fontSize:14, fontWeight:700, marginBottom:8 }}>Proje yok</div>
           {isAdmin&&<Btn onClick={()=>setModal({type:"addProject"})}>+ Proje Oluştur</Btn>}
         </div>}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(265px,1fr))", gap:13 }}>
+        {projectViewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,marginBottom:14}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:980}}><thead><tr>{["Proje","Müşteri","PM","Durum","İlerleme","Görev","Gecikme","Ticket","Makine"].map(label=><th key={label} style={{padding:"11px 10px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{listedProjects.map(project=>{const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);const done=tasks.filter(task=>task.status==="Tamamlandı").length;const progress=tasks.length?Math.round(done/tasks.length*100):0;const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];const pms=projectPmIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");return <tr key={project.id} onClick={()=>{setSelProject(project.id);setSelMilestone(null);setProjectTab("setup");}} style={{borderTop:"1px solid #EEF2F7",cursor:"pointer"}}><td style={{padding:10,fontSize:12,fontWeight:850}}>{project.name}</td><td style={{padding:10,fontSize:11,color:"#64748B"}}>{project.customerProfile?.name||project.customerName||"-"}</td><td style={{padding:10,fontSize:11,color:"#475569"}}>{pms||"-"}</td><td style={{padding:10}}><Badge label={project.status}/></td><td style={{padding:10,fontSize:11,fontWeight:850,color:project.color}}>%{progress}</td><td style={{padding:10,fontSize:11}}>{done}/{tasks.length}</td><td style={{padding:10,fontSize:11,color:delayed?"#E11D48":"#64748B",fontWeight:delayed?850:600}}>{delayed}</td><td style={{padding:10,fontSize:11}}>{((state.projectTickets||{})[project.id]||[]).length}</td><td style={{padding:10,fontSize:11}}>{machines.filter(machine=>machine.commissioned).length}/{machines.length}</td></tr>;})}</tbody></table></div>}
+        <div style={{ display:projectViewMode==="cards"?"grid":"none", gridTemplateColumns:"repeat(auto-fill,minmax(265px,1fr))", gap:13 }}>
           {listedProjects.map(p=><ProjectListCard key={p.id} project={p} people={state.people} isAdmin={isAdmin} onOpen={()=>{setSelProject(p.id);setSelMilestone(null);setProjectTab("setup");}} onEdit={()=>setModal({type:"editProject",data:p})} onReport={()=>generateHTMLReport(p,state.people,state.logs)} onDelete={()=>confirm("Projeyi sil?")&&deleteProject(p.id)}/>)}
           {false&&listedProjects.map(p=>{
             const total=p.milestones.reduce((a,m)=>a+m.tasks.length,0);
@@ -4398,7 +4448,7 @@ export default function App() {
     {modal?.type==="addRisk"&&<RiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
     {modal?.type==="editProfile"&&<UserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
     {modal?.type==="timeLog"&&<TimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
-    {modal?.type==="addPersonal"&&<PersonalTaskModal title="Görev Ata" people={state.people} isAdmin currentUser={currentUser} onClose={()=>setModal(null)} onSave={saveAdminAssignedTask} />}
+    {modal?.type==="addPersonal"&&<PersonalTaskModal title="Görev Ata" people={state.people} projects={state.projects} isAdmin currentUser={currentUser} onClose={()=>setModal(null)} onSave={saveAdminAssignedTask} />}
     {mobileQuickSheet&&<MobileQuickSheet isAdminMode={useAdminHome} onClose={()=>setMobileQuickSheet(false)} onSelect={target=>{setMobileQuickSheet(false);if(target==="assign"){setModal({type:"addPersonal"});return;}if(target==="todo"||target==="action")setMobileQuick(target);else{setSelProject(null);setSelMilestone(null);if(target==="ticket")setTicketMineOnly(true);setView(target==="ticket"?"tickets":target);}}}/>}
     {mobileQuick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickTodo}/>}
     {mobileQuick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickAction}/>}
@@ -4914,9 +4964,9 @@ function TaskModal({ title, initial, onClose, onSave, people }) {
     <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.title.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>
   </Modal>;
 }
-function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, currentUser }) {
+function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, currentUser, projects=[] }) {
   const editing=Boolean(initial?.id);
-  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:isAdmin?"":currentUser.id, assigneeIds:initial?.assignee?[initial.assignee]:[], startDate:todayStr(), startTime:currentTimeStr(), dueDate:todayStr(), dueTime:currentTimeStr(), estimatedHours:"", notes:"", waitSource:"", recurring:false, frequency:"weekly", nextRunDate:"", ...initial });
+  const [f,setF]=useState({ title:"", projectId:"", status:"Bekliyor", priority:"Orta", assignee:isAdmin?"":currentUser.id, assigneeIds:initial?.assignee?[initial.assignee]:[], startDate:todayStr(), startTime:currentTimeStr(), dueDate:todayStr(), dueTime:currentTimeStr(), estimatedHours:"", notes:"", waitSource:"", recurring:false, frequency:"weekly", nextRunDate:"", ...initial });
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
@@ -4933,6 +4983,7 @@ function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, c
   };
   return <Modal title={title} onClose={onClose}>
     <Field label="Görev Başlığı *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
+    <Field label="İlişkili Proje"><select style={iStyle} value={f.projectId||""} onChange={e=>upd("projectId",e.target.value)}><option value="">- Projesiz / Genel iş -</option>{projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Durum"><select style={iStyle} value={f.status} onChange={e=>upd("status",e.target.value)}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></Field>
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></Field>
@@ -4964,6 +5015,7 @@ function TaskDetailModal({ task, people, currentUser, onClose, onUpdate }) {
   const [comment,setComment]=useState("");
   const assignee=people.find(p=>p.id===task.assignee);
   const comments=task.comments||[];
+  const linkedProjectName=task.projectName||task.project?.name||"";
   const addComment=()=>{
     const text=comment.trim();
     if(!text)return;
@@ -4972,7 +5024,7 @@ function TaskDetailModal({ task, people, currentUser, onClose, onUpdate }) {
   };
   return <Modal title="Görev Detayı" onClose={onClose} wide>
     <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",marginBottom:15,flexWrap:"wrap"}}>
-      <div style={{minWidth:0,flex:"1 1 260px"}}><h2 style={{fontSize:18,margin:"0 0 5px",lineHeight:1.25,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.title}</h2><div style={{fontSize:11,color:"#64748B",lineHeight:1.4,wordBreak:"break-word",overflowWrap:"anywhere"}}>{assignee?.name||"Atanmamış"} · Termin: {fmt(task.dueDate)||"Belirtilmedi"}{task.dueTime?` ${task.dueTime}`:""}</div></div>
+      <div style={{minWidth:0,flex:"1 1 260px"}}><h2 style={{fontSize:18,margin:"0 0 5px",lineHeight:1.25,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.title}</h2><div style={{fontSize:11,color:"#64748B",lineHeight:1.4,wordBreak:"break-word",overflowWrap:"anywhere"}}>{assignee?.name||"Atanmamış"}{linkedProjectName?` · ${linkedProjectName}`:""} · Termin: {fmt(task.dueDate)||"Belirtilmedi"}{task.dueTime?` ${task.dueTime}`:""}{task.firstSeenAt?` · İlk bakış: ${new Date(task.firstSeenAt).toLocaleString("tr-TR")}`:""}</div></div>
       <select style={{...iStyle,width:180}} value={task.status||"Bekliyor"} onChange={e=>onUpdate({status:e.target.value})}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select>
     </div>
     {task.notes&&<div style={{background:"#F8FAFC",borderRadius:10,padding:13,fontSize:13,lineHeight:1.6,marginBottom:16,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.notes}</div>}
