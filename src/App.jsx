@@ -1058,7 +1058,7 @@ function MobileBottomNav({view,onNavigate,onQuick,onProfile,deadlineCount,taskCo
     ["projects","projects","Projeler"],
     ["quick","plus","Ekle"],
     ["mytasks","tasks","İşler",taskCount],
-    ["mobilemenu","settings","MenÃ¼"],
+    ["tickets","ticket","Ticket"],
   ];
   return <div style={{position:"fixed",left:10,right:10,bottom:10,zIndex:920,background:"rgba(255,255,255,.92)",backdropFilter:"blur(18px)",border:"1px solid rgba(226,232,240,.9)",borderRadius:24,padding:"8px 9px",display:"grid",gridTemplateColumns:"repeat(5,1fr)",boxShadow:"0 18px 45px rgba(15,23,42,.18)"}}>
     {items.map(([id,icon,label,badge])=>{const active=view===id;return <button key={id} onClick={()=>id==="quick"?onQuick():onNavigate(id)} style={{border:0,background:"transparent",display:"grid",placeItems:"center",gap:3,color:active?"#4338CA":"#64748B",fontSize:9,fontWeight:900,cursor:"pointer",position:"relative",padding:0}}>
@@ -1071,17 +1071,17 @@ function MobileBottomNav({view,onNavigate,onQuick,onProfile,deadlineCount,taskCo
 
 function MobileFeatureMenuPage({isAdmin,onNavigate}) {
   const items=[
-    ["tickets","ticket","Ticketlar","MÃ¼ÅŸteri talepleri ve durum takibi","#EA6C00"],
-    ["reports","reports","Raporlar","HTML/XLSX raporlar ve Ã¶zetler","#4A6CF7"],
-    ["ai","activity","AI Tool","Proje veya portfÃ¶y yorumu","#7C3AED"],
-    ["fieldops","calendar","Saha YÃ¶netimi","Planlar ve ziyaretler","#0F766E"],
-    ["deadlines","clock","Termin UyarÄ±larÄ±","Gecikmeler ve yaklaÅŸan iÅŸler","#E11D48"],
-    ["todos","tasks","To-Do","KiÅŸisel aksiyonlar","#DB2777"],
-    ["people","people","Ekip","Organizasyon ve kiÅŸiler","#0369A1"],
-    ...(isAdmin?[["admin","admin","YÃ¶netici","KPI ve yÃ¶netim paneli","#111827"],["import","download","Import Merkezi","Åablon ve veri aktarÄ±mÄ±","#059669"],["mailcenter","mail","Mail Merkezi","Åablonlar ve otomasyon","#4338CA"]]:[]),
+    ["tickets","ticket","Ticketlar","Müşteri talepleri ve durum takibi","#EA6C00"],
+    ["reports","reports","Raporlar","HTML/XLSX raporlar ve özetler","#4A6CF7"],
+    ["ai","activity","AI Tool","Proje veya portföy yorumu","#7C3AED"],
+    ["fieldops","calendar","Saha Yönetimi","Planlar ve ziyaretler","#0F766E"],
+    ["deadlines","clock","Termin Uyarıları","Gecikmeler ve yaklaşan işler","#E11D48"],
+    ["todos","tasks","To-Do","Kişisel aksiyonlar","#DB2777"],
+    ["people","people","Ekip","Organizasyon ve kişiler","#0369A1"],
+    ...(isAdmin?[["admin","admin","Yönetici","KPI ve yönetim paneli","#111827"],["import","download","Import Merkezi","Şablon ve veri aktarımı","#059669"],["mailcenter","mail","Mail Merkezi","Şablonlar ve otomasyon","#4338CA"]]:[]),
   ];
   return <div style={{minHeight:"100%",background:"#F8FAFC",padding:"18px 14px 92px",overflow:"auto"}}>
-    <div style={{marginBottom:14}}><h2 style={{margin:"0 0 4px",fontSize:20}}>TÃ¼m Ã–zellikler</h2><div style={{fontSize:12,color:"#64748B"}}>Web tarafÄ±ndaki ana alanlara mobilde de buradan eriÅŸebilirsiniz.</div></div>
+    <div style={{marginBottom:14}}><h2 style={{margin:"0 0 4px",fontSize:20}}>Tüm Özellikler</h2><div style={{fontSize:12,color:"#64748B"}}>Web tarafındaki ana alanlara mobilde de buradan erişebilirsiniz.</div></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10}}>{items.map(([view,icon,title,desc,color])=><button key={view} onClick={()=>onNavigate(view)} style={{border:"1px solid #E2E8F0",background:"#fff",borderRadius:18,padding:14,textAlign:"left",cursor:"pointer",minHeight:122,boxShadow:"0 8px 22px rgba(15,23,42,.04)"}}>
       <span style={{width:38,height:38,borderRadius:13,background:color+"16",color,display:"grid",placeItems:"center",marginBottom:10}}><Icon name={icon} size={18}/></span>
       <b style={{display:"block",fontSize:13,color:"#111827"}}>{title}</b>
@@ -3531,6 +3531,7 @@ export default function App() {
   const [loadedAuthUserId,setLoadedAuthUserId]=useState("");
   const fileRef=useRef();
   const skipNextSave=useRef(true);
+  const selectedProjectHistoryRef=useRef("");
 
   // Start waking the API while Supabase restores the persisted session.
   useEffect(()=>{
@@ -3651,6 +3652,7 @@ export default function App() {
 
   const currentUser=state.people.find(p=>p.id===state.currentUserId);
   const isAdmin=currentUser?.isAdmin||false;
+  const useAdminHome=isAdmin&&currentUser?.defaultDashboard==="admin";
   const tenantProfile=resolveTenantProfile(state.tenantProfile);
   useEffect(()=>{
     if(currentUser?.ticketOnly&&!["tickets","notifications"].includes(view)){
@@ -3658,6 +3660,27 @@ export default function App() {
       setSelProject(null);
     }
   },[currentUser?.ticketOnly,view]);
+
+  useEffect(()=>{
+    if(typeof window==="undefined")return;
+    if(selProject&&selectedProjectHistoryRef.current!==selProject){
+      selectedProjectHistoryRef.current=selProject;
+      window.history.pushState({corjectProject:selProject},"",window.location.href);
+    }
+    if(!selProject)selectedProjectHistoryRef.current="";
+  },[selProject]);
+
+  useEffect(()=>{
+    if(typeof window==="undefined")return;
+    const onPopState=()=>{
+      if(selProject){
+        setSelProject(null);
+        setSelMilestone(null);
+      }
+    };
+    window.addEventListener("popstate",onPopState);
+    return ()=>window.removeEventListener("popstate",onPopState);
+  },[selProject]);
 
   const addLog=(user,action,detail,project,milestone)=>{
     setState(s=>({...s,logs:[{id:uid(),ts:now(),user,userId:s.currentUserId,action,detail,project:project||"",milestone:milestone||""},...s.logs]}));
@@ -3942,6 +3965,7 @@ export default function App() {
           <Icon name="bell" size={17}/>
           {(state.notifications||[]).filter(n=>n.userId===currentUser?.id&&!n.read).length>0&&<span style={{ position:"absolute", top:5, right:5, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
         </button>
+        <button title="Tüm özellikler" onClick={()=>{setSelProject(null);setSelMilestone(null);setView("mobilemenu");}} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,cursor:"pointer",padding:"7px 9px",color:"#475569",display:"grid",placeItems:"center",fontSize:18,fontWeight:900,lineHeight:1}}>☰</button>
         <button title="Projelerim" onClick={()=>{setProjectScope("mine");setSelProject(null);setView("projects");}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={34} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
       </div>
     </div>}
@@ -3974,8 +3998,8 @@ export default function App() {
 
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:isMobile?82:0 }}>
-      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&(isMobile?<MobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>:<DashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>)}
-      {view==="admin"&&isAdmin&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
+      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(isMobile?<MobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>:<DashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>)}
+      {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
       {view==="mobilemenu"&&<MobileFeatureMenuPage isAdmin={isAdmin} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);setView(target);}}/>}
       {view==="ai"&&!selProject&&<AIWorkspace projects={visibleProjects}/>}
@@ -3984,7 +4008,6 @@ export default function App() {
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <div style={{background:"#fff",padding:isMobile?"8px 12px 0":"10px 18px 0"}}><button onClick={()=>{setSelProject(null);setSelMilestone(null);setView("projects");}} style={{border:0,background:"#F1F5F9",color:"#475569",borderRadius:10,padding:"7px 10px",fontSize:11,fontWeight:850,cursor:"pointer"}}>← Geri</button></div>
         <ProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={project.customerContacts||[]} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>setProjectTab("setup")}/>
         <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:isMobile?"8px clamp(12px,2.2vw,22px) 10px":"0 clamp(12px,2.2vw,22px) 10px"}}>
           <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:3,scrollbarWidth:"thin"}}>
@@ -4552,6 +4575,8 @@ function UserEditModal({ person, people=[], roles=ORG_LEVELS, onClose, onSave, t
   const [managerId,setManagerId]=useState(person.managerId||"");
   const [isAdmin,setIsAdmin]=useState(Boolean(person.isAdmin));
   const [ticketOnly,setTicketOnly]=useState(Boolean(person.ticketOnly));
+  const [defaultDashboard,setDefaultDashboard]=useState(person.defaultDashboard||"team");
+  const canChooseDashboard=Boolean(person.isAdmin||allowAdmin);
   return <Modal title={title} onClose={onClose} wide>
     <Field label="Ad Soyad *"><input style={iStyle} value={name} onChange={e=>setName(e.target.value)} /></Field>
     <Field label="E-posta"><input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" /></Field>
@@ -4563,11 +4588,12 @@ function UserEditModal({ person, people=[], roles=ORG_LEVELS, onClose, onSave, t
     <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={whatsappEnabled} onChange={e=>setWhatsappEnabled(e.target.checked)}/> WhatsApp görev bildirimlerini al</label>
     {allowAdmin&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
       <Field label="Organizasyon Seviyesi"><select style={iStyle} value={orgLevel} onChange={e=>setOrgLevel(e.target.value)}><option value="">- Atanmamış -</option>{roles.map(level=><option key={level.id} value={level.id}>{level.label}</option>)}</select></Field>
-      <Field label="Bağlı Olduğu Yönetici"><select style={iStyle} value={managerId} onChange={e=>setManagerId(e.target.value)}><option value="">- Yönetici yok -</option>{people.filter(item=>item.id!==person.id).map(item=><option key={item.id} value={item.id}>{item.name} · {orgLevelLabel(item.orgLevel)}</option>)}</select></Field>
+      <Field label="Bağlı Olduğu Yönetici"><select style={iStyle} value={managerId} onChange={e=>setManagerId(e.target.value)}><option value="">- Yönetici yok -</option>{people.filter(item=>item.id!==person.id).map(item=><option key={item.id} value={item.id}>{item.name} - {orgLevelLabel(item.orgLevel)}</option>)}</select></Field>
     </div>}
     {allowAdmin&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={isAdmin} onChange={e=>setIsAdmin(e.target.checked)}/> Yönetici yetkisi</label>}
     {allowAdmin&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={ticketOnly} onChange={e=>setTicketOnly(e.target.checked)}/> Yalnızca ticket modülünü kullanabilir</label>}
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),phone:phone.replace(/\D/g,""),city:city.trim(),district:district.trim(),location:{...(person.location||{}),city:city.trim(),district:district.trim()},whatsappEnabled,...(allowAdmin?{isAdmin,orgLevel,managerId,ticketOnly,role:roles.find(item=>item.id===orgLevel)?.label||"Atanmamış"}:{})}); onClose(); }}>Kaydet</Btn></div>
+    {canChooseDashboard&&<Field label="Alt ana sayfa"><select style={iStyle} value={defaultDashboard} onChange={e=>setDefaultDashboard(e.target.value)}><option value="team">Ekip dashboardu</option><option value="admin">Yönetici dashboardu</option></select></Field>}
+    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),phone:phone.replace(/\D/g,""),city:city.trim(),district:district.trim(),location:{...(person.location||{}),city:city.trim(),district:district.trim()},whatsappEnabled,defaultDashboard:canChooseDashboard?defaultDashboard:"team",...(allowAdmin?{isAdmin,orgLevel,managerId,ticketOnly,role:roles.find(item=>item.id===orgLevel)?.label||"Atanmamış"}:{})}); onClose(); }}>Kaydet</Btn></div>
   </Modal>;
 }
 
