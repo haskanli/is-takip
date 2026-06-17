@@ -3532,6 +3532,7 @@ export default function App() {
   const fileRef=useRef();
   const skipNextSave=useRef(true);
   const selectedProjectHistoryRef=useRef("");
+  const touchStartRef=useRef(null);
 
   // Start waking the API while Supabase restores the persisted session.
   useEffect(()=>{
@@ -3689,6 +3690,43 @@ export default function App() {
     setState(s=>({...s,notifications:[{id:uid(),ts:now(),userId,msg,projectName,read:false},...(s.notifications||[])]}));
   };
   const markAllRead=()=>setState(s=>({...s,notifications:(s.notifications||[]).map(n=>n.userId===currentUser?.id?{...n,read:true}:n)}));
+  const goBackInApp=useCallback(()=>{
+    if(mobileQuickSheet){setMobileQuickSheet(false);return true;}
+    if(mobileQuick){setMobileQuick(null);return true;}
+    if(modal){setModal(null);return true;}
+    if(selProject){
+      if(projectTab!=="setup"){setProjectTab("setup");return true;}
+      setSelProject(null);
+      setSelMilestone(null);
+      setView("projects");
+      return true;
+    }
+    if(view&&view!=="dashboard"){
+      setView("dashboard");
+      setSelMilestone(null);
+      setProjectScope("all");
+      return true;
+    }
+    return false;
+  },[mobileQuickSheet,mobileQuick,modal,selProject,projectTab,view]);
+  const handleTouchStart=event=>{
+    if(!isMobile)return;
+    const touch=event.touches?.[0];
+    if(!touch||touch.clientX>28)return;
+    touchStartRef.current={x:touch.clientX,y:touch.clientY,at:Date.now()};
+  };
+  const handleTouchEnd=event=>{
+    const start=touchStartRef.current;
+    touchStartRef.current=null;
+    if(!isMobile||!start)return;
+    const touch=event.changedTouches?.[0];
+    if(!touch)return;
+    const dx=touch.clientX-start.x;
+    const dy=Math.abs(touch.clientY-start.y);
+    if(dx>72&&dy<70&&Date.now()-start.at<900){
+      goBackInApp();
+    }
+  };
   const login=(id)=>{ setState(s=>({...s,currentUserId:id})); setView("dashboard"); try{localStorage.setItem("corject_uid",id);}catch(e){} };
   const logout=()=>{ if(REQUIRE_AUTH)supabase.auth.signOut();setState(s=>({...s,currentUserId:null})); try{localStorage.removeItem("corject_uid");}catch(e){} setView("dashboard"); setSelProject(null); };
 
@@ -3956,7 +3994,7 @@ export default function App() {
   ];
   const nav=currentUser.ticketOnly?fullNav.filter(item=>["tickets"].includes(item.id)):fullNav;
 
-  return <><GlobalStyle /><div style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
+  return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
     {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:58, background:"rgba(255,255,255,.94)", backdropFilter:"blur(18px)", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
       <button onClick={()=>{setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:34,height:34,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:950,color:"#111827",letterSpacing:.2,maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
@@ -3966,7 +4004,7 @@ export default function App() {
           {(state.notifications||[]).filter(n=>n.userId===currentUser?.id&&!n.read).length>0&&<span style={{ position:"absolute", top:5, right:5, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
         </button>
         <button title="Tüm özellikler" onClick={()=>{setSelProject(null);setSelMilestone(null);setView("mobilemenu");}} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,cursor:"pointer",padding:"7px 9px",color:"#475569",display:"grid",placeItems:"center",fontSize:18,fontWeight:900,lineHeight:1}}>☰</button>
-        <button title="Projelerim" onClick={()=>{setProjectScope("mine");setSelProject(null);setView("projects");}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={34} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
+        <button title="Profilim" onClick={()=>setModal({type:"editProfile"})} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={34} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
       </div>
     </div>}
     {/* Sidebar */}
@@ -3981,7 +4019,7 @@ export default function App() {
             </button>
           </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
-          <button title="Dashboard'a git" onClick={()=>{setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
+          <button title="Profilim" onClick={()=>{setModal({type:"editProfile"});setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
           <div style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", minHeight:28 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", lineHeight:1 }}>{currentUser.name}</div>
           </div>
