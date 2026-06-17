@@ -1100,7 +1100,7 @@ function AdminBoardCard({id,size="medium",draggedId,onDragStart,onDragEnd,onDrop
     style={{position:"relative",opacity:active?.48:1,transform:active?"scale(.985)":"none",transition:"opacity .15s, transform .15s",...style}}
   >
     <div className="admin-board-tools" style={{position:"absolute",top:7,right:8,zIndex:3,display:"flex",alignItems:"center",gap:3}}>
-      <select title="Kart genişliği" value={size} onMouseDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()} onChange={event=>onResize(id,event.target.value)} style={{border:"1px solid #E2E8F0",borderRadius:6,background:"#fff",color:"#94A3B8",fontSize:9,padding:"2px 3px",cursor:"pointer",maxWidth:68}}>{Object.entries(sizeLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
+      <select className="admin-card-size-select" title="Kart genişliği" value={size} onMouseDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()} onChange={event=>onResize(id,event.target.value)} style={{border:"1px solid #E2E8F0",borderRadius:6,background:"#fff",color:"#94A3B8",fontSize:9,padding:"2px 3px",cursor:"pointer",maxWidth:68}}>{Object.entries(sizeLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
       <div draggable onDragStart={event=>onDragStart(event,id)} onDragEnd={onDragEnd} title="Sürükleyerek yerini değiştir" style={{color:"#CBD5E1",fontSize:15,lineHeight:1,cursor:"grab",letterSpacing:1,userSelect:"none"}}>⠿</div>
     </div>
     {children}
@@ -1165,18 +1165,20 @@ function ManagementWorkspace({state,setState,currentUser,onOpenProject,onNavigat
     setState(current=>({...current,organizationRoles:[...(current.organizationRoles||[]),{id:`custom_${uid()}`,label,rank:roles.length+1}]}));
     setNewRole("");
   };
-  return <div style={{padding:"20px clamp(14px,3vw,28px)",flex:1,overflow:"auto"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:16}}>
-      <div><h2 style={{margin:0,fontSize:21}}>Yönetim</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Portföy, ekip atamaları ve organizasyon yapısı.</p></div>
-      <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>{[["overview","Genel Bakış"],["assigned","Atadığım İşler"],["organization","Organizasyon"]].map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:800,cursor:"pointer",background:section===id?"#fff":"transparent",color:section===id?"#4A6CF7":"#64748B"}}>{label}</button>)}</div>
+  const tabs=<div className="management-tabs" style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:12,justifyContent:"center",margin:"12px auto 18px",width:"fit-content",maxWidth:"100%"}}>{[["overview","Genel Bakış"],["assigned","Atadığım İşler"],["organization","Organizasyon"]].map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"9px 14px",fontSize:11,fontWeight:850,cursor:"pointer",background:section===id?"#fff":"transparent",color:section===id?"#4A6CF7":"#64748B",whiteSpace:"nowrap"}}>{label}</button>)}</div>;
+  return <div style={{padding:"20px clamp(14px,3vw,28px)",flex:1,overflow:"auto",background:"linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)"}}>
+    <div className="management-heading" style={{textAlign:"center",maxWidth:760,margin:"0 auto"}}>
+      <h2 style={{margin:0,fontSize:"clamp(23px,3vw,30px)",fontWeight:950,color:"#172033",letterSpacing:"-.03em"}}>Operasyon Kontrol Merkezi</h2>
+      <p style={{margin:"7px auto 0",fontSize:12,color:"#64748B",lineHeight:1.55,maxWidth:560}}>Projeler, terminler, riskler, ekip yükü ve ticketlar için tek bakışta karar ekranı.</p>
+      {tabs}
     </div>
-    {section==="overview"&&<AdminDashboard state={state} setState={setState} currentUser={currentUser} onOpenProject={onOpenProject} onNavigate={onNavigate}/>}
+    {section==="overview"&&<AdminDashboard state={state} setState={setState} currentUser={currentUser} onOpenProject={onOpenProject} onNavigate={onNavigate} showHeader={false}/>}
     {section==="assigned"&&<ManagerAssignedTasks state={state} currentUser={currentUser}/>}
     {section==="organization"&&<><div style={{display:"flex",justifyContent:"flex-end",gap:7,marginBottom:10}}><input style={{...iStyle,width:220}} value={newRole} onChange={event=>setNewRole(event.target.value)} onKeyDown={event=>event.key==="Enter"&&addRole()} placeholder="Yeni organizasyon rolü"/><Btn small onClick={addRole}>Rol Ekle</Btn></div><OrganizationPanel people={state.people} roles={roles} onEdit={onEditPerson}/></>}
   </div>;
 }
 
-function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
+function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate,showHeader=true}) {
   const [projectId,setProjectId]=useState("all");
   const [detailModal,setDetailModal]=useState(null);
   const [draggedCard,setDraggedCard]=useState(null);
@@ -1307,8 +1309,8 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
   kpis.forEach(kpi=>{
     dashboardCards[`kpi-${kpi.id}`]={
       size:"small",
-      node:<div role="button" tabIndex={0} onKeyDown={event=>event.key==="Enter"&&setDetailModal({mode:"detail",...kpi})} onClick={()=>setDetailModal({mode:"detail",...kpi})} style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"14px 15px",boxShadow:"0 5px 16px rgba(15,23,42,.045)",borderTop:`3px solid ${kpi.color}`,textAlign:"left",cursor:"pointer"}}>
-        <div style={{display:"flex",alignItems:"center",gap:5,paddingRight:78,minWidth:0}}><div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{kpi.label}</div><button title="Hesaplama bilgisi" onClick={event=>{event.stopPropagation();setDetailModal({mode:"info",...kpi});}} style={{width:20,height:20,borderRadius:"50%",border:"1px solid #CBD5E1",background:"#F8FAFC",color:"#64748B",fontSize:11,fontWeight:850,cursor:"pointer",flexShrink:0}}>i</button></div>
+      node:<div role="button" tabIndex={0} onKeyDown={event=>event.key==="Enter"&&setDetailModal({mode:"detail",...kpi})} onClick={()=>setDetailModal({mode:"detail",...kpi})} className="admin-kpi-card" style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"14px 15px",boxShadow:"0 5px 16px rgba(15,23,42,.045)",borderTop:`3px solid ${kpi.color}`,textAlign:"left",cursor:"pointer",position:"relative"}}>
+        <div className="admin-kpi-head" style={{display:"flex",alignItems:"center",gap:5,paddingRight:78,minWidth:0}}><div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{kpi.label}</div><button className="admin-kpi-info" title="Hesaplama bilgisi" onClick={event=>{event.stopPropagation();setDetailModal({mode:"info",...kpi});}} style={{width:20,height:20,borderRadius:"50%",border:"1px solid #CBD5E1",background:"#F8FAFC",color:"#64748B",fontSize:11,fontWeight:850,cursor:"pointer",flexShrink:0}}>i</button></div>
         <div style={{fontSize:25,fontWeight:900,color:kpi.color,margin:"4px 0 2px"}}>{kpi.value}</div>
         <div style={{fontSize:10,color:"#94A3B8",lineHeight:1.35,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",overflowWrap:"anywhere"}}>{kpi.detail}</div>
       </div>,
@@ -1326,16 +1328,15 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate}) {
   dashboardCards["ai-assistant"]={size:"medium",node:<button onClick={()=>onNavigate("ai")} style={{width:"100%",height:"100%",border:"1px solid #DDD6FE",borderRadius:16,padding:18,background:"linear-gradient(135deg,#2E1065,#6D28D9)",color:"#fff",textAlign:"left",cursor:"pointer",boxShadow:"0 10px 24px rgba(109,40,217,.2)"}}><span style={{width:36,height:36,borderRadius:11,display:"grid",placeItems:"center",background:"rgba(255,255,255,.14)",marginBottom:16}}><Icon name="activity" size={19}/></span><b style={{display:"block",fontSize:15}}>AI Portföy Asistanı</b><span style={{display:"block",fontSize:10,color:"#DDD6FE",lineHeight:1.55,marginTop:5}}>Seçili proje veya tüm portföy için risk, gecikme ve öncelikli aksiyon analizi alın.</span><span style={{display:"inline-block",marginTop:14,fontSize:10,fontWeight:850,background:"#fff",color:"#6D28D9",borderRadius:8,padding:"6px 9px"}}>Analizi aç</span></button>};
   dashboardCards["report-center"]={size:"full",node:<div style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:16,padding:16,overflow:"hidden"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12,paddingRight:18}}><div style={{minWidth:0}}><div style={{fontWeight:850,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Yönetici Rapor Merkezi</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2,lineHeight:1.35}}>Toplantı, operasyon takibi ve paylaşım için hazır çıktılar.</div></div><button onClick={()=>onNavigate("reports")} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:8,padding:"7px 10px",fontSize:10,fontWeight:800,cursor:"pointer",flexShrink:0}}>Tüm raporlar</button></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:9}}>{[["Genel Durum","Portföy ilerleme, gecikme ve kapasite özeti.","#4338CA",()=>generatePortfolioReport(scopedState,state.people),"HTML / PDF"],["Termin ve Gecikme","Geciken görevler ve sorumlu dağılımı.","#E11D48",()=>downloadDelayReport(scopedState,state.people),"XLSX"],["Efor ve Kapasite","Kişi, proje ve görev bazlı saat analizi.","#7C3AED",()=>downloadEffortReport(scopedState,state.people),"XLSX"],["Ticket Durumu","Ticket yaşı, aksiyon ve Jira durumları.","#EA6C00",()=>generateTicketStatusReport(scopedState,state.people),"HTML / PDF"]].map(([title,description,color,action,label])=><button key={title} onClick={action} style={{border:"1px solid #E2E8F0",borderLeft:`4px solid ${color}`,borderRadius:11,background:"#FAFCFF",padding:12,textAlign:"left",cursor:"pointer",overflow:"hidden"}}><div style={{display:"flex",justifyContent:"space-between",gap:7,minWidth:0}}><b style={{fontSize:11,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{title}</b><span style={{fontSize:8,fontWeight:850,color,background:color+"12",borderRadius:6,padding:"3px 5px",whiteSpace:"nowrap",flexShrink:0}}>{label}</span></div><div style={{fontSize:9,color:"#64748B",lineHeight:1.45,marginTop:5,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{description}</div></button>)}</div></div>};
 
-  return <div style={{padding:"clamp(16px,3vw,28px)",flex:1,overflow:"auto",background:"linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:14,flexWrap:"wrap",marginBottom:18}}>
-      <div>
-        <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#EEF2FF",color:"#4338CA",borderRadius:20,padding:"4px 10px",fontSize:10,fontWeight:850,letterSpacing:.7,marginBottom:7}}><Icon name="admin" size={13}/>YÖNETİCİ GÖRÜNÜMÜ</div>
+  return <div style={{padding:showHeader?"clamp(16px,3vw,28px)":0,flex:1,overflow:showHeader?"auto":"visible",background:showHeader?"linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)":"transparent"}}>
+    <div className="admin-control-row" style={{display:"flex",justifyContent:showHeader?"space-between":"center",alignItems:"flex-end",gap:10,flexWrap:"wrap",marginBottom:18}}>
+      {showHeader&&<div>
         <h2 style={{margin:0,fontSize:"clamp(21px,3vw,28px)",fontWeight:900,color:"#172033"}}>Operasyon Kontrol Merkezi</h2>
         <p style={{margin:"5px 0 0",fontSize:12,color:"#64748B"}}>Projeler, terminler, riskler, ekip yükü ve ticketlar için tek bakışta karar ekranı.</p>
-      </div>
-      <div style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+      </div>}
+      <div style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap",justifyContent:"center"}}>
         <div style={{minWidth:230}}><label style={lStyle}>Proje Kapsamı</label><select style={{...iStyle,background:"#fff"}} value={projectId} onChange={event=>setProjectId(event.target.value)}><option value="all">Tüm Portföy</option>{state.projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></div>
-        <Btn variant="secondary" onClick={()=>generatePortfolioReport(scopedState,state.people)}>HTML Genel Rapor</Btn>
+        <button title="Genel rapor" onClick={()=>generatePortfolioReport(scopedState,state.people)} className="admin-report-button" style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:12,padding:"10px 12px",fontSize:11,fontWeight:900,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,height:42}}><Icon name="reports" size={15}/><span>Rapor</span></button>
       </div>
     </div>
 
@@ -3505,6 +3506,7 @@ const GlobalStyle = () => (
     .admin-board-card { min-width:0; overflow:hidden; }
     .admin-board-card * { min-width:0; }
     .admin-board-card button { max-width:100%; }
+    .admin-report-button span { display:inline; }
     .admin-board-small { grid-column:span 3; min-height:128px; }
     .admin-board-medium { grid-column:span 4; min-height:190px; }
     .admin-board-large { grid-column:span 6; }
@@ -3539,6 +3541,19 @@ const GlobalStyle = () => (
       .project-effort-row > :nth-child(5) { grid-column:2; grid-row:2 / 5; align-self:center; }
       .admin-summary-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .admin-summary-card { min-height:118px; padding:13px; }
+      .management-heading { margin-top: 2px !important; }
+      .management-tabs { width: 100% !important; max-width: 380px !important; }
+      .management-tabs button { flex: 1; padding: 9px 7px !important; font-size: 10px !important; }
+      .admin-control-row { margin-bottom: 14px !important; }
+      .admin-control-row > div:last-child { width: 100%; display:grid !important; grid-template-columns: 1fr 44px; align-items:end !important; gap:8px !important; }
+      .admin-control-row > div:last-child > div { min-width:0 !important; }
+      .admin-report-button { width:42px !important; height:42px !important; padding:0 !important; justify-content:center !important; border-radius:13px !important; }
+      .admin-report-button span { display:none; }
+      .admin-card-size-select { display:none !important; }
+      .admin-board-tools { right:9px !important; top:9px !important; }
+      .admin-kpi-card { padding-bottom: 28px !important; }
+      .admin-kpi-head { padding-right: 0 !important; }
+      .admin-kpi-info { position:absolute !important; right:9px !important; bottom:8px !important; width:16px !important; height:16px !important; font-size:9px !important; opacity:.72; }
       .admin-board-tools { opacity:1; }
       .admin-board-small, .admin-board-medium, .admin-board-large, .admin-board-full { grid-column:span 12; }
     }
