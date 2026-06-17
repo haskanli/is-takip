@@ -1034,13 +1034,17 @@ function EmptyMobileRow({text}) {
 }
 
 function MobileQuickSheet({onClose,onSelect,isAdminMode=false}) {
-  const options=[
-    ...(isAdminMode?[["assign","tasks","Görev Ata","Ekip üyesine görev ve hedef saat ata","#111827"]]:[]),
-    ["todo","ticket","To-Do","Kişisel aksiyon ve termin ekle","#DB2777"],
-    ["action","activity","Aksiyon","Projeye görüşme, not veya efor gir","#2563EB"],
-    ["ticket","ticket","Ticket","Müşteri talebi veya problem kaydı aç","#EA6C00"],
-    ["fieldops","calendar","Saha Planı","Ziyaret veya uzaktan çalışma planla","#0F766E"],
-  ];
+  const options=isAdminMode
+    ? [
+        ["assign","tasks","Görev Ata","Ekip üyesine görev ve hedef saat ata","#111827"],
+        ["fieldops","calendar","Saha Planı","Ziyaret veya uzaktan çalışma planla","#0F766E"],
+      ]
+    : [
+        ["todo","ticket","To-Do","Kişisel aksiyon ve termin ekle","#DB2777"],
+        ["action","activity","Aksiyon","Projeye görüşme, not veya efor gir","#2563EB"],
+        ["ticket","ticket","Ticket","Müşteri talebi veya problem kaydı aç","#EA6C00"],
+        ["fieldops","calendar","Saha Planı","Ziyaret veya uzaktan çalışma planla","#0F766E"],
+      ];
   return <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:980,background:"rgba(15,23,42,.38)",display:"flex",alignItems:"flex-end",padding:12}}>
     <div onClick={event=>event.stopPropagation()} style={{width:"100%",background:"#fff",borderRadius:26,padding:16,boxShadow:"0 -18px 55px rgba(15,23,42,.22)"}}>
       <div style={{width:44,height:5,borderRadius:99,background:"#CBD5E1",margin:"0 auto 14px"}}/>
@@ -1193,11 +1197,10 @@ function ManagerAssignedTasksV2({state,setState,currentUser}) {
       <div style={{fontSize:12,color:"#64748B",fontWeight:800}}>Geciken görevler listede üstte görünür.</div>
       <select style={{...iStyle,width:220,background:"#fff"}} value={personFilter} onChange={event=>setPersonFilter(event.target.value)}><option value="all">Tüm kişiler</option>{peopleWithTasks.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}</select>
     </div>
-    <div style={{display:"grid",gap:8}}>{rows.map(task=><div key={task.id} style={{background:"#fff",border:`1.5px solid ${delayLvl(task.dueDate,task.status)?"#FCA5A5":"#E2E8F0"}`,borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
+    <div style={{display:"grid",gap:8}}>{rows.map(task=><div key={task.id} style={{background:"#fff",border:`1.5px solid ${delayLvl(task.dueDate,task.status)?"#FCA5A5":"#E2E8F0"}`,borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:10,minWidth:0}}>
       <Avatar initials={task.person?.avatar||"?"} imageUrl={task.person?.avatarUrl} size={30}/>
-      <button onClick={()=>setModal({type:"taskDetail",data:task})} style={{flex:1,minWidth:0,border:0,background:"transparent",textAlign:"left",cursor:"pointer",padding:0}}><b style={{fontSize:12,display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{task.person?.name||"Atanmamış"} · {fmt(task.dueDate)}{task.dueTime?` ${task.dueTime}`:""} · {task.status}</div>{task.notes&&<div style={{fontSize:10,color:"#94A3B8",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.notes}</div>}</button>
+      <button onClick={()=>setModal({type:"taskDetail",data:task})} style={{flex:1,minWidth:0,border:0,background:"transparent",textAlign:"left",cursor:"pointer",padding:0}}><b style={{fontSize:12,display:"block",lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3,lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.person?.name||"Atanmamış"} · {fmt(task.dueDate)}{task.dueTime?` ${task.dueTime}`:""} · {task.status}</div>{task.notes&&<div style={{fontSize:10,color:"#94A3B8",marginTop:3,lineHeight:1.4,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.notes}</div>}</button>
       {delayLvl(task.dueDate,task.status)&&<DelayBadge dateStr={task.dueDate} status={task.status}/>}
-      <Btn small variant={task.status==="Tamamlandı"?"success":"secondary"} onClick={()=>updateTask(task.id,{status:task.status==="Tamamlandı"?"Bekliyor":"Tamamlandı"})}>{task.status==="Tamamlandı"?"Aç":"Bitir"}</Btn>
     </div>)}{!rows.length&&<div style={{padding:35,textAlign:"center",color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px dashed #CBD5E1"}}>Bu filtrede yönetici ataması bulunmuyor.</div>}</div>
     {modal?.type==="taskDetail"&&<TaskDetailModal task={(state.personalTasks||[]).find(task=>task.id===modal.data.id)||modal.data} people={state.people} currentUser={currentUser} onClose={()=>setModal(null)} onUpdate={data=>updateTask(modal.data.id,data)} />}
   </div>;
@@ -4968,14 +4971,14 @@ function TaskDetailModal({ task, people, currentUser, onClose, onUpdate }) {
     setComment("");
   };
   return <Modal title="Görev Detayı" onClose={onClose} wide>
-    <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",marginBottom:15}}>
-      <div><h2 style={{fontSize:18,margin:"0 0 5px"}}>{task.title}</h2><div style={{fontSize:11,color:"#64748B"}}>{assignee?.name||"Atanmamış"} · Termin: {fmt(task.dueDate)||"Belirtilmedi"}{task.dueTime?` ${task.dueTime}`:""}</div></div>
+    <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",marginBottom:15,flexWrap:"wrap"}}>
+      <div style={{minWidth:0,flex:"1 1 260px"}}><h2 style={{fontSize:18,margin:"0 0 5px",lineHeight:1.25,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.title}</h2><div style={{fontSize:11,color:"#64748B",lineHeight:1.4,wordBreak:"break-word",overflowWrap:"anywhere"}}>{assignee?.name||"Atanmamış"} · Termin: {fmt(task.dueDate)||"Belirtilmedi"}{task.dueTime?` ${task.dueTime}`:""}</div></div>
       <select style={{...iStyle,width:180}} value={task.status||"Bekliyor"} onChange={e=>onUpdate({status:e.target.value})}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select>
     </div>
-    {task.notes&&<div style={{background:"#F8FAFC",borderRadius:10,padding:13,fontSize:13,lineHeight:1.6,marginBottom:16}}>{task.notes}</div>}
+    {task.notes&&<div style={{background:"#F8FAFC",borderRadius:10,padding:13,fontSize:13,lineHeight:1.6,marginBottom:16,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.notes}</div>}
     <div style={{fontWeight:800,fontSize:13,marginBottom:9}}>Yorumlar ({comments.length})</div>
     <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:260,overflowY:"auto",marginBottom:12}}>
-      {comments.map(item=><div key={item.id} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 12px"}}><div style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:10,color:"#64748B",marginBottom:4}}><b style={{color:"#334155"}}>{item.userName||people.find(p=>p.id===item.userId)?.name||"Kullanıcı"}</b><span>{item.ts?new Date(item.ts).toLocaleString("tr-TR"):""}</span></div><div style={{fontSize:12,lineHeight:1.5}}>{item.text}</div></div>)}
+      {comments.map(item=><div key={item.id} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 12px",minWidth:0}}><div style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:10,color:"#64748B",marginBottom:4,flexWrap:"wrap"}}><b style={{color:"#334155",wordBreak:"break-word",overflowWrap:"anywhere"}}>{item.userName||people.find(p=>p.id===item.userId)?.name||"Kullanıcı"}</b><span>{item.ts?new Date(item.ts).toLocaleString("tr-TR"):""}</span></div><div style={{fontSize:12,lineHeight:1.5,wordBreak:"break-word",overflowWrap:"anywhere"}}>{item.text}</div></div>)}
       {!comments.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Henüz yorum eklenmedi.</div>}
     </div>
     <textarea style={{...iStyle,minHeight:80,resize:"vertical"}} value={comment} onChange={e=>setComment(e.target.value)} placeholder="Bu görevle ilgili yorumunuzu yazın..."/>
