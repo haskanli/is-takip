@@ -17,7 +17,7 @@ import {
   resolveTenantProfile,
 } from "../server/services/emailTemplate.js";
 
-const APP_VERSION = "v1.25.0";
+const APP_VERSION = "v1.25.1";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -386,6 +386,7 @@ function Icon({ name, size=16 }) {
     trash:<><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></>,
     download:<><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></>,
     mail:<><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></>,
+    settings:<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.03.05a2 2 0 1 1-3.94 0L10 20a1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.88.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1l-.05-.03a2 2 0 1 1 0-3.94L4 10a1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.88l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6l.03-.05a2 2 0 1 1 3.94 0L14 4a1.7 1.7 0 0 0 1 .6 1.7 1.7 0 0 0 1.88-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.7 1.7 0 0 0 19.4 9c.22.36.22.64 0 1l.6.03a2 2 0 1 1 0 3.94L20 14a1.7 1.7 0 0 0-.6 1z"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]||paths.projects}</svg>;
 }
@@ -1057,7 +1058,7 @@ function MobileBottomNav({view,onNavigate,onQuick,onProfile,deadlineCount,taskCo
     ["projects","projects","Projeler"],
     ["quick","plus","Ekle"],
     ["mytasks","tasks","İşler",taskCount],
-    ["tickets","ticket","Ticket"],
+    ["mobilemenu","settings","MenÃ¼"],
   ];
   return <div style={{position:"fixed",left:10,right:10,bottom:10,zIndex:920,background:"rgba(255,255,255,.92)",backdropFilter:"blur(18px)",border:"1px solid rgba(226,232,240,.9)",borderRadius:24,padding:"8px 9px",display:"grid",gridTemplateColumns:"repeat(5,1fr)",boxShadow:"0 18px 45px rgba(15,23,42,.18)"}}>
     {items.map(([id,icon,label,badge])=>{const active=view===id;return <button key={id} onClick={()=>id==="quick"?onQuick():onNavigate(id)} style={{border:0,background:"transparent",display:"grid",placeItems:"center",gap:3,color:active?"#4338CA":"#64748B",fontSize:9,fontWeight:900,cursor:"pointer",position:"relative",padding:0}}>
@@ -1065,6 +1066,27 @@ function MobileBottomNav({view,onNavigate,onQuick,onProfile,deadlineCount,taskCo
       <span style={{marginTop:id==="quick"?-8:0}}>{label}</span>
       {badge>0&&<b style={{position:"absolute",top:2,right:"24%",minWidth:16,height:16,borderRadius:8,display:"grid",placeItems:"center",background:"#E11D48",color:"#fff",fontSize:8,border:"2px solid #fff"}}>{badge}</b>}
     </button>;})}
+  </div>;
+}
+
+function MobileFeatureMenuPage({isAdmin,onNavigate}) {
+  const items=[
+    ["tickets","ticket","Ticketlar","MÃ¼ÅŸteri talepleri ve durum takibi","#EA6C00"],
+    ["reports","reports","Raporlar","HTML/XLSX raporlar ve Ã¶zetler","#4A6CF7"],
+    ["ai","activity","AI Tool","Proje veya portfÃ¶y yorumu","#7C3AED"],
+    ["fieldops","calendar","Saha YÃ¶netimi","Planlar ve ziyaretler","#0F766E"],
+    ["deadlines","clock","Termin UyarÄ±larÄ±","Gecikmeler ve yaklaÅŸan iÅŸler","#E11D48"],
+    ["todos","tasks","To-Do","KiÅŸisel aksiyonlar","#DB2777"],
+    ["people","people","Ekip","Organizasyon ve kiÅŸiler","#0369A1"],
+    ...(isAdmin?[["admin","admin","YÃ¶netici","KPI ve yÃ¶netim paneli","#111827"],["import","download","Import Merkezi","Åablon ve veri aktarÄ±mÄ±","#059669"],["mailcenter","mail","Mail Merkezi","Åablonlar ve otomasyon","#4338CA"]]:[]),
+  ];
+  return <div style={{minHeight:"100%",background:"#F8FAFC",padding:"18px 14px 92px",overflow:"auto"}}>
+    <div style={{marginBottom:14}}><h2 style={{margin:"0 0 4px",fontSize:20}}>TÃ¼m Ã–zellikler</h2><div style={{fontSize:12,color:"#64748B"}}>Web tarafÄ±ndaki ana alanlara mobilde de buradan eriÅŸebilirsiniz.</div></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10}}>{items.map(([view,icon,title,desc,color])=><button key={view} onClick={()=>onNavigate(view)} style={{border:"1px solid #E2E8F0",background:"#fff",borderRadius:18,padding:14,textAlign:"left",cursor:"pointer",minHeight:122,boxShadow:"0 8px 22px rgba(15,23,42,.04)"}}>
+      <span style={{width:38,height:38,borderRadius:13,background:color+"16",color,display:"grid",placeItems:"center",marginBottom:10}}><Icon name={icon} size={18}/></span>
+      <b style={{display:"block",fontSize:13,color:"#111827"}}>{title}</b>
+      <span style={{display:"block",fontSize:10,color:"#64748B",lineHeight:1.35,marginTop:4}}>{desc}</span>
+    </button>)}</div>
   </div>;
 }
 
@@ -2531,7 +2553,7 @@ function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,
   const addSchedule=()=>{if(!schedule.name.trim()||!schedule.recipients.trim())return;onChange({reportSchedules:[...(project.reportSchedules||[]),{...schedule,id:uid(),recipients:schedule.recipients.split(",").map(x=>x.trim()).filter(Boolean),createdAt:now(),nextRunAt:nextReportRunAt(schedule)}]});setSchedule(emptySchedule);};
   const tabs=[["overview","Özet"],["readiness","Başlangıç Sağlığı"],["training","Eğitimler"],["cost","Proje Maliyeti"],["raci","RACI ve Kontaklar"],["access","Uzaktan Erişim"],["machines","Makineler"],...(project.commissioningTracking?[["commissioning","Devreye Alma"]]:[]),["effort","Efor"],["documents","Dokümanlar"],["automation","Ayarlar / Rapor"],["ai","AI Proje Yorumu"]];
   return <div style={{flex:1,overflow:"auto",padding:"clamp(14px,3vw,24px)"}}>
-    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>{tabs.map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:800,background:section===id?project.color:"#F1F5F9",color:section===id?"#fff":"#64748B"}}>{label}</button>)}</div>
+    <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:16,background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:6,boxShadow:"0 6px 18px rgba(15,23,42,.04)",scrollbarWidth:"thin"}}>{tabs.map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:10,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:850,background:section===id?project.color:"#F8FAFC",color:section===id?"#fff":"#64748B",whiteSpace:"nowrap",flexShrink:0}}>{label}</button>)}</div>
     {section==="overview"&&<ProjectOverviewPanel project={project} onChange={onChange} canEdit={canEdit}/>}
     {section==="readiness"&&<ReadinessPanel project={project} checklist={checklist} score={score} threshold={threshold} canEdit={canEdit} onChange={onChange} updateItem={updateItem}/>}
     {section==="training"&&<TrainingPanel project={project} onChange={onChange} canEdit={canEdit} people={state.people}/>}
@@ -2927,20 +2949,24 @@ function MachinePanel({ project, canEdit, onChange }) {
   const machines=project.machines||[];
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState("");
-  const [form,setForm]=useState({name:"",code:"",type:"physical",commissioned:false,commissionedAt:"",note:""});
+  const [viewMode,setViewMode]=useState("cards");
+  const [search,setSearch]=useState("");
+  const [form,setForm]=useState({name:"",code:"",type:"physical",ip:"",osModel:"",extraLicense:"",commissioned:false,commissionedAt:"",note:""});
   const fileRef=useRef(null);
   const commissioned=machines.filter(m=>m.commissioned).length;
+  const visibleMachines=machines.filter(machine=>`${machine.name||""} ${machine.code||""} ${machine.ip||""} ${machine.osModel||""} ${machine.extraLicense||""}`.toLocaleLowerCase("tr-TR").includes(search.trim().toLocaleLowerCase("tr-TR")));
+  const copyIp=async(ip)=>{if(!ip)return;try{await navigator.clipboard.writeText(ip);}catch{prompt("IP adresi",ip);}};
   const save=()=>{
     if(!form.name.trim())return;
-    const saved={...form,name:form.name.trim(),code:form.code.trim(),commissionedAt:form.commissioned?(form.commissionedAt||todayStr()):""};
+    const saved={...form,name:form.name.trim(),code:form.code.trim(),ip:form.ip.trim(),osModel:form.osModel.trim(),extraLicense:form.extraLicense.trim(),commissionedAt:form.commissioned?(form.commissionedAt||todayStr()):""};
     onChange(editingId?machines.map(machine=>machine.id===editingId?{...machine,...saved}:machine):[...machines,{...saved,id:uid()}]);
-    setForm({name:"",code:"",type:"physical",commissioned:false,commissionedAt:"",note:""});
+    setForm({name:"",code:"",type:"physical",ip:"",osModel:"",extraLicense:"",commissioned:false,commissionedAt:"",note:""});
     setEditingId("");
     setShowForm(false);
   };
-  const edit=machine=>{setEditingId(machine.id);setForm({name:machine.name||"",code:machine.code||"",type:machine.type||"physical",commissioned:Boolean(machine.commissioned),commissionedAt:machine.commissionedAt||"",note:machine.note||""});setShowForm(true);};
+  const edit=machine=>{setEditingId(machine.id);setForm({name:machine.name||"",code:machine.code||"",type:machine.type||"physical",ip:machine.ip||"",osModel:machine.osModel||"",extraLicense:machine.extraLicense||"",commissioned:Boolean(machine.commissioned),commissionedAt:machine.commissionedAt||"",note:machine.note||""});setShowForm(true);};
   const update=(id,data)=>onChange(machines.map(m=>m.id===id?{...m,...data}:m));
-  const exportExcel=()=>downloadXlsx([["Makine Kodu","Makine Adı","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"],...machines.map(machine=>[machine.code||"",machine.name,machine.type==="virtual"?"Sanal":"Fiziksel",machine.commissioned?"Evet":"Hayır",machine.commissionedAt||"",machine.note||""])],`${safeFileName(project.name)}-makineler.xlsx`,"Makineler");
+  const exportExcel=()=>downloadXlsx([["Makine Kodu","Makine Adı","IP","İşletim Sistemi/Model","Ek Lisans","Tip","Devreye Alındı","Devreye Alma Tarihi","Açıklama"],...machines.map(machine=>[machine.code||"",machine.name,machine.ip||"",machine.osModel||"",machine.extraLicense||"",machine.type==="virtual"?"Sanal":"Fiziksel",machine.commissioned?"Evet":"Hayır",machine.commissionedAt||"",machine.note||""])],`${safeFileName(project.name)}-makineler.xlsx`,"Makineler");
   const importExcel=(event)=>{
     const file=event.target.files?.[0];if(!file)return;
     const reader=new FileReader();
@@ -2948,7 +2974,7 @@ function MachinePanel({ project, canEdit, onChange }) {
       try{
         const workbook=XLSX.read(reader.result,{type:"array"});
         const data=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{defval:""});
-        const imported=data.map(item=>({id:uid(),code:String(item["Makine Kodu"]||"").trim(),name:String(item["Makine Adı"]||item["Makine Adi"]||"").trim(),type:String(item.Tip||"").toLocaleLowerCase("tr-TR")==="sanal"?"virtual":"physical",commissioned:["evet","true","1"].includes(String(item["Devreye Alındı"]||item["Devreye Alindi"]||"").toLocaleLowerCase("tr-TR")),commissionedAt:String(item["Devreye Alma Tarihi"]||""),note:String(item["Açıklama"]||item.Aciklama||"")})).filter(machine=>machine.name);
+        const imported=data.map(item=>({id:uid(),code:String(item["Makine Kodu"]||"").trim(),name:String(item["Makine Adı"]||item["Makine Adi"]||"").trim(),ip:String(item.IP||item.Ip||"").trim(),osModel:String(item["İşletim Sistemi/Model"]||item["Isletim Sistemi/Model"]||item.Model||"").trim(),extraLicense:String(item["Ek Lisans"]||"").trim(),type:String(item.Tip||"").toLocaleLowerCase("tr-TR")==="sanal"?"virtual":"physical",commissioned:["evet","true","1"].includes(String(item["Devreye Alındı"]||item["Devreye Alindi"]||"").toLocaleLowerCase("tr-TR")),commissionedAt:String(item["Devreye Alma Tarihi"]||""),note:String(item["Açıklama"]||item.Aciklama||"")})).filter(machine=>machine.name);
         onChange([...machines,...imported]);
       }catch(error){alert(`Excel okunamadı: ${error.message}`);}
       event.target.value="";
@@ -2958,19 +2984,27 @@ function MachinePanel({ project, canEdit, onChange }) {
   return <div style={{flex:1,overflow:"auto",padding:"clamp(14px, 3vw, 24px)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
       <div><h3 style={{margin:0,fontSize:16,display:"flex",alignItems:"center",gap:7}}><Icon name="machines" size={18}/>Makine Devreye Alma</h3><div style={{fontSize:12,color:"#64748B",marginTop:3}}>{commissioned}/{machines.length} makine devrede</div></div>
-      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}><Btn variant="secondary" onClick={exportExcel}>Excel Dışa Aktar</Btn>{canEdit&&<><Btn variant="secondary" onClick={()=>fileRef.current?.click()}>Excel İçe Aktar</Btn><input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}} onChange={importExcel}/><Btn onClick={()=>{setEditingId("");setForm({name:"",code:"",type:"physical",commissioned:false,commissionedAt:"",note:""});setShowForm(v=>!v);}}>{showForm?"Formu Kapat":"+ Makine Ekle"}</Btn></>}</div>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}><Btn variant="secondary" onClick={exportExcel}>Excel Dışa Aktar</Btn>{canEdit&&<><Btn variant="secondary" onClick={()=>fileRef.current?.click()}>Excel İçe Aktar</Btn><input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}} onChange={importExcel}/><Btn onClick={()=>{setEditingId("");setForm({name:"",code:"",type:"physical",ip:"",osModel:"",extraLicense:"",commissioned:false,commissionedAt:"",note:""});setShowForm(v=>!v);}}>{showForm?"Formu Kapat":"+ Makine Ekle"}</Btn></>}</div>
     </div>
     <div style={{height:8,background:"#E2E8F0",borderRadius:8,marginBottom:16,overflow:"hidden"}}><div style={{height:"100%",width:`${machines.length?commissioned/machines.length*100:0}%`,background:"#059669"}} /></div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
+      <input style={{...iStyle,width:260,maxWidth:"100%"}} value={search} onChange={event=>setSearch(event.target.value)} placeholder="Makine adı, kodu, IP veya OS/model ara..."/>
+      <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
+        {[["cards","Kutucuk"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setViewMode(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:800,fontSize:11,background:viewMode===id?"#fff":"transparent",color:viewMode===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
+      </div>
+    </div>
     {showForm&&<div style={{background:"#fff",border:"1.5px solid #DCE6F2",borderRadius:12,padding:16,marginBottom:16}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}><Field label="Makine Adı *"><input style={iStyle} value={form.name} onChange={e=>setForm(s=>({...s,name:e.target.value}))} /></Field><Field label="Kod / Hat No"><input style={iStyle} value={form.code} onChange={e=>setForm(s=>({...s,code:e.target.value}))} /></Field></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}><Field label="IP Adresi"><input style={iStyle} value={form.ip} onChange={e=>setForm(s=>({...s,ip:e.target.value}))} placeholder="Örn. 192.168.1.10"/></Field><Field label="İşletim Sistemi / Model"><input style={iStyle} value={form.osModel} onChange={e=>setForm(s=>({...s,osModel:e.target.value}))} placeholder="Örn. Windows Server / IPC model"/></Field><Field label="Ek Lisans"><input style={iStyle} value={form.extraLicense} onChange={e=>setForm(s=>({...s,extraLicense:e.target.value}))} placeholder="Örn. OPC, historian, runtime"/></Field></div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}><Field label="Makine Tipi"><select style={iStyle} value={form.type} onChange={e=>setForm(s=>({...s,type:e.target.value}))}><option value="physical">Fiziksel</option><option value="virtual">Sanal</option></select></Field><Field label="Devreye Alma Tarihi"><input type="date" style={iStyle} value={form.commissionedAt} onChange={e=>setForm(s=>({...s,commissionedAt:e.target.value}))} /></Field></div>
       <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:13}}><input type="checkbox" checked={form.commissioned} onChange={e=>setForm(s=>({...s,commissioned:e.target.checked}))} /> Devreye alındı</label>
       <Field label="Devreye Alınamama Açıklaması / Not"><textarea style={{...iStyle,height:70,resize:"vertical"}} value={form.note} onChange={e=>setForm(s=>({...s,note:e.target.value}))} /></Field>
       <div style={{display:"flex",justifyContent:"flex-end",gap:7}}>{editingId&&<Btn variant="ghost" onClick={()=>{setEditingId("");setShowForm(false);}}>İptal</Btn>}<Btn onClick={save}>{editingId?"Değişiklikleri Kaydet":"Makineyi Kaydet"}</Btn></div>
     </div>}
     {!machines.length&&<div style={{padding:40,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Henüz makine eklenmedi.</div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))",gap:10}}>
-      {machines.map(machine=><div key={machine.id} style={{background:"#fff",borderRadius:12,padding:14,border:`1.5px solid ${machine.commissioned?"#A7F3D0":"#FED7AA"}`}}>
+    {viewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,marginBottom:12}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:780}}><thead><tr>{["Makine","Kod","İşletim Sistemi/Model","IP","Tip","Durum",""].map(label=><th key={label} style={{padding:"10px 9px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{visibleMachines.map(machine=><tr key={machine.id} style={{borderTop:"1px solid #EEF2F7"}}><td style={{padding:9,fontSize:11,fontWeight:850}}>{machine.name}</td><td style={{padding:9,fontSize:11,color:"#64748B"}}>{machine.code||"-"}</td><td style={{padding:9,fontSize:11,color:"#475569"}}>{machine.osModel||"-"}</td><td style={{padding:9,fontSize:11}}>{machine.ip?<button onClick={()=>copyIp(machine.ip)} title="IP kopyala" style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"5px 8px",fontSize:10,fontWeight:850,cursor:"pointer"}}>{machine.ip}</button>:"-"}</td><td style={{padding:9,fontSize:11}}>{machine.type==="virtual"?"Sanal":"Fiziksel"}</td><td style={{padding:9,fontSize:11,color:machine.commissioned?"#059669":"#EA6C00",fontWeight:850}}>{machine.commissioned?"Devrede":"Bekliyor"}</td><td style={{padding:9}}>{canEdit&&<div style={{display:"flex",gap:6}}><Btn small variant="secondary" onClick={()=>edit(machine)}>Düzenle</Btn><Btn small variant="danger" onClick={()=>onChange(machines.filter(m=>m.id!==machine.id))}>Sil</Btn></div>}</td></tr>)}</tbody></table>{!visibleMachines.length&&<div style={{padding:24,textAlign:"center",fontSize:12,color:"#94A3B8"}}>Aramaya uygun makine bulunamadı.</div>}</div>}
+    <div style={{display:viewMode==="cards"?"grid":"none",gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))",gap:10}}>
+      {visibleMachines.map(machine=><div key={machine.id} style={{background:"#fff",borderRadius:12,padding:14,border:`1.5px solid ${machine.commissioned?"#A7F3D0":"#FED7AA"}`}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}><div><div style={{fontWeight:800,fontSize:13}}>{machine.name}</div><div style={{fontSize:11,color:"#64748B",marginTop:2}}>{machine.code||"Kod yok"} · {machine.type==="virtual"?"Sanal":"Fiziksel"}</div></div><span style={{background:machine.commissioned?"#ECFDF5":"#FFF7ED",color:machine.commissioned?"#059669":"#EA6C00",padding:"3px 8px",borderRadius:8,fontSize:10,fontWeight:800}}>{machine.commissioned?"DEVREDE":"BEKLİYOR"}</span></div>
         {machine.commissionedAt&&<div style={{fontSize:11,color:"#64748B",marginTop:9}}>Devreye alma: {fmt(machine.commissionedAt)}</div>}
         {!machine.commissioned&&<textarea disabled={!canEdit} value={machine.note||""} onChange={e=>update(machine.id,{note:e.target.value})} placeholder="Neden devreye alınamadı?" style={{...iStyle,height:58,resize:"vertical",marginTop:9,fontSize:11}} />}
@@ -3943,14 +3977,16 @@ export default function App() {
       {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&(isMobile?<MobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>:<DashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>)}
       {view==="admin"&&isAdmin&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} onNavigate={v=>{setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
+      {view==="mobilemenu"&&<MobileFeatureMenuPage isAdmin={isAdmin} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);setView(target);}}/>}
       {view==="ai"&&!selProject&&<AIWorkspace projects={visibleProjects}/>}
       {view==="import"&&isAdmin&&!selProject&&<ImportCenter state={state} setState={setState} currentUser={currentUser}/>}
       {view==="mailcenter"&&isAdmin&&!selProject&&<MailCenterPage state={state} setState={setState}/>}
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{background:"#fff",padding:isMobile?"8px 12px 0":"10px 18px 0"}}><button onClick={()=>{setSelProject(null);setSelMilestone(null);setView("projects");}} style={{border:0,background:"#F1F5F9",color:"#475569",borderRadius:10,padding:"7px 10px",fontSize:11,fontWeight:850,cursor:"pointer"}}>← Geri</button></div>
         <ProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={project.customerContacts||[]} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>setProjectTab("setup")}/>
-        <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"0 clamp(12px,2.2vw,22px) 10px"}}>
+        <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:isMobile?"8px clamp(12px,2.2vw,22px) 10px":"0 clamp(12px,2.2vw,22px) 10px"}}>
           <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:3,scrollbarWidth:"thin"}}>
             {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje Planı"],["tasks","tasks","Görevler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{padding:"7px 11px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:600,fontSize:12,background:projectTab===id?(project.customerProfile?.accentColor||project.color):"#F1F5FF",color:projectTab===id?"#fff":"#64748B",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",flexShrink:0}}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
