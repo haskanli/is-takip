@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { readinessScore } from "../appData.js";
+import { visibleTicketsForUser } from "../customerAccess.js";
+import { commissioningMachines } from "../domain/projectHelpers.js";
 import { Icon } from "./primitives.jsx";
 import { daysDiff } from "./status.jsx";
 import { EmptyMobileRow, MobileFeedCard, MobileFeedRow, QuickActionModal, QuickTodoModal } from "./mobileComponents.jsx";
@@ -8,6 +11,151 @@ const now = () => new Date().toISOString();
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "-";
 const DEFAULT_ACTION_TAGS = ["Takip", "Toplant?", "Telefon/G?r??me", "Yaz??ma", "Sistem Kontrol?", "Saha Ziyareti", "E?itim"];
+
+const customerDisplayName = (project = {}) =>
+  project.customerProfile?.name || project.customerName || project.name || "Proje";
+
+const customerLogo = (project = {}) => project.customerProfile?.logoUrl || project.logoUrl || "";
+const customerWebsite = (project = {}) => project.customerProfile?.website || project.website || "";
+const customerAccent = (project = {}) => project.customerProfile?.accentColor || project.color || "#4A6CF7";
+
+export function CustomerDashboardPage({ state, currentUser, projects = [], onNavigate }) {
+  const projectSummaries = projects.map((project) => {
+    const tasks = (project.milestones || []).flatMap((milestone) => milestone.tasks || []);
+    const doneTasks = tasks.filter((task) => task.status === "Tamamlandı").length;
+    const progress = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
+    const overdue = tasks.filter((task) => task.dueDate && task.status !== "Tamamlandı" && daysDiff(task.dueDate) > 0).length;
+    const visibleTickets = visibleTicketsForUser((state.projectTickets || {})[project.id] || [], {
+      ...currentUser,
+      customerId: currentUser?.customerId || project.id,
+      userType: "customer",
+    });
+    const openTickets = visibleTickets.filter((ticket) => !["Tamamlandı", "İptal edildi", "Done"].includes(ticket.status)).length;
+    const machines = project.commissioningTracking ? commissioningMachines(project.commissioningTree || []) : project.machines || [];
+    const commissioned = machines.filter((machine) => machine.commissioned).length;
+    const trainings = project.trainings || [];
+    const raciCount = (project.raciContacts || project.customerContacts || []).length;
+    const activeMilestone = (project.milestones || []).find((milestone) =>
+      (milestone.tasks || []).some((task) => task.status !== "Tamamlandı"),
+    ) || (project.milestones || [])[0];
+    return {
+      project,
+      tasks,
+      doneTasks,
+      progress,
+      overdue,
+      visibleTickets,
+      openTickets,
+      machines,
+      commissioned,
+      trainings,
+      raciCount,
+      activeMilestone,
+      readiness: readinessScore(project),
+      accent: customerAccent(project),
+      logo: customerLogo(project),
+      website: customerWebsite(project),
+      customerName: customerDisplayName(project),
+    };
+  });
+
+  const totalTasks = projectSummaries.reduce((sum, item) => sum + item.tasks.length, 0);
+  const doneTasks = projectSummaries.reduce((sum, item) => sum + item.doneTasks, 0);
+  const averageProgress = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const totalTickets = projectSummaries.reduce((sum, item) => sum + item.visibleTickets.length, 0);
+  const openTickets = projectSummaries.reduce((sum, item) => sum + item.openTickets, 0);
+  const totalOverdue = projectSummaries.reduce((sum, item) => sum + item.overdue, 0);
+  const averageReadiness = projectSummaries.length
+    ? Math.round(projectSummaries.reduce((sum, item) => sum + item.readiness, 0) / projectSummaries.length)
+    : 0;
+
+  if (!projectSummaries.length) {
+    return <div style={{ flex: 1, overflow: "auto", padding: "clamp(18px,4vw,34px)", background: "#F8FAFC" }}>
+      <div style={{ maxWidth: 920, margin: "0 auto", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 24, padding: 26, boxShadow: "0 18px 45px rgba(15,23,42,.06)" }}>
+        <div style={{ width: 54, height: 54, borderRadius: 18, background: "#EEF2FF", color: "#4A6CF7", display: "grid", placeItems: "center", marginBottom: 14 }}><Icon name="projects" size={25} /></div>
+        <h2 style={{ margin: 0, fontSize: 24 }}>Proje özeti hazırlanıyor</h2>
+        <p style={{ margin: "8px 0 0", color: "#64748B", lineHeight: 1.55 }}>Hesabınıza bağlı görüntülenebilir proje bulunamadı. Proje erişimi tanımlandığında burada yalnızca size ait proje raporu görünecek.</p>
+      </div>
+    </div>;
+  }
+
+  return <div style={{ flex: 1, overflow: "auto", padding: "clamp(16px,4vw,34px)", background: "linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)" }}>
+    <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #C7D2FE", background: "#EEF2FF", color: "#4338CA", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 900, marginBottom: 10 }}>
+            <Icon name="reports" size={14} /> Müşteri Proje Özeti
+          </div>
+          <h1 style={{ margin: 0, fontSize: "clamp(24px,4vw,38px)", letterSpacing: "-.04em", color: "#111827" }}>Proje durum raporu</h1>
+          <p style={{ margin: "8px 0 0", color: "#64748B", fontSize: 14, lineHeight: 1.55, maxWidth: 680 }}>Bu ekranda size ait proje planı, sağlık skoru, eğitim/RACI, makineler ve görünür ticketların güncel özeti yer alır.</p>
+        </div>
+        <button onClick={() => onNavigate?.("tickets")} style={{ border: 0, borderRadius: 14, background: "linear-gradient(135deg,#4A6CF7,#7C3AED)", color: "#fff", padding: "12px 15px", fontWeight: 900, cursor: "pointer", boxShadow: "0 14px 30px rgba(79,70,229,.22)" }}>Ticketları Gör</button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 16 }}>
+        {[
+          ["Genel İlerleme", `%${averageProgress}`, `${doneTasks}/${totalTasks} görev tamamlandı`, "#4A6CF7"],
+          ["Başlangıç Sağlığı", averageReadiness ? `%${averageReadiness}` : "-", "Hazırlık skoru", "#059669"],
+          ["Açık Ticket", openTickets, `${totalTickets} görünür ticket`, "#EA6C00"],
+          ["Geciken İş", totalOverdue, "Müşteri görünür plan", "#E11D48"],
+        ].map(([label, value, desc, color]) => <div key={label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderTop: `4px solid ${color}`, borderRadius: 18, padding: 16, boxShadow: "0 10px 26px rgba(15,23,42,.05)", minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 950, color: "#64748B", letterSpacing: ".08em", textTransform: "uppercase" }}>{label}</div>
+          <div style={{ fontSize: 28, lineHeight: 1.1, fontWeight: 950, color, marginTop: 7 }}>{value}</div>
+          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4, overflowWrap: "anywhere" }}>{desc}</div>
+        </div>)}
+      </div>
+
+      <div style={{ display: "grid", gap: 16 }}>
+        {projectSummaries.map((item) => <section key={item.project.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 24, overflow: "hidden", boxShadow: "0 18px 45px rgba(15,23,42,.07)" }}>
+          <div style={{ background: `linear-gradient(135deg,${item.accent} 0%,#111827 120%)`, color: "#fff", padding: "18px clamp(16px,3vw,24px)", display: "flex", gap: 15, alignItems: "center", minWidth: 0 }}>
+            <div style={{ width: 58, height: 58, borderRadius: 18, background: "rgba(255,255,255,.95)", display: "grid", placeItems: "center", overflow: "hidden", flexShrink: 0 }}>
+              {item.logo ? <img src={item.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 8 }} /> : <b style={{ color: item.accent, fontSize: 22 }}>{item.customerName.slice(0, 1)}</b>}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <h2 style={{ margin: 0, color: "#fff", fontSize: "clamp(20px,3vw,28px)", overflowWrap: "anywhere" }}>{item.customerName}</h2>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 6, fontSize: 12, color: "rgba(255,255,255,.82)" }}>
+                <span>{item.project.name}</span>
+                <span>{fmt(item.project.startDate)} - {fmt(item.project.endDate)}</span>
+                {item.website && <a href={item.website.startsWith("http") ? item.website : `https://${item.website}`} target="_blank" rel="noreferrer" style={{ color: "#fff", fontWeight: 850 }}>Web sitesi</a>}
+              </div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ fontSize: 30, fontWeight: 950 }}>%{item.progress}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,.76)" }}>tamamlanma</div>
+            </div>
+          </div>
+          <div style={{ padding: "18px clamp(16px,3vw,24px)" }}>
+            <div style={{ height: 9, borderRadius: 999, background: "#E2E8F0", overflow: "hidden", marginBottom: 16 }}>
+              <div style={{ height: "100%", width: `${item.progress}%`, background: `linear-gradient(90deg,${item.accent},#22D3EE)`, borderRadius: 999 }} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 12 }}>
+              <CustomerMetric title="Proje Planı" value={`${item.doneTasks}/${item.tasks.length}`} desc={item.activeMilestone ? `Aktif: ${item.activeMilestone.name}` : "Milestone bulunmuyor"} icon="tasks" color={item.accent} />
+              <CustomerMetric title="Proje Sağlığı" value={`%${item.readiness}`} desc={item.readiness >= 80 ? "Başlamaya uygun" : "Hazırlık takibi gerekli"} icon="activity" color={item.readiness >= 80 ? "#059669" : "#EA6C00"} />
+              <CustomerMetric title="Ticketlar" value={item.openTickets} desc={`${item.visibleTickets.length} müşteri görünür ticket`} icon="ticket" color="#EA6C00" />
+              <CustomerMetric title="Makineler" value={`${item.commissioned}/${item.machines.length}`} desc="Devreye alma durumu" icon="projects" color="#0F766E" />
+              <CustomerMetric title="Eğitimler" value={item.trainings.length} desc="Kayıtlı eğitim" icon="people" color="#7C3AED" />
+              <CustomerMetric title="RACI / Kontak" value={item.raciCount} desc="Tanımlı sorumlu ve kontak" icon="people" color="#0369A1" />
+            </div>
+            {item.overdue > 0 && <div style={{ marginTop: 13, border: "1px solid #FECACA", background: "#FFF1F2", color: "#BE123C", borderRadius: 14, padding: "10px 12px", fontSize: 12, fontWeight: 800 }}>{item.overdue} geciken iş takip bekliyor.</div>}
+          </div>
+        </section>)}
+      </div>
+    </div>
+  </div>;
+}
+
+function CustomerMetric({ title, value, desc, icon, color }) {
+  return <div style={{ border: "1px solid #E2E8F0", background: "#F8FAFC", borderRadius: 16, padding: 14, minWidth: 0 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+      <span style={{ width: 34, height: 34, borderRadius: 12, background: `${color}16`, color, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name={icon} size={17} /></span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 10, color: "#64748B", fontWeight: 950, letterSpacing: ".06em", textTransform: "uppercase" }}>{title}</div>
+        <div style={{ fontSize: 23, fontWeight: 950, color, lineHeight: 1.1, marginTop: 2 }}>{value}</div>
+      </div>
+    </div>
+    <div style={{ marginTop: 8, color: "#64748B", fontSize: 11, lineHeight: 1.4, overflowWrap: "anywhere" }}>{desc}</div>
+  </div>;
+}
 
 export function DashboardPage({state,setState,currentUser,isAdmin,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
   const [quick,setQuick]=useState(null);
@@ -150,4 +298,3 @@ export function MobileHomePage({state,setState,currentUser,myProjects,deadlineWa
     {quick==="action"&&<QuickActionModal projects={state.projects} actionTags={DEFAULT_ACTION_TAGS} onClose={()=>setQuick(null)} onSave={saveQuickAction}/>}
   </div>;
 }
-
