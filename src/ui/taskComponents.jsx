@@ -3,6 +3,7 @@ import { Avatar, Btn, Field, Icon, Modal, iStyle } from "./primitives.jsx";
 import {
   Badge,
   DelayBadge,
+  PRIORITIES,
   PRIORITY_COLORS,
   STATUSES,
   delayLvl,
@@ -12,6 +13,8 @@ const defaultFormatDate = (value) => value || "";
 const defaultFormatFullDate = (value) => value || "";
 const defaultCreateId = () => Math.random().toString(36).slice(2, 9);
 const defaultGetTimestamp = () => new Date().toISOString();
+const DEFAULT_WAIT_OPTIONS = ["PM", "Müşteri", "ERP", "Tedarikçi", "Teknik", "Ürün-Teknoloji", "Yönetim", "Diğer"];
+const DEFAULT_RESPONSIBILITY_GROUPS = ["Proje Ekibi", "Ürün Ekibi", "Yazılım Ekibi", "Müşteri", "Tedarikçi", "Diğer"];
 
 export function TaskCard({
   task,
@@ -270,6 +273,148 @@ export function TaskCard({
         )}
       </div>
     </div>
+  );
+}
+
+export function TaskModal({
+  title,
+  initial,
+  onClose,
+  onSave,
+  people,
+  waitOptions = DEFAULT_WAIT_OPTIONS,
+  responsibilityGroups = DEFAULT_RESPONSIBILITY_GROUPS,
+}) {
+  const [form, setForm] = useState({
+    title: "",
+    status: "Bekliyor",
+    priority: "Orta",
+    assignee: "",
+    responsibilityGroup: "Proje Ekibi",
+    startDate: "",
+    dueDate: "",
+    estimatedHours: "",
+    notes: "",
+    waitSource: "",
+    waitReason: "",
+    link: "",
+    ...initial,
+  });
+  const update = (key, value) => setForm((state) => ({ ...state, [key]: value }));
+
+  const save = () => {
+    if (!form.title.trim()) return;
+    onSave(form);
+    onClose();
+  };
+
+  return (
+    <Modal title={title} onClose={onClose}>
+      <Field label="Görev Başlığı *">
+        <input style={iStyle} value={form.title} onChange={(event) => update("title", event.target.value)} />
+      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+        <Field label="Durum">
+          <select style={iStyle} value={form.status} onChange={(event) => update("status", event.target.value)}>
+            {STATUSES.map((status) => (
+              <option key={status}>{status}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Öncelik">
+          <select style={iStyle} value={form.priority} onChange={(event) => update("priority", event.target.value)}>
+            {PRIORITIES.map((priority) => (
+              <option key={priority}>{priority}</option>
+            ))}
+          </select>
+        </Field>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+        <Field label="Sorumlu Kişi">
+          <select style={iStyle} value={form.assignee} onChange={(event) => update("assignee", event.target.value)}>
+            <option value="">- Seç -</option>
+            {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Sorumluluk Grubu">
+          <select
+            style={iStyle}
+            value={form.responsibilityGroup}
+            onChange={(event) => update("responsibilityGroup", event.target.value)}
+          >
+            {responsibilityGroups.map((group) => (
+              <option key={group}>{group}</option>
+            ))}
+          </select>
+        </Field>
+      </div>
+      <Field label="Planlanan Efor (Saat)">
+        <input
+          type="number"
+          min="0"
+          step="0.5"
+          style={iStyle}
+          value={form.estimatedHours || ""}
+          onChange={(event) => update("estimatedHours", event.target.value)}
+          placeholder="Örn. 8"
+        />
+      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+        <Field label="Hedef Başlangıç">
+          <input type="date" style={iStyle} value={form.startDate || ""} onChange={(event) => update("startDate", event.target.value)} />
+        </Field>
+        <Field label="Başlangıç Saati">
+          <input type="time" style={iStyle} value={form.startTime || ""} onChange={(event) => update("startTime", event.target.value)} />
+        </Field>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+        <Field label="Hedef Bitiş">
+          <input type="date" style={iStyle} value={form.dueDate} onChange={(event) => update("dueDate", event.target.value)} />
+        </Field>
+        <Field label="Hedef Saat">
+          <input type="time" style={iStyle} value={form.dueTime || ""} onChange={(event) => update("dueTime", event.target.value)} />
+        </Field>
+      </div>
+      <Field label="Bekleme Kaynağı">
+        <select style={iStyle} value={form.waitSource} onChange={(event) => update("waitSource", event.target.value)}>
+          <option value="">- Yok -</option>
+          {waitOptions.map((source) => (
+            <option key={source}>{source}</option>
+          ))}
+        </select>
+      </Field>
+      {["Bekliyor", "Engellendi"].includes(form.status) && (
+        <Field label="Bekleme Sebebi">
+          <textarea
+            style={{ ...iStyle, minHeight: 70, resize: "vertical" }}
+            value={form.waitReason || ""}
+            onChange={(event) => update("waitReason", event.target.value)}
+            placeholder="Neyi, kimden ve hangi tarihe kadar bekliyoruz?"
+          />
+        </Field>
+      )}
+      <Field label="Notlar">
+        <input style={iStyle} value={form.notes} onChange={(event) => update("notes", event.target.value)} />
+      </Field>
+      <Field label="Jira Linki">
+        <input
+          style={iStyle}
+          value={form.link || ""}
+          onChange={(event) => update("link", event.target.value)}
+          placeholder="https://sirket.atlassian.net/browse/PROJ-123"
+        />
+      </Field>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 7 }}>
+        <Btn variant="ghost" onClick={onClose}>
+          İptal
+        </Btn>
+        <Btn onClick={save}>Kaydet</Btn>
+      </div>
+    </Modal>
   );
 }
 

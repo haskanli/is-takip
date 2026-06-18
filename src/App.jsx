@@ -22,7 +22,11 @@ import {
   PeopleMultiSelect,
   StakeholderEditor,
 } from "./ui/formControls.jsx";
-import { TaskCard as SharedTaskCard, TimeLogModal as SharedTimeLogModal } from "./ui/taskComponents.jsx";
+import {
+  TaskCard as SharedTaskCard,
+  TaskModal as SharedTaskModal,
+  TimeLogModal as SharedTimeLogModal,
+} from "./ui/taskComponents.jsx";
 import { Avatar, Btn, Card, Field, Icon, Modal, iStyle, lStyle } from "./ui/primitives.jsx";
 import {
   Badge,
@@ -4425,8 +4429,8 @@ export default function App() {
     {modal?.type==="editProject"&&<ProjectModal title="Projeyi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(data)=>updateProjectById(modal.data.id,data)} people={state.people} roles={organizationRoles(state)} />}
     {modal?.type==="addMilestone"&&<MilestoneModal title="Yeni Milestone" onClose={()=>setModal(null)} onSave={addMilestone} />}
     {modal?.type==="editMilestone"&&<MilestoneModal title="Milestone Duzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateMilestone(modal.data.id,d)} />}
-    {modal?.type==="addTask"&&<TaskModal title="Yeni Görev" onClose={()=>setModal(null)} onSave={(d)=>addTask(modal.msId,d)} people={state.people} />}
-    {modal?.type==="editTask"&&<TaskModal title="Görevi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateTask(modal.msId,modal.data.id,d)} people={state.people} />}
+    {modal?.type==="addTask"&&<SharedTaskModal title="Yeni Görev" onClose={()=>setModal(null)} onSave={(d)=>addTask(modal.msId,d)} people={state.people} waitOptions={WAIT} responsibilityGroups={RESPONSIBILITY_GROUPS} />}
+    {modal?.type==="editTask"&&<SharedTaskModal title="Görevi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateTask(modal.msId,modal.data.id,d)} people={state.people} waitOptions={WAIT} responsibilityGroups={RESPONSIBILITY_GROUPS} />}
     {modal?.type==="addPerson"&&<PersonModal people={state.people} roles={organizationRoles(state)} onClose={()=>setModal(null)} onSave={addPerson} />}
     {modal?.type==="editPerson"&&<UserEditModal title="Kullanıcıyı Düzenle" person={modal.data} people={state.people} roles={organizationRoles(state)} allowAdmin onClose={()=>setModal(null)} onSave={(d)=>updatePerson(modal.data.id,d)} />}
     {modal?.type==="personDetail"&&<PersonDetailModal person={modal.data} projects={state.projects} personalTasks={state.personalTasks} onClose={()=>setModal(null)} />}
@@ -4921,35 +4925,6 @@ function MilestoneModal({ title, initial, onClose, onSave }) {
     <div style={{background:"#F1F5F9",borderRadius:9,padding:"9px 11px",fontSize:11,color:"#64748B",marginBottom:13}}>Milestone durumu içindeki görevlerin durumuna göre otomatik hesaplanır.</div>
     <Field label="Bekleme Kaynağı"><select style={iStyle} value={f.waitSource} onChange={e=>upd("waitSource",e.target.value)}><option value="">- Yok -</option>{WAIT.map(s=><option key={s}>{s}</option>)}</select></Field>
     <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.name.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>
-  </Modal>;
-}
-function TaskModal({ title, initial, onClose, onSave, people }) {
-  const [f,setF]=useState({ title:"", status:"Bekliyor", priority:"Orta", assignee:"", responsibilityGroup:"Proje Ekibi", startDate:"", dueDate:"", estimatedHours:"", notes:"", waitSource:"", waitReason:"", link:"", ...initial });
-  const upd=(k,v)=>setF(s=>({...s,[k]:v}));
-  return <Modal title={title} onClose={onClose}>
-    <Field label="Görev Başlığı *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Durum"><select style={iStyle} value={f.status} onChange={e=>upd("status",e.target.value)}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></Field>
-      <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></Field>
-    </div>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Sorumlu Kişi"><select style={iStyle} value={f.assignee} onChange={e=>upd("assignee",e.target.value)}><option value="">- Seç -</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
-      <Field label="Sorumluluk Grubu"><select style={iStyle} value={f.responsibilityGroup} onChange={e=>upd("responsibilityGroup",e.target.value)}>{RESPONSIBILITY_GROUPS.map(group=><option key={group}>{group}</option>)}</select></Field>
-    </div>
-    <Field label="Planlanan Efor (Saat)"><input type="number" min="0" step="0.5" style={iStyle} value={f.estimatedHours||""} onChange={e=>upd("estimatedHours",e.target.value)} placeholder="Örn. 8" /></Field>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Hedef Başlangıç"><input type="date" style={iStyle} value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)} /></Field>
-      <Field label="Başlangıç Saati"><input type="time" style={iStyle} value={f.startTime||""} onChange={e=>upd("startTime",e.target.value)} /></Field>
-    </div>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Hedef Bitiş"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
-      <Field label="Hedef Saat"><input type="time" style={iStyle} value={f.dueTime||""} onChange={e=>upd("dueTime",e.target.value)} /></Field>
-    </div>
-    <Field label="Bekleme Kaynağı"><select style={iStyle} value={f.waitSource} onChange={e=>upd("waitSource",e.target.value)}><option value="">- Yok -</option>{WAIT.map(s=><option key={s}>{s}</option>)}</select></Field>
-    {["Bekliyor","Engellendi"].includes(f.status)&&<Field label="Bekleme Sebebi"><textarea style={{...iStyle,minHeight:70,resize:"vertical"}} value={f.waitReason||""} onChange={e=>upd("waitReason",e.target.value)} placeholder="Neyi, kimden ve hangi tarihe kadar bekliyoruz?"/></Field>}
-    <Field label="Notlar"><input style={iStyle} value={f.notes} onChange={e=>upd("notes",e.target.value)} /></Field>
-    <Field label="Jira Linki"><input style={iStyle} value={f.link||""} onChange={e=>upd("link",e.target.value)} placeholder="https://sirket.atlassian.net/browse/PROJ-123" /></Field>
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.title.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>
   </Modal>;
 }
 function PersonalTaskModal({ title, initial, onClose, onSave, people, isAdmin, currentUser, projects=[] }) {
