@@ -48,6 +48,10 @@ test("routeFromLocation reads task and ticket deep links", () => {
     taskId: "task-1",
     ticketProjectId: "",
     ticketId: "",
+    projectScope: "all",
+    projectSegment: "all",
+    projectSearch: "",
+    projectViewMode: "cards",
   });
   assert.deepEqual(routeFromLocation({
     pathname: "/ticketlar",
@@ -61,7 +65,24 @@ test("routeFromLocation reads task and ticket deep links", () => {
     taskId: "",
     ticketProjectId: "project-1",
     ticketId: "ticket-1",
+    projectScope: "all",
+    projectSegment: "all",
+    projectSearch: "",
+    projectViewMode: "cards",
   });
+});
+
+test("routeFromLocation reads project list filters", () => {
+  const route = routeFromLocation({
+    pathname: "/projects",
+    search: "?scope=mine&segment=connected&q=gen&mode=list",
+  });
+  assert.equal(route.view, "projects");
+  assert.equal(route.selProject, null);
+  assert.equal(route.projectScope, "mine");
+  assert.equal(route.projectSegment, "connected");
+  assert.equal(route.projectSearch, "gen");
+  assert.equal(route.projectViewMode, "list");
 });
 
 test("pathForRouteState builds stable app URLs", () => {
@@ -87,5 +108,9 @@ test("pathForRouteState builds stable app URLs", () => {
   assert.equal(
     pathForRouteState({ view: "tickets", ticketMineOnly: true, ticketProjectId: "project-1", ticketId: "ticket-1" }),
     "/ticketlar?mine=1&project=project-1&ticket=ticket-1",
+  );
+  assert.equal(
+    pathForRouteState({ view: "projects", projectScope: "mine", projectSegment: "connected", projectSearch: "gen", projectViewMode: "list" }),
+    "/projects?scope=mine&segment=connected&q=gen&mode=list",
   );
 });

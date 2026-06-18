@@ -79,6 +79,10 @@ export const routeFromLocation = (locationLike) => {
     taskId: view === "mytasks" ? search.get("task") || "" : "",
     ticketProjectId: view === "tickets" ? search.get("project") || "" : "",
     ticketId: view === "tickets" ? search.get("ticket") || "" : "",
+    projectScope: view === "projects" ? search.get("scope") || "all" : "all",
+    projectSegment: view === "projects" ? search.get("segment") || "all" : "all",
+    projectSearch: view === "projects" ? search.get("q") || "" : "",
+    projectViewMode: view === "projects" ? search.get("mode") || "cards" : "cards",
   };
 };
 
@@ -91,6 +95,10 @@ export const pathForRouteState = ({
   taskId = "",
   ticketProjectId = "",
   ticketId = "",
+  projectScope = "all",
+  projectSegment = "all",
+  projectSearch = "",
+  projectViewMode = "cards",
 }) => {
   if (selProject) {
     const tab = PROJECT_ROUTE_TABS.has(projectTab) ? projectTab : DEFAULT_PROJECT_TAB;
@@ -107,6 +115,10 @@ export const pathForRouteState = ({
   if (view === "tickets" && ticketProjectId) search.set("project", ticketProjectId);
   if (view === "tickets" && ticketId) search.set("ticket", ticketId);
   if (view === "mytasks" && taskId) search.set("task", taskId);
+  if (view === "projects" && projectScope && projectScope !== "all") search.set("scope", projectScope);
+  if (view === "projects" && projectSegment && projectSegment !== "all") search.set("segment", projectSegment);
+  if (view === "projects" && projectSearch.trim()) search.set("q", projectSearch.trim());
+  if (view === "projects" && projectViewMode && projectViewMode !== "cards") search.set("mode", projectViewMode);
   const query = search.toString();
   if (query) return `${base}?${query}`;
   return base;

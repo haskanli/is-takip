@@ -198,10 +198,10 @@ export default function App() {
   const [mobileQuick,setMobileQuick]=useState(null);
   const [mobileQuickSheet,setMobileQuickSheet]=useState(false);
   const [adminSection,setAdminSection]=useState(initialRoute.adminSection||"overview");
-  const [projectScope,setProjectScope]=useState("all");
-  const [projectSearch,setProjectSearch]=useState("");
-  const [projectSegment,setProjectSegment]=useState("all");
-  const [projectViewMode,setProjectViewMode]=useState("cards");
+  const [projectScope,setProjectScope]=useState(initialRoute.projectScope||"all");
+  const [projectSearch,setProjectSearch]=useState(initialRoute.projectSearch||"");
+  const [projectSegment,setProjectSegment]=useState(initialRoute.projectSegment||"all");
+  const [projectViewMode,setProjectViewMode]=useState(initialRoute.projectViewMode||"cards");
   const [expandedProjectRows,setExpandedProjectRows]=useState({});
   const [ticketMineOnly,setTicketMineOnly]=useState(Boolean(initialRoute.ticketMineOnly));
   const [taskToOpen,setTaskToOpen]=useState(initialRoute.taskId||"");
@@ -393,6 +393,10 @@ export default function App() {
       setTicketMineOnly(Boolean(next.ticketMineOnly));
       setTaskToOpen(next.taskId||"");
       setTicketToOpen({projectId:next.ticketProjectId||"",ticketId:next.ticketId||""});
+      setProjectScope(next.projectScope||"all");
+      setProjectSearch(next.projectSearch||"");
+      setProjectSegment(next.projectSegment||"all");
+      setProjectViewMode(next.projectViewMode||"cards");
     };
     window.addEventListener("popstate",onPopState);
     return ()=>window.removeEventListener("popstate",onPopState);
@@ -400,14 +404,14 @@ export default function App() {
 
   useEffect(()=>{
     if(typeof window==="undefined")return;
-    const nextPath=pathForRouteState({view,selProject,projectTab,adminSection,ticketMineOnly,taskId:taskToOpen,ticketProjectId:ticketToOpen.projectId,ticketId:ticketToOpen.ticketId});
+    const nextPath=pathForRouteState({view,selProject,projectTab,adminSection,ticketMineOnly,taskId:taskToOpen,ticketProjectId:ticketToOpen.projectId,ticketId:ticketToOpen.ticketId,projectScope,projectSearch,projectSegment,projectViewMode});
     const currentPath=`${window.location.pathname}${window.location.search}`;
     const applying=routeApplyingRef.current;
     routeApplyingRef.current=false;
     if(currentPath===nextPath)return;
     const method=applying?"replaceState":"pushState";
     window.history[method]({corjectRoute:true},"",nextPath);
-  },[view,selProject,projectTab,adminSection,ticketMineOnly,taskToOpen,ticketToOpen.projectId,ticketToOpen.ticketId]);
+  },[view,selProject,projectTab,adminSection,ticketMineOnly,taskToOpen,ticketToOpen.projectId,ticketToOpen.ticketId,projectScope,projectSearch,projectSegment,projectViewMode]);
 
   const navigateTo=(target,options={})=>{
     const nextView=target==="ticket"?"tickets":target;
