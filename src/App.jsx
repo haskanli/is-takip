@@ -28,6 +28,7 @@ import { FieldOperationsPage as SharedFieldOperationsPage } from "./ui/fieldOper
 import { ProjectActionsPanel as SharedProjectActionsPanel } from "./ui/projectActionsComponents.jsx";
 import { MachinePanel as SharedMachinePanel } from "./ui/machineComponents.jsx";
 import { CommissioningPanel as SharedCommissioningPanel } from "./ui/commissioningComponents.jsx";
+import { RiskModal as SharedRiskModal, RiskPanel as SharedRiskPanel } from "./ui/riskComponents.jsx";
 import {
   EmptyMobileRow,
   MobileBottomNav,
@@ -1591,34 +1592,6 @@ ${projLogs.length>0?`<div class="card"><h2>Son Aktiviteler</h2><table><thead><tr
 
 
 // ─── Risk Panel ──────────────────────────────────────────────────────────────
-function RiskPanel({ risks, onAdd, onUpdate, onDelete, canEdit }) {
-  const RL={ "Düşük":{bg:"#ECFDF5",text:"#059669"}, "Orta":{bg:"#FFF7ED",text:"#EA6C00"}, "Yüksek":{bg:"#FFF1F2",text:"#E11D48"} };
-  return <div>
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-      <span style={{ fontWeight:700, fontSize:13 }}>Riskler & Engeller</span>
-      {canEdit&&<Btn small variant="warning" onClick={onAdd}>+ Risk Ekle</Btn>}
-    </div>
-    {risks.length===0&&<div style={{ fontSize:12, color:"#94A3B8", padding:"10px 0" }}>Risk yok.</div>}
-    {risks.map(r=><div key={r.id} style={{ background:"#FAFBFC", borderRadius:8, padding:"10px 14px", marginBottom:6, border:"1.5px solid #E2E8F0", display:"flex", gap:10, alignItems:"flex-start" }}>
-      <div style={{ flex:1 }}>
-        <div style={{ display:"flex", gap:7, alignItems:"center", flexWrap:"wrap" }}>
-          <span style={{ fontWeight:700, fontSize:12 }}>{r.title}</span>
-          <span style={{ background:RL[r.level]?.bg||"#F1F5FF", color:RL[r.level]?.text||"#4A6CF7", borderRadius:12, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{r.level}</span>
-          <span style={{ background:"#F1F5FF", color:"#4A6CF7", borderRadius:12, padding:"2px 8px", fontSize:11 }}>{r.status}</span>
-        </div>
-        {r.note&&<div style={{ fontSize:11, color:"#64748B", marginTop:3 }}>{r.note}</div>}
-      </div>
-      {canEdit&&<div style={{ display:"flex", gap:4 }}>
-        <select value={r.status} onChange={e=>onUpdate(r.id,{status:e.target.value})} style={{ fontSize:11, borderRadius:6, border:"1px solid #E2E8F0", padding:"3px 6px" }}>
-          {["Açık","İzleniyor","Kapalı"].map(x=><option key={x}>{x}</option>)}
-        </select>
-        <Btn small variant="danger" onClick={()=>onDelete(r.id)}>x</Btn>
-      </div>}
-    </div>)}
-  </div>;
-}
-
-// ─── Person Detail Modal ─────────────────────────────────────────────────────
 function PersonDetailModal({ person, projects, personalTasks, onClose }) {
   const [showDone,setShowDone]=useState(false);
   const projTasks=projects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>t.assignee===person.id).map(t=>({...t,projectName:proj.name,projectColor:proj.color,msName:ms.name}))));
@@ -3427,7 +3400,7 @@ export default function App() {
         {projectTab==="actions"&&<SharedProjectActionsPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} canManage={canManageProjectActions}/>}
 
         {projectTab==="risks"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px", maxWidth:680 }}>
-          <RiskPanel risks={project.risks||[]} onAdd={()=>setModal({type:"addRisk"})} onUpdate={updateRisk} onDelete={deleteRisk} canEdit={isAdmin} />
+          <SharedRiskPanel risks={project.risks||[]} onAdd={()=>setModal({type:"addRisk"})} onUpdate={updateRisk} onDelete={deleteRisk} canEdit={isAdmin} />
         </div>}
 
         {projectTab==="tickets"&&<TicketsPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} />}
@@ -3570,7 +3543,7 @@ export default function App() {
     {modal?.type==="addPerson"&&<PersonModal people={state.people} roles={organizationRoles(state)} onClose={()=>setModal(null)} onSave={addPerson} />}
     {modal?.type==="editPerson"&&<UserEditModal title="Kullanıcıyı Düzenle" person={modal.data} people={state.people} roles={organizationRoles(state)} allowAdmin onClose={()=>setModal(null)} onSave={(d)=>updatePerson(modal.data.id,d)} />}
     {modal?.type==="personDetail"&&<PersonDetailModal person={modal.data} projects={state.projects} personalTasks={state.personalTasks} onClose={()=>setModal(null)} />}
-    {modal?.type==="addRisk"&&<RiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
+    {modal?.type==="addRisk"&&<SharedRiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
     {modal?.type==="editProfile"&&<UserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
     {modal?.type==="timeLog"&&<SharedTimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} createId={uid} getTimestamp={now} formatDate={fmt} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
     {modal?.type==="addPersonal"&&<SharedPersonalTaskModal title="Görev Ata" people={state.people} projects={state.projects} isAdmin currentUser={currentUser} waitOptions={WAIT} todayString={todayStr} currentTimeString={currentTimeStr} onClose={()=>setModal(null)} onSave={saveAdminAssignedTask} />}
@@ -4109,16 +4082,4 @@ function PersonModal({ people=[], roles=ORG_LEVELS, onClose, onSave }) {
       </div>
     </Modal>
   );
-}
-function RiskModal({ onClose, onSave }) {
-  const [f,setF]=useState({ title:"", level:"Orta", status:"Açık", note:"" });
-  return <Modal title="Risk Ekle" onClose={onClose}>
-    <Field label="Başlık *"><input style={iStyle} value={f.title} onChange={e=>setF(s=>({...s,title:e.target.value}))} /></Field>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Seviye"><select style={iStyle} value={f.level} onChange={e=>setF(s=>({...s,level:e.target.value}))}>{["Düşük","Orta","Yüksek"].map(l=><option key={l}>{l}</option>)}</select></Field>
-      <Field label="Durum"><select style={iStyle} value={f.status} onChange={e=>setF(s=>({...s,status:e.target.value}))}>{["Açık","İzleniyor","Kapalı"].map(l=><option key={l}>{l}</option>)}</select></Field>
-    </div>
-    <Field label="Not"><input style={iStyle} value={f.note} onChange={e=>setF(s=>({...s,note:e.target.value}))} /></Field>
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.title.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>
-  </Modal>;
 }
