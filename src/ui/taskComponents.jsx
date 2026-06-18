@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Avatar, Btn, Field, Icon, Modal, iStyle } from "./primitives.jsx";
+import { PeopleMultiSelect } from "./formControls.jsx";
 import {
   Badge,
   DelayBadge,
@@ -13,6 +14,8 @@ const defaultFormatDate = (value) => value || "";
 const defaultFormatFullDate = (value) => value || "";
 const defaultCreateId = () => Math.random().toString(36).slice(2, 9);
 const defaultGetTimestamp = () => new Date().toISOString();
+const defaultTodayString = () => new Date().toISOString().slice(0, 10);
+const defaultCurrentTimeString = () => new Date().toTimeString().slice(0, 5);
 const DEFAULT_WAIT_OPTIONS = ["PM", "Müşteri", "ERP", "Tedarikçi", "Teknik", "Ürün-Teknoloji", "Yönetim", "Diğer"];
 const DEFAULT_RESPONSIBILITY_GROUPS = ["Proje Ekibi", "Ürün Ekibi", "Yazılım Ekibi", "Müşteri", "Tedarikçi", "Diğer"];
 
@@ -413,6 +416,222 @@ export function TaskModal({
           İptal
         </Btn>
         <Btn onClick={save}>Kaydet</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+export function PersonalTaskModal({
+  title,
+  initial,
+  onClose,
+  onSave,
+  people,
+  isAdmin,
+  currentUser,
+  projects = [],
+  waitOptions = DEFAULT_WAIT_OPTIONS,
+  todayString = defaultTodayString,
+  currentTimeString = defaultCurrentTimeString,
+}) {
+  const editing = Boolean(initial?.id);
+  const [form, setForm] = useState({
+    title: "",
+    projectId: "",
+    status: "Bekliyor",
+    priority: "Orta",
+    assignee: isAdmin ? "" : currentUser.id,
+    assigneeIds: initial?.assignee ? [initial.assignee] : [],
+    supportAssigneeIds: [],
+    startDate: todayString(),
+    startTime: currentTimeString(),
+    dueDate: todayString(),
+    dueTime: currentTimeString(),
+    estimatedHours: "",
+    notes: "",
+    waitSource: "",
+    recurring: false,
+    frequency: "weekly",
+    nextRunDate: "",
+    ...initial,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const update = (key, value) => setForm((state) => ({ ...state, [key]: value }));
+
+  const save = async () => {
+    if (!form.title.trim()) return;
+    if (isAdmin && !editing && !form.assigneeIds.length) {
+      setError("En az bir kişi seçmelisiniz.");
+      return;
+    }
+    if (form.recurring && !form.nextRunDate) {
+      setError("Periyodik görev için ilk tekrar tarihini seçmelisiniz.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await onSave({
+        ...form,
+        recurrence: {
+          enabled: !editing && form.recurring,
+          frequency: form.frequency,
+          nextRunDate: form.nextRunDate,
+        },
+      });
+      onClose();
+    } catch (errorValue) {
+      setError(errorValue.message || "Görev kaydedilemedi.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal title={title} onClose={onClose}>
+      <Field label="Görev Başlığı *">
+        <input style={iStyle} value={form.title} onChange={(event) => update("title", event.target.value)} />
+      </Field>
+      <Field label="İlişkili Proje">
+        <select style={iStyle} value={form.projectId || ""} onChange={(event) => update("projectId", event.target.value)}>
+          <option value="">- Projesiz / Genel iş -</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+        <Field label="Durum">
+          <select style={iStyle} value={form.status} onChange={(event) => update("status", event.target.value)}>
+            {STATUSES.map((status) => (
+              <option key={status}>{status}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Öncelik">
+          <select style={iStyle} value={form.priority} onChange={(event) => update("priority", event.target.value)}>
+            {PRIORITIES.map((priority) => (
+              <option key={priority}>{priority}</option>
+            ))}
+          </select>
+        </Field>
+      </div>
+
+      {isAdmin ? (
+        editing ? (
+          <Field label="Atanan Kişi">
+            <select style={iStyle} value={form.assignee} onChange={(event) => update("assignee", event.target.value)}>
+              <option value="">- Seç -</option>
+              {people.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : (
+          <Field label="Atanacak Kişiler *">
+            <PeopleMultiSelect people={people} value={form.assigneeIds} onChange={(value) => update("assigneeIds", value)} />
+          </Field>
+        )
+      ) : (
+        <div
+          style={{
+            background: "#F1F5FF",
+            borderRadius: 8,
+            padding: "8px 12px",
+            marginBottom: 13,
+            fontSize: 12,
+            color: "#4A6CF7",
+          }}
+        >
+          Görev size atanacak: <b>{currentUser.name}</b>
+        </div>
+      )}
+
+      {isAdmin && !editing && (
+        <Field label="Destek Sorumluları">
+          <PeopleMultiSelect
+            people={people.filter((person) => !form.assigneeIds.includes(person.id))}
+            value={form.supportAssigneeIds}
+            onChange={(value) => update("supportAssigneeIds", value)}
+          />
+        </Field>
+      )}
+
+      <Field label="Planlanan Efor (Saat)">
+        <input
+          type="number"
+          min="0"
+          step="0.5"
+          style={iStyle}
+          value={form.estimatedHours || ""}
+          onChange={(event) => update("estimatedHours", event.target.value)}
+          placeholder="Örn. 4"
+        />
+      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+        <Field label="Hedef Başlangıç">
+          <input type="date" style={iStyle} value={form.startDate || ""} onChange={(event) => update("startDate", event.target.value)} />
+        </Field>
+        <Field label="Başlangıç Saati">
+          <input type="time" style={iStyle} value={form.startTime || ""} onChange={(event) => update("startTime", event.target.value)} />
+        </Field>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+        <Field label="Hedef Bitiş">
+          <input type="date" style={iStyle} value={form.dueDate} onChange={(event) => update("dueDate", event.target.value)} />
+        </Field>
+        <Field label="Hedef Saat">
+          <input type="time" style={iStyle} value={form.dueTime || ""} onChange={(event) => update("dueTime", event.target.value)} />
+        </Field>
+      </div>
+      <Field label="Bekleme Kaynağı">
+        <select style={iStyle} value={form.waitSource} onChange={(event) => update("waitSource", event.target.value)}>
+          <option value="">- Yok -</option>
+          {waitOptions.map((source) => (
+            <option key={source}>{source}</option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Notlar">
+        <input style={iStyle} value={form.notes} onChange={(event) => update("notes", event.target.value)} />
+      </Field>
+
+      {!editing && (
+        <div style={{ background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 10, padding: 12, marginBottom: 13 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            <input type="checkbox" checked={form.recurring} onChange={(event) => update("recurring", event.target.checked)} /> Periyodik
+            takip görevi
+          </label>
+          {form.recurring && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9, marginTop: 11 }}>
+              <Field label="Sıklık">
+                <select style={iStyle} value={form.frequency} onChange={(event) => update("frequency", event.target.value)}>
+                  <option value="daily">Her gün</option>
+                  <option value="weekly">Her hafta</option>
+                  <option value="monthly">Her ay</option>
+                </select>
+              </Field>
+              <Field label="İlk Tekrar Tarihi">
+                <input type="date" style={iStyle} value={form.nextRunDate} onChange={(event) => update("nextRunDate", event.target.value)} />
+              </Field>
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && <div style={{ color: "#DC2626", fontSize: 12, fontWeight: 600, marginBottom: 10 }}>{error}</div>}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 7 }}>
+        <Btn variant="ghost" onClick={onClose}>
+          İptal
+        </Btn>
+        <Btn disabled={saving} onClick={save}>
+          {saving ? "Kaydediliyor..." : "Kaydet"}
+        </Btn>
       </div>
     </Modal>
   );
