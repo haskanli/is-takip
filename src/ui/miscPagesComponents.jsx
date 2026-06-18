@@ -5,6 +5,18 @@ import { daysDiff } from "./status.jsx";
 const uid = () => Math.random().toString(36).slice(2, 9);
 const now = () => new Date().toISOString();
 const todayStr = () => new Date().toISOString().slice(0, 10);
+const LOG_META = {
+  task_done: { icon: "✓", color: "#059669", bg: "#ECFDF5", label: "Tamamlandı" },
+  task_add: { icon: "+", color: "#4A6CF7", bg: "#F1F5FF", label: "Görev Eklendi" },
+  task_delete: { icon: "×", color: "#E11D48", bg: "#FFF1F2", label: "Görev Silindi" },
+  status_change: { icon: "↻", color: "#EA6C00", bg: "#FFF7ED", label: "Durum Değişti" },
+  milestone_add: { icon: "◆", color: "#7C3AED", bg: "#F5F3FF", label: "Milestone" },
+  project_create: { icon: "▦", color: "#0EA5E9", bg: "#F0F9FF", label: "Proje" },
+  risk_add: { icon: "!", color: "#E11D48", bg: "#FFF1F2", label: "Risk" },
+  import: { icon: "⬆", color: "#64748B", bg: "#F8FAFC", label: "Import" },
+  person_add: { icon: "◎", color: "#4A6CF7", bg: "#F1F5FF", label: "Ekip" },
+  general: { icon: "·", color: "#64748B", bg: "#F8FAFC", label: "Genel" },
+};
 const isNotificationForUser = (notification, user) => {
   if (!notification || !user) return false;
   if (notification.userId && notification.userId === user.id) return true;
