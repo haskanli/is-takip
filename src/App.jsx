@@ -52,7 +52,7 @@ import {
   ProjectBusinessCard as SharedProjectBusinessCard,
   ProjectListCard as SharedProjectListCard,
 } from "./ui/projectCards.jsx";
-import { MilestoneTaskPanel as SharedMilestoneTaskPanel } from "./ui/projectPlanComponents.jsx";
+import { GanttChart as SharedGanttChart, MilestoneTaskPanel as SharedMilestoneTaskPanel, PlanListTable as SharedPlanListTable, TemplatePicker as SharedTemplatePicker } from "./ui/projectPlanComponents.jsx";
 import {
   PersonalTaskModal as SharedPersonalTaskModal,
   TaskCard as SharedTaskCard,
@@ -495,283 +495,6 @@ function LegacyRemoteAccessPanel({project,state,setState,currentUser,isAdmin,can
 }
 /* eslint-enable no-unused-vars */
 
-
-function TemplatePicker({ onSelect, onSkip }) {
-  const [sel, setSel] = useState(null);
-  return <div>
-    <div style={{ marginBottom:16, fontSize:13, color:"#64748B" }}>Başlangıç şablonu seçin veya boş devam edin:</div>
-    <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
-      {MES_TEMPLATES.map(t => <div key={t.id} onClick={() => setSel(t.id)}
-        style={{ padding:"14px 16px", borderRadius:12, border:`2px solid ${sel===t.id?t.color:"#E2E8F0"}`, cursor:"pointer", background:sel===t.id?t.color+"11":"#fff" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ width:10, height:10, borderRadius:"50%", background:t.color, flexShrink:0 }} />
-          <div style={{ fontWeight:700, fontSize:13 }}>{t.name}</div>
-          <span style={{ marginLeft:"auto", fontSize:11, color:"#94A3B8" }}>{t.milestones.length} milestone</span>
-        </div>
-        <div style={{ fontSize:12, color:"#64748B", marginTop:4, marginLeft:20 }}>{t.description}</div>
-        {sel===t.id && <div style={{ marginTop:10, marginLeft:20 }}>
-          <div style={{ fontSize:11, fontWeight:600, color:"#64748B", marginBottom:5 }}>Milestonelar:</div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-            {t.milestones.map((m,i) => <span key={i} style={{ background:t.color+"22", color:t.color, borderRadius:8, padding:"2px 9px", fontSize:11, fontWeight:600 }}>{m.name}</span>)}
-          </div>
-        </div>}
-      </div>)}
-    </div>
-    <div style={{ display:"flex", justifyContent:"space-between" }}>
-      <Btn variant="ghost" onClick={onSkip}>Şablon Olmadan Devam</Btn>
-      <Btn disabled={!sel} onClick={() => sel&&onSelect(MES_TEMPLATES.find(t=>t.id===sel))}>Bu Şablonu Kullan</Btn>
-    </div>
-  </div>;
-}
-
-// ─── Gantt ──────────────────────────────────────────────────────────────────
-function GanttChart({ project, compact }) {
-  const [expanded, setExpanded] = useState(null);
-  const ms = project.milestones;
-  if (!ms.length) return <div style={{ padding:40, textAlign:"center", color:"#94A3B8" }}>Milestone yok.</div>;
-
-  const allDates = [
-    ...ms.map(m => m.startDate || project.startDate).filter(Boolean),
-    ...ms.map(m => m.dueDate).filter(Boolean),
-  ].filter(Boolean);
-  if (!allDates.length) return <div style={{ padding:40, textAlign:"center", color:"#94A3B8" }}>Tarih bilgisi eksik.</div>;
-
-  const minDate = new Date(Math.min(...allDates.map(d => new Date(d))));
-  const maxDate = new Date(Math.max(...allDates.map(d => new Date(d))));
-  // Add padding so bars don't touch edges
-  minDate.setDate(minDate.getDate() - 3);
-  maxDate.setDate(maxDate.getDate() + 3);
-  const total = Math.max(1, (maxDate - minDate) / 86400000);
-  const todayOff = (new Date() - minDate) / 86400000;
-
-  const pct = (d) => {
-    if (!d) return 0;
-    return Math.max(0, Math.min(99, (new Date(d) - minDate) / 86400000 / total * 100));
-  };
-  const wPct = (s, e) => {
-    if (!s || !e) return 2;
-    const w = (new Date(e) - new Date(s)) / 86400000 / total * 100;
-    return Math.max(2, w);
-  };
-
-  const months = [];
-  let cur = new Date(minDate); cur.setDate(1);
-  while (cur <= maxDate) {
-    months.push({ label: cur.toLocaleDateString("tr-TR", { month:"short", year:"2-digit" }), pct: pct(cur.toISOString().slice(0,10)) });
-    cur.setMonth(cur.getMonth() + 1);
-  }
-
-  const labelW = compact ? 110 : 150;
-  const rowH = 28;
-  const bgs = ["#FFFFFF", "#F8FAFF"];
-
-  const barColor = (m) => {
-    const dl = delayLvl(m.dueDate, m.status);
-    if (m.status === "Tamamland\u0131") return "#059669";
-    if (dl === "critical") return "#E11D48";
-    if (dl === "normal") return "#EA6C00";
-    return project.color;
-  };
-
-  return (
-    <div style={{ overflowX:"auto" }}>
-      <div style={{ minWidth: 520 }}>
-        <div style={{ fontSize:10, color:"#94A3B8", marginBottom:8 }}>
-          Milestone tıklayın → hedeflenen/gerçekleşen + görev satırları
-        </div>
-        {/* Month labels */}
-        <div style={{ display:"flex", marginLeft:labelW, marginBottom:4, position:"relative", height:16 }}>
-          {months.map((m, i) => (
-            <div key={i} style={{ position:"absolute", left:`${m.pct}%`, fontSize:9, color:"#94A3B8", fontWeight:600, whiteSpace:"nowrap" }}>{m.label}</div>
-          ))}
-        </div>
-        {/* Today line header */}
-        <div style={{ display:"flex", marginLeft:labelW, marginBottom:2, position:"relative", height:2 }}>
-          <div style={{ flex:1, position:"relative", height:2, background:"#F1F5FF", borderRadius:1 }}>
-            {todayOff >= 0 && todayOff <= total && (
-              <div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:-2, bottom:-2, width:2, background:"#E11D48", opacity:0.5 }} />
-            )}
-          </div>
-        </div>
-
-        {ms.map((m, mi) => {
-          const s = m.startDate || project.startDate;
-          const e = m.dueDate;
-          if (!s || !e) return null;
-          const bc = barColor(m);
-          const done = m.tasks.filter(t => t.status === "Tamamland\u0131").length;
-          const isExp = expanded === m.id;
-
-          return (
-            <div key={m.id} style={{ marginBottom: isExp ? 2 : 3 }}>
-              {/* Milestone row */}
-              <div onClick={() => setExpanded(isExp ? null : m.id)}
-                style={{ display:"flex", alignItems:"center", padding:"2px 0", cursor:"pointer" }}>
-                <div style={{ width:labelW, flexShrink:0, fontSize:compact ? 10 : 11, fontWeight:700, paddingRight:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#1E293B" }} title={m.name}>
-                  {isExp ? "▾" : "▸"} {m.name}
-                </div>
-                <div style={{ flex:1, position:"relative", height:rowH, background: bgs[mi % 2], borderRadius:6, border:`1px solid #E8EDF5` }}>
-                  {/* Today line */}
-                  {todayOff >= 0 && todayOff <= total && (
-                    <div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:0, bottom:0, width:1.5, background:"#E11D48", zIndex:4, opacity:0.7 }} />
-                  )}
-                  {/* Planned bar (dashed outline) */}
-                  <div style={{
-                    position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`,
-                    top:4, height:rowH-8, background:bc+"22",
-                    border:`1.5px dashed ${bc}`, borderRadius:4, zIndex:1
-                  }} />
-                  {/* Actual bar (solid) - only if actual dates exist */}
-                  {m.actualStart && (
-                    <div style={{
-                      position:"absolute",
-                      left:`${pct(m.actualStart)}%`,
-                      width:`${wPct(m.actualStart, m.actualEnd || new Date().toISOString().slice(0,10))}%`,
-                      top:4, height:rowH-8, background:bc, borderRadius:4, zIndex:2, overflow:"hidden",
-                      display:"flex", alignItems:"center", justifyContent:"center"
-                    }}>
-                      <span title={`${fmt(m.actualStart)} → ${fmt(m.actualEnd||e)}`} style={{ display:"block",maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",fontSize:9, color:"#fff", fontWeight:700, padding:"0 4px", whiteSpace:"nowrap",textShadow:"0 1px 2px rgba(0,0,0,.45)" }}>
-                        {m.status === "Tamamland\u0131" ? "✓ " : ""}{fmt(e)}
-                      </span>
-                    </div>
-                  )}
-                  {/* If no actual, show solid planned bar with label */}
-                  {!m.actualStart && (
-                    <div style={{
-                      position:"absolute", left:`${pct(s)}%`, width:`${wPct(s,e)}%`,
-                      top:4, height:rowH-8, background:bc, borderRadius:4, zIndex:2, overflow:"hidden",
-                      display:"flex", alignItems:"center", justifyContent:"center"
-                    }}>
-                      <span title={`${fmt(s)} → ${fmt(e)}`} style={{ display:"block",maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",fontSize:9, color:"#fff", fontWeight:700, padding:"0 4px", whiteSpace:"nowrap",textShadow:"0 1px 2px rgba(0,0,0,.45)" }}>
-                        {m.status === "Tamamland\u0131" ? "✓ " : ""}{fmt(s)} → {fmt(e)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div style={{ width:50, textAlign:"right", paddingLeft:6, fontSize:10, color:"#94A3B8" }}>{done}/{m.tasks.length}</div>
-              </div>
-
-              {/* Expanded: comparison + tasks */}
-              {isExp && (
-                <div style={{ marginLeft:labelW, background:"#F0F6FF", borderRadius:"0 0 6px 6px", padding:"8px 8px 10px", border:"1px solid #D0E0FF", borderTop:"none", marginBottom:4 }}>
-                  <div style={{ fontSize:10, fontWeight:600, color:"#4A6CF7", marginBottom:8 }}>
-                    Hedef: {fmt(s)} → {fmt(e)} &nbsp;|&nbsp; {m.actualStart ? `Gerçekleşen: ${fmt(m.actualStart)} → ${fmt(m.actualEnd)||"devam"}` : "Gerçekleşen tarih girilmemiş (Milestone Düzenle)"}
-                  </div>
-                  {/* Task Gantt rows */}
-                  {m.tasks.filter(t => t.dueDate).length > 0 ? (
-                    <div>
-                      <div style={{ fontSize:9, fontWeight:600, color:"#4A6CF7", marginBottom:6, textTransform:"uppercase", letterSpacing:1 }}>Görev Planı</div>
-                      {m.tasks.filter(t => t.dueDate).map(t => {
-                        const tdl = delayLvl(t.dueDate, t.status);
-                        const tc = t.status === "Tamamland\u0131" ? "#059669" : tdl === "critical" ? "#E11D48" : tdl === "normal" ? "#EA6C00" : project.color;
-                        const hasRange = t.startDate && t.dueDate && new Date(t.startDate) < new Date(t.dueDate);
-                        const barLeft = hasRange ? pct(t.startDate) : Math.max(0, pct(t.dueDate) - 1);
-                        const barWidth = hasRange ? wPct(t.startDate, t.dueDate) : 2;
-                        const donePct = t.status === "Tamamland\u0131" ? 100 : 0;
-                        return (
-                          <div key={t.id} style={{ display:"flex", alignItems:"center", marginBottom:5 }}>
-                            <div style={{ width:140, flexShrink:0, fontSize:9, color:"#475569", paddingRight:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight: t.status==="Tamamland\u0131"?400:500 }} title={t.title}>
-                              {t.status==="Tamamland\u0131" ? "✓ " : ""}{t.title}
-                            </div>
-                            <div style={{ flex:1, position:"relative", height:20, background:"#fff", borderRadius:4, border:"1px solid #E8EDF5", overflow:"hidden" }}>
-                              {/* Today line */}
-                              {todayOff >= 0 && todayOff <= total && (
-                                <div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:0, bottom:0, width:1, background:"#E11D48", opacity:0.4, zIndex:3 }} />
-                              )}
-                              {/* Task bar background */}
-                              <div style={{
-                                position:"absolute",
-                                left:`${barLeft}%`,
-                                width:`${barWidth}%`,
-                                top:3, height:14,
-                                background: tc + "33",
-                                border:`1px solid ${tc}66`,
-                                borderRadius:4,
-                                zIndex:1,
-                                minWidth:4
-                              }} />
-                              {/* Progress fill */}
-                              {hasRange && donePct > 0 && (
-                                <div style={{
-                                  position:"absolute",
-                                  left:`${barLeft}%`,
-                                  width:`${barWidth * donePct / 100}%`,
-                                  top:3, height:14,
-                                  background: tc,
-                                  borderRadius:4,
-                                  zIndex:2
-                                }} />
-                              )}
-                              {/* If no range: diamond marker at due date */}
-                              {!hasRange && (
-                                <div style={{
-                                  position:"absolute",
-                                  left:`${pct(t.dueDate)}%`,
-                                  top:4, width:12, height:12,
-                                  background:tc,
-                                  transform:"translateX(-50%) rotate(45deg)",
-                                  zIndex:2,
-                                  borderRadius:2
-                                }} title={`${t.title}: ${fmt(t.dueDate)}`} />
-                              )}
-                              {/* Date label inside bar if wide enough */}
-                              {hasRange && barWidth > 8 && (
-                                <div style={{
-                                  position:"absolute",
-                                  left:`${barLeft}%`,
-                                  width:`${barWidth}%`,
-                                  top:3, height:14,
-                                  display:"flex", alignItems:"center", justifyContent:"center",
-                                  zIndex:3, pointerEvents:"none"
-                                }}>
-                                  <span style={{ fontSize:8, color: donePct>50?"#fff":tc, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden" }}>
-                                    {fmt(t.startDate)}→{fmt(t.dueDate)}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <div style={{ width:56, fontSize:8, color: tdl ? "#E11D48" : "#94A3B8", paddingLeft:5, whiteSpace:"nowrap", textAlign:"right" }}>
-                              {hasRange ? fmt(t.dueDate) : fmt(t.dueDate)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize:11, color:"#94A3B8" }}>Bu milestone'da tarihli görev yok.</div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Today label */}
-        {todayOff >= 0 && todayOff <= total && (
-          <div style={{ position:"relative", height:14, marginLeft:labelW }}>
-            <div style={{ position:"absolute", left:`${todayOff/total*100}%`, fontSize:9, color:"#E11D48", fontWeight:700, transform:"translateX(-50%)", whiteSpace:"nowrap" }}>▲ BUGÜN</div>
-          </div>
-        )}
-
-        {/* Legend */}
-        <div style={{ display:"flex", gap:14, marginTop:10, flexWrap:"wrap" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-            <div style={{ width:24, height:8, borderRadius:3, border:`1.5px dashed ${project.color}`, background:project.color+"22" }} />
-            <span style={{ fontSize:10, color:"#64748B" }}>Hedeflenen</span>
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-            <div style={{ width:24, height:8, borderRadius:3, background:project.color }} />
-            <span style={{ fontSize:10, color:"#64748B" }}>Gerçekleşen</span>
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-            <div style={{ width:2, height:16, background:"#E11D48", borderRadius:2 }} />
-            <span style={{ fontSize:10, color:"#64748B" }}>Bugün</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
 const GlobalStyle = () => (
@@ -1524,9 +1247,9 @@ export default function App() {
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" style={{ display:"none" }} onChange={handleImport} />
             </div>
           </div>
-          <GanttChart project={project} />
+          <SharedGanttChart project={project} />
           {/* Plan listesi - expandable */}
-          <PlanListTable project={project} people={state.people} />
+          <SharedPlanListTable project={project} people={state.people} />
           <div style={{ display:"flex", gap:12, marginTop:16, flexWrap:"wrap" }}>
             {[[project.color,"Devam Ediyor"],["#059669","Tamamlandı"],["#EA6C00","Gecikmiş"],["#E11D48","Kritik"]].map(([c,l])=><div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:12, height:8, borderRadius:3, background:c }} /><span style={{ fontSize:11, color:"#64748B" }}>{l}</span></div>)}
           </div>
@@ -1691,85 +1414,6 @@ export default function App() {
 
 
 // ─── Plan List Table ─────────────────────────────────────────────────────────
-function PlanListTable({ project, people }) {
-  const [expandedMs, setExpandedMs] = useState({});
-  const toggle = (id) => setExpandedMs(s => ({ ...s, [id]: !s[id] }));
-  const findName = (id) => people.find(p => p.id === id)?.name || "—";
-  const thStyle = { padding:"8px 12px", textAlign:"left", fontWeight:600, color:"#64748B", borderBottom:"1px solid #E2E8F0", fontSize:11 };
-  const tdStyle = (extra={}) => ({ padding:"8px 12px", borderBottom:"1px solid #F1F5FF", fontSize:12, ...extra });
-  const bgs = ["#FAFBFF", "#F5F9FF"];
-
-  // Flatten rows: milestone rows + optional task rows
-  const rows = [];
-  project.milestones.forEach((m, mi) => {
-    const done = m.tasks.filter(t => t.status === "Tamamlandı").length;
-    const pct = m.tasks.length ? Math.round(done / m.tasks.length * 100) : 0;
-    const isExp = !!expandedMs[m.id];
-    const bg = bgs[mi % 2];
-    rows.push(
-      <tr key={m.id} style={{ background: bg, cursor:"pointer" }} onClick={() => toggle(m.id)}>
-        <td style={{ ...tdStyle(), width:28, color:"#94A3B8", fontWeight:700 }}>{isExp ? "▾" : "▸"}</td>
-        <td style={{ ...tdStyle(), fontWeight:700 }}>{m.name}</td>
-        <td style={tdStyle({ color:"#64748B" })}>{fmt(m.startDate)}</td>
-        <td style={tdStyle({ color:"#64748B" })}>{fmt(m.dueDate)}</td>
-        <td style={tdStyle({ color: m.actualStart ? "#1E293B" : "#CBD5E1" })}>{fmt(m.actualStart) || "—"}</td>
-        <td style={tdStyle({ color: m.actualEnd ? "#1E293B" : "#CBD5E1" })}>{fmt(m.actualEnd) || "—"}</td>
-        <td style={tdStyle()}><Badge label={m.status} /></td>
-        <td style={tdStyle()}>
-          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <div style={{ width:60, height:6, background:"#E2E8F0", borderRadius:4 }}>
-              <div style={{ width:`${pct}%`, height:"100%", background: project.color, borderRadius:4 }} />
-            </div>
-            <span style={{ fontSize:11, color:"#64748B" }}>{done}/{m.tasks.length}</span>
-          </div>
-        </td>
-      </tr>
-    );
-    if (isExp) {
-      m.tasks.forEach(t => {
-        const dl = delayLvl(t.dueDate, t.status);
-        rows.push(
-          <tr key={t.id} style={{ background:"#F8FAFC" }}>
-            <td style={{ ...tdStyle(), color:"#CBD5E1" }}></td>
-            <td style={{ ...tdStyle(), paddingLeft:28 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ fontSize:11, color:"#1E293B" }}>{t.title}</span>
-                {t.link && (() => {
-                  const jm = String(t.link).match(/([A-Z][A-Z0-9]+-[0-9]+)/);
-                  return <a href={t.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize:10, color:"#0052CC", background:"#DEEBFF", borderRadius:4, padding:"1px 5px", fontWeight:700, textDecoration:"none" }}>{jm ? jm[1] : "Jira"}</a>;
-                })()}
-              </div>
-            </td>
-            <td style={tdStyle({ color:t.startDate?"#64748B":"#94A3B8" })}>{fmt(t.startDate)}</td>
-            <td style={tdStyle({ color: dl ? "#E11D48" : "#64748B" })}>{fmt(t.dueDate)}</td>
-            <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
-            <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
-            <td style={tdStyle()}><Badge label={t.status} /></td>
-            <td style={tdStyle({ color:"#64748B", fontSize:11 })}>{findName(t.assignee)}</td>
-          </tr>
-        );
-      });
-    }
-  });
-
-  return (
-    <div style={{ marginTop:24, background:"#fff", borderRadius:12, border:"1.5px solid #E2E8F0", overflow:"hidden" }}>
-      <div style={{ padding:"12px 16px", borderBottom:"1.5px solid #E2E8F0", fontWeight:700, fontSize:13 }}>Plan Listesi</div>
-      <div style={{ overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:600 }}>
-          <thead>
-            <tr style={{ background:"#F8FAFC" }}>
-              {["","Milestone / Görev","Hedef Başl.","Hedef Bitiş","Gerç. Başl.","Gerç. Bitiş","Durum","İlerleme"].map(h => (
-                <th key={h} style={thStyle}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>{rows}</tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 function UserEditModal({ person, people=[], roles=ORG_LEVELS, onClose, onSave, title="Profilimi Düzenle", allowAdmin=false }) {
   const [name, setName] = useState(person.name);
@@ -1813,7 +1457,7 @@ function AddProjectModal({ onClose, onSave, people, roles }) {
   const handleTplSelect=(tpl)=>{ setTplData(tpl); setF(s=>({...s,color:tpl.color})); setStep("form"); };
   const handleSave=()=>{ if(!f.name.trim())return; const built=tplData?buildFromTemplate(tplData,f.startDate||todayStr()):{milestones:[]}; onSave({...f,...built,risks:[]}); onClose(); };
   return <Modal title="Yeni Proje" onClose={onClose} wide>
-    {step==="template"&&<TemplatePicker onSelect={handleTplSelect} onSkip={()=>setStep("form")} />}
+    {step==="template"&&<SharedTemplatePicker templates={MES_TEMPLATES} onSelect={handleTplSelect} onSkip={()=>setStep("form")} />}
     {step==="form"&&<div>
       {tplData&&<div style={{ background:tplData.color+"15", border:`1.5px solid ${tplData.color}44`, borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:12 }}>
         <strong style={{ color:tplData.color }}>Sablon: {tplData.name}</strong>
