@@ -34,6 +34,11 @@ import {
   QuickTodoModal,
 } from "./ui/mobileComponents.jsx";
 import {
+  ProjectBusinessCard as SharedProjectBusinessCard,
+  ProjectListCard as SharedProjectListCard,
+} from "./ui/projectCards.jsx";
+import { MilestoneTaskPanel as SharedMilestoneTaskPanel } from "./ui/projectPlanComponents.jsx";
+import {
   PersonalTaskModal as SharedPersonalTaskModal,
   TaskCard as SharedTaskCard,
   TaskDetailModal as SharedTaskDetailModal,
@@ -2553,160 +2558,6 @@ function ResponsibilitySummary({project,selected=[],onChange}) {
   return <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,padding:13,marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:9}}><div><div style={{fontSize:12,fontWeight:850}}>Kalan İşin Sorumluluk Dağılımı</div><div style={{fontSize:9,color:"#94A3B8",marginTop:2}}>Bir veya birden fazla ekibe tıklayarak görevleri filtreleyin.</div></div>{selected.length>0&&<button onClick={()=>onChange([])} style={{border:0,background:"#FFF1F2",color:"#BE123C",borderRadius:7,padding:"5px 8px",fontSize:9,fontWeight:800,cursor:"pointer"}}>Filtreyi temizle</button>}</div>{items.length?<div style={{display:"grid",gap:7}}>{items.map((item,index)=><ResponsibilityFilterRow key={item.group} item={item} index={index} active={selected.includes(item.group)} onClick={()=>toggle(item.group)}/>)}</div>:<div style={{fontSize:11,color:"#059669"}}>Kalan görev bulunmuyor.</div>}</div>;
 }
 
-function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,progress,doneT,totalT,currentMs,readiness,commissioningPercent,overdueC,criticalC,canEdit,onChange,onOpenSetup}) {
-  const [editing,setEditing]=useState(false);
-  const [expanded,setExpanded]=useState(false);
-  const fileInput=useRef(null);
-  const customer=project.customerProfile||{};
-  const location=project.location||{city:"",district:"",address:""};
-  const modules=project.activeModules||[];
-  const customerName=customer.name||project.customerName||project.name;
-  const accent=customer.accentColor||project.color||"#4A6CF7";
-  const url=mapsUrl(location);
-  const updateCustomer=(data)=>onChange({customerProfile:{...customer,...data}});
-  const updateLocation=(key,value)=>onChange({location:{...location,[key]:value}});
-  const toggleModule=(module)=>onChange({activeModules:modules.includes(module)?modules.filter(item=>item!==module):[...modules,module]});
-  const uploadLogo=(file)=>{
-    if(!file)return;
-    const reader=new FileReader();
-    reader.onload=()=>updateCustomer({logoUrl:String(reader.result||"")});
-    reader.readAsDataURL(file);
-  };
-  const website=customer.website?customer.website.startsWith("http")?customer.website:`https://${customer.website}`:"";
-  return <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"8px clamp(10px,2vw,18px) 8px"}}>
-    <div onClick={()=>setExpanded(value=>!value)} style={{position:"relative",overflow:"hidden",borderRadius:16,background:`linear-gradient(135deg,#0F172A 0%,${accent} 58%,#111827 100%)`,color:"#fff",padding:"9px 12px",boxShadow:`0 10px 24px ${accent}24`,cursor:"pointer"}}>
-      <div style={{position:"absolute",right:-45,top:-75,width:145,height:145,borderRadius:"50%",background:"rgba(255,255,255,.10)"}}/>
-      <div style={{position:"relative",zIndex:1,display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:10,alignItems:"center"}}>
-        <button type="button" onClick={event=>{event.stopPropagation();canEdit&&fileInput.current?.click();}} title={canEdit?"Logo yükle":"Müşteri logosu"} style={{width:44,height:44,border:0,borderRadius:13,background:"rgba(255,255,255,.18)",display:"grid",placeItems:"center",overflow:"hidden",cursor:canEdit?"pointer":"default",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.24)"}}>
-          {customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"contain",background:"#fff",padding:6}}/>:<b style={{fontSize:26,color:"#fff"}}>{customerName.slice(0,2).toUpperCase()}</b>}
-        </button>
-        <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={event=>uploadLogo(event.target.files?.[0])}/>
-        <div style={{minWidth:0}}>
-          <h2 style={{margin:0,fontSize:"clamp(19px,2.45vw,25px)",lineHeight:1.08,letterSpacing:"-.02em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#fff",fontWeight:950,textShadow:"0 2px 12px rgba(0,0,0,.75)"}}>{customerName}</h2>
-          <div style={{marginTop:5,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",fontSize:10,color:"rgba(255,255,255,.82)",lineHeight:1.35}}>
-            {activePMs.length>0&&<span>PM: <b style={{color:"#fff"}}>{activePMs.map(p=>p.name).join(", ")}</b></span>}
-            {website&&<a href={website} target="_blank" rel="noreferrer" style={{color:"#fff",textDecoration:"none",fontWeight:850,maxWidth:190,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customer.website}</a>}
-            {expanded&&url&&<a href={url} target="_blank" rel="noreferrer" style={{color:"#fff",textDecoration:"none",fontWeight:850}}>Yol tarifi</a>}
-            {expanded&&modules.slice(0,5).map(module=><span key={module}>{module}</span>)}
-          </div>
-          {expanded&&<div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:8,fontSize:11,color:"rgba(255,255,255,.78)"}}>
-            {activeStakeholders.slice(0,3).map(item=><span key={item.id}>{item.role}: <b style={{color:"#fff"}}>{item.person.name}</b></span>)}
-            <span>{fmt(project.startDate)} - {fmt(project.endDate)}</span>
-            <span>{doneT}/{totalT} görev</span>
-            {currentMs&&<span>Aktif: <b style={{color:"#fff"}}>{currentMs.name}</b></span>}
-          </div>}
-        </div>
-        <div style={{display:"grid",gap:2,minWidth:70,justifyItems:"end"}}>
-          <b style={{fontSize:18,lineHeight:1}}>{progress}%</b>
-          <span style={{fontSize:9,color:"rgba(255,255,255,.75)",fontWeight:850}}>Tamamlama</span>
-          {expanded&&canEdit&&<button onClick={event=>{event.stopPropagation();setEditing(value=>!value);}} style={{border:0,background:"#fff",color:accent,borderRadius:9,padding:"5px 8px",fontSize:9,fontWeight:950,cursor:"pointer"}}>{editing?"Kapat":"Düzenle"}</button>}
-        </div>
-      </div>
-      {expanded&&totalT>0&&<div style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",gap:9,marginTop:10}}><div style={{flex:1,height:5,background:"rgba(255,255,255,.2)",borderRadius:10,overflow:"hidden"}}><div style={{width:`${progress}%`,height:"100%",background:"#fff",borderRadius:10}}/></div><span style={{fontSize:10,fontWeight:900}}>{progress}%</span></div>}
-    </div>
-    <button onClick={()=>setExpanded(value=>!value)} title={expanded?"Daralt":"Detayları aç"} style={{display:"grid",placeItems:"center",width:28,height:18,margin:"-2px auto 0",border:0,borderRadius:"0 0 10px 10px",background:"#F1F5F9",color:accent,cursor:"pointer",fontSize:13,fontWeight:950,lineHeight:1}}>{expanded?"⌃":"⌄"}</button>
-    {expanded&&<div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:7,fontSize:11}}>
-      <button onClick={onOpenSetup} style={{border:0,background:readiness>=Number(project.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readiness>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:12,padding:"5px 9px",fontSize:11,fontWeight:850,cursor:"pointer"}}>Başlangıç: {readiness}/100</button>
-      {commissioningPercent!==null&&<span style={{background:"#ECFDF5",color:"#047857",borderRadius:12,padding:"5px 9px",fontWeight:850}}>Devreye Alma: %{commissioningPercent}</span>}
-      {overdueC>0&&<span style={{background:"#FFF7ED",color:"#EA6C00",borderRadius:12,padding:"5px 9px",fontWeight:850}}>Gecikmiş: {overdueC}</span>}
-      {criticalC>0&&<span style={{background:"#FFF1F2",color:"#E11D48",borderRadius:12,padding:"5px 9px",fontWeight:850}}>Kritik: {criticalC}</span>}
-      {contacts.slice(0,3).map(contact=><span key={contact.id} style={{background:"#F0F9FF",color:"#0369A1",borderRadius:12,padding:"5px 9px",fontWeight:800}}>{contact.name}{contact.title?` · ${contact.title}`:""}</span>)}
-    </div>}
-    {expanded&&editing&&canEdit&&<div style={{marginTop:10,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:16,padding:13,display:"grid",gap:10}}>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:9}}>
-        <Field label="Müşteri Adı"><input style={iStyle} value={customer.name||""} onChange={event=>updateCustomer({name:event.target.value})} placeholder="Firma adı"/></Field>
-        <Field label="Web Adresi"><input style={iStyle} value={customer.website||""} onChange={event=>updateCustomer({website:event.target.value})} placeholder="https://firma.com"/></Field>
-        <Field label="Logo URL"><input style={iStyle} value={(customer.logoUrl||"").startsWith("data:")?"":customer.logoUrl||""} onChange={event=>updateCustomer({logoUrl:event.target.value})} placeholder="https://.../logo.png"/></Field>
-        <Field label="Kart Rengi"><input type="color" style={{...iStyle,padding:4,height:42}} value={accent} onChange={event=>updateCustomer({accentColor:event.target.value})}/></Field>
-        <Field label="İl"><input style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)}/></Field>
-        <Field label="İlçe"><input style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)}/></Field>
-        <Field label="Adres"><input style={iStyle} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Açık adres"/></Field>
-      </div>
-      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{DEFAULT_ACTIVE_MODULES.map(module=><button key={module} onClick={()=>toggleModule(module)} style={{border:"1px solid "+(modules.includes(module)?accent:"#E2E8F0"),background:modules.includes(module)?accent+"18":"#fff",color:modules.includes(module)?accent:"#64748B",borderRadius:999,padding:"7px 10px",fontSize:10,fontWeight:850,cursor:"pointer"}}>{module}</button>)}</div>
-    </div>}
-  </div>;
-}
-
-function ProjectListCard({project,people,isAdmin,onOpen,onEdit,onReport,onDelete}) {
-  const total=project.milestones.reduce((a,m)=>a+m.tasks.length,0);
-  const done=project.milestones.reduce((a,m)=>a+m.tasks.filter(t=>t.status==="Tamamlandı").length,0);
-  const progress=total?Math.round(done/total*100):0;
-  const overdue=project.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,0);
-  const critical=project.milestones.reduce((a,m)=>a+m.tasks.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length,0);
-  const pms=projectPmIds(project).map(id=>people.find(person=>person.id===id)).filter(Boolean);
-  const stakeholders=projectStakeholders(project).map(item=>({...item,person:people.find(person=>person.id===item.userId)})).filter(item=>item.person);
-  const activeMs=project.milestones.find(milestone=>milestone.status!=="Tamamlandı");
-  const customer=project.customerProfile||{};
-  const customerName=customer.name||project.customerName||project.name;
-  const accent=customer.accentColor||project.color;
-  const website=customer.website?customer.website.startsWith("http")?customer.website:`https://${customer.website}`:"";
-  return <div onClick={onOpen}
-    style={{background:"#fff",borderRadius:16,border:"1px solid #E2E8F0",cursor:"pointer",boxShadow:"0 2px 6px rgba(0,0,0,0.04)",overflow:"hidden",transition:"box-shadow .15s, transform .15s"}}
-    onMouseEnter={event=>{event.currentTarget.style.boxShadow="0 6px 16px rgba(0,0,0,0.1)";event.currentTarget.style.transform="translateY(-2px)";}}
-    onMouseLeave={event=>{event.currentTarget.style.boxShadow="0 2px 6px rgba(0,0,0,0.04)";event.currentTarget.style.transform="none";}}>
-    <div style={{background:`linear-gradient(135deg,#0F172A 0%,${accent} 62%,#111827 100%)`,color:"#fff",padding:"12px 13px",display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:10,alignItems:"center"}}>
-      <span style={{width:42,height:42,borderRadius:12,background:"#fff",display:"grid",placeItems:"center",overflow:"hidden",boxShadow:"0 6px 18px rgba(0,0,0,.18)"}}>{customer.logoUrl?<img src={customer.logoUrl} alt="" style={{width:"100%",height:"100%",objectFit:"contain",padding:5}}/>:<b style={{fontSize:16,color:accent}}>{customerName.slice(0,2).toUpperCase()}</b>}</span>
-      <span style={{minWidth:0}}><h3 style={{margin:0,fontSize:18,fontWeight:950,lineHeight:1.12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#fff",textShadow:"0 2px 12px rgba(0,0,0,.75)"}}>{customerName}</h3><span style={{display:"flex",gap:8,marginTop:5,fontSize:10,color:"rgba(255,255,255,.86)",overflow:"hidden"}}>{pms.length>0&&<span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>PM: <b style={{color:"#fff"}}>{pms.map(pm=>pm.name).join(", ")}</b></span>}{website&&<a href={website} target="_blank" rel="noreferrer" onClick={event=>event.stopPropagation()} style={{color:"#fff",fontWeight:850,textDecoration:"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{customer.website}</a>}</span></span>
-      <span style={{fontSize:18,fontWeight:950,textAlign:"right"}}>{progress}%</span>
-    </div>
-    <div style={{padding:13}}>
-      <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><span style={{fontSize:11,color:"#64748B",fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{project.name}</span><Badge label={project.status}/></div>
-      {activeMs&&<div style={{fontSize:11,color:"#4A6CF7",marginBottom:7,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Aktif: {activeMs.name} - {fmt(activeMs.dueDate)}</div>}
-      <div style={{display:"flex",gap:7,marginBottom:8,flexWrap:"wrap"}}>
-        <span style={{color:readinessScore(project)>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",fontSize:10,fontWeight:850}}>Başlangıç {readinessScore(project)}/100</span>
-        {overdue>0&&<span style={{color:"#EA6C00",fontSize:10,fontWeight:800}}>Gecikmiş: {overdue}</span>}
-        {critical>0&&<span style={{color:"#E11D48",fontSize:10,fontWeight:800}}>Kritik: {critical}</span>}
-        {stakeholders.slice(0,2).map(item=><span key={item.id} style={{fontSize:10,color:"#64748B"}}>{item.role}: {item.person.name}</span>)}
-      </div>
-      <div style={{height:4,background:"#F1F5FF",borderRadius:10}}><div style={{width:`${progress}%`,height:"100%",background:accent,borderRadius:10}}/></div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginTop:7}}>
-        <div style={{fontSize:11,color:"#64748B"}}>{done}/{total} görev</div>
-        {isAdmin&&<div style={{display:"flex",gap:4}}>
-          {[["edit","#EEF2FF","#4A6CF7",onEdit,"Düzenle"],["download","#ECFDF5","#059669",onReport,"HTML rapor"],["trash","#FFF1F2","#E11D48",onDelete,"Sil"]].map(([icon,bg,color,action,title])=><button key={icon} title={title} aria-label={title} onClick={event=>{event.stopPropagation();action();}} style={{width:28,height:28,border:0,borderRadius:7,background:bg,color,display:"grid",placeItems:"center",cursor:"pointer"}}><Icon name={icon} size={13}/></button>)}
-        </div>}
-      </div>
-    </div>
-  </div>;
-}
-
-function MilestoneTaskPanel({ milestone, project, people, isAdmin, showDone, setShowDone, onEdit, onDelete, onAddTask, onEditTask, onDeleteTask, onCheckTask, onTimeTask }) {
-  const active=milestone.tasks.filter(t=>t.status!=="Tamamland\u0131");
-  const done=milestone.tasks.filter(t=>t.status==="Tamamland\u0131");
-  return <div>
-    <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:13, flexWrap:"wrap" }}>
-      <h3 style={{ margin:0, fontSize:15, fontWeight:800 }}>{milestone.name}</h3>
-      <Badge label={milestone.status} /><DelayBadge dateStr={milestone.dueDate} status={milestone.status} />
-      {milestone.waitSource&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Bekliyor: {milestone.waitSource}</span>}
-      <div style={{ marginLeft:"auto", display:"flex", gap:5 }}>
-        {isAdmin&&<><Btn small variant="secondary" onClick={()=>onEdit(milestone)}>Duzenle</Btn><Btn small variant="danger" onClick={()=>onDelete(milestone.id)}>Sil</Btn><Btn small onClick={()=>onAddTask(milestone.id)}>+ Görev</Btn></>}
-      </div>
-    </div>
-    {active.length===0&&done.length===0&&<div style={{ textAlign:"center", padding:"28px", color:"#94A3B8", fontSize:12 }}>Görev yok.</div>}
-    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-      {active.map(task=><SharedTaskCard key={task.id} task={task} people={people} projectColor={project.color} canEdit={isAdmin} formatDate={fmt} formatFullDate={fmtFull}
-        onCheck={(c)=>onCheckTask(milestone.id,task.id,c)}
-        onEdit={isAdmin?()=>onEditTask(milestone.id,task):null}
-        onDelete={isAdmin?()=>onDeleteTask(milestone.id,task.id):null}
-        onTime={()=>onTimeTask(milestone.id,task)}
-      />)}
-    </div>
-    {done.length>0&&<div style={{ marginTop:12 }}>
-      <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, padding:"0 0 7px", display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({done.length})</button>
-      {showDone&&<div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-        {done.map(task=><SharedTaskCard key={task.id} task={task} people={people} projectColor={project.color} canEdit={isAdmin} formatDate={fmt} formatFullDate={fmtFull}
-          onCheck={(c)=>onCheckTask(milestone.id,task.id,c)}
-          onEdit={isAdmin?()=>onEditTask(milestone.id,task):null}
-          onDelete={isAdmin?()=>onDeleteTask(milestone.id,task.id):null}
-          onTime={()=>onTimeTask(milestone.id,task)}
-        />)}
-      </div>}
-    </div>}
-  </div>;
-}
-
-// ─── Main App ────────────────────────────────────────────────────────────────
-
-// ─── Project Notes Panel ───────────────────────────────────────────────────
 function ProjectNotesPanel({ project, currentUser, state, setState, isAdmin, canManage }) {
   const [section,setSection]=useState("notes");
   // Shared project notes (admin can edit, others view)
@@ -4106,7 +3957,7 @@ export default function App() {
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <ProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={project.customerContacts||[]} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>setProjectTab("setup")}/>
+        <SharedProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={project.customerContacts||[]} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>setProjectTab("setup")} formatDate={fmt} mapsUrlForLocation={mapsUrl} moduleOptions={DEFAULT_ACTIVE_MODULES}/>
         <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:isMobile?"8px clamp(12px,2.2vw,22px) 10px":"0 clamp(12px,2.2vw,22px) 10px"}}>
           <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:3,scrollbarWidth:"thin"}}>
             {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje Planı"],["tasks","tasks","Görevler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{padding:"7px 11px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:600,fontSize:12,background:projectTab===id?(project.customerProfile?.accentColor||project.color):"#F1F5FF",color:projectTab===id?"#fff":"#64748B",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",flexShrink:0}}><Icon name={icon} size={14}/>{label}</button>)}
@@ -4147,7 +3998,7 @@ export default function App() {
             <button onClick={()=>{setSelMilestone(open?null:ms.id);setShowDoneTasks(false);}} style={{width:"100%",border:"none",background:open?project.color+"0D":"#fff",padding:"13px 15px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",fontFamily:"inherit"}}>
               <span style={{color:project.color,display:"flex"}}><Icon name="tasks" size={17}/></span><div style={{flex:1,minWidth:0}}><div style={{fontWeight:800,fontSize:13}}>{ms.name}</div><div style={{fontSize:11,color:"#64748B",marginTop:3}}>{fmt(ms.startDate)} - {fmt(ms.dueDate)} · {done}/{visibleTasks.length} tamamlandı</div></div><Badge label={ms.status}/><span style={{fontSize:17,color:"#64748B"}}>{open?"−":"+"}</span>
             </button>
-            {open&&<div style={{padding:"13px 15px",borderTop:"1px solid #E2E8F0"}}><MilestoneTaskPanel milestone={filteredMilestone} project={project} people={state.people} isAdmin={isAdmin} showDone={showDoneTasks} setShowDone={setShowDoneTasks} onEdit={(item)=>setModal({type:"editMilestone",data:item})} onDelete={(id)=>{if(confirm("Silinsin mi?"))deleteMilestone(id);}} onAddTask={(msId)=>setModal({type:"addTask",msId})} onEditTask={(msId,task)=>setModal({type:"editTask",msId,data:task})} onDeleteTask={(msId,taskId)=>{if(confirm("Silinsin mi?"))deleteTask(msId,taskId);}} onCheckTask={(msId,taskId,c)=>updateTask(msId,taskId,{status:c?"Tamamland\u0131":"Bekliyor"})} onTimeTask={(msId,task)=>setModal({type:"timeLog",msId,data:task})}/></div>}
+            {open&&<div style={{padding:"13px 15px",borderTop:"1px solid #E2E8F0"}}><SharedMilestoneTaskPanel milestone={filteredMilestone} project={project} people={state.people} isAdmin={isAdmin} showDone={showDoneTasks} setShowDone={setShowDoneTasks} onEdit={(item)=>setModal({type:"editMilestone",data:item})} onDelete={(id)=>{if(confirm("Silinsin mi?"))deleteMilestone(id);}} onAddTask={(msId)=>setModal({type:"addTask",msId})} onEditTask={(msId,task)=>setModal({type:"editTask",msId,data:task})} onDeleteTask={(msId,taskId)=>{if(confirm("Silinsin mi?"))deleteTask(msId,taskId);}} onCheckTask={(msId,taskId,c)=>updateTask(msId,taskId,{status:c?"Tamamland\u0131":"Bekliyor"})} onTimeTask={(msId,task)=>setModal({type:"timeLog",msId,data:task})} formatDate={fmt} formatFullDate={fmtFull}/></div>}
           </div>;})}
           {!project.milestones.length&&<div style={{padding:40,textAlign:"center",color:"#94A3B8",border:"1.5px dashed #CBD5E1",borderRadius:12}}>Milestone yok.</div>}
         </div>}
@@ -4210,7 +4061,7 @@ export default function App() {
         {projectViewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,marginBottom:14}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:980}}><thead><tr>{["Proje","Müşteri","PM","Durum","İlerleme","Görev","Gecikme","Ticket","Makine"].map(label=><th key={label} style={{padding:"11px 10px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{listedProjects.map(project=>{const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);const done=tasks.filter(task=>task.status==="Tamamlandı").length;const progress=tasks.length?Math.round(done/tasks.length*100):0;const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];const pms=projectPmIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");return <tr key={project.id} onClick={()=>setExpandedProjectRows(current=>({...current,[project.id]:!current[project.id]}))} style={{borderTop:"1px solid #EEF2F7",cursor:"pointer"}}><td style={{padding:10,fontSize:12,fontWeight:850}}>{project.name}</td><td style={{padding:10,fontSize:11,color:"#64748B"}}>{project.customerProfile?.name||project.customerName||"-"}</td><td style={{padding:10,fontSize:11,color:"#475569"}}>{pms||"-"}</td><td style={{padding:10}}><Badge label={project.status}/></td><td style={{padding:10,fontSize:11,fontWeight:850,color:project.color}}>%{progress}</td><td style={{padding:10,fontSize:11}}>{done}/{tasks.length}</td><td style={{padding:10,fontSize:11,color:delayed?"#E11D48":"#64748B",fontWeight:delayed?850:600}}>{delayed}</td><td style={{padding:10,fontSize:11}}>{((state.projectTickets||{})[project.id]||[]).length}</td><td style={{padding:10,fontSize:11}}>{machines.filter(machine=>machine.commissioned).length}/{machines.length}</td></tr>;})}</tbody></table></div>}
         {projectViewMode==="list"&&listedProjects.filter(project=>expandedProjectRows[project.id]).map(project=><div key={`ms-${project.id}`} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:14,padding:12,margin:"-4px 0 14px"}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><b style={{fontSize:12}}>{project.name} · Milestonelar</b><Btn small onClick={()=>{setSelProject(project.id);setSelMilestone(null);setProjectTab("setup");}}>Projeyi Aç</Btn></div><div style={{display:"grid",gap:7}}>{project.milestones.map(milestone=>{const tasks=milestone.tasks||[];const done=tasks.filter(task=>task.status==="Tamamlandı").length;return <div key={milestone.id} style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto auto",gap:8,alignItems:"center",background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"9px 10px"}}><span style={{minWidth:0,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{milestone.name}</span><span style={{fontSize:10,color:"#64748B"}}>{done}/{tasks.length}</span><Badge label={milestone.status}/></div>;})}</div></div>)}
         <div style={{ display:projectViewMode==="cards"?"grid":"none", gridTemplateColumns:"repeat(auto-fill,minmax(265px,1fr))", gap:13 }}>
-          {listedProjects.map(p=><ProjectListCard key={p.id} project={p} people={state.people} isAdmin={isAdmin} onOpen={()=>{setSelProject(p.id);setSelMilestone(null);setProjectTab("setup");}} onEdit={()=>setModal({type:"editProject",data:p})} onReport={()=>generateHTMLReport(p,state.people,state.logs)} onDelete={()=>confirm("Projeyi sil?")&&deleteProject(p.id)}/>)}
+          {listedProjects.map(p=><SharedProjectListCard key={p.id} project={p} people={state.people} isAdmin={isAdmin} onOpen={()=>{setSelProject(p.id);setSelMilestone(null);setProjectTab("setup");}} onEdit={()=>setModal({type:"editProject",data:p})} onReport={()=>generateHTMLReport(p,state.people,state.logs)} onDelete={()=>confirm("Projeyi sil?")&&deleteProject(p.id)} formatDate={fmt} readinessScoreForProject={readinessScore}/>)}
           {false&&listedProjects.map(p=>{
             const total=p.milestones.reduce((a,m)=>a+m.tasks.length,0);
             const done=p.milestones.reduce((a,m)=>a+m.tasks.filter(t=>t.status==="Tamamland\u0131").length,0);
