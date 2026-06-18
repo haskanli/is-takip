@@ -11,6 +11,9 @@ export const CUSTOMER_VISIBLE_SETUP_SECTIONS = new Set([
 export const isCustomerUser = (user = {}) =>
   user.userType === "customer" || user.roleKey === "customer_viewer";
 
+export const customerAccessKeysForProject = (project = {}) =>
+  [project.id, project.customerId].filter(Boolean);
+
 export const customerNameForProject = (project = {}, customers = []) => {
   const linked = customers.find((customer) => customer.id === project.customerId);
   return linked?.name || project.customerProfile?.name || project.customerName || project.name;
@@ -29,7 +32,9 @@ export const customerProfileForProject = (project = {}, customers = []) => {
 };
 
 export const canCustomerAccessProject = (user = {}, project = {}) =>
-  isCustomerUser(user) && user.customerId && project.customerId === user.customerId;
+  isCustomerUser(user) &&
+  user.customerId &&
+  customerAccessKeysForProject(project).includes(user.customerId);
 
 export const visibleTicketsForUser = (tickets = [], user = {}) => {
   if (!isCustomerUser(user)) return tickets;

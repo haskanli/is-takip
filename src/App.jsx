@@ -206,7 +206,7 @@ export default function App() {
   const [ticketMineOnly,setTicketMineOnly]=useState(Boolean(initialRoute.ticketMineOnly));
   const [taskToOpen,setTaskToOpen]=useState("");
   const [responsibilityFilters,setResponsibilityFilters]=useState([]);
-  const [previewCustomerId,setPreviewCustomerId]=useState("");
+  const [previewCustomerProjectId,setPreviewCustomerProjectId]=useState("");
   const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<768);
   const [authSession,setAuthSession]=useState(null);
   const [authReady,setAuthReady]=useState(!REQUIRE_AUTH);
@@ -339,9 +339,9 @@ export default function App() {
 
   const currentUser=state.people.find(p=>p.id===state.currentUserId);
   const isAdmin=currentUser?.isAdmin||false;
-  const customerPreview=previewCustomerId?(state.customers||[]).find(customer=>customer.id===previewCustomerId):null;
-  const customerView=Boolean(currentUser&&(isCustomerUser(currentUser)||customerPreview));
-  const effectiveCustomerId=customerPreview?.id||currentUser?.customerId||"";
+  const customerPreviewProject=previewCustomerProjectId?state.projects.find(project=>project.id===previewCustomerProjectId):null;
+  const customerView=Boolean(currentUser&&(isCustomerUser(currentUser)||customerPreviewProject));
+  const effectiveCustomerId=customerPreviewProject?.id||currentUser?.customerId||"";
   const useAdminHome=isAdmin&&currentUser?.defaultDashboard==="admin";
   const tenantProfile=resolveTenantProfile(state.tenantProfile);
   useEffect(()=>{
@@ -365,6 +365,7 @@ export default function App() {
     const routeProject=state.projects.find(item=>item.id===selProject);
     const allowedProject=routeProject&&(
       !customerView||
+      routeProject.id===effectiveCustomerId||
       routeProject.customerId===effectiveCustomerId||
       canCustomerAccessProject(currentUser,routeProject)
     );
@@ -467,7 +468,7 @@ export default function App() {
 
   // Project visibility filter
   const visibleProjects=customerView
-    ? state.projects.filter(project=>project.customerId===effectiveCustomerId||canCustomerAccessProject(currentUser,project))
+    ? state.projects.filter(project=>project.id===effectiveCustomerId||project.customerId===effectiveCustomerId||canCustomerAccessProject(currentUser,project))
     : state.projects;
   const myProjects=customerView?visibleProjects:state.projects.filter(p=>projectPmIds(p).includes(currentUser.id)||projectStakeholders(p).some(item=>item.userId===currentUser.id)||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
   const listedProjects=(projectScope==="mine"?myProjects:visibleProjects)
@@ -821,9 +822,9 @@ export default function App() {
 
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:isMobile?82:0 }}>
-      {customerPreview&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,background:"#EEF2FF",color:"#3730A3",borderBottom:"1px solid #C7D2FE",padding:"9px 14px",fontSize:12,fontWeight:850}}>
-        <span>Müşteri görünümü: {customerPreview.name}</span>
-        <button onClick={()=>{setPreviewCustomerId("");setView("customers");setSelProject(null);}} style={{border:0,borderRadius:8,background:"#fff",color:"#4338CA",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>Yöneticiye Dön</button>
+      {customerPreviewProject&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,background:"#EEF2FF",color:"#3730A3",borderBottom:"1px solid #C7D2FE",padding:"9px 14px",fontSize:12,fontWeight:850}}>
+        <span>Müşteri görünümü: {customerPreviewProject.customerProfile?.name||customerPreviewProject.customerName||customerPreviewProject.name}</span>
+        <button onClick={()=>{setPreviewCustomerProjectId("");setView("customers");setSelProject(null);}} style={{border:0,borderRadius:8,background:"#fff",color:"#4338CA",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>Yöneticiye Dön</button>
       </div>}
       {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(isMobile?<SharedMobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>:<SharedDashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>)}
       {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<SharedManagementWorkspace state={state} setState={setState} currentUser={currentUser} initialSection={adminSection} onNavigate={v=>{if(v==="dashboard"||v==="admin")setAdminSection("overview");setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})} onAddPerson={()=>setModal({type:"addPerson"})} onAssignTask={saveAdminAssignedTask}/>}
@@ -984,7 +985,7 @@ export default function App() {
       {view==="deadlines"&&<SharedDeadlinePage warnings={deadlineWarnings} people={state.people} onOpenTask={id=>{setTaskToOpen(id);setView("mytasks");setSelProject(null);}} onOpenTodos={()=>setView("todos")}/>}
       {view==="tickets"&&<SharedTicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} initialMine={ticketMineOnly} generateTicketStatusReport={generateTicketStatusReport}/>}
       {view==="reports"&&<SharedReportsPage state={state} people={state.people} isAdmin={isAdmin} />}
-      {view==="customers"&&isAdmin&&!selProject&&<SharedCustomersPage state={state} setState={setState} onInviteUser={addPerson} onPreviewCustomer={customerId=>{setPreviewCustomerId(customerId);setView("projects");setProjectScope("all");setSelProject(null);}}/>}
+      {view==="customers"&&isAdmin&&!selProject&&<SharedCustomersPage state={state} setState={setState} onInviteUser={addPerson} onPreviewCustomer={projectId=>{setPreviewCustomerProjectId(projectId);setView("projects");setProjectScope("all");setSelProject(projectId);setProjectTab("setup");}}/>}
 
       {view==="people"&&<div style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>

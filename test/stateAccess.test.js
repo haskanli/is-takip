@@ -12,7 +12,7 @@ const state = {
     { id: "member", name: "Member" },
     { id: "other", name: "Other" },
     { id: "product", name: "Product", ticketOnly: true },
-    { id: "cust-user", name: "Customer", userType: "customer", roleKey: "customer_viewer", customerId: "cust1" },
+    { id: "cust-user", name: "Customer", userType: "customer", roleKey: "customer_viewer", customerId: "p1" },
   ],
   customers: [{ id: "cust1", name: "Customer A" }],
   projects: [
@@ -65,7 +65,7 @@ const state = {
   projectTickets: {
     p1: [
       { id: "ticket1", assignedTo: "member", title: "Mine" },
-      { id: "ticket-customer", title: "Visible to customer", customerVisible: true, customerId: "cust1" },
+      { id: "ticket-customer", title: "Visible to customer", customerVisible: true, customerId: "p1" },
     ],
     p2: [{ id: "ticket2", assignedTo: "other", title: "Hidden" }],
   },
@@ -190,7 +190,7 @@ test("customer can add a new customer ticket but cannot edit project data", () =
   const added = merged.projectTickets.p1.find((ticket) => ticket.id === "ticket-new-customer");
   assert.equal(added.source, "customer");
   assert.equal(added.customerVisible, true);
-  assert.equal(added.customerId, "cust1");
+  assert.equal(added.customerId, "p1");
   assert.equal(added.author, "Customer");
 });
 

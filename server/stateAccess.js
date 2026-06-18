@@ -51,6 +51,8 @@ const isCustomerProfile = (profile, person) =>
 const profileCustomerId = (profile, person) =>
   profile?.customer_id || profile?.customerId || person?.customerId || "";
 
+const customerProjectKeys = (project) => [project?.id, project?.customerId].filter(Boolean);
+
 const sanitizeCustomerProject = (project) => ({
   id: project.id,
   name: project.name,
@@ -93,7 +95,7 @@ export const filterStateForProfile = (state, profile) => {
   if (isCustomerProfile(profile, person)) {
     const customerId = profileCustomerId(profile, person);
     const projects = (safeState.projects || [])
-      .filter((project) => project.customerId === customerId)
+      .filter((project) => customerProjectKeys(project).includes(customerId))
       .map(sanitizeCustomerProject);
     const projectIds = new Set(projects.map((project) => project.id));
     return {
@@ -288,7 +290,7 @@ export const mergeStateForProfile = (current, incoming, profile) => {
     const customerId = profileCustomerId(profile, person);
     const customerProjectIds = new Set(
       (current.projects || [])
-        .filter((project) => project.customerId === customerId)
+        .filter((project) => customerProjectKeys(project).includes(customerId))
         .map((project) => project.id),
     );
     const resultTickets = clone(current.projectTickets || {});
@@ -303,7 +305,7 @@ export const mergeStateForProfile = (current, incoming, profile) => {
           ...clone(ticket),
           source: "customer",
           customerVisible: true,
-          customerId,
+          customerId: projectId,
           author: profile.name,
           createdBy: legacyId,
           assignedTo: "",

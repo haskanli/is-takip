@@ -62,7 +62,7 @@ export function TicketsPage({state,setState,currentUser,isAdmin,initialMine=fals
     const createdAt=now();
     const project=state.projects.find(item=>item.id===projectId);
     const customerTicket=isCustomerUser(currentUser);
-    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?currentUser.customerId:data.customerId||project?.customerId||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
+    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?projectId:data.customerId||project?.customerId||projectId||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
     save(projectId,[...((state.projectTickets||{})[projectId]||[]),ticket]);
     if(customerTicket){
       const pmIds=[...(project?.pmIds||[]),project?.pm].filter(Boolean);
@@ -120,7 +120,7 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin })
   const addTicket=async(data)=>{
     const createdAt=now();
     const customerTicket=isCustomerUser(currentUser);
-    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?currentUser.customerId:data.customerId||project.customerId||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
+    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?project.id:data.customerId||project.customerId||project.id||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
     saveTickets([...allTickets,ticket]);
     if(customerTicket){
       const pmIds=[...(project.pmIds||[]),project.pm].filter(Boolean);

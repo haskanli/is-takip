@@ -128,7 +128,7 @@ const canAccessProject = (state, profile, projectId) => {
   const customerId = profile.customer_id || profile.customerId || person?.customerId || "";
   if (
     customerId &&
-    project.customerId === customerId &&
+    [project.id, project.customerId].filter(Boolean).includes(customerId) &&
     (person?.userType === "customer" || person?.roleKey === "customer_viewer" || profile.role_key === "customer_viewer")
   ) return true;
   if ([...(project.pmIds || []), project.pm].filter(Boolean).includes(profile.legacy_id)) return true;
@@ -364,6 +364,7 @@ const handleCreateTicket = async (request, response, auth) => {
   let customerTicketNotification = { sent: false, reason: "Ticket source is not customer" };
   if (ticket.source === "customer") {
     const customer = (state.customers || []).find((item) => item.id === ticket.customerId);
+    const projectCustomerName = project.customerProfile?.name || project.customerName || project.name;
     const pmIds = [...new Set([...(project.pmIds || []), project.pm].filter(Boolean))];
     const recipients = pmIds
       .map((id) => state.people?.find((person) => person.id === id))
@@ -375,7 +376,7 @@ const handleCreateTicket = async (request, response, auth) => {
           recipient,
           ticket,
           project,
-          customerName: customer?.name || ticket.customer || "",
+          customerName: customer?.name || ticket.customer || projectCustomerName,
         });
         results.push({ userId: recipient.id, sent: !slack.skipped, messageId: slack.id || null });
       } catch (error) {
