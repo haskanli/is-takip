@@ -1028,7 +1028,8 @@ function SlackLogo({ size=22 }) {
 
 function AuthLoginScreen() {
   const [email,setEmail]=useState("");
-  const [showEmail,setShowEmail]=useState(false);
+  const [password,setPassword]=useState("");
+  const [showAlternatives,setShowAlternatives]=useState(false);
   const [status,setStatus]=useState({loading:false,message:"",error:false});
   const slackLogin=async()=>{
     setStatus({loading:true,message:"",error:false});
@@ -1041,45 +1042,92 @@ function AuthLoginScreen() {
     });
     if(error)setStatus({loading:false,message:error.message,error:true});
   };
-  const submit=async()=>{
+  const passwordLogin=async()=>{
     const value=email.trim().toLowerCase();
-    if(!value)return;
+    if(!value||!password){setStatus({loading:false,message:"E-posta ve \u015fifre girin.",error:true});return;}
+    setStatus({loading:true,message:"",error:false});
+    const {error}=await supabase.auth.signInWithPassword({email:value,password});
+    setStatus(error
+      ?{loading:false,message:error.message,error:true}
+      :{loading:false,message:"Giri\u015f ba\u015far\u0131l\u0131, y\u00f6nlendiriliyorsunuz...",error:false});
+  };
+  const sendResetLink=async()=>{
+    const value=email.trim().toLowerCase();
+    if(!value){setStatus({loading:false,message:"\u00d6nce e-posta adresinizi yaz\u0131n.",error:true});return;}
+    setStatus({loading:true,message:"",error:false});
+    const {error}=await supabase.auth.resetPasswordForEmail(value,{redirectTo:`${window.location.origin}/`});
+    setStatus(error
+      ?{loading:false,message:error.message,error:true}
+      :{loading:false,message:"\u015eifre belirleme/s\u0131f\u0131rlama ba\u011flant\u0131s\u0131 e-posta adresinize g\u00f6nderildi.",error:false});
+  };
+  const sendMagicLink=async()=>{
+    const value=email.trim().toLowerCase();
+    if(!value){setStatus({loading:false,message:"\u00d6nce e-posta adresinizi yaz\u0131n.",error:true});return;}
     setStatus({loading:true,message:"",error:false});
     const {error}=await supabase.auth.signInWithOtp({
       email:value,
       options:{
         emailRedirectTo:`${window.location.origin}/`,
-        shouldCreateUser:true,
+        shouldCreateUser:false,
       },
     });
     setStatus(error
       ?{loading:false,message:error.message,error:true}
-      :{loading:false,message:"Giriş bağlantısı e-posta adresinize gönderildi.",error:false});
+      :{loading:false,message:"Tek kullan\u0131ml\u0131k giri\u015f ba\u011flant\u0131s\u0131 e-posta adresinize g\u00f6nderildi.",error:false});
   };
   return <div className="login-screen" style={{position:"fixed",inset:0,background:"linear-gradient(145deg,#0F172A,#1E293B 55%,#0F172A)",display:"grid",placeItems:"center",padding:20,fontFamily:"Inter,Segoe UI,sans-serif"}}>
     <div style={{width:"100%",maxWidth:430,textAlign:"center"}}>
       <img src={corjectLogo} alt="Corject" style={{width:74,height:74,objectFit:"contain",filter:"drop-shadow(0 10px 22px rgba(74,108,247,.35))"}}/>
       <h1 style={{color:"#fff",fontSize:22,letterSpacing:3,margin:"8px 0 4px"}}>CORJECT</h1>
-      <p style={{color:"#64748B",fontSize:12,margin:"0 0 22px"}}>Güvenli ekip girişi</p>
-      <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.12)",borderRadius:18,padding:24,textAlign:"left"}}>
-        <button disabled={status.loading} onClick={slackLogin} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:12,padding:"13px 16px",background:"#fff",color:"#1E293B",fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:11,boxShadow:"0 5px 18px rgba(0,0,0,.16)"}}>
-          <SlackLogo size={23}/>
-          Slack ile Giriş Yap
-        </button>
-        <button onClick={()=>{setShowEmail(value=>!value);setStatus({loading:false,message:"",error:false});}} style={{width:"100%",border:0,background:"transparent",color:"#94A3B8",fontSize:11,fontWeight:700,cursor:"pointer",padding:"14px 4px 2px",textDecoration:"underline"}}>
-          {showEmail?"E-posta girişini kapat":"E-posta ile giriş"}
-        </button>
-        <div style={{display:showEmail?"flex":"none",alignItems:"center",gap:10,margin:"14px 0",color:"#64748B",fontSize:10}}>
-          <span style={{height:1,background:"rgba(255,255,255,.12)",flex:1}}/>
-          veya e-posta bağlantısı
-          <span style={{height:1,background:"rgba(255,255,255,.12)",flex:1}}/>
+      <p style={{color:"#94A3B8",fontSize:12,margin:"0 0 22px"}}>{"E-posta ve \u015fifre ile g\u00fcvenli giri\u015f"}</p>
+      <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.12)",borderRadius:18,padding:24,textAlign:"left",boxShadow:"0 22px 60px rgba(0,0,0,.25)"}}>
+        <label style={{display:"block",fontSize:12,fontWeight:800,color:"#CBD5E1",marginBottom:6}}>E-posta</label>
+        <input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="ad@firma.com" style={{...iStyle,padding:12,background:"#fff",marginBottom:10}}/>
+        <label style={{display:"block",fontSize:12,fontWeight:800,color:"#CBD5E1",marginBottom:6}}>{"\u015eifre"}</label>
+        <input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&passwordLogin()} placeholder={"\u015eifreniz"} style={{...iStyle,padding:12,background:"#fff",marginBottom:12}}/>
+        <button disabled={status.loading} onClick={passwordLogin} style={{width:"100%",border:0,borderRadius:12,padding:"13px 16px",background:"linear-gradient(135deg,#4A6CF7,#7C3AED)",color:"#fff",fontWeight:900,cursor:"pointer",boxShadow:"0 12px 26px rgba(74,108,247,.32)"}}>{status.loading?"Giri\u015f yap\u0131l\u0131yor...":"Giri\u015f Yap"}</button>
+        <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginTop:12,flexWrap:"wrap"}}>
+          <button disabled={status.loading} onClick={sendResetLink} style={{border:0,background:"transparent",color:"#A5B4FC",fontSize:11,fontWeight:800,cursor:"pointer",padding:0}}>{"\u015eifremi belirle / unuttum"}</button>
+          <button onClick={()=>setShowAlternatives(value=>!value)} style={{border:0,background:"transparent",color:"#94A3B8",fontSize:11,fontWeight:800,cursor:"pointer",padding:0}}>{showAlternatives?"Alternatifleri gizle":"Di\u011fer giri\u015fler"}</button>
         </div>
-        <label style={{display:showEmail?"block":"none",fontSize:12,fontWeight:700,color:"#CBD5E1",marginBottom:6}}>Kurumsal e-posta adresiniz</label>
-        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="ad@firma.com" style={{...iStyle,padding:12,background:"#fff",marginBottom:10,display:showEmail?"block":"none"}}/>
-        <button disabled={status.loading} onClick={submit} style={{width:"100%",border:0,borderRadius:10,padding:12,background:"#4A6CF7",color:"#fff",fontWeight:800,cursor:"pointer",display:showEmail?"block":"none"}}>{status.loading?"Gönderiliyor...":"Giriş Bağlantısı Gönder"}</button>
-        {status.message&&<div style={{fontSize:11,lineHeight:1.5,marginTop:11,color:status.error?"#FCA5A5":"#A7F3D0"}}>{status.message}</div>}
+        {showAlternatives&&<div style={{marginTop:15,borderTop:"1px solid rgba(255,255,255,.12)",paddingTop:15,display:"grid",gap:9}}>
+          <button disabled={status.loading} onClick={slackLogin} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:11,padding:"11px 14px",background:"#fff",color:"#1E293B",fontWeight:850,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}><SlackLogo size={21}/>{"Slack ile giri\u015f"}</button>
+          <button disabled={status.loading} onClick={sendMagicLink} style={{width:"100%",border:"1px solid rgba(255,255,255,.18)",borderRadius:11,padding:"11px 14px",background:"rgba(255,255,255,.06)",color:"#CBD5E1",fontWeight:850,cursor:"pointer"}}>{"Tek kullan\u0131ml\u0131k e-posta linki g\u00f6nder"}</button>
+        </div>}
+        {status.message&&<div style={{fontSize:11,lineHeight:1.5,marginTop:13,color:status.error?"#FCA5A5":"#A7F3D0",background:status.error?"rgba(127,29,29,.18)":"rgba(6,95,70,.18)",borderRadius:10,padding:"9px 10px"}}>{status.message}</div>}
       </div>
       <div style={{fontSize:10,color:"#475569",marginTop:14}}>CORJECT {APP_VERSION}</div>
+    </div>
+  </div>;
+}
+
+function PasswordRecoveryScreen({ onDone }) {
+  const [password,setPassword]=useState("");
+  const [confirm,setConfirm]=useState("");
+  const [status,setStatus]=useState({loading:false,message:"",error:false});
+  const save=async()=>{
+    if(password.length<8){setStatus({loading:false,message:"\u015eifre en az 8 karakter olmal\u0131.",error:true});return;}
+    if(password!==confirm){setStatus({loading:false,message:"\u015eifreler e\u015fle\u015fmiyor.",error:true});return;}
+    setStatus({loading:true,message:"",error:false});
+    const {error}=await supabase.auth.updateUser({password});
+    setStatus(error
+      ?{loading:false,message:error.message,error:true}
+      :{loading:false,message:"\u015eifreniz g\u00fcncellendi.",error:false});
+    if(!error)setTimeout(onDone,600);
+  };
+  return <div className="login-screen" style={{position:"fixed",inset:0,background:"linear-gradient(145deg,#0F172A,#1E293B 55%,#0F172A)",display:"grid",placeItems:"center",padding:20,fontFamily:"Inter,Segoe UI,sans-serif"}}>
+    <div style={{width:"100%",maxWidth:430,textAlign:"center"}}>
+      <img src={corjectLogo} alt="Corject" style={{width:68,height:68,objectFit:"contain",filter:"drop-shadow(0 10px 22px rgba(74,108,247,.35))"}}/>
+      <h1 style={{color:"#fff",fontSize:21,letterSpacing:2,margin:"10px 0 4px"}}>{"Yeni \u015fifre belirle"}</h1>
+      <p style={{color:"#94A3B8",fontSize:12,margin:"0 0 20px"}}>{"Corject hesab\u0131n\u0131z i\u00e7in kal\u0131c\u0131 \u015fifre olu\u015fturun."}</p>
+      <div style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.12)",borderRadius:18,padding:24,textAlign:"left"}}>
+        <label style={{display:"block",fontSize:12,fontWeight:800,color:"#CBD5E1",marginBottom:6}}>{"Yeni \u015fifre"}</label>
+        <input type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder={"En az 8 karakter"} style={{...iStyle,padding:12,background:"#fff",marginBottom:10}}/>
+        <label style={{display:"block",fontSize:12,fontWeight:800,color:"#CBD5E1",marginBottom:6}}>{"Yeni \u015fifre tekrar"}</label>
+        <input type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} onKeyDown={e=>e.key==="Enter"&&save()} placeholder={"\u015eifreyi tekrar yaz\u0131n"} style={{...iStyle,padding:12,background:"#fff",marginBottom:12}}/>
+        <button disabled={status.loading} onClick={save} style={{width:"100%",border:0,borderRadius:12,padding:"13px 16px",background:"linear-gradient(135deg,#4A6CF7,#7C3AED)",color:"#fff",fontWeight:900,cursor:"pointer"}}>{status.loading?"Kaydediliyor...":"\u015eifreyi Kaydet"}</button>
+        {status.message&&<div style={{fontSize:11,lineHeight:1.5,marginTop:13,color:status.error?"#FCA5A5":"#A7F3D0",background:status.error?"rgba(127,29,29,.18)":"rgba(6,95,70,.18)",borderRadius:10,padding:"9px 10px"}}>{status.message}</div>}
+      </div>
     </div>
   </div>;
 }
@@ -2785,6 +2833,7 @@ export default function App() {
   const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<768);
   const [authSession,setAuthSession]=useState(null);
   const [authReady,setAuthReady]=useState(!REQUIRE_AUTH);
+  const [passwordRecovery,setPasswordRecovery]=useState(false);
   const [loadError,setLoadError]=useState("");
   const [loadedAuthUserId,setLoadedAuthUserId]=useState("");
   const fileRef=useRef();
@@ -2813,9 +2862,11 @@ export default function App() {
   useEffect(()=>{
     if(!REQUIRE_AUTH)return;
     supabase.auth.getSession().then(({data})=>{setAuthSession(data.session||null);setAuthReady(true);});
-    const {data:listener}=supabase.auth.onAuthStateChange((_event,session)=>{
+    const {data:listener}=supabase.auth.onAuthStateChange((event,session)=>{
       setAuthSession(session||null);
       setAuthReady(true);
+      if(event==="PASSWORD_RECOVERY")setPasswordRecovery(true);
+      if(event==="SIGNED_OUT")setPasswordRecovery(false);
     });
     return ()=>listener.subscription.unsubscribe();
   },[]);
@@ -2990,6 +3041,7 @@ export default function App() {
 
   if(REQUIRE_AUTH&&!authReady)return <AppLoadingScreen progress={loadProgress} status="Oturum kontrol ediliyor"/>;
   if(REQUIRE_AUTH&&!authSession)return <AuthLoginScreen/>;
+  if(REQUIRE_AUTH&&passwordRecovery)return <PasswordRecoveryScreen onDone={()=>setPasswordRecovery(false)}/>;
   if(loadError)return <div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#F8FAFC",padding:20,fontFamily:"Inter,Segoe UI,sans-serif"}}>
     <div style={{maxWidth:520,textAlign:"center"}}>
       <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>Veriler yüklenemedi</div>
