@@ -79,7 +79,7 @@ const MACHINE_CONTROL_REASONS = [
 const RESPONSIBILITY_GROUPS = ["Proje Ekibi","\u00dcr\u00fcn Ekibi","Yaz\u0131l\u0131m Ekibi","M\u00fc\u015fteri","Tedarik\u00e7i","Di\u011fer"];
 const TRAINING_SCOPES = ["Operatör Eğitimi","Yönetici Eğitimi","Hatırlatma Eğitimi","Proje Devri Eğitimi","Süper Kullanıcı Eğitimi","Teknik Eğitim","Diğer"];
 const COST_CATEGORIES = ["Saha Yakıt","Yetkili Servis İşçilik","Donanım","Lisans","Konaklama","Ulaşım","Diğer"];
-const DEFAULT_ACTIVE_MODULES = ["Üretim Takibi","Kalite","Bakım","OEE","Enerji","Depo","Planlama","Raporlama","Entegrasyon","Mobil"];
+const DEFAULT_ACTIVE_MODULES = ["Üretim Takip","Bakım","Kalite","İzlenebilirlik","Satın Alma","Connected Supplier"];
 const DEFAULT_COST_SETTINGS = {fuelConsumptionLtPer100Km:6.5,fuelTryPerLt:45,usdTry:32};
 const mapsUrl = (location={}) => {
   const query=[location.address,location.district,location.city].filter(Boolean).join(", ");
@@ -676,6 +676,7 @@ function RemoteAccessPanel({project,setState,isAdmin,canManage}) {
 function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const [scope,setScope]=useState(isAdmin?"team":"mine");
   const [personFilter,setPersonFilter]=useState("");
+  const [projectFilter,setProjectFilter]=useState("all");
   const [weekOffset,setWeekOffset]=useState(0);
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
@@ -689,7 +690,10 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
   const days=Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
   const dateKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const weekEnd=days[6];
-  const visible=plans.filter(p=>scope==="team"&&isAdmin?(personFilter?p.userId===personFilter:true):p.userId===currentUser.id);
+  const visible=plans.filter(p=>{
+    const scopeOk=scope==="team"&&isAdmin?(personFilter?p.userId===personFilter:true):p.userId===currentUser.id;
+    return scopeOk&&(projectFilter==="all"||p.projectId===projectFilter);
+  });
   const openForm=(date=todayStr(),plan=null)=>{
     setEditingId(plan?.id||null);
     setForm(plan?{userId:plan.userId,projectId:plan.projectId,workType:plan.workType||"field",date:plan.date,startTime:plan.startTime||"09:00",endTime:plan.endTime||"17:00",note:plan.note||""}:{userId:currentUser.id,projectId:"",workType:"field",date,startTime:"09:00",endTime:"17:00",note:""});
@@ -721,7 +725,7 @@ function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
       <div style={{display:"flex",justifyContent:"flex-end"}}><Btn disabled={!form.projectId||!form.date} onClick={save}>{editingId?"Değişiklikleri Kaydet":"Planı Kaydet"}</Btn></div>
     </div>}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
-      {isAdmin?<div style={{display:"flex",gap:7,flexWrap:"wrap"}}><div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>{[["mine","Benim Planım"],["team","Tüm Ekip"]].map(([id,label])=><button key={id} onClick={()=>setScope(id)} style={{border:0,borderRadius:8,padding:"7px 12px",cursor:"pointer",fontWeight:700,fontSize:12,background:scope===id?"#fff":"transparent",color:scope===id?"#4A6CF7":"#64748B",boxShadow:scope===id?"0 2px 6px #0f172a14":"none"}}>{label}</button>)}</div>{scope==="team"&&<select style={{...iStyle,width:190}} value={personFilter} onChange={e=>setPersonFilter(e.target.value)}><option value="">Tüm kişiler</option>{state.people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>}</div>:<span style={{fontSize:12,fontWeight:700,color:"#4A6CF7"}}>Benim Planım</span>}
+      {isAdmin?<div style={{display:"flex",gap:7,flexWrap:"wrap"}}><div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>{[["mine","Benim Planım"],["team","Tüm Ekip"]].map(([id,label])=><button key={id} onClick={()=>setScope(id)} style={{border:0,borderRadius:8,padding:"7px 12px",cursor:"pointer",fontWeight:700,fontSize:12,background:scope===id?"#fff":"transparent",color:scope===id?"#4A6CF7":"#64748B",boxShadow:scope===id?"0 2px 6px #0f172a14":"none"}}>{label}</button>)}</div>{scope==="team"&&<select style={{...iStyle,width:190}} value={personFilter} onChange={e=>setPersonFilter(e.target.value)}><option value="">Tüm kişiler</option>{state.people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>}<select style={{...iStyle,width:210}} value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="all">Tüm projeler</option>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>:<span style={{fontSize:12,fontWeight:700,color:"#4A6CF7"}}>Benim Planım</span>}
       <div style={{display:"flex",alignItems:"center",gap:6}}><button onClick={()=>setWeekOffset(v=>v-1)} style={{border:0,borderRadius:8,padding:"7px 10px",background:"#fff",cursor:"pointer",color:"#64748B"}}>‹</button><button onClick={()=>setWeekOffset(0)} style={{border:0,borderRadius:8,padding:"7px 11px",background:"#F1F5FF",cursor:"pointer",fontWeight:700,color:"#4A6CF7"}}>{monthLabel}</button><button onClick={()=>setWeekOffset(v=>v+1)} style={{border:0,borderRadius:8,padding:"7px 10px",background:"#fff",cursor:"pointer",color:"#64748B"}}>›</button></div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(165px,1fr))",gap:9}}>
@@ -888,6 +892,13 @@ function DashboardPage({state,setState,currentUser,isAdmin,myProjects,deadlineWa
   const visits=(state.fieldPlans||[]).filter(p=>p.userId===currentUser.id&&(p.status==="completed"||p.completedAt));
   const todos=((state.userNotes||{})[currentUser.id]?.todos||[]).filter(t=>!t.done);
   const upcomingTodos=[...todos].sort((a,b)=>(a.dueDate||"9999").localeCompare(b.dueDate||"9999"));
+  const todayPlans=plans.filter(plan=>plan.date===todayStr());
+  const overdueTodos=todos.filter(todo=>todo.dueDate&&daysDiff(todo.dueDate)>0);
+  const todayFlowLines=[
+    todayPlans.length?`${todayPlans.length} çalışma planı var.`:"Bugün için planlı saha/uzaktan çalışma yok.",
+    overdueTodos.length?`${overdueTodos.length} geciken to-do kontrol edilmeli.`:upcomingTodos.length?`${upcomingTodos.length} açık to-do sırada.`:"Açık to-do görünmüyor.",
+    deadlineWarnings.length?`${deadlineWarnings.length} termin uyarısı var.`:"Kritik termin uyarısı yok."
+  ];
   const cards=[
     {label:"To-Do",value:todos.length,desc:"Müşteri aksiyonlarım",icon:"ticket",color:"#DB2777",view:"todos"},
     {label:"Projelerim",value:myProjects.length,desc:"Dahil olduğum projeler",icon:"projects",color:"#4A6CF7",view:"projects"},
@@ -916,6 +927,10 @@ function DashboardPage({state,setState,currentUser,isAdmin,myProjects,deadlineWa
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:12,marginBottom:18}}>
       <button onClick={()=>setQuick("todo")} style={{border:0,borderRadius:16,padding:16,textAlign:"left",cursor:"pointer",background:"linear-gradient(135deg,#DB2777,#7C3AED)",color:"#fff",boxShadow:"0 12px 28px rgba(124,58,237,.18)"}}><b style={{display:"block",fontSize:16}}>+ Hızlı To-Do</b><span style={{fontSize:11,color:"#FCE7F3"}}>Müşteri, termin ve aksiyonu hemen kaydet</span></button>
       <button onClick={()=>setQuick("action")} style={{border:0,borderRadius:16,padding:16,textAlign:"left",cursor:"pointer",background:"linear-gradient(135deg,#2563EB,#0891B2)",color:"#fff",boxShadow:"0 12px 28px rgba(37,99,235,.18)"}}><b style={{display:"block",fontSize:16}}>+ Hızlı Aksiyon</b><span style={{fontSize:11,color:"#DBEAFE"}}>Proje görüşmesi, yazışma veya saha notu gir</span></button>
+    </div>
+    <div style={{background:"linear-gradient(135deg,#EEF2FF,#F8FAFC)",border:"1.5px solid #C7D2FE",borderRadius:18,padding:18,marginBottom:18,boxShadow:"0 12px 28px rgba(79,70,229,.08)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><span style={{width:28,height:28,borderRadius:10,background:"#4A6CF7",color:"#fff",display:"grid",placeItems:"center",fontSize:12,fontWeight:950}}>AI</span><b style={{fontSize:14,color:"#1E293B"}}>Bugünün Akışı</b></div>
+      <div style={{display:"grid",gap:5}}>{todayFlowLines.map(line=><div key={line} style={{fontSize:12,color:"#475569",lineHeight:1.45,wordBreak:"break-word"}}>{line}</div>)}</div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:13,marginBottom:24}}>
       {cards.map(card=><button key={card.view} onClick={()=>onNavigate(card.view)} style={{aspectRatio:"1.15/1",minHeight:145,border:"1.5px solid #E2E8F0",borderRadius:17,background:"#fff",padding:17,textAlign:"left",cursor:"pointer",boxShadow:"0 5px 18px rgba(15,23,42,.05)",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
@@ -2803,7 +2818,6 @@ function ProjectBusinessCard({project,activePMs,activeStakeholders,contacts,prog
           <div style={{marginTop:5,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",fontSize:10,color:"rgba(255,255,255,.82)",lineHeight:1.35}}>
             {activePMs.length>0&&<span>PM: <b style={{color:"#fff"}}>{activePMs.map(p=>p.name).join(", ")}</b></span>}
             {website&&<a href={website} target="_blank" rel="noreferrer" style={{color:"#fff",textDecoration:"none",fontWeight:850,maxWidth:190,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{customer.website}</a>}
-            {expanded&&<span>{project.name}</span>}
             {expanded&&url&&<a href={url} target="_blank" rel="noreferrer" style={{color:"#fff",textDecoration:"none",fontWeight:850}}>Yol tarifi</a>}
             {expanded&&modules.slice(0,5).map(module=><span key={module}>{module}</span>)}
           </div>
@@ -3152,9 +3166,9 @@ function MachinePanel({ project, canEdit, currentUser, onChange }) {
   const exportExcel=()=>downloadXlsx([["Makine Kodu","Makine Adı","Seri No","Lokasyon","IP","İşletim Sistemi/Model","Veri Kaynağı","Protokol","Proses Parametreleri","Ek Lisans","Sorumlu","Tip","Devreye Alındı","Perfect Veri","Son Kontrol","Son Kontrol Nedenleri","Devreye Alma Tarihi","Açıklama"],...machines.map(machine=>{const last=(machine.controlHistory||[])[0]||{};return [machine.code||"",machine.name,machine.serialNo||"",machine.location||"",machine.ip||"",machine.osModel||"",machine.dataSource||"",machine.protocol||"",machine.processParameters||"",machine.extraLicense||"",machine.responsible||"",machine.type==="virtual"?"Sanal":"Fiziksel",machine.commissioned?"Evet":"Hayır",machine.lastPerfectData?"Evet":"Hayır",machine.lastControlAt||"",((last.reasons||[]).join(", ")),machine.commissionedAt||"",machine.note||""]})],`${safeFileName(project.name)}-makineler.xlsx`,"Makineler");
   const addMachineCheck=(machine,perfectData,note="")=>{
     const draft=controlDrafts[machine.id]||{};
-    const check={id:uid(),ts:now(),userId:currentUser?.id||"",userName:currentUser?.name||"",perfectData,reasons:perfectData?[]:(draft.reasons||[]),note:note||draft.note||""};
+    const check={id:uid(),ts:now(),userId:currentUser?.id||"",userName:currentUser?.name||"",perfectData,reasons:perfectData?[]:(draft.reasons||[]),note:note||draft.note||"",resolved:Boolean(draft.resolved)};
     update(machine.id,{lastPerfectData:perfectData,lastControlAt:check.ts,controlHistory:[check,...(machine.controlHistory||[])]});
-    setControlDrafts(current=>({...current,[machine.id]:{reasons:[],note:""}}));
+    setControlDrafts(current=>({...current,[machine.id]:{reasons:[],note:"",resolved:false}}));
   };
   const importExcel=(event)=>{
     const file=event.target.files?.[0];if(!file)return;
@@ -3197,17 +3211,18 @@ function MachinePanel({ project, canEdit, currentUser, onChange }) {
     {viewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:13,marginBottom:12}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:1100}}><thead><tr>{["Makine","Kod","Seri/Lokasyon","OS/Model","IP","Veri Kaynağı","Protokol","Perfect Veri","Tip","Durum",""].map(label=><th key={label} style={{padding:"10px 9px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{visibleMachines.map(machine=><tr key={machine.id} style={{borderTop:"1px solid #EEF2F7"}}><td style={{padding:9,fontSize:11,fontWeight:850}}>{machine.name}</td><td style={{padding:9,fontSize:11,color:"#64748B"}}>{machine.code||"-"}</td><td style={{padding:9,fontSize:10,color:"#64748B"}}>{machine.serialNo||"-"}{machine.location?` · ${machine.location}`:""}</td><td style={{padding:9,fontSize:11,color:"#475569"}}>{machine.osModel||"-"}</td><td style={{padding:9,fontSize:11}}>{machine.ip?<button onClick={()=>copyIp(machine.ip)} title="IP kopyala" style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"5px 8px",fontSize:10,fontWeight:850,cursor:"pointer"}}>{machine.ip}</button>:"-"}</td><td style={{padding:9,fontSize:11,color:"#475569"}}>{machine.dataSource||"-"}</td><td style={{padding:9,fontSize:11,color:"#475569"}}>{machine.protocol||"-"}</td><td style={{padding:9,fontSize:11,color:machine.lastPerfectData?"#059669":"#EA6C00",fontWeight:850}}>{machine.lastControlAt?(machine.lastPerfectData?"Evet":"Hayır"):"Kontrol yok"}</td><td style={{padding:9,fontSize:11}}>{machine.type==="virtual"?"Sanal":"Fiziksel"}</td><td style={{padding:9,fontSize:11,color:machine.commissioned?"#059669":"#EA6C00",fontWeight:850}}>{machine.commissioned?"Devrede":"Bekliyor"}</td><td style={{padding:9}}>{canEdit&&<div style={{display:"flex",gap:6}}><Btn small variant="secondary" onClick={()=>edit(machine)}>Düzenle</Btn><Btn small variant="danger" onClick={()=>onChange(machines.filter(m=>m.id!==machine.id))}>Sil</Btn></div>}</td></tr>)}</tbody></table>{!visibleMachines.length&&<div style={{padding:24,textAlign:"center",fontSize:12,color:"#94A3B8"}}>Aramaya uygun makine bulunamadı.</div>}</div>}
     {viewMode==="control"&&<div style={{display:"grid",gap:10,marginBottom:12}}>
       <div style={{background:"#EEF2FF",border:"1px solid #C7D2FE",borderRadius:13,padding:12,fontSize:12,color:"#3730A3",lineHeight:1.5}}>Devredeki makineleri saha kontrolü sırasında hızlıca işaretleyin. Her işaretleme makinenin kontrol geçmişine kaydedilir.</div>
-      {commissionedMachines.map(machine=>{const last=(machine.controlHistory||[])[0];const draft=controlDrafts[machine.id]||{reasons:[],note:""};const setDraft=data=>setControlDrafts(current=>({...current,[machine.id]:{...draft,...data}}));return <div key={machine.id} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:13}}>
+      {commissionedMachines.map(machine=>{const last=(machine.controlHistory||[])[0];const draft=controlDrafts[machine.id]||{reasons:[],note:"",resolved:false};const setDraft=data=>setControlDrafts(current=>({...current,[machine.id]:{...draft,...data}}));return <div key={machine.id} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:13}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",flexWrap:"wrap"}}>
           <div style={{minWidth:0,flex:1}}><div style={{fontSize:13,fontWeight:900,wordBreak:"break-word"}}>{machine.name}</div><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{machine.code||"Kod yok"}{machine.ip?` · ${machine.ip}`:""}{machine.dataSource?` · ${machine.dataSource}`:""}</div></div>
           <label style={{display:"inline-flex",alignItems:"center",gap:8,background:machine.lastPerfectData?"#ECFDF5":"#FFF7ED",color:machine.lastPerfectData?"#047857":"#EA6C00",borderRadius:10,padding:"8px 10px",fontSize:11,fontWeight:900,cursor:"pointer"}}><input type="checkbox" checked={Boolean(machine.lastPerfectData)} onChange={event=>addMachineCheck(machine,event.target.checked)}/> Perfect veri alıyor</label>
         </div>
         <div style={{marginTop:10,display:"grid",gap:8}}>
           {!machine.lastPerfectData&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{MACHINE_CONTROL_REASONS.map(reason=><button key={reason} onClick={()=>setDraft({reasons:draft.reasons.includes(reason)?draft.reasons.filter(item=>item!==reason):[...draft.reasons,reason]})} style={{border:"1px solid "+(draft.reasons.includes(reason)?"#E11D48":"#E2E8F0"),background:draft.reasons.includes(reason)?"#FFF1F2":"#fff",color:draft.reasons.includes(reason)?"#BE123C":"#475569",borderRadius:999,padding:"5px 8px",fontSize:9,fontWeight:850,cursor:"pointer"}}>{reason}</button>)}</div>}
+          {!machine.lastPerfectData&&<label style={{display:"inline-flex",alignItems:"center",gap:7,fontSize:11,fontWeight:850,color:"#047857",background:"#ECFDF5",borderRadius:9,padding:"7px 9px",width:"fit-content"}}><input type="checkbox" checked={Boolean(draft.resolved)} onChange={event=>setDraft({resolved:event.target.checked})}/> Çözüldü</label>}
           <textarea style={{...iStyle,minHeight:58,fontSize:11,resize:"vertical"}} value={draft.note||""} onChange={event=>setDraft({note:event.target.value})} placeholder="Serbest kontrol notu / gözlem..."/>
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}><button onClick={()=>addMachineCheck(machine,Boolean(machine.lastPerfectData))} style={{border:0,background:"#F1F5F9",color:"#475569",borderRadius:8,padding:"7px 9px",fontSize:10,fontWeight:850,cursor:"pointer"}}>Notlu Kontrolü Kaydet</button>{last&&<span style={{fontSize:10,color:"#64748B",alignSelf:"center"}}>Son kontrol: {new Date(last.ts).toLocaleString("tr-TR")} · {last.userName||"Kullanıcı"} · {last.perfectData?"Perfect":"Sorun var"}</span>}</div>
         </div>
-        {(machine.controlHistory||[]).length>0&&<div style={{marginTop:10,borderTop:"1px solid #EEF2F7",paddingTop:8,display:"grid",gap:5}}>{(machine.controlHistory||[]).slice(0,4).map(item=><div key={item.id} style={{fontSize:10,color:"#64748B",display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}><span>{new Date(item.ts).toLocaleString("tr-TR")} · {item.userName||"Kullanıcı"}</span><b style={{color:item.perfectData?"#059669":"#E11D48"}}>{item.perfectData?"Perfect veri":"Sorun / eksik veri"}</b>{(item.reasons||[]).length>0&&<span style={{flexBasis:"100%",color:"#BE123C",fontWeight:800}}>{item.reasons.join(", ")}</span>}{item.note&&<span style={{flexBasis:"100%",color:"#475569"}}>{item.note}</span>}</div>)}</div>}
+        {(machine.controlHistory||[]).length>0&&<div style={{marginTop:10,borderTop:"1px solid #EEF2F7",paddingTop:8,display:"grid",gap:5}}>{(machine.controlHistory||[]).slice(0,4).map(item=><div key={item.id} style={{fontSize:10,color:"#64748B",display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}><span>{new Date(item.ts).toLocaleString("tr-TR")} · {item.userName||"Kullanıcı"}</span><b style={{color:item.perfectData?"#059669":item.resolved?"#047857":"#E11D48"}}>{item.perfectData?"Perfect veri":item.resolved?"Sorun çözüldü":"Sorun / eksik veri"}</b>{(item.reasons||[]).length>0&&<span style={{flexBasis:"100%",color:"#BE123C",fontWeight:800}}>{item.reasons.join(", ")}</span>}{item.note&&<span style={{flexBasis:"100%",color:"#475569"}}>{item.note}</span>}</div>)}</div>}
       </div>;})}
       {!commissionedMachines.length&&<div style={{padding:34,textAlign:"center",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Kontrol edilecek devrede makine bulunamadı.</div>}
     </div>}
@@ -3637,14 +3652,14 @@ function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false}){
       <MultiChoiceFilter label="Durumlar" options={TICKET_STATUSES.map(status=>({value:status,label:status}))} value={statusFilters} onChange={setStatusFilters}/>
     </div>
     {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"#ECFDF5":"#FFF7ED",color:mailNotice.includes("gönderildi")?"#047857":"#C2410C",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(360px,100%),1fr))",gap:10}}>{filtered.map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${project?.color||"#4A6CF7"}`,borderRadius:13,padding:"14px 15px",cursor:"pointer",boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(360px,100%),1fr))",gap:10}}>{[...filtered].sort((a,b)=>String(b.ticket.updatedAt||b.ticket.ts||"").localeCompare(String(a.ticket.updatedAt||a.ticket.ts||""))).map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${project?.color||"#4A6CF7"}`,borderRadius:13,padding:"14px 15px",cursor:"pointer",boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
       <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontSize:10,fontWeight:850,color:"#4338CA",background:"#EEF2FF",padding:"3px 7px",borderRadius:7}}>{ticketNumber(ticket)}</span><b style={{fontSize:13}}>{ticket.title}</b><select value={ticket.status||"Açık"} onClick={event=>event.stopPropagation()} onChange={event=>update(projectId,ticket.id,{status:event.target.value})} style={{fontSize:10,border:"1px solid #CBD5E1",borderRadius:7,padding:"3px 6px",background:"#fff"}}>{TICKET_STATUSES.map(status=><option key={status}>{status}</option>)}</select><span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span><span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
       <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"#64748B"}}><span>Sorumlu: <b>{assignee?.name||"Atanmamış"}</b></span><span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span>{(isAdmin||ticket.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();if(confirm("Ticket silinsin mi?"))remove(projectId,ticket.id);}} style={{marginLeft:"auto",border:0,background:"transparent",color:"#E11D48",fontSize:11,fontWeight:700,cursor:"pointer"}}>Sil</button>}</div>
     </div>})}</div>
     {!filtered.length&&<div style={{padding:40,textAlign:"center",background:"#fff",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Filtreye uygun ticket yok.</div>}
     </>}
     {activeTab==="recurring"&&<RecurringProblemsPanel entries={all}/>}
-    {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}><Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><TicketForm types={TYPES} prios={PRIOS} people={state.people} onClose={()=>setModal(null)} onSave={async data=>{if(!modal.projectId)return;await add(modal.projectId,data);setModal(null);}}/></Modal>}
+    {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}><Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><TicketForm project={state.projects.find(p=>p.id===modal.projectId)} types={TYPES} prios={PRIOS} people={state.people} onClose={()=>setModal(null)} onSave={async data=>{if(!modal.projectId)return;await add(modal.projectId,data);setModal(null);}}/></Modal>}
     {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} canEdit={isAdmin||modal.data.author===currentUser.name} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)} onResend={()=>notifyTicketAssignment(modal.projectId,((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data)}/>}
   </div>;
 }
@@ -3660,6 +3675,11 @@ const GlobalStyle = () => (
     .sidebar-nav { scrollbar-width: none; }
     .sidebar-nav::-webkit-scrollbar { display: none; }
     .login-users { scrollbar-width: thin; scrollbar-color: #475569 transparent; }
+    @keyframes corjectLoadingFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); filter: drop-shadow(0 12px 30px rgba(99,102,241,.45)); }
+      50% { transform: translateY(-7px) rotate(5deg) scale(1.05); filter: drop-shadow(0 18px 38px rgba(34,211,238,.55)); }
+    }
+    .corject-loading-logo { animation: corjectLoadingFloat 1.8s ease-in-out infinite; }
     .admin-summary-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; margin-bottom:12px; }
     .admin-summary-card { min-width:0; min-height:126px; border:1px solid #E2E8F0; border-top:3px solid #4A6CF7; border-radius:16px; background:#fff; padding:15px; text-align:left; cursor:pointer; box-shadow:0 8px 22px rgba(15,23,42,.05); overflow:hidden; transition:transform .16s ease, box-shadow .16s ease; }
     .admin-summary-card:hover { transform:translateY(-2px); box-shadow:0 12px 28px rgba(15,23,42,.08); }
@@ -3734,7 +3754,7 @@ function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor"}) {
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
   return <div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:20,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 50% 30%,#312E81 0,#172033 42%,#0F172A 100%)",color:"#fff",zIndex:9999,overflow:"hidden"}}>
     <div style={{width:"min(430px,100%)",textAlign:"center"}}>
-      <img src={corjectLogo} alt="Corject" style={{width:66,height:66,objectFit:"contain",filter:"drop-shadow(0 12px 30px rgba(99,102,241,.45))"}}/>
+      <img className="corject-loading-logo" src={corjectLogo} alt="Corject" style={{width:66,height:66,objectFit:"contain"}}/>
       <div style={{fontSize:14,fontWeight:900,letterSpacing:4,color:"#A5B4FC",marginTop:9}}>CORJECT</div>
       <div style={{fontSize:12,color:"#CBD5E1",margin:"25px 0 10px"}}>{status}</div>
       <div style={{height:9,borderRadius:20,background:"rgba(255,255,255,.1)",overflow:"hidden",border:"1px solid rgba(255,255,255,.08)"}}><div style={{height:"100%",width:`${safeProgress}%`,borderRadius:20,background:"linear-gradient(90deg,#4A6CF7,#8B5CF6,#22D3EE)",transition:"width .35s ease"}}/></div>
@@ -3761,6 +3781,7 @@ export default function App() {
   const [adminSection,setAdminSection]=useState("overview");
   const [projectScope,setProjectScope]=useState("all");
   const [projectSearch,setProjectSearch]=useState("");
+  const [projectSegment,setProjectSegment]=useState("all");
   const [projectViewMode,setProjectViewMode]=useState("cards");
   const [expandedProjectRows,setExpandedProjectRows]=useState({});
   const [ticketMineOnly,setTicketMineOnly]=useState(false);
@@ -3987,7 +4008,9 @@ export default function App() {
   // Project visibility filter
   const visibleProjects=state.projects;
   const myProjects=state.projects.filter(p=>projectPmIds(p).includes(currentUser.id)||projectStakeholders(p).some(item=>item.userId===currentUser.id)||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
-  const listedProjects=(projectScope==="mine"?myProjects:visibleProjects).filter(item=>`${item.name||""} ${item.description||""} ${(item.customerProfile?.website)||""}`.toLocaleLowerCase("tr-TR").includes(projectSearch.trim().toLocaleLowerCase("tr-TR")));
+  const listedProjects=(projectScope==="mine"?myProjects:visibleProjects)
+    .filter(item=>projectSegment==="connected"?Boolean(item.connectedSupplier):projectSegment==="standard"?!item.connectedSupplier:true)
+    .filter(item=>`${item.name||""} ${item.description||""} ${(item.customerProfile?.website)||""}`.toLocaleLowerCase("tr-TR").includes(projectSearch.trim().toLocaleLowerCase("tr-TR")));
   const exportListedProjects=()=>downloadXlsx([
     ["Proje","Müşteri","Durum","PM","Başlangıç","Hedef Bitiş","İlerleme %","Görev","Geciken","Ticket","Makine","Devrede"],
     ...listedProjects.map(project=>{
@@ -4404,6 +4427,9 @@ export default function App() {
               <button onClick={()=>setProjectScope("mine")} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectScope==="mine"||!isAdmin?"#fff":"transparent",color:projectScope==="mine"||!isAdmin?"#4A6CF7":"#64748B"}}>Projelerim</button>
             </div>
             <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
+              {[["all","Tüm"],["connected","Connected Supplier"],["standard","Standart"]].map(([id,label])=><button key={id} onClick={()=>setProjectSegment(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectSegment===id?"#fff":"transparent",color:projectSegment===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
+            </div>
+            <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
               {[["cards","Kart"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setProjectViewMode(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectViewMode===id?"#fff":"transparent",color:projectViewMode===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
             </div>
             {isAdmin&&<Btn onClick={()=>setModal({type:"addProject"})}>+ Yeni Proje</Btn>}
@@ -4689,7 +4715,7 @@ function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
     <RecurringProblemsPanel entries={tickets.map(ticket=>({ticket,project}))}/>
     {tickets.length===0&&<div style={{ textAlign:"center", padding:"40px", background:"#fff", borderRadius:12, border:"1.5px dashed #E2E8F0", color:"#94A3B8" }}>Henüz ticket yok.</div>}
     <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-      {tickets.map(t=><div key={t.id} onClick={()=>setModal({type:"detail",data:t})} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:"1.5px solid #E2E8F0", display:"flex", gap:12, alignItems:"flex-start", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", cursor:"pointer" }}>
+      {[...tickets].sort((a,b)=>String(b.updatedAt||b.ts||"").localeCompare(String(a.updatedAt||a.ts||""))).map(t=><div key={t.id} onClick={()=>setModal({type:"detail",data:t})} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:"1.5px solid #E2E8F0", display:"flex", gap:12, alignItems:"flex-start", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", cursor:"pointer" }}>
         <div style={{ width:8, height:8, borderRadius:"50%", background:TYPE_COLORS[t.type]||"#94A3B8", marginTop:4, flexShrink:0 }} />
         <div style={{ flex:1 }}>
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
@@ -4712,7 +4738,7 @@ function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
       </div>)}
     </div>
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>
-      <TicketForm onSave={async d=>{await addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />
+      <TicketForm project={project} onSave={async d=>{await addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />
     </Modal>}
     {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} canEdit={isAdmin||modal.data.author===currentUser.name} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} onResend={()=>notifyTicketAssignment(project.id,tickets.find(t=>t.id===modal.data.id)||modal.data)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />}
   </div>;
@@ -4737,21 +4763,35 @@ function RecurringProblemsPanel({entries=[]}) {
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:9}}>{repeated.map(group=><div key={`${group.label}-${group.items.length}`} style={{background:"linear-gradient(145deg,#FFF7ED,#fff)",border:"1px solid #FED7AA",borderRadius:11,padding:"12px 13px",fontSize:10,color:"#475569"}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:12,color:"#7C2D12"}}>{group.label}</b><span style={{background:"#FFEDD5",color:"#C2410C",borderRadius:12,padding:"2px 7px",fontWeight:900}}>{group.items.length} kez</span></div><div style={{marginTop:8}}>{group.effort.toFixed(1)} saat efor · {[...group.projects].length} proje</div><span style={{display:"block",color:"#94A3B8",marginTop:4}}>{group.explicit?"Ortak problem koduyla eşleşti":"Başlık benzerliğine göre aday"}</span></div>)}</div>
   </div>;
 }
-function TicketForm({ onSave, onClose, types, prios, people }) {
-  const [f,setF]=useState({ title:"", type:"Görev", category:"Operasyonel", ownerTeam:"Operasyon", priority:"Orta", description:"", status:"Açık", jiraKey:"", assignedTo:"", testResult:"", recurrenceKey:"", rootCause:"", resolution:"", effortHours:"" });
+function TicketForm({ project, onSave, onClose, types, prios, people }) {
+  const [f,setF]=useState({ title:"", customer:project?.customerProfile?.name||project?.customerName||project?.name||"", module:(project?.activeModules||[])[0]||"", subModule:"", functionButton:"", pageUrl:"", type:"Görev", category:"Operasyonel", ownerTeam:"Operasyon", priority:"Orta", description:"", requestRequirements:[""], completionCriteria:[""], status:"Açık", jiraKey:"", assignedTo:"", testResult:"", recurrenceKey:"", rootCause:"", resolution:"", effortHours:"" });
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
+  const updList=(key,index,value)=>setF(s=>({...s,[key]:(s[key]||[]).map((item,i)=>i===index?value:item)}));
+  const addListItem=key=>setF(s=>({...s,[key]:[...(s[key]||[]),""]}));
+  const removeListItem=(key,index)=>setF(s=>({...s,[key]:(s[key]||[]).filter((_,i)=>i!==index)}));
   const submit=async()=>{
     if(!f.title.trim())return;
     const jiraKey=f.jiraKey.trim().toUpperCase();
+    const normalized={...f,requestRequirements:(f.requestRequirements||[]).map(item=>item.trim()).filter(Boolean),completionCriteria:(f.completionCriteria||[]).map(item=>item.trim()).filter(Boolean)};
     setSaving(true);setError("");
-    try{await onSave({...f,jiraKey,jiraId:jiraKey});}
+    try{await onSave({...normalized,jiraKey,jiraId:jiraKey});}
     catch(e){setError(e?.message||"Ticket oluşturulamadı.");}
     finally{setSaving(false);}
   };
   return <div>
     <Field label="Başlık *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
+    <div style={{background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:12,padding:12,marginBottom:12}}>
+      <div style={{fontSize:11,fontWeight:900,color:"#475569",marginBottom:9}}>Standart Talep Bilgileri</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
+        <Field label="Müşteri"><input style={iStyle} value={f.customer} onChange={e=>upd("customer",e.target.value)} /></Field>
+        <Field label="İlgili Modül"><select style={iStyle} value={f.module} onChange={e=>upd("module",e.target.value)}><option value="">Modül seçin</option>{DEFAULT_ACTIVE_MODULES.map(module=><option key={module}>{module}</option>)}</select></Field>
+        <Field label="İlgili Alt Modül"><input style={iStyle} value={f.subModule} onChange={e=>upd("subModule",e.target.value)} /></Field>
+        <Field label="Fonksiyon / Buton"><input style={iStyle} value={f.functionButton} onChange={e=>upd("functionButton",e.target.value)} /></Field>
+      </div>
+      <Field label="Sistem Sayfa URL"><input style={iStyle} value={f.pageUrl} onChange={e=>upd("pageUrl",e.target.value)} placeholder="https://..." /></Field>
+    </div>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Tip"><select style={iStyle} value={f.type} onChange={e=>upd("type",e.target.value)}>{types.map(t=><option key={t}>{t}</option>)}</select></Field>
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{prios.map(p=><option key={p}>{p}</option>)}</select></Field>
@@ -4761,7 +4801,9 @@ function TicketForm({ onSave, onClose, types, prios, people }) {
       <Field label="Kategori"><select style={iStyle} value={f.category} onChange={e=>upd("category",e.target.value)}>{TICKET_CATEGORIES.map(category=><option key={category}>{category}</option>)}</select></Field>
       <Field label="Sahip Ekip"><select style={iStyle} value={f.ownerTeam} onChange={e=>upd("ownerTeam",e.target.value)}>{["Operasyon","Ürün","Yazılım"].map(team=><option key={team}>{team}</option>)}</select></Field>
     </div>
-    <Field label="Açıklama"><textarea style={{ ...iStyle, height:80, resize:"vertical" }} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
+    <Field label="Talep Açıklaması"><textarea style={{ ...iStyle, height:80, resize:"vertical" }} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
+    <StepListEditor title="Talep İsterleri" items={f.requestRequirements} onAdd={()=>addListItem("requestRequirements")} onRemove={index=>removeListItem("requestRequirements",index)} onChange={(index,value)=>updList("requestRequirements",index,value)}/>
+    <StepListEditor title="Tamamlanma Kriterleri" items={f.completionCriteria} onAdd={()=>addListItem("completionCriteria")} onRemove={index=>removeListItem("completionCriteria",index)} onChange={(index,value)=>updList("completionCriteria",index,value)}/>
     <Field label="Atanan Kullanıcı"><select style={iStyle} value={f.assignedTo} onChange={e=>upd("assignedTo",e.target.value)}><option value="">- Atanmamış -</option>{people.map(person=><option key={person.id} value={person.id}>{person.name}{person.email?` · ${person.email}`:""}</option>)}</select></Field>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
       <Field label="Tekrar Eden Problem Kodu"><input style={iStyle} value={f.recurrenceKey} onChange={e=>upd("recurrenceKey",e.target.value)} placeholder="Örn. VPN-KOPMA"/></Field>
@@ -4771,6 +4813,22 @@ function TicketForm({ onSave, onClose, types, prios, people }) {
     <div style={{ fontSize:11, color:"#64748B", marginBottom:11 }}>Mevcut bir Jira taskıyla ilişkilendirmek için issue key girin.</div>
     {error&&<div style={{background:"#FFF1F2",color:"#BE123C",borderRadius:8,padding:"8px 10px",fontSize:11,fontWeight:700,marginBottom:10}}>{error}</div>}
     <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" disabled={saving} onClick={onClose}>İptal</Btn><Btn disabled={saving} onClick={submit}>{saving?"Kaydediliyor...":"Kaydet"}</Btn></div>
+  </div>;
+}
+
+function StepListEditor({title,items=[],onAdd,onRemove,onChange}) {
+  return <div style={{marginBottom:12}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:7}}>
+      <label style={{fontSize:12,fontWeight:750,color:"#334155"}}>{title}</label>
+      <button type="button" onClick={onAdd} style={{border:0,borderRadius:8,background:"#EEF2FF",color:"#4338CA",fontSize:10,fontWeight:900,padding:"5px 8px",cursor:"pointer"}}>+ Adım</button>
+    </div>
+    <div style={{display:"grid",gap:7}}>
+      {(items.length?items:[""]).map((item,index)=><div key={index} style={{display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:7,alignItems:"center"}}>
+        <span style={{width:22,height:22,borderRadius:8,display:"grid",placeItems:"center",background:"#F1F5F9",color:"#64748B",fontSize:10,fontWeight:900}}>{index+1}</span>
+        <input style={{...iStyle,minWidth:0}} value={item} onChange={event=>onChange(index,event.target.value)} placeholder={`${title} adımı`}/>
+        <button type="button" onClick={()=>onRemove(index)} style={{border:0,background:"transparent",color:"#E11D48",fontSize:16,cursor:"pointer"}}>×</button>
+      </div>)}
+    </div>
   </div>;
 }
 
@@ -4851,6 +4909,18 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
     </div>:<div>
       {ticket.description&&<div style={{fontSize:13,color:"#475569",lineHeight:1.6,marginBottom:16}}>{ticket.description}</div>}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}><span style={{background:"#F1F5FF",color:"#4A6CF7",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.type}</span><span style={{background:"#FFF7ED",color:"#EA6C00",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.priority}</span><span style={{background:"#F8FAFC",color:"#64748B",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.status}</span><span style={{background:"#F5F3FF",color:"#7C3AED",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.category||"Operasyonel"} · {ticket.ownerTeam||"Operasyon"}</span>{ticket.testResult&&<span style={{background:ticket.testResult==="Başarısız"?"#FFF1F2":"#ECFDF5",color:ticket.testResult==="Başarısız"?"#BE123C":"#047857",borderRadius:8,padding:"3px 9px",fontSize:11}}>Test: {ticket.testResult}</span>}</div>
+      {(ticket.customer||ticket.module||ticket.subModule||ticket.functionButton||ticket.pageUrl||(ticket.requestRequirements||[]).length||(ticket.completionCriteria||[]).length)&&<div style={{border:"1px solid #E2E8F0",borderRadius:12,padding:13,background:"#fff",marginBottom:16}}>
+        <div style={{fontWeight:900,fontSize:12,marginBottom:10}}>Standart Talep Bilgileri</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8,fontSize:11,color:"#475569",marginBottom:10}}>
+          {ticket.customer&&<div><b>Müşteri:</b> {ticket.customer}</div>}
+          {ticket.module&&<div><b>İlgili Modül:</b> {ticket.module}</div>}
+          {ticket.subModule&&<div><b>İlgili Alt Modül:</b> {ticket.subModule}</div>}
+          {ticket.functionButton&&<div><b>Fonksiyon / Buton:</b> {ticket.functionButton}</div>}
+          {ticket.pageUrl&&<div><b>Sistem Sayfa URL:</b> <a href={ticket.pageUrl} target="_blank" rel="noreferrer" style={{color:"#4A6CF7"}}>{ticket.pageUrl}</a></div>}
+        </div>
+        {(ticket.requestRequirements||[]).length>0&&<div style={{marginTop:8}}><b style={{fontSize:11}}>Talep İsterleri</b><ol style={{margin:"6px 0 0 18px",fontSize:11,color:"#475569",lineHeight:1.6}}>{ticket.requestRequirements.map((item,index)=><li key={index}>{item}</li>)}</ol></div>}
+        {(ticket.completionCriteria||[]).length>0&&<div style={{marginTop:8}}><b style={{fontSize:11}}>Tamamlanma Kriterleri</b><ol style={{margin:"6px 0 0 18px",fontSize:11,color:"#475569",lineHeight:1.6}}>{ticket.completionCriteria.map((item,index)=><li key={index}>{item}</li>)}</ol></div>}
+      </div>}
       {ticket.assignedTo&&<div style={{fontSize:12,color:"#4A6CF7",marginBottom:14}}>Atanan: <b>{people.find(person=>person.id===ticket.assignedTo)?.name||"Bilinmiyor"}</b></div>}
       {mailStatus.message&&<div style={{fontSize:11,fontWeight:700,color:mailStatus.error?"#BE123C":"#059669",background:mailStatus.error?"#FFF1F2":"#ECFDF5",borderRadius:8,padding:"8px 10px",marginBottom:12}}>{mailStatus.message}</div>}
       <div style={{border:"1.5px solid #DDE7F5",borderRadius:12,padding:14,background:"#F8FBFF",marginBottom:16}}>
@@ -4946,7 +5016,7 @@ function NotificationsPage({ notifications, currentUser, setState, onOpenTask })
 function AddProjectModal({ onClose, onSave, people, roles }) {
   const [step,setStep]=useState("template");
   const [tplData,setTplData]=useState(null);
-  const [f,setF]=useState({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:todayStr(), endDate:"", pmIds:[], stakeholders:[], customerContacts:[], commissioningTracking:false });
+  const [f,setF]=useState({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:todayStr(), endDate:"", pmIds:[], stakeholders:[], customerContacts:[], commissioningTracking:false, connectedSupplier:false });
   const upd=(k,v)=>setF(s=>({...s,[k]:v}));
   const handleTplSelect=(tpl)=>{ setTplData(tpl); setF(s=>({...s,color:tpl.color})); setStep("form"); };
   const handleSave=()=>{ if(!f.name.trim())return; const built=tplData?buildFromTemplate(tplData,f.startDate||todayStr()):{milestones:[]}; onSave({...f,...built,risks:[]}); onClose(); };
@@ -4963,7 +5033,7 @@ function AddProjectModal({ onClose, onSave, people, roles }) {
       <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
       <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
       <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)}/></Field>
-      <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
+      <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F0FDFA",border:"1.5px solid #99F6E4",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.connectedSupplier)} onChange={e=>upd("connectedSupplier",e.target.checked)} style={{marginTop:2}}/><span><b>Connected Supplier</b><span style={{display:"block",color:"#0F766E",marginTop:3}}>Bu proje Connected Supplier kapsamında ayrı takip ve filtrelere dahil edilir.</span></span></label><label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
       <Field label="Renk"><div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
         <Field label="Başlangıç"><input type="date" style={iStyle} value={f.startDate} onChange={e=>upd("startDate",e.target.value)} /></Field>
@@ -4983,7 +5053,7 @@ function ProjectModal({ title, initial, onClose, onSave, people, roles }) {
     <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
     <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
     <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)}/></Field>
-    <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
+    <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F0FDFA",border:"1.5px solid #99F6E4",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.connectedSupplier)} onChange={e=>upd("connectedSupplier",e.target.checked)} style={{marginTop:2}}/><span><b>Connected Supplier</b><span style={{display:"block",color:"#0F766E",marginTop:3}}>Bu proje Connected Supplier kapsamında ayrı takip ve filtrelere dahil edilir.</span></span></label><label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
     <Field label="Renk"><div style={{ display:"flex", gap:7 }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
       <Field label="Başlangıç"><input type="date" style={iStyle} value={f.startDate} onChange={e=>upd("startDate",e.target.value)} /></Field>
