@@ -637,6 +637,123 @@ export function PersonalTaskModal({
   );
 }
 
+export function TaskDetailModal({
+  task,
+  people,
+  currentUser,
+  onClose,
+  onUpdate,
+  createId = defaultCreateId,
+  getTimestamp = defaultGetTimestamp,
+  formatDate = defaultFormatDate,
+}) {
+  const [comment, setComment] = useState("");
+  const assignee = people.find((person) => person.id === task.assignee);
+  const comments = task.comments || [];
+  const linkedProjectName = task.projectName || task.project?.name || "";
+
+  const addComment = () => {
+    const text = comment.trim();
+    if (!text) return;
+    onUpdate({
+      comments: [
+        ...comments,
+        {
+          id: createId(),
+          text,
+          userId: currentUser.id,
+          userName: currentUser.name,
+          ts: getTimestamp(),
+        },
+      ],
+    });
+    setComment("");
+  };
+
+  return (
+    <Modal title="Görev Detayı" onClose={onClose} wide>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 15, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0, flex: "1 1 260px" }}>
+          <h2 style={{ fontSize: 18, margin: "0 0 5px", lineHeight: 1.25, wordBreak: "break-word", overflowWrap: "anywhere" }}>
+            {task.title}
+          </h2>
+          <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.4, wordBreak: "break-word", overflowWrap: "anywhere" }}>
+            {assignee?.name || "Atanmamış"}
+            {linkedProjectName ? ` · ${linkedProjectName}` : ""} · Termin: {formatDate(task.dueDate) || "Belirtilmedi"}
+            {task.dueTime ? ` ${task.dueTime}` : ""}
+            {task.firstSeenAt ? ` · İlk bakış: ${new Date(task.firstSeenAt).toLocaleString("tr-TR")}` : ""}
+          </div>
+        </div>
+        {task.assignmentRole && (
+          <span
+            style={{
+              background: task.assignmentRole === "Destek Sorumlusu" ? "#F0F9FF" : "#EEF2FF",
+              color: task.assignmentRole === "Destek Sorumlusu" ? "#0369A1" : "#4338CA",
+              borderRadius: 999,
+              padding: "7px 10px",
+              fontSize: 10,
+              fontWeight: 900,
+            }}
+          >
+            {task.assignmentRole}
+          </span>
+        )}
+        <select style={{ ...iStyle, width: 180 }} value={task.status || "Bekliyor"} onChange={(event) => onUpdate({ status: event.target.value })}>
+          {STATUSES.map((status) => (
+            <option key={status}>{status}</option>
+          ))}
+        </select>
+      </div>
+
+      {task.notes && (
+        <div
+          style={{
+            background: "#F8FAFC",
+            borderRadius: 10,
+            padding: 13,
+            fontSize: 13,
+            lineHeight: 1.6,
+            marginBottom: 16,
+            wordBreak: "break-word",
+            overflowWrap: "anywhere",
+          }}
+        >
+          {task.notes}
+        </div>
+      )}
+
+      <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 9 }}>Yorumlar ({comments.length})</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", marginBottom: 12 }}>
+        {comments.map((item) => (
+          <div key={item.id} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: "10px 12px", minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 10, color: "#64748B", marginBottom: 4, flexWrap: "wrap" }}>
+              <b style={{ color: "#334155", wordBreak: "break-word", overflowWrap: "anywhere" }}>
+                {item.userName || people.find((person) => person.id === item.userId)?.name || "Kullanıcı"}
+              </b>
+              <span>{item.ts ? new Date(item.ts).toLocaleString("tr-TR") : ""}</span>
+            </div>
+            <div style={{ fontSize: 12, lineHeight: 1.5, wordBreak: "break-word", overflowWrap: "anywhere" }}>{item.text}</div>
+          </div>
+        ))}
+        {!comments.length && <div style={{ fontSize: 12, color: "#94A3B8" }}>Henüz yorum eklenmedi.</div>}
+      </div>
+
+      <textarea
+        style={{ ...iStyle, minHeight: 80, resize: "vertical" }}
+        value={comment}
+        onChange={(event) => setComment(event.target.value)}
+        placeholder="Bu görevle ilgili yorumunuzu yazın..."
+      />
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 7, marginTop: 9 }}>
+        <Btn variant="ghost" onClick={onClose}>
+          Kapat
+        </Btn>
+        <Btn onClick={addComment}>Yorum Ekle</Btn>
+      </div>
+    </Modal>
+  );
+}
+
 export function TimeLogModal({
   task,
   currentUser,
