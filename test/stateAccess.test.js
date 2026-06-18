@@ -145,7 +145,7 @@ test("member cannot save an unsafe profile image URL", () => {
   );
 });
 
-test("member can update assigned manager task status and first seen time", () => {
+test("member can mark assigned manager task seen when acting on it", () => {
   const current = {
     ...state,
     personalTasks: [

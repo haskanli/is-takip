@@ -2124,6 +2124,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
     const notices=[];
     const patch={...data};
     if(data.status&&old?.status!==data.status){
+      if(old?.assignee===currentUser.id&&!old.firstSeenAt&&!patch.firstSeenAt)patch.firstSeenAt=now();
       patch.statusUpdatedAt=now();
       patch.statusUpdatedBy=currentUser.id;
       addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} \u2192 ${data.status}`);
@@ -2136,12 +2137,6 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
     }
     return {...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...patch}:t),notifications:[...notices,...(s.notifications||[])]};
   });
-  useEffect(()=>{
-    const unseen=(state.personalTasks||[]).filter(t=>t.assignee===currentUser.id&&!t.firstSeenAt);
-    if(!unseen.length)return;
-    const seenAt=now();
-    setState(s=>({...s,personalTasks:(s.personalTasks||[]).map(t=>t.assignee===currentUser.id&&!t.firstSeenAt?{...t,firstSeenAt:seenAt}:t)}));
-  },[currentUser.id,state.personalTasks,setState]);
   const updateProjTask=(pId,mId,tId,data)=>setState(s=>{const old=s.projects.find(p=>p.id===pId)?.milestones.find(m=>m.id===mId)?.tasks.find(t=>t.id===tId);const upd={...s,projects:s.projects.map(p=>p.id!==pId?p:{...p,milestones:p.milestones.map(m=>m.id!==mId?m:{...m,tasks:m.tasks.map(t=>t.id!==tId?t:{...t,...data})})})};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
   const openTaskDetail=t=>{
     if(t.source==="personal"&&t.assignee===currentUser.id&&!t.firstSeenAt)updatePersonal(t.id,{firstSeenAt:now()});
