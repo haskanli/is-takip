@@ -22,7 +22,7 @@ import {
   PeopleMultiSelect,
   StakeholderEditor,
 } from "./ui/formControls.jsx";
-import { TaskCard as SharedTaskCard } from "./ui/taskComponents.jsx";
+import { TaskCard as SharedTaskCard, TimeLogModal as SharedTimeLogModal } from "./ui/taskComponents.jsx";
 import { Avatar, Btn, Card, Field, Icon, Modal, iStyle, lStyle } from "./ui/primitives.jsx";
 import {
   Badge,
@@ -2219,7 +2219,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
 
     {modal?.type==="addPersonal"&&<PersonalTaskModal title="Genel Görev Ekle" people={state.people} projects={state.projects} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={addPersonal} />}
     {modal?.type==="editPersonal"&&<PersonalTaskModal title="Görevi Düzenle" initial={modal.data} people={state.people} projects={state.projects} isAdmin={isAdmin} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(d)=>{updatePersonal(modal.data.id,d);setModal(null);}} />}
-    {modal?.type==="time"&&<TimeLogModal task={modal.data} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(entries)=>{const t=modal.data;if(t.source==="personal")updatePersonal(t.id,{timeEntries:entries});else updateProjTask(t.projId,t.msId,t.id,{timeEntries:entries});}} />}
+    {modal?.type==="time"&&<SharedTimeLogModal task={modal.data} currentUser={currentUser} createId={uid} getTimestamp={now} formatDate={fmt} onClose={()=>setModal(null)} onSave={(entries)=>{const t=modal.data;if(t.source==="personal")updatePersonal(t.id,{timeEntries:entries});else updateProjTask(t.projId,t.msId,t.id,{timeEntries:entries});}} />}
     {modal?.type==="taskDetail"&&<TaskDetailModal task={modal.data.source==="personal"?(state.personalTasks||[]).find(t=>t.id===modal.data.id)||modal.data:state.projects.find(p=>p.id===modal.data.projId)?.milestones.find(m=>m.id===modal.data.msId)?.tasks.find(t=>t.id===modal.data.id)||modal.data} people={state.people} currentUser={currentUser} onClose={()=>setModal(null)} onUpdate={(data)=>{const t=modal.data;if(t.source==="personal")updatePersonal(t.id,data);else updateProjTask(t.projId,t.msId,t.id,data);}} />}
   </div>;
 }
@@ -4432,53 +4432,12 @@ export default function App() {
     {modal?.type==="personDetail"&&<PersonDetailModal person={modal.data} projects={state.projects} personalTasks={state.personalTasks} onClose={()=>setModal(null)} />}
     {modal?.type==="addRisk"&&<RiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
     {modal?.type==="editProfile"&&<UserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
-    {modal?.type==="timeLog"&&<TimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
+    {modal?.type==="timeLog"&&<SharedTimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} createId={uid} getTimestamp={now} formatDate={fmt} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
     {modal?.type==="addPersonal"&&<PersonalTaskModal title="Görev Ata" people={state.people} projects={state.projects} isAdmin currentUser={currentUser} onClose={()=>setModal(null)} onSave={saveAdminAssignedTask} />}
     {mobileQuickSheet&&<MobileQuickSheet isAdminMode={useAdminHome} onClose={()=>setMobileQuickSheet(false)} onSelect={target=>{setMobileQuickSheet(false);if(target==="assign"){setModal({type:"addPersonal"});return;}if(target==="todo"||target==="action")setMobileQuick(target);else{setSelProject(null);setSelMilestone(null);if(target==="ticket")setTicketMineOnly(true);setView(target==="ticket"?"tickets":target);}}}/>}
     {mobileQuick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickTodo}/>}
     {mobileQuick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickAction}/>}
   </div></>;
-}
-
-
-// ─── Time Log Modal ──────────────────────────────────────────────────────────
-function TimeLogModal({ task, currentUser, onClose, onSave }) {
-  const entries=task.timeEntries||[];
-  const [hours,setHours]=useState("");
-  const [date,setDate]=useState(new Date().toISOString().slice(0,10));
-  const [note,setNote]=useState("");
-  const total=entries.reduce((a,e)=>a+(parseFloat(e.hours)||0),0);
-  const planned=parseFloat(task.estimatedHours)||0;
-  const add=()=>{
-    const h=parseFloat(hours);
-    if(!h||h<=0){alert("Geçerli saat girin.");return;}
-    onSave([...entries,{id:uid(),hours:h,date,note,user:currentUser.name,userId:currentUser.id,ts:now()}]);
-    setHours("");setNote("");
-  };
-  const remove=(id)=>onSave(entries.filter(e=>e.id!==id));
-  return <Modal title={`Süre Girişi — ${task.title}`} onClose={onClose} wide>
-    <div style={{ background:"#F5F3FF", borderRadius:10, padding:"12px 16px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-      <span style={{ fontSize:13, fontWeight:700, color:"#7C3AED" }}>Toplam Harcanan{planned?` / Planlanan ${planned} saat`:""}</span>
-      <span style={{ fontSize:20, fontWeight:800, color:planned&&total>planned?"#E11D48":"#7C3AED" }}>{total} saat</span>
-    </div>
-    <div style={{ display:"grid", gridTemplateColumns:"100px 1fr", gap:10, marginBottom:10 }}>
-      <Field label="Saat *"><input type="number" step="0.5" min="0" style={iStyle} value={hours} onChange={e=>setHours(e.target.value)} placeholder="2.5" /></Field>
-      <Field label="Tarih"><input type="date" style={iStyle} value={date} onChange={e=>setDate(e.target.value)} /></Field>
-    </div>
-    <Field label="Açıklama"><input style={iStyle} value={note} onChange={e=>setNote(e.target.value)} placeholder="Ne yapıldı?" /></Field>
-    <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:18 }}><Btn onClick={add}>+ Süre Ekle</Btn></div>
-    {entries.length>0&&<div>
-      <div style={{ fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Kayıtlar ({entries.length})</div>
-      {entries.slice().reverse().map(e=><div key={e.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 13px", background:"#F8FAFC", borderRadius:8, border:"1.5px solid #E2E8F0", marginBottom:5 }}>
-        <span style={{ fontWeight:800, fontSize:14, color:"#7C3AED", minWidth:55 }}>{e.hours} sa</span>
-        <div style={{ flex:1 }}>
-          <div style={{ fontSize:12, color:"#1E293B" }}>{e.note||"—"}</div>
-          <div style={{ fontSize:10, color:"#94A3B8" }}>{e.user} · {fmt(e.date)}</div>
-        </div>
-        <button onClick={()=>remove(e.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:14 }}>x</button>
-      </div>)}
-    </div>}
-  </Modal>;
 }
 
 

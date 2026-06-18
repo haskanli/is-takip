@@ -1,4 +1,5 @@
-import { Avatar, Btn, Icon, iStyle } from "./primitives.jsx";
+import { useState } from "react";
+import { Avatar, Btn, Field, Icon, Modal, iStyle } from "./primitives.jsx";
 import {
   Badge,
   DelayBadge,
@@ -9,6 +10,8 @@ import {
 
 const defaultFormatDate = (value) => value || "";
 const defaultFormatFullDate = (value) => value || "";
+const defaultCreateId = () => Math.random().toString(36).slice(2, 9);
+const defaultGetTimestamp = () => new Date().toISOString();
 
 export function TaskCard({
   task,
@@ -267,5 +270,148 @@ export function TaskCard({
         )}
       </div>
     </div>
+  );
+}
+
+export function TimeLogModal({
+  task,
+  currentUser,
+  onClose,
+  onSave,
+  createId = defaultCreateId,
+  getTimestamp = defaultGetTimestamp,
+  formatDate = defaultFormatDate,
+}) {
+  const entries = task.timeEntries || [];
+  const [hours, setHours] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [note, setNote] = useState("");
+  const total = entries.reduce((sum, entry) => sum + (parseFloat(entry.hours) || 0), 0);
+  const planned = parseFloat(task.estimatedHours) || 0;
+
+  const add = () => {
+    const parsedHours = parseFloat(hours);
+    if (!parsedHours || parsedHours <= 0) {
+      alert("Geçerli saat girin.");
+      return;
+    }
+    onSave([
+      ...entries,
+      {
+        id: createId(),
+        hours: parsedHours,
+        date,
+        note,
+        user: currentUser.name,
+        userId: currentUser.id,
+        ts: getTimestamp(),
+      },
+    ]);
+    setHours("");
+    setNote("");
+  };
+
+  const remove = (id) => onSave(entries.filter((entry) => entry.id !== id));
+
+  return (
+    <Modal title={`Süre Girişi — ${task.title}`} onClose={onClose} wide>
+      <div
+        style={{
+          background: "#F5F3FF",
+          borderRadius: 10,
+          padding: "12px 16px",
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#7C3AED" }}>
+          Toplam Harcanan{planned ? ` / Planlanan ${planned} saat` : ""}
+        </span>
+        <span style={{ fontSize: 20, fontWeight: 800, color: planned && total > planned ? "#E11D48" : "#7C3AED" }}>
+          {total} saat
+        </span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: 10, marginBottom: 10 }}>
+        <Field label="Saat *">
+          <input
+            type="number"
+            step="0.5"
+            min="0"
+            style={iStyle}
+            value={hours}
+            onChange={(event) => setHours(event.target.value)}
+            placeholder="2.5"
+          />
+        </Field>
+        <Field label="Tarih">
+          <input type="date" style={iStyle} value={date} onChange={(event) => setDate(event.target.value)} />
+        </Field>
+      </div>
+
+      <Field label="Açıklama">
+        <input
+          style={iStyle}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          placeholder="Ne yapıldı?"
+        />
+      </Field>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 18 }}>
+        <Btn onClick={add}>+ Süre Ekle</Btn>
+      </div>
+
+      {entries.length > 0 && (
+        <div>
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 11,
+              color: "#64748B",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              marginBottom: 8,
+            }}
+          >
+            Kayıtlar ({entries.length})
+          </div>
+          {entries
+            .slice()
+            .reverse()
+            .map((entry) => (
+              <div
+                key={entry.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "9px 13px",
+                  background: "#F8FAFC",
+                  borderRadius: 8,
+                  border: "1.5px solid #E2E8F0",
+                  marginBottom: 5,
+                }}
+              >
+                <span style={{ fontWeight: 800, fontSize: 14, color: "#7C3AED", minWidth: 55 }}>{entry.hours} sa</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, color: "#1E293B" }}>{entry.note || "—"}</div>
+                  <div style={{ fontSize: 10, color: "#94A3B8" }}>
+                    {entry.user} · {formatDate(entry.date)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => remove(entry.id)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#CBD5E1", fontSize: 14 }}
+                >
+                  x
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
+    </Modal>
   );
 }
