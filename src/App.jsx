@@ -4140,10 +4140,6 @@ export default function App() {
     ["projlogs","activity","Log","project.logs.view"],
   ];
   const allowedProjectTabs=projectTabDefs.filter(([, , ,permission])=>!project||hasPermission(currentUser,permission,{state,project}));
-  useEffect(()=>{
-    if(!project||!allowedProjectTabs.length)return;
-    if(!allowedProjectTabs.some(([id])=>id===projectTab))setProjectTab(allowedProjectTabs[0][0]);
-  },[project?.id,projectTab,allowedProjectTabs]);
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
 
   const addProject=(data)=>{ const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,members:[...new Set([...(data.members||[]),...assigned])],pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));setSelProject(p.id);setView("projects");setProjectTab("setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
@@ -4397,12 +4393,6 @@ export default function App() {
     {id:"logs",icon:"activity",label:"Aktivite",permission:"project.logs.view"},
   ];
   const nav=(currentUser.ticketOnly?fullNav.filter(item=>["tickets"].includes(item.id)):fullNav).filter(item=>!item.permission||hasPermission(currentUser,item.permission,{state}));
-  useEffect(()=>{
-    if(!nav.length)return;
-    if(!nav.some(item=>item.id===view)&&!selProject){
-      setView(nav[0].id);
-    }
-  },[nav,view,selProject]);
 
   return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
