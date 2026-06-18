@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getServerConfig, getSupabaseConfig } from "./config.js";
+import { findSlackProfileByEmail } from "./services/slack.js";
 
 let authClient;
 const getAuthClient = () => {
@@ -123,13 +124,25 @@ export const ensureApplicationUser = async (person) => {
   }
 
   const client = getAuthClient();
+  let slackProfile = null;
+  try {
+    const result = await findSlackProfileByEmail(email);
+    if (!result?.skipped) slackProfile = result;
+  } catch {
+    slackProfile = null;
+  }
   let authUser = await findAuthUserByEmail(client, email);
   let createdAuthUser = false;
   if (!authUser) {
     const { data, error } = await client.auth.admin.createUser({
       email,
       email_confirm: true,
-      user_metadata: { name, legacy_id: legacyId },
+      user_metadata: {
+        name,
+        legacy_id: legacyId,
+        ...(slackProfile?.avatarUrl ? { avatar_url: slackProfile.avatarUrl } : {}),
+        ...(slackProfile?.slackUserId ? { slack_user_id: slackProfile.slackUserId } : {}),
+      },
     });
     if (error) throw Object.assign(new Error(error.message), { status: 422 });
     authUser = data.user;
@@ -141,6 +154,8 @@ export const ensureApplicationUser = async (person) => {
         ...(authUser.user_metadata || {}),
         name,
         legacy_id: legacyId,
+        ...(slackProfile?.avatarUrl ? { avatar_url: slackProfile.avatarUrl } : {}),
+        ...(slackProfile?.slackUserId ? { slack_user_id: slackProfile.slackUserId } : {}),
       },
     });
     if (updateAuthError) {
@@ -180,7 +195,11 @@ export const ensureApplicationUser = async (person) => {
     is_admin: Boolean(person.isAdmin),
     whatsapp_enabled: person.whatsappEnabled !== false,
     active: person.active !== false,
-    payload: person,
+    payload: {
+      ...person,
+      ...(slackProfile?.avatarUrl ? { avatarUrl: slackProfile.avatarUrl } : {}),
+      ...(slackProfile?.slackUserId ? { slackUserId: slackProfile.slackUserId } : {}),
+    },
     updated_at: new Date().toISOString(),
   };
   const { error: upsertError } = await client
@@ -195,5 +214,7 @@ export const ensureApplicationUser = async (person) => {
     profileId: profile.id,
     createdAuthUser,
     updatedProfile: Boolean(existingProfile),
+    avatarUrl: slackProfile?.avatarUrl || "",
+    slackUserId: slackProfile?.slackUserId || "",
   };
 };

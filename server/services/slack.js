@@ -95,6 +95,27 @@ const lookupSlackUserByEmail = async (email, token, fetchImpl) => {
   return result.user;
 };
 
+export const findSlackProfileByEmail = async (
+  email,
+  { fetchImpl = fetch } = {},
+) => {
+  const { botToken } = getSlackConfig();
+  if (!botToken || !email) return { skipped: true };
+  const user = await lookupSlackUserByEmail(email.trim().toLowerCase(), botToken, fetchImpl);
+  const profile = user.profile || {};
+  return {
+    slackUserId: user.id,
+    name: profile.real_name || profile.display_name || user.real_name || user.name || "",
+    avatarUrl:
+      profile.image_512 ||
+      profile.image_192 ||
+      profile.image_72 ||
+      profile.image_48 ||
+      profile.image_32 ||
+      "",
+  };
+};
+
 export const sendTaskAssignedSlack = async (
   { assignee, task, assigner },
   { fetchImpl = fetch } = {},

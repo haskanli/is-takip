@@ -3123,7 +3123,8 @@ export default function App() {
     setState(s=>({...s,people:[...s.people,person]}));
     addLog(currentUser.name,"general",`Ekip ?yesi eklendi: ${data.name}`);
     try{
-      await ensureAuthUserForPerson(person);
+      const authResult=await ensureAuthUserForPerson(person);
+      if(authResult?.avatarUrl)setState(s=>({...s,people:s.people.map(item=>item.id===person.id?{...item,avatarUrl:authResult.avatarUrl,slackUserId:authResult.slackUserId||item.slackUserId}:item)}));
     }catch(error){
       console.warn("Auth kullan?c?s? olu?turulamad?",error);
       alert(`Ki?i eklendi ancak giri? hesab? olu?turulamad?: ${error.message}`);
@@ -3136,7 +3137,8 @@ export default function App() {
     setState(s=>({...s,people:s.people.map(item=>item.id===id?person:item)}));
     addLog(currentUser.name,"general",`Ekip ?yesi g?ncellendi: ${data.name}`);
     try{
-      await ensureAuthUserForPerson(person);
+      const authResult=await ensureAuthUserForPerson(person);
+      if(authResult?.avatarUrl)setState(s=>({...s,people:s.people.map(item=>item.id===person.id?{...item,avatarUrl:authResult.avatarUrl,slackUserId:authResult.slackUserId||item.slackUserId}:item)}));
     }catch(error){
       console.warn("Auth kullan?c?s? g?ncellenemedi",error);
       alert(`Ki?i g?ncellendi ancak giri? hesab? senkronlanamad?: ${error.message}`);
