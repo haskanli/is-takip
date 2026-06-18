@@ -179,6 +179,7 @@ test("customer can add a new customer ticket but cannot edit project data", () =
   const profile = { ...member, legacy_id: "cust-user", name: "Customer" };
   const incoming = filterStateForProfile(state, profile);
   incoming.projects[0].name = "Tampered customer project";
+  incoming.projects[0].milestones.push({ id: "customer-ms", name: "Injected", tasks: [] });
   incoming.projectTickets.p1.push({
     id: "ticket-new-customer",
     title: "New customer ticket",
@@ -187,11 +188,38 @@ test("customer can add a new customer ticket but cannot edit project data", () =
 
   const merged = mergeStateForProfile(state, incoming, profile);
   assert.equal(merged.projects[0].name, "Visible");
+  assert.equal(merged.projects[0].milestones.some((item) => item.id === "customer-ms"), false);
   const added = merged.projectTickets.p1.find((ticket) => ticket.id === "ticket-new-customer");
   assert.equal(added.source, "customer");
   assert.equal(added.customerVisible, true);
   assert.equal(added.customerId, "p1");
   assert.equal(added.author, "Customer");
+});
+
+test("customer can only approve or reject tickets waiting for customer approval", () => {
+  const profile = { ...member, legacy_id: "cust-user", name: "Customer" };
+  const current = {
+    ...state,
+    projectTickets: {
+      ...state.projectTickets,
+      p1: [
+        ...state.projectTickets.p1,
+        { id: "ticket-approval", title: "Needs approval", status: "Müşteri Onayında", customerVisible: true, customerId: "p1" },
+        { id: "ticket-normal", title: "Normal", status: "Açık", customerVisible: true, customerId: "p1" },
+      ],
+    },
+  };
+  const incoming = filterStateForProfile(current, profile);
+  incoming.projectTickets.p1 = incoming.projectTickets.p1.map((ticket) => {
+    if (ticket.id === "ticket-approval") return { ...ticket, status: "Tamamlandı", customerApproval: { respondedAt: "2026-06-18T12:00:00.000Z" } };
+    if (ticket.id === "ticket-normal") return { ...ticket, status: "Tamamlandı" };
+    return ticket;
+  });
+
+  const merged = mergeStateForProfile(current, incoming, profile);
+  assert.equal(merged.projectTickets.p1.find((ticket) => ticket.id === "ticket-approval").status, "Tamamlandı");
+  assert.equal(merged.projectTickets.p1.find((ticket) => ticket.id === "ticket-approval").customerApproval.status, "approved");
+  assert.equal(merged.projectTickets.p1.find((ticket) => ticket.id === "ticket-normal").status, "Açık");
 });
 
 test("member can mark assigned manager task seen when acting on it", () => {

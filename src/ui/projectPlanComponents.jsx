@@ -38,7 +38,7 @@ export function MilestoneTaskPanel({
       onCheck={(checked) => onCheckTask(milestone.id, task.id, checked)}
       onEdit={isAdmin ? () => onEditTask(milestone.id, task) : null}
       onDelete={isAdmin ? () => onDeleteTask(milestone.id, task.id) : null}
-      onTime={() => onTimeTask(milestone.id, task)}
+      onTime={isAdmin ? () => onTimeTask(milestone.id, task) : null}
     />
   );
 

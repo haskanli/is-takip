@@ -143,7 +143,7 @@ export function TicketsPage({
     </>}
     {!customerMode&&activeTab==="recurring"&&<RecurringProblemsPanel entries={all}/>}
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}><Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><TicketForm project={state.projects.find(p=>p.id===modal.projectId)} types={TYPES} prios={PRIOS} people={state.people} customerMode={customerMode} onClose={()=>setModal(null)} onSave={async data=>{if(!modal.projectId)return;await add(modal.projectId,data);setModal(null);}}/></Modal>}
-    {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} canEdit={!customerMode&&(isAdmin||modal.data.author===currentUser.name)} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)} onResend={!customerMode?()=>notifyTicketAssignment(modal.projectId,((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data):undefined}/>}
+    {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} customerMode={customerMode} canEdit={!customerMode&&(isAdmin||modal.data.author===currentUser.name)} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)} onResend={!customerMode?()=>notifyTicketAssignment(modal.projectId,((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data):undefined}/>}
   </div>;
 }
 
@@ -216,7 +216,7 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin })
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>
       <TicketForm project={project} onSave={async d=>{await addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} customerMode={customerMode} />
     </Modal>}
-    {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} canEdit={!customerMode&&(isAdmin||modal.data.author===currentUser.name)} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} onResend={!customerMode?()=>notifyTicketAssignment(project.id,tickets.find(t=>t.id===modal.data.id)||modal.data):undefined} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />}
+    {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} customerMode={customerMode} canEdit={!customerMode&&(isAdmin||modal.data.author===currentUser.name)} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} onResend={!customerMode?()=>notifyTicketAssignment(project.id,tickets.find(t=>t.id===modal.data.id)||modal.data):undefined} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />}
   </div>;
 }
 function RecurringProblemsPanel({entries=[]}) {
@@ -308,7 +308,7 @@ function StepListEditor({title,items=[],onAdd,onRemove,onChange}) {
   </div>;
 }
 
-function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, prios, people=[] }) {
+function TicketDetail({ ticket, customerMode=false, canEdit, onClose, onUpdate, onResend, types, prios, people=[] }) {
   const [editing,setEditing]=useState(false);
   const [form,setForm]=useState(ticket);
   const [jira,setJira]=useState(null);
@@ -359,6 +359,40 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
       setMailStatus({loading:false,message:e?.message||"Mail gönderilemedi.",error:true});
     }
   };
+  const customerApprovalOpen=String(ticket.status||"").toLocaleLowerCase("tr-TR")==="müşteri onayında";
+  if(customerMode){
+    const decide=(approved)=>onUpdate?.({
+      status:approved?"Tamamlandı":"Müşteri Reddetti",
+      customerApproval:{...(ticket.customerApproval||{}),status:approved?"approved":"rejected",respondedAt:now()}
+    });
+    return <Modal title={`${ticketNumber(ticket)} · ${ticket.title}`} onClose={onClose} wide>
+      <div>
+        {ticket.description&&<div style={{fontSize:13,color:"#475569",lineHeight:1.6,marginBottom:16}}>{ticket.description}</div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9,marginBottom:16}}>
+          <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,padding:12}}><div style={{fontSize:10,color:"#64748B",fontWeight:850,textTransform:"uppercase"}}>Durum</div><div style={{fontSize:15,fontWeight:900,color:"#1E293B",marginTop:4}}>{ticket.status||"Açık"}</div></div>
+          <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,padding:12}}><div style={{fontSize:10,color:"#64748B",fontWeight:850,textTransform:"uppercase"}}>Öncelik</div><div style={{fontSize:15,fontWeight:900,color:"#1E293B",marginTop:4}}>{ticket.priority||"-"}</div></div>
+          <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,padding:12}}><div style={{fontSize:10,color:"#64748B",fontWeight:850,textTransform:"uppercase"}}>Açılış</div><div style={{fontSize:15,fontWeight:900,color:"#1E293B",marginTop:4}}>{ticket.ts?new Date(ticket.ts).toLocaleDateString("tr-TR"):"-"}</div></div>
+        </div>
+        {(ticket.jiraStatus||ticket.jiraKey||ticket.jiraSummary||ticket.jiraLink)&&<div style={{border:"1.5px solid #DDE7F5",borderRadius:12,padding:14,background:"#F8FBFF",marginBottom:16}}>
+          <div style={{fontWeight:800,fontSize:13,color:"#0052CC",marginBottom:8}}>Jira Durumu</div>
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:8}}>{ticket.jiraKey&&<strong style={{fontSize:13}}>{ticket.jiraKey}</strong>}<span style={{background:"#E8F5E9",color:"#16794A",borderRadius:7,padding:"2px 8px",fontSize:11,fontWeight:700}}>{ticket.jiraStatus||"Durum bekleniyor"}</span></div>
+          {ticket.jiraSummary&&<div style={{fontSize:12,fontWeight:750,color:"#334155",marginBottom:7}}>{ticket.jiraSummary}</div>}
+          {ticket.jiraLink&&<a href={ticket.jiraLink} target="_blank" rel="noreferrer" style={{display:"inline-block",background:"#0052CC",color:"#fff",borderRadius:8,padding:"6px 11px",fontSize:12,fontWeight:700,textDecoration:"none"}}>Jira'da Aç</a>}
+        </div>}
+        <div style={{border:"1px solid #C7D2FE",borderRadius:12,padding:13,background:"#EEF2FF",marginBottom:16}}>
+          <div style={{fontWeight:800,fontSize:12,color:"#3730A3"}}>Müşteri Onayı</div>
+          <div style={{fontSize:11,color:"#64748B",margin:"5px 0 10px"}}>{ticket.customerApproval?.status==="approved"?"Onaylandı":ticket.customerApproval?.status==="rejected"?"Reddedildi":customerApprovalOpen?"Onayınız bekleniyor":"Şu an onay beklenmiyor"}</div>
+          {customerApprovalOpen&&<div style={{display:"flex",gap:7,flexWrap:"wrap"}}><Btn small variant="success" onClick={()=>decide(true)}>Onayla</Btn><Btn small variant="danger" onClick={()=>decide(false)}>Reddet</Btn></div>}
+        </div>
+        <div style={{border:"1px solid #E2E8F0",borderRadius:12,padding:13,background:"#F8FAFC",marginBottom:16}}>
+          <div style={{fontWeight:800,fontSize:12,marginBottom:9}}>Ticket Geçmişi</div>
+          <div style={{display:"grid",gap:7}}>{[...(ticket.history||[])].reverse().map(entry=><div key={entry.id} style={{fontSize:10,color:"#475569",display:"grid",gridTemplateColumns:"110px 1fr",gap:8}}><span style={{color:"#94A3B8"}}>{new Date(entry.ts).toLocaleString("tr-TR")}</span><span><b>{entry.userName||"Sistem"}</b> · {entry.label}: {entry.from} → {entry.to}</span></div>)}</div>
+          {!ticket.history?.length&&<div style={{fontSize:11,color:"#94A3B8"}}>Henüz değişiklik kaydı yok.</div>}
+        </div>
+        <div style={{display:"flex",justifyContent:"flex-end"}}><Btn variant="ghost" onClick={onClose}>Kapat</Btn></div>
+      </div>
+    </Modal>;
+  }
   return <Modal title={`${ticketNumber(ticket)} · ${ticket.title}`} onClose={onClose} wide>
     {editing?<div>
       <Field label="Başlık"><input style={iStyle} value={form.title||""} onChange={e=>upd("title",e.target.value)} /></Field>

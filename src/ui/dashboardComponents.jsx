@@ -89,7 +89,10 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
           <h1 style={{ margin: 0, fontSize: "clamp(24px,4vw,38px)", letterSpacing: "-.04em", color: "#111827" }}>Proje durum raporu</h1>
           <p style={{ margin: "8px 0 0", color: "#64748B", fontSize: 14, lineHeight: 1.55, maxWidth: 680 }}>Bu ekranda size ait proje planı, sağlık skoru, eğitim/RACI, makineler ve görünür ticketların güncel özeti yer alır.</p>
         </div>
-        <button onClick={() => onNavigate?.("tickets")} style={{ border: 0, borderRadius: 14, background: "linear-gradient(135deg,#4A6CF7,#7C3AED)", color: "#fff", padding: "12px 15px", fontWeight: 900, cursor: "pointer", boxShadow: "0 14px 30px rgba(79,70,229,.22)" }}>Ticketları Gör</button>
+        <div style={{display:"flex",gap:9,flexWrap:"wrap",justifyContent:"flex-end"}}>
+          <button onClick={() => onNavigate?.("tickets")} style={{ border: 0, borderRadius: 14, background: "linear-gradient(135deg,#4A6CF7,#7C3AED)", color: "#fff", padding: "12px 15px", fontWeight: 900, cursor: "pointer", boxShadow: "0 14px 30px rgba(79,70,229,.22)" }}>+ Yeni Ticket Aç</button>
+          <button onClick={() => onNavigate?.("tickets")} style={{ border: "1px solid #E2E8F0", borderRadius: 14, background: "#fff", color: "#334155", padding: "12px 15px", fontWeight: 900, cursor: "pointer" }}>Ticketları Gör</button>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 16 }}>

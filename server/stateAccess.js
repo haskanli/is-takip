@@ -300,7 +300,29 @@ export const mergeStateForProfile = (current, incoming, profile) => {
       const incomingTickets = safeIncoming.projectTickets?.[projectId] || [];
       const nextTickets = [...currentTickets];
       for (const ticket of incomingTickets) {
-        if (currentById.has(ticket.id)) continue;
+        if (currentById.has(ticket.id)) {
+          const currentTicket = currentById.get(ticket.id);
+          const currentStatus = String(currentTicket.status || "").toLocaleLowerCase("tr-TR");
+          const incomingStatus = String(ticket.status || "");
+          const canApprove =
+            currentStatus === "müşteri onayında" &&
+            (incomingStatus === "Tamamlandı" || incomingStatus === "Müşteri Reddetti") &&
+            (currentTicket.customerVisible || currentTicket.source === "customer" || currentTicket.customerId === customerId);
+          if (canApprove) {
+            const index = nextTickets.findIndex((item) => item.id === ticket.id);
+            nextTickets[index] = {
+              ...currentTicket,
+              status: incomingStatus,
+              customerApproval: {
+                ...(currentTicket.customerApproval || {}),
+                status: incomingStatus === "Tamamlandı" ? "approved" : "rejected",
+                respondedAt: ticket.customerApproval?.respondedAt || new Date().toISOString(),
+              },
+              updatedAt: ticket.updatedAt || new Date().toISOString(),
+            };
+          }
+          continue;
+        }
         nextTickets.push({
           ...clone(ticket),
           source: "customer",
