@@ -1,4 +1,78 @@
+import { useState } from "react";
 import { Icon } from "./primitives.jsx";
+import { Btn, Field, Modal, iStyle } from "./primitives.jsx";
+
+const DEFAULT_QUICK_ACTION_TAGS = ["Takip", "Toplantı", "Telefon/Görüşme", "Yazışma", "Sistem Kontrolü", "Saha Ziyareti", "Eğitim"];
+
+export function QuickTodoModal({ projects, onClose, onSave }) {
+  const [form, setForm] = useState({ projectId: "", customer: "", dueDate: "", action: "" });
+  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const selected = projects.find((project) => project.id === form.projectId);
+
+  return (
+    <Modal title="Hızlı To-Do" onClose={onClose}>
+      <Field label="Proje / Müşteri">
+        <select style={iStyle} value={form.projectId} onChange={(event) => update("projectId", event.target.value)}>
+          <option value="">Genel / proje yok</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>{project.name}</option>
+          ))}
+        </select>
+      </Field>
+      {!selected && (
+        <Field label="Müşteri">
+          <input style={iStyle} value={form.customer} onChange={(event) => update("customer", event.target.value)} placeholder="Müşteri adı" />
+        </Field>
+      )}
+      <Field label="Termin">
+        <input type="date" style={iStyle} value={form.dueDate} onChange={(event) => update("dueDate", event.target.value)} />
+      </Field>
+      <Field label="Aksiyon">
+        <textarea style={{ ...iStyle, minHeight: 100, resize: "vertical" }} value={form.action} onChange={(event) => update("action", event.target.value)} placeholder="Ne yapılacak?" />
+      </Field>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 7 }}>
+        <Btn variant="ghost" onClick={onClose}>İptal</Btn>
+        <Btn disabled={!form.action.trim()} onClick={() => onSave({ ...form, customer: selected?.name || form.customer })}>Kaydet</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+export function QuickActionModal({ projects, onClose, onSave, actionTags = DEFAULT_QUICK_ACTION_TAGS }) {
+  const [form, setForm] = useState({ projectId: projects[0]?.id || "", tag: "Takip", text: "", effortHours: "" });
+  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  return (
+    <Modal title="Hızlı Aksiyon" onClose={onClose}>
+      <Field label="Proje">
+        <select style={iStyle} value={form.projectId} onChange={(event) => update("projectId", event.target.value)}>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>{project.name}</option>
+          ))}
+        </select>
+      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <Field label="Aksiyon Türü">
+          <select style={iStyle} value={form.tag} onChange={(event) => update("tag", event.target.value)}>
+            {actionTags.map((tag) => (
+              <option key={tag}>{tag}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Efor (opsiyonel)">
+          <input type="number" min="0" step=".25" style={iStyle} value={form.effortHours} onChange={(event) => update("effortHours", event.target.value)} />
+        </Field>
+      </div>
+      <Field label="Not">
+        <textarea style={{ ...iStyle, minHeight: 120, resize: "vertical" }} value={form.text} onChange={(event) => update("text", event.target.value)} placeholder="Ne yaptınız, kiminle görüştünüz, sonraki aksiyon nedir?" />
+      </Field>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 7 }}>
+        <Btn variant="ghost" onClick={onClose}>İptal</Btn>
+        <Btn disabled={!form.projectId || !form.text.trim()} onClick={() => onSave(form)}>Kaydet</Btn>
+      </div>
+    </Modal>
+  );
+}
 
 export function MobileFeedCard({ title, actionLabel, onAction, children }) {
   return (

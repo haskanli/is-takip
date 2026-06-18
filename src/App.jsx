@@ -30,6 +30,8 @@ import {
   MobileFeedCard,
   MobileFeedRow,
   MobileQuickSheet,
+  QuickActionModal,
+  QuickTodoModal,
 } from "./ui/mobileComponents.jsx";
 import {
   PersonalTaskModal as SharedPersonalTaskModal,
@@ -860,32 +862,8 @@ function DashboardPage({state,setState,currentUser,isAdmin,myProjects,deadlineWa
       <div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:15,padding:16}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><div style={{fontWeight:800,fontSize:13}}>Yaklaşan To-Do'larım</div><button onClick={()=>onNavigate("todos")} style={{border:0,background:"#FDF2F8",color:"#BE185D",borderRadius:7,padding:"5px 7px",fontSize:9,fontWeight:800,cursor:"pointer"}}>Tümünü aç</button></div>{upcomingTodos.slice(0,5).map(todo=>{const project=state.projects.find(item=>item.id===todo.projectId);const late=todo.dueDate&&daysDiff(todo.dueDate)>0;return <button key={todo.id} onClick={()=>onNavigate("todos")} style={{width:"100%",border:0,borderBottom:"1px solid #F1F5F9",background:"transparent",padding:"8px 0",textAlign:"left",cursor:"pointer",display:"flex",gap:8,alignItems:"flex-start"}}><span style={{width:7,height:7,borderRadius:"50%",background:late?"#E11D48":"#DB2777",marginTop:4,flexShrink:0}}/><span style={{minWidth:0,flex:1}}><b style={{display:"block",fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{todo.action||todo.text}</b><span style={{display:"block",fontSize:9,color:late?"#E11D48":"#94A3B8",marginTop:2}}>{project?.name||todo.customer||"Genel"}{todo.dueDate?` · ${fmt(todo.dueDate)}`:""}{late?` · ${daysDiff(todo.dueDate)} gün gecikti`:""}</span></span></button>})}{!upcomingTodos.length&&<div style={{fontSize:12,color:"#94A3B8"}}>Açık To-Do bulunmuyor.</div>}</div>
     </div>
     {quick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickTodo}/>}
-    {quick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickAction}/>}
+    {quick==="action"&&<QuickActionModal projects={state.projects} actionTags={DEFAULT_ACTION_TAGS} onClose={()=>setQuick(null)} onSave={saveQuickAction}/>}
   </div>;
-}
-
-function QuickTodoModal({projects,onClose,onSave}) {
-  const [form,setForm]=useState({projectId:"",customer:"",dueDate:"",action:""});
-  const update=(key,value)=>setForm(current=>({...current,[key]:value}));
-  const selected=projects.find(project=>project.id===form.projectId);
-  return <Modal title="Hızlı To-Do" onClose={onClose}>
-    <Field label="Proje / Müşteri"><select style={iStyle} value={form.projectId} onChange={event=>update("projectId",event.target.value)}><option value="">Genel / proje yok</option>{projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></Field>
-    {!selected&&<Field label="Müşteri"><input style={iStyle} value={form.customer} onChange={event=>update("customer",event.target.value)} placeholder="Müşteri adı"/></Field>}
-    <Field label="Termin"><input type="date" style={iStyle} value={form.dueDate} onChange={event=>update("dueDate",event.target.value)}/></Field>
-    <Field label="Aksiyon"><textarea style={{...iStyle,minHeight:100,resize:"vertical"}} value={form.action} onChange={event=>update("action",event.target.value)} placeholder="Ne yapılacak?"/></Field>
-    <div style={{display:"flex",justifyContent:"flex-end",gap:7}}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn disabled={!form.action.trim()} onClick={()=>onSave({...form,customer:selected?.name||form.customer})}>Kaydet</Btn></div>
-  </Modal>;
-}
-
-function QuickActionModal({projects,onClose,onSave}) {
-  const [form,setForm]=useState({projectId:projects[0]?.id||"",tag:"Takip",text:"",effortHours:""});
-  const update=(key,value)=>setForm(current=>({...current,[key]:value}));
-  return <Modal title="Hızlı Aksiyon" onClose={onClose}>
-    <Field label="Proje"><select style={iStyle} value={form.projectId} onChange={event=>update("projectId",event.target.value)}>{projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></Field>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Aksiyon Türü"><select style={iStyle} value={form.tag} onChange={event=>update("tag",event.target.value)}>{DEFAULT_ACTION_TAGS.map(tag=><option key={tag}>{tag}</option>)}</select></Field><Field label="Efor (opsiyonel)"><input type="number" min="0" step=".25" style={iStyle} value={form.effortHours} onChange={event=>update("effortHours",event.target.value)}/></Field></div>
-    <Field label="Not"><textarea style={{...iStyle,minHeight:120,resize:"vertical"}} value={form.text} onChange={event=>update("text",event.target.value)} placeholder="Ne yaptınız, kiminle görüştünüz, sonraki aksiyon nedir?"/></Field>
-    <div style={{display:"flex",justifyContent:"flex-end",gap:7}}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn disabled={!form.projectId||!form.text.trim()} onClick={()=>onSave(form)}>Kaydet</Btn></div>
-  </Modal>;
 }
 
 function MobileHomePage({state,setState,currentUser,myProjects,deadlineWarnings,onNavigate,onOpenProject}) {
@@ -961,7 +939,7 @@ function MobileHomePage({state,setState,currentUser,myProjects,deadlineWarnings,
       {!myProjects.length&&<EmptyMobileRow text="Atanmış proje yok."/>}
     </MobileFeedCard>
     {quick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickTodo}/>}
-    {quick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setQuick(null)} onSave={saveQuickAction}/>}
+    {quick==="action"&&<QuickActionModal projects={state.projects} actionTags={DEFAULT_ACTION_TAGS} onClose={()=>setQuick(null)} onSave={saveQuickAction}/>}
   </div>;
 }
 
@@ -4343,7 +4321,7 @@ export default function App() {
     {modal?.type==="addPersonal"&&<SharedPersonalTaskModal title="Görev Ata" people={state.people} projects={state.projects} isAdmin currentUser={currentUser} waitOptions={WAIT} todayString={todayStr} currentTimeString={currentTimeStr} onClose={()=>setModal(null)} onSave={saveAdminAssignedTask} />}
     {mobileQuickSheet&&<MobileQuickSheet isAdminMode={useAdminHome} onClose={()=>setMobileQuickSheet(false)} onSelect={target=>{setMobileQuickSheet(false);if(target==="assign"){setModal({type:"addPersonal"});return;}if(target==="todo"||target==="action")setMobileQuick(target);else{setSelProject(null);setSelMilestone(null);if(target==="ticket")setTicketMineOnly(true);setView(target==="ticket"?"tickets":target);}}}/>}
     {mobileQuick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickTodo}/>}
-    {mobileQuick==="action"&&<QuickActionModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickAction}/>}
+    {mobileQuick==="action"&&<QuickActionModal projects={state.projects} actionTags={DEFAULT_ACTION_TAGS} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickAction}/>}
   </div></>;
 }
 
