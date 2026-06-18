@@ -12,13 +12,28 @@ const state = {
     { id: "member", name: "Member" },
     { id: "other", name: "Other" },
     { id: "product", name: "Product", ticketOnly: true },
+    {
+      id: "customerUser",
+      name: "Customer User",
+      userType: "customer",
+      roleKey: "customer_viewer",
+      customerId: "customer1",
+    },
   ],
+  customers: [{ id: "customer1", name: "Customer One" }],
   projects: [
     {
       id: "p1",
       name: "Visible",
+      customerId: "customer1",
       pmIds: ["pm"],
       members: ["member"],
+      costItems: [{ id: "c1", amountUsd: 100 }],
+      costSettings: { usdTry: 40 },
+      reportSchedules: [{ id: "rs1" }],
+      documents: [{ id: "doc1" }],
+      invoiceMilestones: [{ id: "inv1" }],
+      lessonsLearned: [{ id: "lesson1" }],
       remoteAccess: [
         { id: "r1", name: "VPN", username: "user", password: "plain-secret" },
       ],
@@ -27,7 +42,15 @@ const state = {
           id: "m1",
           name: "Milestone",
           tasks: [
-            { id: "t1", assignee: "member", status: "Bekliyor", title: "Own" },
+            {
+              id: "t1",
+              assignee: "member",
+              status: "Bekliyor",
+              title: "Own",
+              estimatedHours: 4,
+              timeEntries: [{ id: "te1", hours: 2 }],
+              waitReason: "Internal wait",
+            },
             { id: "t2", assignee: "other", status: "Bekliyor", title: "Other" },
           ],
         },
@@ -55,7 +78,11 @@ const state = {
     { id: "n2", userId: "other" },
   ],
   projectTickets: {
-    p1: [{ id: "ticket1", assignedTo: "member", title: "Mine" }],
+    p1: [
+      { id: "ticket1", assignedTo: "member", title: "Mine" },
+      { id: "ticketCustomer", customerVisible: true, title: "Visible to customer" },
+      { id: "ticketCustomerOwned", customerId: "customer1", title: "Owned customer" },
+    ],
     p2: [{ id: "ticket2", assignedTo: "other", title: "Hidden" }],
   },
   projectActions: { p1: [{ id: "a1" }], p2: [{ id: "a2" }] },
@@ -104,6 +131,54 @@ test("ticket-only users see tickets without project details", () => {
   assert.deepEqual(filtered.projects[0].milestones, []);
   assert.deepEqual(filtered.personalTasks, []);
   assert.deepEqual(filtered.projectActions, {});
+});
+
+test("customer users see only their sanitized customer project data", () => {
+  const profile = {
+    ...member,
+    legacy_id: "customerUser",
+    name: "Customer User",
+  };
+  const filtered = filterStateForProfile(state, profile);
+
+  assert.deepEqual(filtered.customers.map((item) => item.id), ["customer1"]);
+  assert.deepEqual(filtered.people.map((item) => item.id), ["customerUser"]);
+  assert.deepEqual(filtered.projects.map((item) => item.id), ["p1"]);
+  assert.equal(filtered.projects[0].remoteAccess, undefined);
+  assert.equal(filtered.projects[0].costItems, undefined);
+  assert.equal(filtered.projects[0].costSettings, undefined);
+  assert.equal(filtered.projects[0].reportSchedules, undefined);
+  assert.equal(filtered.projects[0].documents, undefined);
+  assert.equal(filtered.projects[0].invoiceMilestones, undefined);
+  assert.equal(filtered.projects[0].lessonsLearned, undefined);
+  assert.equal(filtered.projects[0].milestones[0].tasks[0].timeEntries, undefined);
+  assert.equal(filtered.projects[0].milestones[0].tasks[0].estimatedHours, undefined);
+  assert.equal(filtered.projects[0].milestones[0].tasks[0].waitReason, undefined);
+  assert.deepEqual(
+    filtered.projectTickets.p1.map((item) => item.id),
+    ["ticketCustomer", "ticketCustomerOwned"],
+  );
+  assert.deepEqual(filtered.personalTasks, []);
+  assert.deepEqual(filtered.projectActions, {});
+  assert.deepEqual(filtered.logs, []);
+});
+
+test("customer users cannot merge state changes", () => {
+  const profile = {
+    ...member,
+    legacy_id: "customerUser",
+    name: "Customer User",
+  };
+  const incoming = filterStateForProfile(state, profile);
+  incoming.projects[0].name = "Tampered by customer";
+  incoming.projectTickets.p1[0].title = "Tampered ticket";
+  const merged = mergeStateForProfile(state, incoming, profile);
+
+  assert.equal(merged.projects[0].name, "Visible");
+  assert.equal(
+    merged.projectTickets.p1.find((item) => item.id === "ticketCustomer").title,
+    "Visible to customer",
+  );
 });
 
 test("member cannot change another user's task or hidden project", () => {

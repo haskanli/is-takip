@@ -36,7 +36,10 @@ import {
   resolveTenantProfile,
 } from "./services/emailTemplate.js";
 import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
-import { sendTaskAssignedSlack } from "./services/slack.js";
+import {
+  sendCustomerTicketCreatedSlack,
+  sendTaskAssignedSlack,
+} from "./services/slack.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
 import { askPortfolioAI, askProjectAI } from "./services/projectAI.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
@@ -120,6 +123,19 @@ const canAccessProject = (state, profile, projectId) => {
   if (!profile || profile.is_admin) return true;
   const project = state.projects?.find((item) => item.id === projectId);
   if (!project) return false;
+  const person = state.people?.find((item) => item.id === profile.legacy_id);
+  if (
+    person?.userType === "customer" ||
+    person?.roleKey === "customer_viewer"
+  ) {
+    const customerId = person.customerId || "";
+    return Boolean(
+      customerId &&
+        (project.customerId === customerId ||
+          project.customerProfile?.customerId === customerId ||
+          project.customerProfile?.id === customerId),
+    );
+  }
   if ([...(project.pmIds || []), project.pm].filter(Boolean).includes(profile.legacy_id)) return true;
   if ((project.members || []).includes(profile.legacy_id)) return true;
   if ((project.stakeholders || []).some((item) => item.userId === profile.legacy_id)) return true;
@@ -311,14 +327,71 @@ const handleCreateTicket = async (request, response, auth) => {
   if (!project) {
     throw Object.assign(new Error("Project not found"), { status: 404 });
   }
+  const actor = state.people?.find((item) => item.id === auth?.profile?.legacy_id);
+  const isCustomerActor =
+    actor?.userType === "customer" || actor?.roleKey === "customer_viewer";
+  const customerId = isCustomerActor ? actor.customerId || "" : body.ticket.customerId || "";
   const ticket = await createTicket({
     projectId: body.projectId,
     ticket: auth?.profile
-      ? { ...body.ticket, author: auth.profile.name, authorId: auth.profile.legacy_id }
+      ? {
+          ...body.ticket,
+          ...(isCustomerActor
+            ? {
+                assignedTo: "",
+                customerId,
+                customerVisible: true,
+                source: "customer",
+                status: body.ticket.status || "Açık",
+              }
+            : {}),
+          author: auth.profile.name,
+          authorId: auth.profile.legacy_id,
+        }
       : body.ticket,
   });
   let notification = { sent: false, reason: "Ticket is not assigned" };
-  if (ticket.assignedTo) {
+  const pmSlackNotifications = [];
+  if (isCustomerActor) {
+    const customer = (state.customers || []).find((item) => item.id === customerId);
+    const pmIds = [...new Set([...(project.pmIds || []), project.pm].filter(Boolean))];
+    for (const pmId of pmIds) {
+      const recipient = state.people?.find((item) => item.id === pmId);
+      if (!recipient) continue;
+      try {
+        const slack = await sendCustomerTicketCreatedSlack({
+          recipient,
+          ticket,
+          project,
+          customer,
+        });
+        pmSlackNotifications.push({
+          userId: recipient.id,
+          sent: !slack.skipped,
+          channel: slack.skipped ? "none" : "slack",
+          messageId: slack.id || null,
+        });
+      } catch (error) {
+        logger.error("slack.customer-ticket.failed", error, {
+          projectId: project.id,
+          ticketId: ticket.id,
+          userId: recipient.id,
+        });
+        pmSlackNotifications.push({
+          userId: recipient.id,
+          sent: false,
+          channel: "slack",
+          reason: error.message,
+        });
+      }
+    }
+    notification = {
+      sent: pmSlackNotifications.some((item) => item.sent),
+      channel: "slack",
+      recipients: pmSlackNotifications,
+      reason: pmSlackNotifications.length ? undefined : "Project has no PM",
+    };
+  } else if (ticket.assignedTo) {
     const assignee = state.people?.find((item) => item.id === ticket.assignedTo);
     if (!assignee) {
       notification = { sent: false, reason: "Assignee not found" };

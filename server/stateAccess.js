@@ -26,6 +26,52 @@ const safeAvatarUrl = (value) => {
 const projectManagerIds = (project) =>
   [...new Set([...(project.pmIds || []), project.pm].filter(Boolean))];
 
+const isCustomerPerson = (person = {}) =>
+  person.userType === "customer" || person.roleKey === "customer_viewer";
+
+const projectBelongsToCustomer = (project = {}, customerId = "") =>
+  Boolean(
+    customerId &&
+      (project.customerId === customerId ||
+        project.customerProfile?.customerId === customerId ||
+        project.customerProfile?.id === customerId),
+  );
+
+const isCustomerVisibleTicket = (ticket = {}, customerId = "") =>
+  Boolean(
+    customerId &&
+      (ticket.customerVisible === true ||
+        ticket.source === "customer" ||
+        ticket.customerId === customerId),
+  );
+
+const sanitizeProjectForCustomer = (project) => {
+  const safe = clone(project);
+  safe.milestones = (safe.milestones || []).map((milestone) => ({
+    ...milestone,
+    tasks: (milestone.tasks || []).map((task) => {
+      const item = { ...task };
+      delete item.timeEntries;
+      delete item.estimatedHours;
+      delete item.waitingHistory;
+      delete item.waitReason;
+      delete item.notes;
+      return item;
+    }),
+  }));
+  delete safe.remoteAccess;
+  delete safe.reportSchedules;
+  delete safe.costItems;
+  delete safe.costSettings;
+  delete safe.billingMilestones;
+  delete safe.invoiceMilestones;
+  delete safe.documents;
+  delete safe.risks;
+  delete safe.lessonsLearned;
+  delete safe.internalNotes;
+  return safe;
+};
+
 export const canAccessProject = (project, legacyId) =>
   projectManagerIds(project).includes(legacyId) ||
   (project.members || []).includes(legacyId) ||
@@ -47,8 +93,42 @@ export const filterStateForProfile = (state, profile) => {
   if (!profile || profile.is_admin) return safeState;
 
   const legacyId = profile.legacy_id;
+  const person = safeState.people?.find((item) => item.id === legacyId);
+  if (isCustomerPerson(person)) {
+    const customerId = person.customerId || "";
+    const projects = (safeState.projects || [])
+      .filter((project) => projectBelongsToCustomer(project, customerId))
+      .map(sanitizeProjectForCustomer);
+    const projectIds = new Set(projects.map((project) => project.id));
+    return {
+      ...safeState,
+      customers: clone(
+        (safeState.customers || []).filter((customer) => customer.id === customerId),
+      ),
+      people: clone((safeState.people || []).filter((item) => item.id === legacyId)),
+      projects,
+      personalTasks: [],
+      fieldPlans: [],
+      userNotes: {},
+      notifications: clone(
+        (safeState.notifications || []).filter((item) => item.userId === legacyId),
+      ),
+      recurringTasks: [],
+      projectTickets: Object.fromEntries(
+        Object.entries(safeState.projectTickets || {})
+          .filter(([projectId]) => projectIds.has(projectId))
+          .map(([projectId, tickets]) => [
+            projectId,
+            clone((tickets || []).filter((ticket) => isCustomerVisibleTicket(ticket, customerId))),
+          ]),
+      ),
+      projectActions: {},
+      logs: [],
+      permissionOverrides: {},
+    };
+  }
   const ticketOnly = Boolean(
-    safeState.people?.find((person) => person.id === legacyId)?.ticketOnly,
+    person?.ticketOnly,
   );
   if (ticketOnly) {
     return {
@@ -210,8 +290,12 @@ export const mergeStateForProfile = (current, incoming, profile) => {
   }
 
   const legacyId = profile.legacy_id;
+  const person = current.people?.find((item) => item.id === legacyId);
+  if (isCustomerPerson(person)) {
+    return clone(current);
+  }
   const ticketOnly = Boolean(
-    current.people?.find((person) => person.id === legacyId)?.ticketOnly,
+    person?.ticketOnly,
   );
   if (ticketOnly) {
     return {

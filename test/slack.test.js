@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   formatSlackDueDate,
+  sendCustomerTicketCreatedSlack,
   sendTaskAssignedSlack,
 } from "../server/services/slack.js";
 
@@ -72,4 +73,50 @@ test("sendTaskAssignedSlack skips users without email", async () => {
     task: { id: "task-1", title: "Test" },
   });
   assert.equal(result.skipped, true);
+});
+
+test("sendCustomerTicketCreatedSlack sends project PM a customer ticket DM", async () => {
+  const requests = [];
+  const result = await sendCustomerTicketCreatedSlack(
+    {
+      recipient: { id: "pm-1", email: "pm@example.com" },
+      customer: { name: "Acme MES" },
+      project: { id: "project-1", name: "MES Rollout" },
+      ticket: {
+        id: "ticket-1",
+        ticketNo: "CJT-1042",
+        title: "Operatör ekranı açılmıyor",
+        description: "Vardiya başlangıcında ekran beyaz kalıyor.",
+        priority: "Yüksek",
+        status: "Açık",
+      },
+    },
+    {
+      fetchImpl: async (url, options) => {
+        requests.push({ url, options });
+        const body = String(url).includes("users.lookupByEmail")
+          ? { ok: true, user: { id: "UPM1" } }
+          : { ok: true, ts: "171235.789" };
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+    },
+  );
+
+  assert.match(
+    String(requests[0].url),
+    /users\.lookupByEmail\?email=pm%40example\.com/,
+  );
+  const message = JSON.parse(requests[1].options.body);
+  assert.equal(message.channel, "UPM1");
+  assert.equal(message.blocks[0].text.text, "Müşteri ticket açtı");
+  assert.equal(message.blocks[1].fields[0].text, "*Müşteri:*\nAcme MES");
+  assert.equal(message.blocks[1].fields[1].text, "*Proje:*\nMES Rollout");
+  assert.equal(message.blocks[2].elements[0].text.text, "Ticketı Aç");
+  assert.match(message.text, /Acme MES yeni bir ticket açtı/);
+  assert.match(message.blocks[2].elements[0].url, /ticket=ticket-1/);
+  assert.doesNotMatch(requests[1].options.body, /xoxb-test-token/);
+  assert.equal(result.id, "171235.789");
 });
