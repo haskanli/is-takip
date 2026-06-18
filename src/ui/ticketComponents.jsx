@@ -35,17 +35,47 @@ const applyTicketWorkflow=(data)=>{
   return data;
 };
 
-export function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false,initialProjectId="",initialTicketId="",onTicketOpened,generateTicketStatusReport}){
+export function TicketsPage({
+  state,
+  setState,
+  currentUser,
+  isAdmin,
+  initialMine=false,
+  initialProjectId="",
+  initialTicketId="",
+  activeTab: controlledActiveTab,
+  onActiveTabChange,
+  projectFilters: controlledProjectFilters,
+  onProjectFiltersChange,
+  statusFilters: controlledStatusFilters,
+  onStatusFiltersChange,
+  search: controlledSearch,
+  onSearchChange,
+  mineOnly: controlledMineOnly,
+  onMineOnlyChange,
+  onTicketOpened,
+  generateTicketStatusReport,
+}){
   const linkedProject=initialProjectId||"";
   const linkedTicket=initialTicketId||"";
   const linkedTicketData=linkedProject&&linkedTicket?((state.projectTickets||{})[linkedProject]||[]).find(ticket=>ticket.id===linkedTicket):null;
-  const [activeTab,setActiveTab]=useState("tickets");
-  const [projectFilters,setProjectFilters]=useState(linkedProject?[linkedProject]:[]);
-  const [statusFilters,setStatusFilters]=useState([]);
-  const [search,setSearch]=useState("");
+  const [localActiveTab,setLocalActiveTab]=useState("tickets");
+  const [localProjectFilters,setLocalProjectFilters]=useState(linkedProject?[linkedProject]:[]);
+  const [localStatusFilters,setLocalStatusFilters]=useState([]);
+  const [localSearch,setLocalSearch]=useState("");
   const [mailNotice,setMailNotice]=useState("");
-  const [mineOnly,setMineOnly]=useState(initialMine);
+  const [localMineOnly,setLocalMineOnly]=useState(initialMine);
   const [modal,setModal]=useState(linkedTicketData?{type:"detail",projectId:linkedProject,data:linkedTicketData}:null);
+  const activeTab=controlledActiveTab??localActiveTab;
+  const setActiveTab=onActiveTabChange||setLocalActiveTab;
+  const projectFilters=controlledProjectFilters??localProjectFilters;
+  const setProjectFilters=onProjectFiltersChange||setLocalProjectFilters;
+  const statusFilters=controlledStatusFilters??localStatusFilters;
+  const setStatusFilters=onStatusFiltersChange||setLocalStatusFilters;
+  const search=controlledSearch??localSearch;
+  const setSearch=onSearchChange||setLocalSearch;
+  const mineOnly=controlledMineOnly??localMineOnly;
+  const setMineOnly=onMineOnlyChange||setLocalMineOnly;
   const TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
   const PRIOS=["Düşük","Orta","Yüksek","Kritik"];
   const all=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>{

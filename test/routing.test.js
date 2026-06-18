@@ -48,6 +48,19 @@ test("routeFromLocation reads task and ticket deep links", () => {
     taskId: "task-1",
     ticketProjectId: "",
     ticketId: "",
+    ticketTab: "tickets",
+    ticketSearch: "",
+    ticketProjectFilters: [],
+    ticketStatusFilters: [],
+    fieldSection: "plan",
+    fieldScope: "",
+    fieldProject: "all",
+    fieldPerson: "",
+    fieldType: "all",
+    fieldWeek: 0,
+    importType: "all",
+    reportProject: "",
+    reportGroup: "operations",
     projectScope: "all",
     projectSegment: "all",
     projectSearch: "",
@@ -65,11 +78,68 @@ test("routeFromLocation reads task and ticket deep links", () => {
     taskId: "",
     ticketProjectId: "project-1",
     ticketId: "ticket-1",
+    ticketTab: "tickets",
+    ticketSearch: "",
+    ticketProjectFilters: [],
+    ticketStatusFilters: [],
+    fieldSection: "plan",
+    fieldScope: "",
+    fieldProject: "all",
+    fieldPerson: "",
+    fieldType: "all",
+    fieldWeek: 0,
+    importType: "all",
+    reportProject: "",
+    reportGroup: "operations",
     projectScope: "all",
     projectSegment: "all",
     projectSearch: "",
     projectViewMode: "cards",
   });
+});
+
+test("routeFromLocation reads ticket list filters", () => {
+  const route = routeFromLocation({
+    pathname: "/ticketlar",
+    search: "?mine=1&tab=recurring&q=lisans&projects=project-1,project-2&statuses=Open,Done",
+  });
+  assert.equal(route.view, "tickets");
+  assert.equal(route.ticketMineOnly, true);
+  assert.equal(route.ticketTab, "recurring");
+  assert.equal(route.ticketSearch, "lisans");
+  assert.deepEqual(route.ticketProjectFilters, ["project-1", "project-2"]);
+  assert.deepEqual(route.ticketStatusFilters, ["Open", "Done"]);
+});
+
+test("routeFromLocation reads field operations filters", () => {
+  const route = routeFromLocation({
+    pathname: "/field-operations",
+    search: "?section=visits&scope=team&project=project-1&person=person-1&type=remote&week=2",
+  });
+  assert.equal(route.view, "fieldops");
+  assert.equal(route.fieldSection, "visits");
+  assert.equal(route.fieldScope, "team");
+  assert.equal(route.fieldProject, "project-1");
+  assert.equal(route.fieldPerson, "person-1");
+  assert.equal(route.fieldType, "remote");
+  assert.equal(route.fieldWeek, 2);
+});
+
+test("routeFromLocation reads report and import filters", () => {
+  const reportRoute = routeFromLocation({
+    pathname: "/reports",
+    search: "?project=project-1&group=management",
+  });
+  assert.equal(reportRoute.view, "reports");
+  assert.equal(reportRoute.reportProject, "project-1");
+  assert.equal(reportRoute.reportGroup, "management");
+
+  const importRoute = routeFromLocation({
+    pathname: "/import",
+    search: "?type=machines",
+  });
+  assert.equal(importRoute.view, "import");
+  assert.equal(importRoute.importType, "machines");
 });
 
 test("routeFromLocation reads project list filters", () => {
@@ -108,6 +178,22 @@ test("pathForRouteState builds stable app URLs", () => {
   assert.equal(
     pathForRouteState({ view: "tickets", ticketMineOnly: true, ticketProjectId: "project-1", ticketId: "ticket-1" }),
     "/ticketlar?mine=1&project=project-1&ticket=ticket-1",
+  );
+  assert.equal(
+    pathForRouteState({ view: "tickets", ticketMineOnly: true, ticketTab: "recurring", ticketSearch: "lisans", ticketProjectFilters: ["project-1", "project-2"], ticketStatusFilters: ["Open", "Done"] }),
+    "/ticketlar?mine=1&tab=recurring&q=lisans&projects=project-1%2Cproject-2&statuses=Open%2CDone",
+  );
+  assert.equal(
+    pathForRouteState({ view: "fieldops", fieldSection: "visits", fieldScope: "team", fieldProject: "project-1", fieldPerson: "person-1", fieldType: "remote", fieldWeek: 2 }),
+    "/field-operations?section=visits&scope=team&project=project-1&person=person-1&type=remote&week=2",
+  );
+  assert.equal(
+    pathForRouteState({ view: "reports", reportProject: "project-1", reportGroup: "management" }),
+    "/reports?project=project-1&group=management",
+  );
+  assert.equal(
+    pathForRouteState({ view: "import", importType: "machines" }),
+    "/import?type=machines",
   );
   assert.equal(
     pathForRouteState({ view: "projects", projectScope: "mine", projectSegment: "connected", projectSearch: "gen", projectViewMode: "list" }),

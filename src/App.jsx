@@ -204,6 +204,19 @@ export default function App() {
   const [projectViewMode,setProjectViewMode]=useState(initialRoute.projectViewMode||"cards");
   const [expandedProjectRows,setExpandedProjectRows]=useState({});
   const [ticketMineOnly,setTicketMineOnly]=useState(Boolean(initialRoute.ticketMineOnly));
+  const [ticketTab,setTicketTab]=useState(initialRoute.ticketTab||"tickets");
+  const [ticketSearch,setTicketSearch]=useState(initialRoute.ticketSearch||"");
+  const [ticketProjectFilters,setTicketProjectFilters]=useState(initialRoute.ticketProjectFilters||[]);
+  const [ticketStatusFilters,setTicketStatusFilters]=useState(initialRoute.ticketStatusFilters||[]);
+  const [fieldSection,setFieldSection]=useState(initialRoute.fieldSection||"plan");
+  const [fieldScope,setFieldScope]=useState(initialRoute.fieldScope||"");
+  const [fieldProject,setFieldProject]=useState(initialRoute.fieldProject||"all");
+  const [fieldPerson,setFieldPerson]=useState(initialRoute.fieldPerson||"");
+  const [fieldType,setFieldType]=useState(initialRoute.fieldType||"all");
+  const [fieldWeek,setFieldWeek]=useState(initialRoute.fieldWeek||0);
+  const [importType,setImportType]=useState(initialRoute.importType||"all");
+  const [reportProject,setReportProject]=useState(initialRoute.reportProject||"");
+  const [reportGroup,setReportGroup]=useState(initialRoute.reportGroup||"operations");
   const [taskToOpen,setTaskToOpen]=useState(initialRoute.taskId||"");
   const [ticketToOpen,setTicketToOpen]=useState({projectId:initialRoute.ticketProjectId||"",ticketId:initialRoute.ticketId||""});
   const [responsibilityFilters,setResponsibilityFilters]=useState([]);
@@ -391,6 +404,19 @@ export default function App() {
       setProjectTab(next.projectTab||DEFAULT_PROJECT_TAB);
       setAdminSection(next.adminSection||"overview");
       setTicketMineOnly(Boolean(next.ticketMineOnly));
+      setTicketTab(next.ticketTab||"tickets");
+      setTicketSearch(next.ticketSearch||"");
+      setTicketProjectFilters(next.ticketProjectFilters||[]);
+      setTicketStatusFilters(next.ticketStatusFilters||[]);
+      setFieldSection(next.fieldSection||"plan");
+      setFieldScope(next.fieldScope||"");
+      setFieldProject(next.fieldProject||"all");
+      setFieldPerson(next.fieldPerson||"");
+      setFieldType(next.fieldType||"all");
+      setFieldWeek(next.fieldWeek||0);
+      setImportType(next.importType||"all");
+      setReportProject(next.reportProject||"");
+      setReportGroup(next.reportGroup||"operations");
       setTaskToOpen(next.taskId||"");
       setTicketToOpen({projectId:next.ticketProjectId||"",ticketId:next.ticketId||""});
       setProjectScope(next.projectScope||"all");
@@ -404,14 +430,14 @@ export default function App() {
 
   useEffect(()=>{
     if(typeof window==="undefined")return;
-    const nextPath=pathForRouteState({view,selProject,projectTab,adminSection,ticketMineOnly,taskId:taskToOpen,ticketProjectId:ticketToOpen.projectId,ticketId:ticketToOpen.ticketId,projectScope,projectSearch,projectSegment,projectViewMode});
+    const nextPath=pathForRouteState({view,selProject,projectTab,adminSection,ticketMineOnly,ticketTab,ticketSearch,ticketProjectFilters,ticketStatusFilters,fieldSection,fieldScope,fieldProject,fieldPerson,fieldType,fieldWeek,importType,reportProject,reportGroup,taskId:taskToOpen,ticketProjectId:ticketToOpen.projectId,ticketId:ticketToOpen.ticketId,projectScope,projectSearch,projectSegment,projectViewMode});
     const currentPath=`${window.location.pathname}${window.location.search}`;
     const applying=routeApplyingRef.current;
     routeApplyingRef.current=false;
     if(currentPath===nextPath)return;
     const method=applying?"replaceState":"pushState";
     window.history[method]({corjectRoute:true},"",nextPath);
-  },[view,selProject,projectTab,adminSection,ticketMineOnly,taskToOpen,ticketToOpen.projectId,ticketToOpen.ticketId,projectScope,projectSearch,projectSegment,projectViewMode]);
+  },[view,selProject,projectTab,adminSection,ticketMineOnly,ticketTab,ticketSearch,ticketProjectFilters,ticketStatusFilters,fieldSection,fieldScope,fieldProject,fieldPerson,fieldType,fieldWeek,importType,reportProject,reportGroup,taskToOpen,ticketToOpen.projectId,ticketToOpen.ticketId,projectScope,projectSearch,projectSegment,projectViewMode]);
 
   const navigateTo=(target,options={})=>{
     const nextView=target==="ticket"?"tickets":target;
@@ -862,7 +888,7 @@ export default function App() {
       {view==="todos"&&<SharedTodoPage state={state} setState={setState} currentUser={currentUser}/>}
       {view==="mobilemenu"&&<MobileFeatureMenuPage isAdmin={isAdmin} onNavigate={target=>navigateTo(target,{projectScope:target==="projects"?"all":undefined,ticketMineOnly:target==="tickets"})}/>}
       {view==="ai"&&!selProject&&<SharedAIWorkspace projects={visibleProjects}/>}
-      {view==="import"&&isAdmin&&!selProject&&<SharedImportCenter state={state} setState={setState} currentUser={currentUser}/>}
+      {view==="import"&&isAdmin&&!selProject&&<SharedImportCenter state={state} setState={setState} currentUser={currentUser} importType={importType} onImportTypeChange={setImportType}/>}
       {view==="mailcenter"&&isAdmin&&!selProject&&<SharedMailCenterPage state={state} setState={setState}/>}
 
       {/* PROJECT DETAIL */}
@@ -1010,12 +1036,12 @@ export default function App() {
       </div>}
 
       {view==="mytasks"&&<SharedMyTasksPage currentUser={currentUser} state={state} setState={setState} addLog={addLog} isAdmin={isAdmin} initialTaskId={taskToOpen} onTaskOpened={()=>setTaskToOpen("")}/>}
-      {view==="fieldops"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>openProject(id,"actions")}/>}
-      {view==="fieldplan"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>openProject(id,"actions")}/>}
-      {view==="fieldvisits"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>openProject(id,"actions")}/>}
+      {view==="fieldops"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} section={fieldSection} onSectionChange={setFieldSection} scope={fieldScope} onScopeChange={setFieldScope} projectFilter={fieldProject} onProjectFilterChange={setFieldProject} personFilter={fieldPerson} onPersonFilterChange={setFieldPerson} typeFilter={fieldType} onTypeFilterChange={setFieldType} weekOffset={fieldWeek} onWeekOffsetChange={setFieldWeek} onOpenProject={id=>openProject(id,"actions")}/>}
+      {view==="fieldplan"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} section="plan" onSectionChange={setFieldSection} scope={fieldScope} onScopeChange={setFieldScope} projectFilter={fieldProject} onProjectFilterChange={setFieldProject} personFilter={fieldPerson} onPersonFilterChange={setFieldPerson} typeFilter={fieldType} onTypeFilterChange={setFieldType} weekOffset={fieldWeek} onWeekOffsetChange={setFieldWeek} onOpenProject={id=>openProject(id,"actions")}/>}
+      {view==="fieldvisits"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} section="visits" onSectionChange={setFieldSection} scope={fieldScope} onScopeChange={setFieldScope} projectFilter={fieldProject} onProjectFilterChange={setFieldProject} personFilter={fieldPerson} onPersonFilterChange={setFieldPerson} typeFilter={fieldType} onTypeFilterChange={setFieldType} weekOffset={fieldWeek} onWeekOffsetChange={setFieldWeek} onOpenProject={id=>openProject(id,"actions")}/>}
       {view==="deadlines"&&<SharedDeadlinePage warnings={deadlineWarnings} people={state.people} onOpenTask={id=>navigateTo("mytasks",{taskId:id})} onOpenTodos={()=>navigateTo("todos")}/>}
-      {view==="tickets"&&<SharedTicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} initialMine={ticketMineOnly} initialProjectId={ticketToOpen.projectId} initialTicketId={ticketToOpen.ticketId} onTicketOpened={()=>setTicketToOpen({projectId:"",ticketId:""})} generateTicketStatusReport={generateTicketStatusReport}/>}
-      {view==="reports"&&<SharedReportsPage state={state} people={state.people} isAdmin={isAdmin} />}
+      {view==="tickets"&&<SharedTicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} initialMine={ticketMineOnly} initialProjectId={ticketToOpen.projectId} initialTicketId={ticketToOpen.ticketId} activeTab={ticketTab} onActiveTabChange={setTicketTab} projectFilters={ticketProjectFilters} onProjectFiltersChange={setTicketProjectFilters} statusFilters={ticketStatusFilters} onStatusFiltersChange={setTicketStatusFilters} search={ticketSearch} onSearchChange={setTicketSearch} mineOnly={ticketMineOnly} onMineOnlyChange={setTicketMineOnly} onTicketOpened={()=>setTicketToOpen({projectId:"",ticketId:""})} generateTicketStatusReport={generateTicketStatusReport}/>}
+      {view==="reports"&&<SharedReportsPage state={state} people={state.people} isAdmin={isAdmin} projectId={reportProject} onProjectIdChange={setReportProject} group={reportGroup} onGroupChange={setReportGroup} />}
       {view==="customers"&&isAdmin&&!selProject&&<SharedCustomersPage state={state} setState={setState} onInviteUser={addPerson} onPreviewCustomer={projectId=>{setPreviewCustomerProjectId(projectId);navigateTo("dashboard");}}/>}
 
       {view==="people"&&<div style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>

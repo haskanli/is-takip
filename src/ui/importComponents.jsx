@@ -30,11 +30,13 @@ const importSheetRows=(workbook,name)=>workbook.Sheets[name]?XLSX.utils.sheet_to
 const importText=(value)=>String(value??"").trim();
 const importBool=(value)=>["evet","true","1","yes"].includes(importText(value).toLocaleLowerCase("tr-TR"));
 
-export function ImportCenter({state,setState,currentUser}) {
+export function ImportCenter({state,setState,currentUser,importType: controlledImportType,onImportTypeChange}) {
   const [preview,setPreview]=useState(null);
   const [fileName,setFileName]=useState("");
   const [message,setMessage]=useState("");
-  const [importType,setImportType]=useState("all");
+  const [localImportType,setLocalImportType]=useState("all");
+  const importType=controlledImportType??localImportType;
+  const setImportType=onImportTypeChange||setLocalImportType;
   const importModules=[
     ["all","Tüm Veriler","Tüm modülleri tek çalışma kitabında taşıyın."],
     ["projects","Projeler","Proje temel bilgileri ve tarihleri."],

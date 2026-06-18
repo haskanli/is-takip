@@ -464,9 +464,13 @@ export function MailCenterPage({state,setState}) {
   </div>;
 }
 
-export function ReportsPage({ state, people, isAdmin }) {
-  const [projectId,setProjectId]=useState(state.projects[0]?.id||"");
-  const [group,setGroup]=useState("operations");
+export function ReportsPage({ state, people, isAdmin, projectId: controlledProjectId, onProjectIdChange, group: controlledGroup, onGroupChange }) {
+  const [localProjectId,setLocalProjectId]=useState(state.projects[0]?.id||"");
+  const [localGroup,setLocalGroup]=useState("operations");
+  const projectId=controlledProjectId||localProjectId;
+  const setProjectId=onProjectIdChange||setLocalProjectId;
+  const group=controlledGroup??localGroup;
+  const setGroup=onGroupChange||setLocalGroup;
   const project=state.projects.find(p=>p.id===projectId);
   const tasks=project?project.milestones.flatMap(m=>m.tasks.map(task=>({task,project,milestone:m}))):[];
   const delayed=tasks.filter(({task})=>delayLvl(task.dueDate,task.status));

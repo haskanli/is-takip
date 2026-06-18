@@ -15,15 +15,36 @@ const fuelCost = ({ roundTripKm = 0, settings = DEFAULT_COST_SETTINGS }) => {
   return { liters: Math.round(liters * 10) / 10, tryAmount: Math.round(tryAmount), usdAmount: Math.round(usdAmount * 100) / 100 };
 };
 
-function FieldPlanPage({ state, setState, currentUser, isAdmin }) {
-  const [scope,setScope]=useState(isAdmin?"team":"mine");
-  const [personFilter,setPersonFilter]=useState("");
-  const [projectFilter,setProjectFilter]=useState("all");
-  const [weekOffset,setWeekOffset]=useState(0);
+function FieldPlanPage({
+  state,
+  setState,
+  currentUser,
+  isAdmin,
+  scope: controlledScope,
+  onScopeChange,
+  projectFilter: controlledProjectFilter,
+  onProjectFilterChange,
+  personFilter: controlledPersonFilter,
+  onPersonFilterChange,
+  weekOffset: controlledWeekOffset,
+  onWeekOffsetChange,
+}) {
+  const [localScope,setLocalScope]=useState(isAdmin?"team":"mine");
+  const [localPersonFilter,setLocalPersonFilter]=useState("");
+  const [localProjectFilter,setLocalProjectFilter]=useState("all");
+  const [localWeekOffset,setLocalWeekOffset]=useState(0);
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
   const [visitPlan,setVisitPlan]=useState(null);
   const [form,setForm]=useState({userId:currentUser.id,projectId:"",workType:"field",date:todayStr(),startTime:"09:00",endTime:"17:00",note:""});
+  const scope=controlledScope||localScope;
+  const setScope=onScopeChange||setLocalScope;
+  const personFilter=controlledPersonFilter??localPersonFilter;
+  const setPersonFilter=onPersonFilterChange||setLocalPersonFilter;
+  const projectFilter=controlledProjectFilter??localProjectFilter;
+  const setProjectFilter=onProjectFilterChange||setLocalProjectFilter;
+  const weekOffset=controlledWeekOffset??localWeekOffset;
+  const setWeekOffset=onWeekOffsetChange||setLocalWeekOffset;
   const plans=state.fieldPlans||[];
   const monday=new Date();
   const day=monday.getDay()||7;
@@ -122,13 +143,35 @@ export function FieldVisitModal({plan,project,currentUser,onClose,onSave}) {
   </Modal>;
 }
 
-function FieldVisitsPage({state,setState,currentUser,isAdmin,onOpenProject}) {
+function FieldVisitsPage({
+  state,
+  setState,
+  currentUser,
+  isAdmin,
+  scope: controlledScope,
+  onScopeChange,
+  projectFilter: controlledProjectFilter,
+  onProjectFilterChange,
+  personFilter: controlledPersonFilter,
+  onPersonFilterChange,
+  typeFilter: controlledTypeFilter,
+  onTypeFilterChange,
+  onOpenProject,
+}) {
   const responsibleIds=new Set(state.projects.filter(project=>isAdmin||projectPmIds(project).includes(currentUser.id)).map(project=>project.id));
-  const [scope,setScope]=useState("mine");
-  const [projectFilter,setProjectFilter]=useState("all");
-  const [personFilter,setPersonFilter]=useState("");
-  const [typeFilter,setTypeFilter]=useState("all");
+  const [localScope,setLocalScope]=useState("mine");
+  const [localProjectFilter,setLocalProjectFilter]=useState("all");
+  const [localPersonFilter,setLocalPersonFilter]=useState("");
+  const [localTypeFilter,setLocalTypeFilter]=useState("all");
   const [editing,setEditing]=useState(null);
+  const scope=controlledScope||localScope;
+  const setScope=onScopeChange||setLocalScope;
+  const projectFilter=controlledProjectFilter??localProjectFilter;
+  const setProjectFilter=onProjectFilterChange||setLocalProjectFilter;
+  const personFilter=controlledPersonFilter??localPersonFilter;
+  const setPersonFilter=onPersonFilterChange||setLocalPersonFilter;
+  const typeFilter=controlledTypeFilter??localTypeFilter;
+  const setTypeFilter=onTypeFilterChange||setLocalTypeFilter;
   const completed=(state.fieldPlans||[]).filter(plan=>plan.status==="completed"||plan.completedAt);
   const visible=completed.filter(plan=>{
     const inScope=scope==="mine"?plan.userId===currentUser.id:responsibleIds.has(plan.projectId);
@@ -160,13 +203,32 @@ function FieldVisitsPage({state,setState,currentUser,isAdmin,onOpenProject}) {
   </div>;
 }
 
-export function FieldOperationsPage({state,setState,currentUser,isAdmin,onOpenProject}) {
-  const [section,setSection]=useState("plan");
+export function FieldOperationsPage({
+  state,
+  setState,
+  currentUser,
+  isAdmin,
+  section: controlledSection,
+  onSectionChange,
+  scope,
+  onScopeChange,
+  projectFilter,
+  onProjectFilterChange,
+  personFilter,
+  onPersonFilterChange,
+  typeFilter,
+  onTypeFilterChange,
+  weekOffset,
+  onWeekOffsetChange,
+  onOpenProject,
+}) {
+  const [localSection,setLocalSection]=useState("plan");
+  const section=controlledSection||localSection;
+  const setSection=onSectionChange||setLocalSection;
   return <div style={{flex:1,overflow:"auto",background:"#F8FAFC"}}>
     <div style={{position:"sticky",top:0,zIndex:5,display:"flex",gap:7,padding:"12px clamp(16px,4vw,28px)",background:"#fff",borderBottom:"1px solid #E2E8F0"}}>
       {[["plan","calendar","Haftalık Plan"],["visits","activity","Gerçekleşen Çalışmalar"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:9,padding:"8px 13px",background:section===id?"#0F766E":"#F1F5F9",color:section===id?"#fff":"#64748B",fontSize:12,fontWeight:800,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}><Icon name={icon} size={14}/>{label}</button>)}
     </div>
-    {section==="plan"?<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>:<FieldVisitsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={onOpenProject}/>}
+    {section==="plan"?<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} scope={scope} onScopeChange={onScopeChange} projectFilter={projectFilter} onProjectFilterChange={onProjectFilterChange} personFilter={personFilter} onPersonFilterChange={onPersonFilterChange} weekOffset={weekOffset} onWeekOffsetChange={onWeekOffsetChange}/>:<FieldVisitsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} scope={scope} onScopeChange={onScopeChange} projectFilter={projectFilter} onProjectFilterChange={onProjectFilterChange} personFilter={personFilter} onPersonFilterChange={onPersonFilterChange} typeFilter={typeFilter} onTypeFilterChange={onTypeFilterChange} onOpenProject={onOpenProject}/>}
   </div>;
 }
-
