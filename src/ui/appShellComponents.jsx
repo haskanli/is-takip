@@ -112,23 +112,27 @@ export const GlobalStyle = () => (
 export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logoSrc=""}) {
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
   const localAnimationCss = `
-    @keyframes corjectRingSweep { 0% { transform: rotate(-30deg); filter: drop-shadow(0 0 12px rgba(34,211,238,.26)); } 50% { transform: rotate(18deg); filter: drop-shadow(0 0 24px rgba(139,92,246,.46)); } 100% { transform: rotate(330deg); filter: drop-shadow(0 0 16px rgba(34,211,238,.32)); } }
-    @keyframes corjectNodeTravel { 0%, 100% { transform: translateX(-34px) scale(.9); opacity:.78; } 45% { transform: translateX(5px) scale(1.08); opacity:1; } 75% { transform: translateX(38px) scale(.96); opacity:.9; } }
-    @keyframes corjectBeam { 0%, 100% { opacity:.25; transform: scaleX(.55); } 50% { opacity:1; transform: scaleX(1.05); } }
-    @keyframes corjectCheckPulse { 0%, 65%, 100% { transform: scale(.92); opacity:.72; } 78% { transform: scale(1.14); opacity:1; } }
-    @keyframes corjectGlowPulse { 0%, 100% { opacity:.36; transform: scale(.82); } 50% { opacity:.95; transform: scale(1.08); } }
+    @keyframes corjectRingSweep { 0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 12px rgba(37,99,235,.28)); } 55% { transform: rotate(174deg) scale(1.02); filter: drop-shadow(0 0 20px rgba(34,211,238,.38)); } 100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 14px rgba(124,58,237,.32)); } }
+    @keyframes corjectPathFill { 0% { transform: scaleX(0); opacity:.45; } 18% { transform: scaleX(.28); opacity:.85; } 48% { transform: scaleX(.68); opacity:1; } 72%, 100% { transform: scaleX(1); opacity:1; } }
+    @keyframes corjectSpark { 0% { left:39px; opacity:0; transform:scale(.7); } 10% { opacity:1; } 48% { left:78px; transform:scale(1); } 74% { left:115px; opacity:1; transform:scale(.92); } 100% { left:115px; opacity:0; transform:scale(.65); } }
+    @keyframes corjectNodeReady { 0%, 18% { background:#0B1224; border-color:#334155; box-shadow:none; } 34%, 100% { background:#E0F2FE; border-color:#4A6CF7; box-shadow:0 0 20px rgba(74,108,247,.62); } }
+    @keyframes corjectNodeReadyTwo { 0%, 40% { background:#0B1224; border-color:#334155; box-shadow:none; } 55%, 100% { background:#EDE9FE; border-color:#8B5CF6; box-shadow:0 0 20px rgba(139,92,246,.62); } }
+    @keyframes corjectNodeReadyThree { 0%, 62% { background:#0B1224; border-color:#334155; box-shadow:none; } 78%, 100% { background:#CFFAFE; border-color:#22D3EE; box-shadow:0 0 22px rgba(34,211,238,.72); } }
+    @keyframes corjectCheckPulse { 0%, 68% { transform: scale(.75); opacity:0; } 78% { transform: scale(1.1); opacity:1; } 88%, 100% { transform: scale(1); opacity:1; } }
+    @keyframes corjectGlowPulse { 0%, 100% { opacity:.25; transform: scale(.9); } 50% { opacity:.6; transform: scale(1.03); } }
     @keyframes corjectDots { 0%, 80%, 100% { opacity:.25; transform: translateY(0); } 40% { opacity:1; transform: translateY(-3px); } }
   `;
   return <><style>{localAnimationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:20,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 50% 18%,rgba(74,108,247,.22),transparent 34%),radial-gradient(circle at 58% 70%,rgba(34,211,238,.16),transparent 28%),linear-gradient(145deg,#020617 0%,#0B1020 48%,#111827 100%)",color:"#fff",zIndex:9999,overflow:"hidden"}}>
     <div style={{position:"absolute",inset:"auto 12% 9%",height:90,background:"radial-gradient(ellipse,rgba(37,99,235,.42),transparent 65%)",filter:"blur(16px)"}} />
     <div style={{width:"min(390px,100%)",textAlign:"center",border:"1px solid rgba(148,163,184,.18)",borderRadius:32,padding:"34px 28px 30px",background:"linear-gradient(180deg,rgba(15,23,42,.78),rgba(2,6,23,.62))",boxShadow:"0 30px 90px rgba(0,0,0,.42)",backdropFilter:"blur(16px)",position:"relative"}}>
       <div style={{width:150,height:150,margin:"0 auto 18px",position:"relative",display:"grid",placeItems:"center"}}>
-        <div style={{position:"absolute",inset:8,borderRadius:"50%",background:"conic-gradient(from 42deg,#2563EB 0 120deg,transparent 120deg 172deg,#7C3AED 172deg 314deg,transparent 314deg 360deg)",animation:"corjectRingSweep 2.55s linear infinite"}} />
+        <div style={{position:"absolute",inset:8,borderRadius:"50%",background:"conic-gradient(from 18deg,#2563EB 0 116deg,transparent 116deg 174deg,#7C3AED 174deg 306deg,transparent 306deg 360deg)",animation:"corjectRingSweep 3.6s cubic-bezier(.45,0,.2,1) infinite"}} />
         <div style={{position:"absolute",inset:32,borderRadius:"50%",background:"#050A16",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.06)"}} />
-        <div style={{position:"absolute",left:39,right:39,top:78,height:6,borderRadius:999,background:"linear-gradient(90deg,#22D3EE,#4A6CF7,#A855F7)",transformOrigin:"center",animation:"corjectBeam 1.6s ease-in-out infinite",boxShadow:"0 0 18px rgba(34,211,238,.7)"}} />
-        <span style={{position:"absolute",left:38,top:66,width:30,height:30,borderRadius:"50%",background:"#EFF6FF",border:"7px solid #4A6CF7",boxShadow:"0 0 22px rgba(74,108,247,.6)"}} />
-        <span style={{position:"absolute",left:61,top:77,width:82,height:10,borderRadius:999,background:"rgba(255,255,255,.1)"}} />
-        <span style={{position:"absolute",left:"calc(50% - 10px)",top:73,width:20,height:20,borderRadius:"50%",background:"#E0F2FE",boxShadow:"0 0 20px rgba(34,211,238,.82)",animation:"corjectNodeTravel 1.9s ease-in-out infinite"}} />
+        <div style={{position:"absolute",left:42,right:34,top:78,height:8,borderRadius:999,background:"rgba(148,163,184,.18)",overflow:"hidden"}}><span style={{display:"block",height:"100%",width:"100%",borderRadius:999,background:"linear-gradient(90deg,#22D3EE,#4A6CF7,#A855F7)",transformOrigin:"left center",animation:"corjectPathFill 2.4s ease-in-out infinite",boxShadow:"0 0 16px rgba(34,211,238,.55)"}} /></div>
+        <span style={{position:"absolute",left:37,top:66,width:30,height:30,borderRadius:"50%",background:"#0B1224",border:"7px solid #334155",animation:"corjectNodeReady 2.4s ease-in-out infinite"}} />
+        <span style={{position:"absolute",left:75,top:72,width:18,height:18,borderRadius:"50%",background:"#0B1224",border:"5px solid #334155",animation:"corjectNodeReadyTwo 2.4s ease-in-out infinite"}} />
+        <span style={{position:"absolute",left:112,top:70,width:22,height:22,borderRadius:"50%",background:"#0B1224",border:"5px solid #334155",animation:"corjectNodeReadyThree 2.4s ease-in-out infinite"}} />
+        <span style={{position:"absolute",top:74,width:18,height:18,borderRadius:"50%",background:"#E0F2FE",boxShadow:"0 0 24px rgba(34,211,238,.9)",animation:"corjectSpark 2.4s ease-in-out infinite"}} />
         <span style={{position:"absolute",right:26,top:52,width:38,height:38,borderRadius:"50%",background:"#22D3EE",display:"grid",placeItems:"center",boxShadow:"0 0 28px rgba(34,211,238,.75)",animation:"corjectCheckPulse 2.1s ease-in-out infinite"}}>
           <i style={{width:15,height:8,borderLeft:"4px solid #fff",borderBottom:"4px solid #fff",transform:"rotate(-45deg)",display:"block",marginTop:-2}} />
         </span>
