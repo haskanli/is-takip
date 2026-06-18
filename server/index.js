@@ -36,7 +36,7 @@ import {
   resolveTenantProfile,
 } from "./services/emailTemplate.js";
 import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
-import { sendTaskAssignedSlack } from "./services/slack.js";
+import { sendCustomerTicketSlack, sendTaskAssignedSlack } from "./services/slack.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
 import { askPortfolioAI, askProjectAI } from "./services/projectAI.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
@@ -124,6 +124,13 @@ const canAccessProject = (state, profile, projectId) => {
   if (!profile || profile.is_admin) return true;
   const project = state.projects?.find((item) => item.id === projectId);
   if (!project) return false;
+  const person = state.people?.find((item) => item.id === profile.legacy_id);
+  const customerId = profile.customer_id || profile.customerId || person?.customerId || "";
+  if (
+    customerId &&
+    project.customerId === customerId &&
+    (person?.userType === "customer" || person?.roleKey === "customer_viewer" || profile.role_key === "customer_viewer")
+  ) return true;
   if ([...(project.pmIds || []), project.pm].filter(Boolean).includes(profile.legacy_id)) return true;
   if ((project.members || []).includes(profile.legacy_id)) return true;
   if ((project.stakeholders || []).some((item) => item.userId === profile.legacy_id)) return true;
@@ -354,7 +361,39 @@ const handleCreateTicket = async (request, response, auth) => {
       }
     }
   }
-  json(response, 201, { ticket, notification });
+  let customerTicketNotification = { sent: false, reason: "Ticket source is not customer" };
+  if (ticket.source === "customer") {
+    const customer = (state.customers || []).find((item) => item.id === ticket.customerId);
+    const pmIds = [...new Set([...(project.pmIds || []), project.pm].filter(Boolean))];
+    const recipients = pmIds
+      .map((id) => state.people?.find((person) => person.id === id))
+      .filter((person) => person?.email);
+    const results = [];
+    for (const recipient of recipients) {
+      try {
+        const slack = await sendCustomerTicketSlack({
+          recipient,
+          ticket,
+          project,
+          customerName: customer?.name || ticket.customer || "",
+        });
+        results.push({ userId: recipient.id, sent: !slack.skipped, messageId: slack.id || null });
+      } catch (error) {
+        logger.error("slack.customer-ticket.failed", error, {
+          projectId: project.id,
+          ticketId: ticket.id,
+          recipientId: recipient.id,
+        });
+        results.push({ userId: recipient.id, sent: false, error: error.message });
+      }
+    }
+    customerTicketNotification = {
+      sent: results.some((item) => item.sent),
+      recipients: results,
+      reason: recipients.length ? undefined : "Project manager has no Slack-resolvable email",
+    };
+  }
+  json(response, 201, { ticket, notification, customerTicketNotification });
 };
 
 const notifyTaskAssignee = async ({ assignee, task, assigner, state }) => {

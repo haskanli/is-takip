@@ -1,7 +1,7 @@
 import { getSlackConfig } from "../config.js";
 import { logger } from "../logger.js";
 import { withRetry } from "../retry.js";
-import { userTaskUrl } from "./email.js";
+import { userTaskUrl, userTicketUrl } from "./email.js";
 
 export const formatSlackDueDate = (value) => {
   if (!value) return "Belirtilmedi";
@@ -186,6 +186,74 @@ export const sendTaskAssignedSlack = async (
   );
   logger.info("slack.task-assignment.sent", {
     userId: assignee.id,
+    slackUserId: user.id,
+    messageId: message.ts,
+  });
+  return { id: message.ts, slackUserId: user.id };
+};
+
+export const sendCustomerTicketSlack = async (
+  { recipient, ticket, project, customerName },
+  { fetchImpl = fetch } = {},
+) => {
+  const { botToken } = getSlackConfig();
+  if (!botToken || !recipient?.email) {
+    logger.warn("slack.customer-ticket.skipped.not-configured", { userId: recipient?.id });
+    return { skipped: true };
+  }
+
+  const user = await lookupSlackUserByEmail(
+    recipient.email.trim().toLowerCase(),
+    botToken,
+    fetchImpl,
+  );
+  const link = userTicketUrl(recipient.id, project.id, ticket.id);
+  const blocks = [
+    {
+      type: "header",
+      text: { type: "plain_text", text: "Müşteri ticketı açıldı", emoji: true },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*${ticket.ticketNo || "Yeni ticket"} · ${ticket.title}*\n${ticket.description || "Açıklama girilmedi."}`,
+      },
+      fields: [
+        { type: "mrkdwn", text: `*Müşteri:*\n${customerName || ticket.customer || "-"}` },
+        { type: "mrkdwn", text: `*Proje:*\n${project.name}` },
+        { type: "mrkdwn", text: `*Öncelik:*\n${ticket.priority || "-"}` },
+        { type: "mrkdwn", text: `*Durum:*\n${ticket.status || "Açık"}` },
+      ],
+    },
+  ];
+  if (link) {
+    blocks.push({
+      type: "actions",
+      elements: [{
+        type: "button",
+        text: { type: "plain_text", text: "Ticketı Aç", emoji: true },
+        url: link,
+        style: "primary",
+      }],
+    });
+  }
+
+  const message = await slackRequest(
+    "chat.postMessage",
+    {
+      channel: user.id,
+      text: `${customerName || "Müşteri"} yeni ticket açtı: ${ticket.title}`,
+      blocks,
+      unfurl_links: false,
+      unfurl_media: false,
+    },
+    botToken,
+    fetchImpl,
+  );
+  logger.info("slack.customer-ticket.sent", {
+    userId: recipient.id,
+    ticketId: ticket.id,
     slackUserId: user.id,
     messageId: message.ts,
   });

@@ -42,13 +42,86 @@ const filterRecordByProjectIds = (record, projectIds) =>
     Object.entries(record || {}).filter(([projectId]) => projectIds.has(projectId)),
   );
 
+const isCustomerProfile = (profile, person) =>
+  profile?.role_key === "customer_viewer" ||
+  profile?.userType === "customer" ||
+  person?.userType === "customer" ||
+  person?.roleKey === "customer_viewer";
+
+const profileCustomerId = (profile, person) =>
+  profile?.customer_id || profile?.customerId || person?.customerId || "";
+
+const sanitizeCustomerProject = (project) => ({
+  id: project.id,
+  name: project.name,
+  description: project.description || "",
+  color: project.color,
+  status: project.status || "",
+  startDate: project.startDate || "",
+  endDate: project.endDate || "",
+  customerId: project.customerId || "",
+  customerName: project.customerName || "",
+  customerProfile: clone(project.customerProfile || {}),
+  customerContacts: clone(project.customerContacts || []),
+  location: clone(project.location || {}),
+  activeModules: clone(project.activeModules || []),
+  connectedSupplier: Boolean(project.connectedSupplier),
+  commissioningTracking: Boolean(project.commissioningTracking),
+  commissioningTree: clone(project.commissioningTree || []),
+  milestones: clone(project.milestones || []),
+  machines: clone(project.machines || []),
+  readinessChecklist: clone(project.readinessChecklist || []),
+  readinessThreshold: project.readinessThreshold || 80,
+  trainings: clone(project.trainings || []),
+  raciContacts: clone(project.raciContacts || []),
+});
+
+const filterCustomerTickets = (tickets, customerId) =>
+  (tickets || []).filter(
+    (ticket) =>
+      ticket.source === "customer" ||
+      ticket.customerVisible === true ||
+      (customerId && ticket.customerId === customerId),
+  );
+
 export const filterStateForProfile = (state, profile) => {
   const safeState = stripSensitiveState(state);
   if (!profile || profile.is_admin) return safeState;
 
   const legacyId = profile.legacy_id;
+  const person = safeState.people?.find((item) => item.id === legacyId);
+  if (isCustomerProfile(profile, person)) {
+    const customerId = profileCustomerId(profile, person);
+    const projects = (safeState.projects || [])
+      .filter((project) => project.customerId === customerId)
+      .map(sanitizeCustomerProject);
+    const projectIds = new Set(projects.map((project) => project.id));
+    return {
+      ...safeState,
+      people: clone((safeState.people || []).filter((item) => item.id === legacyId)),
+      customers: clone((safeState.customers || []).filter((item) => item.id === customerId)),
+      projects,
+      personalTasks: [],
+      fieldPlans: [],
+      userNotes: {},
+      notifications: clone(
+        (safeState.notifications || []).filter((item) => item.userId === legacyId),
+      ),
+      recurringTasks: [],
+      projectTickets: Object.fromEntries(
+        Object.entries(filterRecordByProjectIds(safeState.projectTickets, projectIds)).map(
+          ([projectId, tickets]) => [projectId, clone(filterCustomerTickets(tickets, customerId))],
+        ),
+      ),
+      projectActions: {},
+      projectNotes: {},
+      logs: [],
+      reportSchedules: [],
+      emailTemplates: [],
+    };
+  }
   const ticketOnly = Boolean(
-    safeState.people?.find((person) => person.id === legacyId)?.ticketOnly,
+    person?.ticketOnly,
   );
   if (ticketOnly) {
     return {
@@ -210,8 +283,46 @@ export const mergeStateForProfile = (current, incoming, profile) => {
   }
 
   const legacyId = profile.legacy_id;
+  const person = current.people?.find((item) => item.id === legacyId);
+  if (isCustomerProfile(profile, person)) {
+    const customerId = profileCustomerId(profile, person);
+    const customerProjectIds = new Set(
+      (current.projects || [])
+        .filter((project) => project.customerId === customerId)
+        .map((project) => project.id),
+    );
+    const resultTickets = clone(current.projectTickets || {});
+    for (const projectId of customerProjectIds) {
+      const currentTickets = resultTickets[projectId] || [];
+      const currentById = new Map(currentTickets.map((ticket) => [ticket.id, ticket]));
+      const incomingTickets = safeIncoming.projectTickets?.[projectId] || [];
+      const nextTickets = [...currentTickets];
+      for (const ticket of incomingTickets) {
+        if (currentById.has(ticket.id)) continue;
+        nextTickets.push({
+          ...clone(ticket),
+          source: "customer",
+          customerVisible: true,
+          customerId,
+          author: profile.name,
+          createdBy: legacyId,
+          assignedTo: "",
+        });
+      }
+      resultTickets[projectId] = nextTickets;
+    }
+    return {
+      ...clone(current),
+      projectTickets: resultTickets,
+      notifications: replaceOwnedItems(
+        current.notifications,
+        safeIncoming.notifications,
+        (item) => item.userId === legacyId,
+      ),
+    };
+  }
   const ticketOnly = Boolean(
-    current.people?.find((person) => person.id === legacyId)?.ticketOnly,
+    person?.ticketOnly,
   );
   if (ticketOnly) {
     return {

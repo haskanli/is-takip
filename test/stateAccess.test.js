@@ -12,16 +12,24 @@ const state = {
     { id: "member", name: "Member" },
     { id: "other", name: "Other" },
     { id: "product", name: "Product", ticketOnly: true },
+    { id: "cust-user", name: "Customer", userType: "customer", roleKey: "customer_viewer", customerId: "cust1" },
   ],
+  customers: [{ id: "cust1", name: "Customer A" }],
   projects: [
     {
       id: "p1",
       name: "Visible",
+      customerId: "cust1",
       pmIds: ["pm"],
       members: ["member"],
       remoteAccess: [
         { id: "r1", name: "VPN", username: "user", password: "plain-secret" },
       ],
+      costItems: [{ id: "c1", amountUsd: 100 }],
+      reportSchedules: [{ id: "rs1" }],
+      trainings: [{ id: "tr1", title: "Operator training" }],
+      raciContacts: [{ id: "rc1", name: "Customer Contact", side: "Müşteri" }],
+      machines: [{ id: "machine1", name: "Machine" }],
       milestones: [
         {
           id: "m1",
@@ -55,7 +63,10 @@ const state = {
     { id: "n2", userId: "other" },
   ],
   projectTickets: {
-    p1: [{ id: "ticket1", assignedTo: "member", title: "Mine" }],
+    p1: [
+      { id: "ticket1", assignedTo: "member", title: "Mine" },
+      { id: "ticket-customer", title: "Visible to customer", customerVisible: true, customerId: "cust1" },
+    ],
     p2: [{ id: "ticket2", assignedTo: "other", title: "Hidden" }],
   },
   projectActions: { p1: [{ id: "a1" }], p2: [{ id: "a2" }] },
@@ -143,6 +154,44 @@ test("member cannot save an unsafe profile image URL", () => {
     merged.people.find((person) => person.id === "member").avatarUrl,
     undefined,
   );
+});
+
+test("customer sees only linked project public data and visible tickets", () => {
+  const filtered = filterStateForProfile(state, {
+    ...member,
+    legacy_id: "cust-user",
+    name: "Customer",
+  });
+  assert.deepEqual(filtered.projects.map((item) => item.id), ["p1"]);
+  assert.deepEqual(filtered.people.map((item) => item.id), ["cust-user"]);
+  assert.equal(filtered.projects[0].remoteAccess, undefined);
+  assert.equal(filtered.projects[0].costItems, undefined);
+  assert.equal(filtered.projects[0].reportSchedules, undefined);
+  assert.deepEqual(filtered.projects[0].trainings.map((item) => item.id), ["tr1"]);
+  assert.deepEqual(filtered.projects[0].raciContacts.map((item) => item.id), ["rc1"]);
+  assert.deepEqual(filtered.projects[0].machines.map((item) => item.id), ["machine1"]);
+  assert.deepEqual(filtered.projectTickets.p1.map((ticket) => ticket.id), ["ticket-customer"]);
+  assert.deepEqual(filtered.projectActions, {});
+  assert.deepEqual(filtered.logs, []);
+});
+
+test("customer can add a new customer ticket but cannot edit project data", () => {
+  const profile = { ...member, legacy_id: "cust-user", name: "Customer" };
+  const incoming = filterStateForProfile(state, profile);
+  incoming.projects[0].name = "Tampered customer project";
+  incoming.projectTickets.p1.push({
+    id: "ticket-new-customer",
+    title: "New customer ticket",
+    status: "Açık",
+  });
+
+  const merged = mergeStateForProfile(state, incoming, profile);
+  assert.equal(merged.projects[0].name, "Visible");
+  const added = merged.projectTickets.p1.find((ticket) => ticket.id === "ticket-new-customer");
+  assert.equal(added.source, "customer");
+  assert.equal(added.customerVisible, true);
+  assert.equal(added.customerId, "cust1");
+  assert.equal(added.author, "Customer");
 });
 
 test("member can mark assigned manager task seen when acting on it", () => {

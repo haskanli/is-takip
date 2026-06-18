@@ -405,8 +405,9 @@ function InvoiceMilestonePanel({project,onChange}) {
   </div>;
 }
 
-export function ProjectSetupPanel({project,onChange,canEdit,state,setState,currentUser,isAdmin,authHeaders,updateApiStateVersion,AIWorkspaceComponent=()=>null}) {
+export function ProjectSetupPanel({project,onChange,canEdit,customerView=false,state,setState,currentUser,isAdmin,authHeaders,updateApiStateVersion,AIWorkspaceComponent=()=>null}) {
   const [section,setSection]=useState("overview");
+  const customerSections=["overview","readiness","training","raci","machines","commissioning"];
   const [contact,setContact]=useState({side:"M\u00fc\u015fteri",name:"",title:"",company:"",department:"",email:"",phone:"",raci:"C",scope:""});
   const [document,setDocument]=useState({name:"",purpose:"",tags:"",url:"",owner:"",version:"1.0"});
   const emptySchedule={name:"",reportType:"project_status",recipients:"",frequency:"weekly",weekday:"1",time:"09:00",timezone:"Europe/Istanbul",enabled:true};
@@ -418,7 +419,8 @@ export function ProjectSetupPanel({project,onChange,canEdit,state,setState,curre
   const addContact=()=>{if(!contact.name.trim())return;onChange({raciContacts:[...(project.raciContacts||[]),{...contact,id:uid()}]});setContact({side:"M\u00fc\u015fteri",name:"",title:"",company:"",department:"",email:"",phone:"",raci:"C",scope:""});};
   const addDocument=()=>{if(!document.name.trim())return;onChange({documents:[...(project.documents||[]),{...document,id:uid(),tags:document.tags.split(",").map(x=>x.trim()).filter(Boolean),createdAt:now()}]});setDocument({name:"",purpose:"",tags:"",url:"",owner:"",version:"1.0"});};
   const addSchedule=()=>{if(!schedule.name.trim()||!schedule.recipients.trim())return;onChange({reportSchedules:[...(project.reportSchedules||[]),{...schedule,id:uid(),recipients:schedule.recipients.split(",").map(x=>x.trim()).filter(Boolean),createdAt:now(),nextRunAt:nextReportRunAt(schedule)}]});setSchedule(emptySchedule);};
-  const tabs=[["overview","Özet"],["readiness","Başlangıç Sağlığı"],["training","Eğitimler"],["cost","Proje Maliyeti"],...(isAdmin?[["billing","Fatura Koşulları"]]:[]),["raci","RACI ve Kontaklar"],["access","Uzaktan Erişim"],["machines","Makineler"],...(project.commissioningTracking?[["commissioning","Devreye Alma"]]:[]),["effort","Efor"],["lessons","Öğrenilmiş Dersler"],["documents","Dokümanlar"],["automation","Ayarlar / Rapor"],["ai","AI Proje Yorumu"]];
+  const tabs=[["overview","Özet"],["readiness","Başlangıç Sağlığı"],["training","Eğitimler"],["cost","Proje Maliyeti"],...(isAdmin?[["billing","Fatura Koşulları"]]:[]),["raci","RACI ve Kontaklar"],["access","Uzaktan Erişim"],["machines","Makineler"],...(project.commissioningTracking?[["commissioning","Devreye Alma"]]:[]),["effort","Efor"],["lessons","Öğrenilmiş Dersler"],["documents","Dokümanlar"],["automation","Ayarlar / Rapor"],["ai","AI Proje Yorumu"]].filter(([id])=>!customerView||customerSections.includes(id));
+  useEffect(()=>{if(customerView&&!customerSections.includes(section))setSection("overview");},[customerView,section]);
   return <div style={{flex:1,overflow:"auto",padding:"clamp(14px,3vw,24px)"}}>
     <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:16,background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:6,boxShadow:"0 6px 18px rgba(15,23,42,.04)",scrollbarWidth:"thin"}}>{tabs.map(([id,label])=><button key={id} onClick={()=>setSection(id)} style={{border:0,borderRadius:10,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:850,background:section===id?project.color:"#F8FAFC",color:section===id?"#fff":"#64748B",whiteSpace:"nowrap",flexShrink:0}}>{label}</button>)}</div>
     {section==="overview"&&<ProjectOverviewPanel project={project} onChange={onChange} canEdit={canEdit}/>}

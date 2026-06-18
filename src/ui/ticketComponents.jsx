@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getJiraIssue } from "../jira";
 import { createTicketWithNotification, notifyTicketAssignment } from "../email";
 import { DEFAULT_ACTIVE_MODULES } from "../appData.js";
+import { isCustomerUser, visibleTicketsForUser } from "../customerAccess.js";
 import { nextTicketNumber, ticketNumber } from "../domain/projectHelpers.js";
 import { MultiChoiceFilter } from "./formControls.jsx";
 import { Btn, Field, Icon, Modal, iStyle } from "./primitives.jsx";
@@ -50,7 +51,7 @@ export function TicketsPage({state,setState,currentUser,isAdmin,initialMine=fals
   const PRIOS=["Düşük","Orta","Yüksek","Kritik"];
   const all=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>{
     const project=state.projects.find(p=>p.id===projectId);
-    return (list||[]).map(ticket=>({ticket,projectId,project}));
+    return visibleTicketsForUser(list||[],currentUser).map(ticket=>({ticket,projectId,project}));
   });
   const filtered=all.filter(({ticket,projectId,project})=>{
     const haystack=`${ticket.ticketNo||""} ${ticket.title||""} ${ticket.description||""} ${project?.name||""} ${state.people.find(p=>p.id===ticket.assignedTo)?.name||""}`.toLocaleLowerCase("tr-TR");
@@ -59,8 +60,14 @@ export function TicketsPage({state,setState,currentUser,isAdmin,initialMine=fals
   const save=(projectId,tickets)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[projectId]:tickets}}));
   const add=async(projectId,data)=>{
     const createdAt=now();
-    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
+    const project=state.projects.find(item=>item.id===projectId);
+    const customerTicket=isCustomerUser(currentUser);
+    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?currentUser.customerId:data.customerId||project?.customerId||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
     save(projectId,[...((state.projectTickets||{})[projectId]||[]),ticket]);
+    if(customerTicket){
+      const pmIds=[...(project?.pmIds||[]),project?.pm].filter(Boolean);
+      setState(s=>({...s,notifications:[...pmIds.map(userId=>({id:uid(),ts:now(),userId,msg:`${currentUser.name} müşteri portalından ${ticket.ticketNo} ticketını açtı.`,projectName:project?.name||"",type:"customer_ticket",ticketId:ticket.id,projectId,read:false})),...(s.notifications||[])]}));
+    }
     const result=await createTicketWithNotification(projectId,ticket);
     if(result.ticket?.ticketNo)save(projectId,[...((state.projectTickets||{})[projectId]||[]),{...ticket,...result.ticket}]);
     setMailNotice(result.notification?.sent?"Ticket oluşturuldu ve atama maili gönderildi.":`Ticket oluşturuldu; mail gönderilemedi: ${result.notification?.reason||"Bilinmeyen hata"}`);
@@ -107,25 +114,31 @@ export function TicketsPage({state,setState,currentUser,isAdmin,initialMine=fals
 export function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
   const [modal,setModal]=useState(null);
   const [mailNotice,setMailNotice]=useState("");
-  const tickets=((state.projectTickets||{})[project.id])||[];
+  const allTickets=((state.projectTickets||{})[project.id])||[];
+  const tickets=visibleTicketsForUser(allTickets,currentUser);
   const saveTickets=(t)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[project.id]:t}}));
   const addTicket=async(data)=>{
     const createdAt=now();
-    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
-    saveTickets([...tickets,ticket]);
+    const customerTicket=isCustomerUser(currentUser);
+    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?currentUser.customerId:data.customerId||project.customerId||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
+    saveTickets([...allTickets,ticket]);
+    if(customerTicket){
+      const pmIds=[...(project.pmIds||[]),project.pm].filter(Boolean);
+      setState(s=>({...s,notifications:[...pmIds.map(userId=>({id:uid(),ts:now(),userId,msg:`${currentUser.name} müşteri portalından ${ticket.ticketNo} ticketını açtı.`,projectName:project.name,type:"customer_ticket",ticketId:ticket.id,projectId:project.id,read:false})),...(s.notifications||[])]}));
+    }
     const result=await createTicketWithNotification(project.id,ticket);
-    if(result.ticket?.ticketNo)saveTickets([...tickets,{...ticket,...result.ticket}]);
+    if(result.ticket?.ticketNo)saveTickets([...allTickets,{...ticket,...result.ticket}]);
     setMailNotice(result.notification?.sent?"Ticket oluşturuldu ve atama maili gönderildi.":`Ticket oluşturuldu; mail gönderilemedi: ${result.notification?.reason||"Bilinmeyen hata"}`);
     return result;
   };
   const updateTicket=(id,data)=>{
-    const old=tickets.find(t=>t.id===id);
+    const old=allTickets.find(t=>t.id===id);
     const workflowData=applyTicketWorkflow(data);
     const updated={...old,...workflowData,updatedAt:now(),history:[...(old?.history||[]),...ticketChangeLog(old,workflowData,currentUser)]};
-    saveTickets(tickets.map(t=>t.id===id?updated:t));
+    saveTickets(allTickets.map(t=>t.id===id?updated:t));
     if(workflowData.assignedTo&&workflowData.assignedTo!==old?.assignedTo)notifyTicketAssignment(project.id,updated).catch(error=>console.warn("Ticket maili gönderilemedi",error));
   };
-  const deleteTicket=(id)=>saveTickets(tickets.filter(t=>t.id!==id));
+  const deleteTicket=(id)=>saveTickets(allTickets.filter(t=>t.id!==id));
   const TICKET_TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
   const TICKET_PRIOS=["Düşük","Orta","Yüksek","Kritik"];
   const TYPE_COLORS={"Bug":"#E11D48","Görev":"#4A6CF7","İyileştirme":"#059669","Soru":"#EA6C00","Bilgi":"#94A3B8"};
