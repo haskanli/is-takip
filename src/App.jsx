@@ -1044,10 +1044,21 @@ function SlackLogo({ size=22 }) {
 }
 
 function AuthLoginScreen() {
-  const [email,setEmail]=useState("");
+  const rememberedEmail = (() => {
+    try { return localStorage.getItem("corject_remember_email") || ""; }
+    catch { return ""; }
+  })();
+  const [email,setEmail]=useState(rememberedEmail);
   const [password,setPassword]=useState("");
+  const [rememberMe,setRememberMe]=useState(Boolean(rememberedEmail));
   const [showAlternatives,setShowAlternatives]=useState(false);
   const [status,setStatus]=useState({loading:false,message:"",error:false});
+  const syncRememberedEmail = (value) => {
+    try {
+      if (rememberMe) localStorage.setItem("corject_remember_email", value);
+      else localStorage.removeItem("corject_remember_email");
+    } catch {}
+  };
   const slackLogin=async()=>{
     setStatus({loading:true,message:"",error:false});
     const {error}=await supabase.auth.signInWithOAuth({
@@ -1064,6 +1075,7 @@ function AuthLoginScreen() {
     if(!value||!password){setStatus({loading:false,message:"E-posta ve \u015fifre girin.",error:true});return;}
     setStatus({loading:true,message:"",error:false});
     const {error}=await supabase.auth.signInWithPassword({email:value,password});
+    if(!error)syncRememberedEmail(value);
     setStatus(error
       ?{loading:false,message:error.message,error:true}
       :{loading:false,message:"Giri\u015f ba\u015far\u0131l\u0131, y\u00f6nlendiriliyorsunuz...",error:false});
@@ -1102,6 +1114,10 @@ function AuthLoginScreen() {
         <input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="ad@firma.com" style={{...iStyle,padding:12,background:"#fff",marginBottom:10}}/>
         <label style={{display:"block",fontSize:12,fontWeight:800,color:"#CBD5E1",marginBottom:6}}>{"\u015eifre"}</label>
         <input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&passwordLogin()} placeholder={"\u015eifreniz"} style={{...iStyle,padding:12,background:"#fff",marginBottom:12}}/>
+        <label style={{display:"flex",alignItems:"center",gap:8,color:"#CBD5E1",fontSize:11,fontWeight:750,margin:"-2px 0 13px",cursor:"pointer"}}>
+          <input type="checkbox" checked={rememberMe} onChange={e=>{setRememberMe(e.target.checked);if(!e.target.checked){try{localStorage.removeItem("corject_remember_email");}catch{}}}} style={{accentColor:"#4A6CF7"}}/>
+          {"Beni hat\u0131rla"}
+        </label>
         <button disabled={status.loading} onClick={passwordLogin} style={{width:"100%",border:0,borderRadius:12,padding:"13px 16px",background:"linear-gradient(135deg,#4A6CF7,#7C3AED)",color:"#fff",fontWeight:900,cursor:"pointer",boxShadow:"0 12px 26px rgba(74,108,247,.32)"}}>{status.loading?"Giri\u015f yap\u0131l\u0131yor...":"Giri\u015f Yap"}</button>
         <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginTop:12,flexWrap:"wrap"}}>
           <button disabled={status.loading} onClick={sendResetLink} style={{border:0,background:"transparent",color:"#A5B4FC",fontSize:11,fontWeight:800,cursor:"pointer",padding:0}}>{"\u015eifremi belirle / unuttum"}</button>
