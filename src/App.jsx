@@ -349,7 +349,7 @@ export default function App() {
       setView("tickets");
       setSelProject(null);
     }
-    if(customerView&&(!["dashboard","tickets","notifications"].includes(view)||selProject)){
+    if(customerView&&!selProject&&!["dashboard","tickets","notifications"].includes(view)){
       setView("dashboard");
       setSelProject(null);
     }
@@ -844,7 +844,7 @@ export default function App() {
         <span>Müşteri görünümü: {customerPreviewProject.customerProfile?.name||customerPreviewProject.customerName||customerPreviewProject.name}</span>
         <button onClick={()=>{setPreviewCustomerProjectId("");navigateTo("customers");}} style={{border:0,borderRadius:8,background:"#fff",color:"#4338CA",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>Yöneticiye Dön</button>
       </div>}
-      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(customerView?<SharedCustomerDashboardPage state={state} currentUser={currentUser} projects={visibleProjects} onNavigate={v=>navigateTo(v,{ticketMineOnly:v==="tickets"})}/>:isMobile?<SharedMobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>:<SharedDashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>)}
+      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(customerView?<SharedCustomerDashboardPage state={state} currentUser={currentUser} projects={visibleProjects} onNavigate={v=>navigateTo(v,{ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>:isMobile?<SharedMobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>:<SharedDashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>)}
       {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<SharedManagementWorkspace state={state} setState={setState} currentUser={currentUser} initialSection={adminSection} onNavigate={v=>navigateTo(v)} onOpenProject={id=>openProject(id,"setup")} onEditPerson={person=>setModal({type:"editPerson",data:person})} onAddPerson={()=>setModal({type:"addPerson"})} onAssignTask={saveAdminAssignedTask}/>}
       {view==="todos"&&<SharedTodoPage state={state} setState={setState} currentUser={currentUser}/>}
       {view==="mobilemenu"&&<MobileFeatureMenuPage isAdmin={isAdmin} onNavigate={target=>navigateTo(target,{projectScope:target==="projects"?"all":undefined,ticketMineOnly:target==="tickets"})}/>}

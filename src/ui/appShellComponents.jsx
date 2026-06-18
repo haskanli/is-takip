@@ -111,7 +111,15 @@ export const GlobalStyle = () => (
 
 export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logoSrc=""}) {
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
-  return <div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:20,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 50% 18%,rgba(74,108,247,.22),transparent 34%),radial-gradient(circle at 58% 70%,rgba(34,211,238,.16),transparent 28%),linear-gradient(145deg,#020617 0%,#0B1020 48%,#111827 100%)",color:"#fff",zIndex:9999,overflow:"hidden"}}>
+  const localAnimationCss = `
+    @keyframes corjectRingSweep { 0% { transform: rotate(-30deg); filter: drop-shadow(0 0 12px rgba(34,211,238,.26)); } 50% { transform: rotate(18deg); filter: drop-shadow(0 0 24px rgba(139,92,246,.46)); } 100% { transform: rotate(330deg); filter: drop-shadow(0 0 16px rgba(34,211,238,.32)); } }
+    @keyframes corjectNodeTravel { 0%, 100% { transform: translateX(-34px) scale(.9); opacity:.78; } 45% { transform: translateX(5px) scale(1.08); opacity:1; } 75% { transform: translateX(38px) scale(.96); opacity:.9; } }
+    @keyframes corjectBeam { 0%, 100% { opacity:.25; transform: scaleX(.55); } 50% { opacity:1; transform: scaleX(1.05); } }
+    @keyframes corjectCheckPulse { 0%, 65%, 100% { transform: scale(.92); opacity:.72; } 78% { transform: scale(1.14); opacity:1; } }
+    @keyframes corjectGlowPulse { 0%, 100% { opacity:.36; transform: scale(.82); } 50% { opacity:.95; transform: scale(1.08); } }
+    @keyframes corjectDots { 0%, 80%, 100% { opacity:.25; transform: translateY(0); } 40% { opacity:1; transform: translateY(-3px); } }
+  `;
+  return <><style>{localAnimationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:20,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 50% 18%,rgba(74,108,247,.22),transparent 34%),radial-gradient(circle at 58% 70%,rgba(34,211,238,.16),transparent 28%),linear-gradient(145deg,#020617 0%,#0B1020 48%,#111827 100%)",color:"#fff",zIndex:9999,overflow:"hidden"}}>
     <div style={{position:"absolute",inset:"auto 12% 9%",height:90,background:"radial-gradient(ellipse,rgba(37,99,235,.42),transparent 65%)",filter:"blur(16px)"}} />
     <div style={{width:"min(390px,100%)",textAlign:"center",border:"1px solid rgba(148,163,184,.18)",borderRadius:32,padding:"34px 28px 30px",background:"linear-gradient(180deg,rgba(15,23,42,.78),rgba(2,6,23,.62))",boxShadow:"0 30px 90px rgba(0,0,0,.42)",backdropFilter:"blur(16px)",position:"relative"}}>
       <div style={{width:150,height:150,margin:"0 auto 18px",position:"relative",display:"grid",placeItems:"center"}}>
@@ -121,7 +129,9 @@ export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",log
         <span style={{position:"absolute",left:38,top:66,width:30,height:30,borderRadius:"50%",background:"#EFF6FF",border:"7px solid #4A6CF7",boxShadow:"0 0 22px rgba(74,108,247,.6)"}} />
         <span style={{position:"absolute",left:61,top:77,width:82,height:10,borderRadius:999,background:"rgba(255,255,255,.1)"}} />
         <span style={{position:"absolute",left:"calc(50% - 10px)",top:73,width:20,height:20,borderRadius:"50%",background:"#E0F2FE",boxShadow:"0 0 20px rgba(34,211,238,.82)",animation:"corjectNodeTravel 1.9s ease-in-out infinite"}} />
-        <span style={{position:"absolute",right:26,top:52,width:38,height:38,borderRadius:"50%",background:"#22D3EE",display:"grid",placeItems:"center",fontSize:23,fontWeight:950,color:"#fff",boxShadow:"0 0 28px rgba(34,211,238,.75)",animation:"corjectCheckPulse 2.1s ease-in-out infinite"}}>✓</span>
+        <span style={{position:"absolute",right:26,top:52,width:38,height:38,borderRadius:"50%",background:"#22D3EE",display:"grid",placeItems:"center",boxShadow:"0 0 28px rgba(34,211,238,.75)",animation:"corjectCheckPulse 2.1s ease-in-out infinite"}}>
+          <i style={{width:15,height:8,borderLeft:"4px solid #fff",borderBottom:"4px solid #fff",transform:"rotate(-45deg)",display:"block",marginTop:-2}} />
+        </span>
         <span style={{position:"absolute",inset:48,borderRadius:"50%",background:"radial-gradient(circle,rgba(34,211,238,.3),transparent 62%)",animation:"corjectGlowPulse 1.8s ease-in-out infinite"}} />
         {logoSrc&&<img className="corject-loading-logo" src={logoSrc} alt="Corject" style={{position:"absolute",width:1,height:1,opacity:0,pointerEvents:"none"}}/>}
       </div>
@@ -133,5 +143,5 @@ export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",log
       <div style={{height:8,borderRadius:20,background:"rgba(148,163,184,.16)",overflow:"hidden",border:"1px solid rgba(148,163,184,.16)"}}><div style={{height:"100%",width:`${safeProgress}%`,borderRadius:20,background:"linear-gradient(90deg,#2563EB,#7C3AED,#22D3EE)",transition:"width .35s ease",boxShadow:"0 0 24px rgba(34,211,238,.42)"}}/></div>
       <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#94A3B8",marginTop:9}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"#C4B5FD"}}>%{safeProgress}</b></div>
     </div>
-  </div>;
+  </div></>;
 }

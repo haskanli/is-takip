@@ -19,7 +19,7 @@ const customerLogo = (project = {}) => project.customerProfile?.logoUrl || proje
 const customerWebsite = (project = {}) => project.customerProfile?.website || project.website || "";
 const customerAccent = (project = {}) => project.customerProfile?.accentColor || project.color || "#4A6CF7";
 
-export function CustomerDashboardPage({ state, currentUser, projects = [], onNavigate }) {
+export function CustomerDashboardPage({ state, currentUser, projects = [], onNavigate, onOpenProject }) {
   const projectSummaries = projects.map((project) => {
     const tasks = (project.milestones || []).flatMap((milestone) => milestone.tasks || []);
     const doneTasks = tasks.filter((task) => task.status === "Tamamlandı").length;
@@ -137,6 +137,10 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
               <CustomerMetric title="RACI / Kontak" value={item.raciCount} desc="Tanımlı sorumlu ve kontak" icon="people" color="#0369A1" />
             </div>
             {item.overdue > 0 && <div style={{ marginTop: 13, border: "1px solid #FECACA", background: "#FFF1F2", color: "#BE123C", borderRadius: 14, padding: "10px 12px", fontSize: 12, fontWeight: 800 }}>{item.overdue} geciken iş takip bekliyor.</div>}
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:14}}>
+              <button onClick={()=>onOpenProject?.(item.project.id)} style={{border:0,borderRadius:13,background:item.accent,color:"#fff",padding:"10px 13px",fontSize:12,fontWeight:900,cursor:"pointer",boxShadow:"0 10px 22px rgba(15,23,42,.12)"}}>Proje detaylarını gör</button>
+              <button onClick={()=>onNavigate?.("tickets")} style={{border:"1px solid #E2E8F0",borderRadius:13,background:"#fff",color:"#334155",padding:"10px 13px",fontSize:12,fontWeight:900,cursor:"pointer"}}>Ticketları aç</button>
+            </div>
           </div>
         </section>)}
       </div>
