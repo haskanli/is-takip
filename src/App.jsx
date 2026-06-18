@@ -22,12 +22,12 @@ import {
   PeopleMultiSelect,
   StakeholderEditor,
 } from "./ui/formControls.jsx";
+import { TaskCard as SharedTaskCard } from "./ui/taskComponents.jsx";
 import { Avatar, Btn, Card, Field, Icon, Modal, iStyle, lStyle } from "./ui/primitives.jsx";
 import {
   Badge,
   DelayBadge,
   PRIORITIES,
-  PRIORITY_COLORS as PCOL,
   STATUSES,
   STATUS_COLORS as S,
   daysDiff,
@@ -2021,42 +2021,6 @@ ${projLogs.length>0?`<div class="card"><h2>Son Aktiviteler</h2><table><thead><tr
   document.body.removeChild(a);
 }
 
-// ─── Task Card ───────────────────────────────────────────────────────────────
-function TaskCard({ task, people, projectColor, onCheck, onStatusChange, onEdit, onDelete, onTime, onOpen, showProject, projectName, canEdit }) {
-  const assignee=people.find(p=>p.id===task.assignee);
-  const dl=delayLvl(task.dueDate,task.status);
-  return <div style={{ background:"#fff", borderRadius:10, padding:"11px 15px", border:`1.5px solid ${dl==="critical"?"#FCA5A5":dl==="normal"?"#FED7AA":"#E2E8F0"}`, display:"flex", alignItems:"flex-start", gap:11, boxShadow:"0 1px 3px rgba(0,0,0,0.04)", opacity:task.status==="Tamamland\u0131"?0.75:1 }}>
-    {canEdit?<input type="checkbox" checked={task.status==="Tamamland\u0131"} onChange={e=>onCheck&&onCheck(e.target.checked)} style={{ marginTop:3, width:15, height:15, cursor:"pointer", accentColor:"#4A6CF7" }} />:<span style={{ marginTop:3, width:15, height:15, flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center", fontSize:12 }}>{task.status==="Tamamland\u0131"?"✓":"○"}</span>}
-    <div style={{ flex:1, minWidth:0 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-        <button onClick={onOpen} style={{border:0,background:"transparent",padding:0,fontWeight:600,fontSize:13,textAlign:"left",cursor:onOpen?"pointer":"default",textDecoration:task.status==="Tamamland\u0131"?"line-through":"none",color:task.status==="Tamamland\u0131"?"#94A3B8":"#1E293B"}}>{task.title}</button>
-        <Badge label={task.status} />
-        <span style={{ fontSize:11, fontWeight:700, color:PCOL[task.priority] }}>+{task.priority}</span>
-        <DelayBadge dateStr={task.dueDate} status={task.status} />
-      </div>
-      <div style={{ display:"flex", gap:10, marginTop:5, alignItems:"center", flexWrap:"wrap" }}>
-        {assignee&&<div style={{ display:"flex", alignItems:"center", gap:4 }}><Avatar initials={assignee.avatar} imageUrl={assignee.avatarUrl} size={17} color={projectColor||"#4A6CF7"} /><span style={{ fontSize:11, color:"#64748B" }}>{assignee.name}</span></div>}
-        {task.startDate&&<span style={{ fontSize:11, color:"#94A3B8" }}>Başl: {fmt(task.startDate)}{task.startTime?` ${task.startTime}`:""}</span>}
-        {task.dueDate&&<span style={{ fontSize:11, color:dl?"#E11D48":"#94A3B8" }}>{task.startDate?"Bit:":"Termin:"} {fmt(task.dueDate)}{task.dueTime?` ${task.dueTime}`:""}</span>}
-        {(task.timeEntries||[]).length>0&&<span style={{ fontSize:11, color:"#7C3AED", fontWeight:600, background:"#F5F3FF", borderRadius:6, padding:"1px 6px" }}>{(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0)} saat</span>}
-        {task.estimatedHours&&<span style={{ fontSize:11, color:"#0369A1", fontWeight:600, background:"#F0F9FF", borderRadius:6, padding:"1px 6px" }}>Plan: {task.estimatedHours} sa</span>}
-        {task.responsibilityGroup&&<span style={{ fontSize:11, color:"#4338CA", fontWeight:700, background:"#EEF2FF", borderRadius:6, padding:"1px 6px" }}>{task.responsibilityGroup}</span>}
-        {task.waitSource&&<span style={{ fontSize:11, color:"#EA6C00", fontWeight:600 }}>Bekliyor: {task.waitSource}</span>}
-        {task.waitReason&&["Bekliyor","Engellendi"].includes(task.status)&&<span style={{fontSize:11,color:"#9A3412",background:"#FFF7ED",borderRadius:6,padding:"1px 6px"}}>{task.waitReason}</span>}
-        {task.link&&(()=>{const jm=String(task.link).match(/([A-Z][A-Z0-9]+-[0-9]+)/);return <a href={task.link} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ fontSize:11, color:"#0052CC", background:"#DEEBFF", borderRadius:6, padding:"1px 7px", fontWeight:700, textDecoration:"none" }}>{jm?jm[1]:"Jira"}</a>;})()}
-        {showProject&&projectName&&<span style={{ fontSize:11, color:"#4A6CF7", background:"#F1F5FF", borderRadius:6, padding:"1px 6px" }}>{projectName}</span>}
-        {task.notes&&<span style={{ fontSize:11, color:"#94A3B8", fontStyle:"italic" }}>"{task.notes}"</span>}
-      </div>
-      {(task.waitingHistory||[]).length>0&&<details style={{marginTop:7}}><summary style={{fontSize:10,color:"#64748B",cursor:"pointer",fontWeight:700}}>Bekleme geçmişi ({task.waitingHistory.length})</summary><div style={{display:"grid",gap:4,marginTop:6}}>{task.waitingHistory.slice().reverse().map(entry=><div key={entry.id} style={{fontSize:10,color:"#475569",background:"#F8FAFC",borderRadius:7,padding:"6px 8px"}}><b>{entry.source}</b> · {entry.reason} · {fmtFull(entry.startAt)} - {entry.endAt?fmtFull(entry.endAt):"Devam ediyor"}</div>)}</div></details>}
-    </div>
-    <div style={{ display:"flex", gap:4, flexShrink:0 }}>
-      {onStatusChange&&<select onClick={event=>event.stopPropagation()} value={task.status||"Bekliyor"} onChange={event=>onStatusChange(event.target.value)} style={{...iStyle,width:145,fontSize:11,background:"#F8FAFC",padding:"5px 8px"}}>{STATUSES.map(status=><option key={status}>{status}</option>)}</select>}
-      {onTime&&<Btn small variant="ghost" onClick={onTime} style={{ color:"#7C3AED" }}>Efor</Btn>}
-      {canEdit&&onEdit&&<Btn small variant="ghost" onClick={onEdit} style={{ display:"inline-flex", alignItems:"center", padding:"5px 7px" }}><Icon name="edit" size={15}/></Btn>}
-      {canEdit&&onDelete&&<Btn small variant="danger" onClick={onDelete}>x</Btn>}
-    </div>
-  </div>;
-}
 
 // ─── Risk Panel ──────────────────────────────────────────────────────────────
 function RiskPanel({ risks, onAdd, onUpdate, onDelete, canEdit }) {
@@ -2209,7 +2173,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
         {sectionActive.length>0&&<div style={{ marginBottom:16 }}>
           <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{section==="all"?"Tüm Görevler":section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {sectionActive.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel Görev"} canEdit
+            {sectionActive.map(t=><SharedTaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel Görev"} canEdit formatDate={fmt} formatFullDate={fmtFull}
                onOpen={()=>openTaskDetail(t)}
                onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
                onStatusChange={(status)=>{ if(t.source==="personal")updatePersonal(t.id,{status}); else updateProjTask(t.projId,t.msId,t.id,{status}); }}
@@ -2222,7 +2186,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
         {sectionCompleted.length>0&&<div>
           <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({sectionCompleted.length})</button>
           {showDone&&<div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {sectionCompleted.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel"} canEdit
+            {sectionCompleted.map(t=><SharedTaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel"} canEdit formatDate={fmt} formatFullDate={fmtFull}
                onOpen={()=>openTaskDetail(t)}
                onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
                onStatusChange={(status)=>{ if(t.source==="personal")updatePersonal(t.id,{status}); else updateProjTask(t.projId,t.msId,t.id,{status}); }}
@@ -2236,7 +2200,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
           <div style={{ fontWeight:700, fontSize:13, marginBottom:10 }}>Tüm Genel Görevler (Yönetici)</div>
           {(state.personalTasks||[]).length===0&&<div style={{ color:"#94A3B8", fontSize:12 }}>Genel görev yok.</div>}
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {(state.personalTasks||[]).map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={null} showProject canEdit
+            {(state.personalTasks||[]).map(t=><SharedTaskCard key={t.id} task={t} people={state.people} projectColor={null} showProject canEdit formatDate={fmt} formatFullDate={fmtFull}
                onOpen={()=>openTaskDetail({...t,source:"personal"})}
                onCheck={(c)=>updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"})}
                onStatusChange={(status)=>updatePersonal(t.id,{status})}
@@ -2835,7 +2799,7 @@ function MilestoneTaskPanel({ milestone, project, people, isAdmin, showDone, set
     </div>
     {active.length===0&&done.length===0&&<div style={{ textAlign:"center", padding:"28px", color:"#94A3B8", fontSize:12 }}>Görev yok.</div>}
     <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-      {active.map(task=><TaskCard key={task.id} task={task} people={people} projectColor={project.color} canEdit={isAdmin}
+      {active.map(task=><SharedTaskCard key={task.id} task={task} people={people} projectColor={project.color} canEdit={isAdmin} formatDate={fmt} formatFullDate={fmtFull}
         onCheck={(c)=>onCheckTask(milestone.id,task.id,c)}
         onEdit={isAdmin?()=>onEditTask(milestone.id,task):null}
         onDelete={isAdmin?()=>onDeleteTask(milestone.id,task.id):null}
@@ -2845,7 +2809,7 @@ function MilestoneTaskPanel({ milestone, project, people, isAdmin, showDone, set
     {done.length>0&&<div style={{ marginTop:12 }}>
       <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, padding:"0 0 7px", display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({done.length})</button>
       {showDone&&<div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-        {done.map(task=><TaskCard key={task.id} task={task} people={people} projectColor={project.color} canEdit={isAdmin}
+        {done.map(task=><SharedTaskCard key={task.id} task={task} people={people} projectColor={project.color} canEdit={isAdmin} formatDate={fmt} formatFullDate={fmtFull}
           onCheck={(c)=>onCheckTask(milestone.id,task.id,c)}
           onEdit={isAdmin?()=>onEditTask(milestone.id,task):null}
           onDelete={isAdmin?()=>onDeleteTask(milestone.id,task.id):null}
