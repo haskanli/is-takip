@@ -406,6 +406,29 @@ export default function App() {
     window.history[method]({corjectRoute:true},"",nextPath);
   },[view,selProject,projectTab,adminSection,ticketMineOnly]);
 
+  const navigateTo=(target,options={})=>{
+    const nextView=target==="ticket"?"tickets":target;
+    if(nextView==="dashboard"||nextView==="admin")setAdminSection(options.adminSection||"overview");
+    else if(options.adminSection)setAdminSection(options.adminSection);
+    if(nextView==="projects"&&options.projectScope)setProjectScope(options.projectScope);
+    if(nextView==="tickets")setTicketMineOnly(Boolean(options.ticketMineOnly));
+    setView(nextView);
+    setSelProject(null);
+    setSelMilestone(null);
+    if(options.closeMobile!==false)setMobileMenuOpen(false);
+  };
+  const openProject=(projectId,tab=DEFAULT_PROJECT_TAB,options={})=>{
+    if(options.projectScope)setProjectScope(options.projectScope);
+    setView("projects");
+    setSelProject(projectId);
+    setSelMilestone(null);
+    setProjectTab(tab);
+    if(options.closeMobile!==false)setMobileMenuOpen(false);
+  };
+  const openProjectTab=(tab=DEFAULT_PROJECT_TAB)=>{
+    setProjectTab(PROJECT_ROUTE_TABS.has(tab)?tab:DEFAULT_PROJECT_TAB);
+  };
+
   const addLog=(user,action,detail,project,milestone)=>{
     setState(s=>({...s,logs:[{id:uid(),ts:now(),user,userId:s.currentUserId,action,detail,project:project||"",milestone:milestone||""},...s.logs]}));
   };
@@ -418,15 +441,12 @@ export default function App() {
     if(mobileQuick){setMobileQuick(null);return true;}
     if(modal){setModal(null);return true;}
     if(selProject){
-      if(projectTab!=="setup"){setProjectTab("setup");return true;}
-      setSelProject(null);
-      setSelMilestone(null);
-      setView("projects");
+      if(projectTab!=="setup"){openProjectTab("setup");return true;}
+      navigateTo("projects",{closeMobile:false});
       return true;
     }
     if(view&&view!=="dashboard"){
-      setView("dashboard");
-      setSelMilestone(null);
+      navigateTo("dashboard",{closeMobile:false});
       setProjectScope("all");
       return true;
     }
@@ -450,8 +470,8 @@ export default function App() {
       goBackInApp();
     }
   };
-  const login=(id)=>{ setState(s=>({...s,currentUserId:id})); setView("dashboard"); try{localStorage.setItem("corject_uid",id);}catch(e){} };
-  const logout=()=>{ if(REQUIRE_AUTH)supabase.auth.signOut();setState(s=>({...s,currentUserId:null})); try{localStorage.removeItem("corject_uid");}catch(e){} setView("dashboard"); setSelProject(null); };
+  const login=(id)=>{ setState(s=>({...s,currentUserId:id})); navigateTo("dashboard"); try{localStorage.setItem("corject_uid",id);}catch(e){} };
+  const logout=()=>{ if(REQUIRE_AUTH)supabase.auth.signOut();setState(s=>({...s,currentUserId:null})); try{localStorage.removeItem("corject_uid");}catch(e){} navigateTo("dashboard"); };
 
   if(REQUIRE_AUTH&&!authReady)return <AppLoadingScreen progress={loadProgress} status="Oturum kontrol ediliyor" logoSrc={corjectLogo}/>;
   if(REQUIRE_AUTH&&!authSession)return <AuthLoginScreen appVersion={APP_VERSION}/>;
@@ -509,7 +529,7 @@ export default function App() {
     ["projlogs","activity","Log"],
   ].filter(([id])=>!customerView||CUSTOMER_VISIBLE_PROJECT_TABS.has(id));
 
-  const addProject=(data)=>{ const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,members:[...new Set([...(data.members||[]),...assigned])],pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));setSelProject(p.id);setView("projects");setProjectTab("setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
+  const addProject=(data)=>{ const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,members:[...new Set([...(data.members||[]),...assigned])],pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));openProject(p.id,"setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
   const addPerson=async(data)=>{
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
     const person={id:uid(),avatar,...data};
@@ -543,7 +563,7 @@ export default function App() {
     personalTasks:(s.personalTasks||[]).map(t=>t.assignee===id?{...t,assignee:""}:t)
   }));
   const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>{if(p.id!==id)return p;const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);return {...p,...data,members:[...new Set([...(p.members||[]),...assigned])],pm:data.pmIds?.[0]||""};})}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
-  const deleteProject=(id)=>{ if(!isAdmin)return; const name=state.projects.find(p=>p.id===id)?.name; setState(s=>{const projectActions={...(s.projectActions||{})};delete projectActions[id];return {...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id),projectActions};}); setSelProject(null); setSelMilestone(null); addLog(currentUser.name,"general","Proje silindi: "+name); };
+  const deleteProject=(id)=>{ if(!isAdmin)return; const name=state.projects.find(p=>p.id===id)?.name; setState(s=>{const projectActions={...(s.projectActions||{})};delete projectActions[id];return {...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id),projectActions};}); navigateTo("projects"); addLog(currentUser.name,"general","Proje silindi: "+name); };
   const addRisk=(data)=>{ mutProject(p=>({...p,risks:[...(p.risks||[]),{id:uid(),...data}]})); addLog(currentUser.name,"risk_add",data.title,project?.name); };
   const updateRisk=(rId,data)=>mutProject(p=>({...p,risks:(p.risks||[]).map(r=>r.id===rId?{...r,...data}:r)}));
   const deleteRisk=(rId)=>mutProject(p=>({...p,risks:(p.risks||[]).filter(r=>r.id!==rId)}));
@@ -754,9 +774,7 @@ export default function App() {
     const action={id:uid(),tag:data.tag||"Takip",text:data.text,effortHours:parseFloat(data.effortHours)||0,actionAt:now(),createdAt:now(),authorId:currentUser.id,authorName:currentUser.name};
     setState(current=>({...current,projectActions:{...(current.projectActions||{}),[data.projectId]:[action,...(((current.projectActions||{})[data.projectId])||[])]}}));
     setMobileQuick(null);
-    setSelProject(data.projectId);
-    setView("projects");
-    setProjectTab("actions");
+    openProject(data.projectId,"actions");
   };
 
   const fullNav=[
@@ -783,13 +801,13 @@ export default function App() {
   return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
     {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:58, background:"rgba(255,255,255,.94)", backdropFilter:"blur(18px)", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
-      <button onClick={()=>{setAdminSection("overview");setView("dashboard");setSelProject(null);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:34,height:34,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:950,color:"#111827",letterSpacing:.2,maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
+      <button onClick={()=>navigateTo("dashboard")} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:34,height:34,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:950,color:"#111827",letterSpacing:.2,maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={()=>{ setView("notifications"); setSelProject(null); }} style={{ background:"#F8FAFC", border:"1px solid #E2E8F0", borderRadius:12, cursor:"pointer", position:"relative", padding:8, color:"#475569", display:"grid", placeItems:"center" }}>
+        <button onClick={()=>navigateTo("notifications")} style={{ background:"#F8FAFC", border:"1px solid #E2E8F0", borderRadius:12, cursor:"pointer", position:"relative", padding:8, color:"#475569", display:"grid", placeItems:"center" }}>
           <Icon name="bell" size={17}/>
           {(state.notifications||[]).filter(n=>isNotificationForUser(n,currentUser)&&!n.read).length>0&&<span style={{ position:"absolute", top:5, right:5, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
         </button>
-        <button title="Tüm özellikler" onClick={()=>{setSelProject(null);setSelMilestone(null);setView("mobilemenu");}} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,cursor:"pointer",padding:"7px 9px",color:"#475569",display:"grid",placeItems:"center",fontSize:18,fontWeight:900,lineHeight:1}}>☰</button>
+        <button title="Tüm özellikler" onClick={()=>navigateTo("mobilemenu")} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,cursor:"pointer",padding:"7px 9px",color:"#475569",display:"grid",placeItems:"center",fontSize:18,fontWeight:900,lineHeight:1}}>☰</button>
         <button title="Profilim" onClick={()=>setModal({type:"editProfile"})} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={34} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
       </div>
     </div>}
@@ -798,8 +816,8 @@ export default function App() {
       ...(isMobile?{ position:"fixed", top:0, left:mobileMenuOpen?0:-240, bottom:0, zIndex:960, transition:"left .25s ease", boxShadow:mobileMenuOpen?"4px 0 20px rgba(0,0,0,0.3)":"none" }:{}) }}>
       <div style={{ padding:"20px 16px 15px", borderBottom:"1px solid rgba(148,163,184,.18)", background:"radial-gradient(circle at top left,rgba(99,102,241,.28),transparent 42%)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <button onClick={()=>{setAdminSection("overview");setView("dashboard");setSelProject(null);setMobileMenuOpen(false);}} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",minWidth:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgba(99,102,241,.3))"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:850,color:"#fff",letterSpacing:.3,lineHeight:1,maxWidth:135,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
-            <button onClick={()=>{ setView("notifications"); setSelProject(null); setMobileMenuOpen(false); }} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
+            <button onClick={()=>navigateTo("dashboard")} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",minWidth:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgba(99,102,241,.3))"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:850,color:"#fff",letterSpacing:.3,lineHeight:1,maxWidth:135,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
+            <button onClick={()=>navigateTo("notifications")} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
               <span style={{ color:"#94A3B8", display:"flex" }}><Icon name="bell" size={17} /></span>
               {(state.notifications||[]).filter(n=>isNotificationForUser(n,currentUser)&&!n.read).length>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
             </button>
@@ -813,7 +831,7 @@ export default function App() {
         </div>
       </div>
       <nav className="sidebar-nav" style={{ padding:"12px 10px", flex:1, overflowY:"auto" }}>
-        {nav.map(n=><button key={n.id} onClick={()=>{ if(n.id==="dashboard"||n.id==="admin")setAdminSection("overview"); setView(n.id); setSelProject(null); setSelMilestone(null); setMobileMenuOpen(false); if(n.id==="tickets")setTicketMineOnly(false); }}
+        {nav.map(n=><button key={n.id} onClick={()=>navigateTo(n.id,{ticketMineOnly:false})}
           style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"10px 11px", borderRadius:11, border:"1px solid "+(view===n.id&&!selProject?"rgba(255,255,255,.22)":"transparent"), cursor:"pointer", background:view===n.id&&!selProject?"linear-gradient(135deg,#4A6CF7,#7C3AED)":"transparent", color:view===n.id&&!selProject?"#fff":"#CBD5E1", fontSize:13, fontWeight:700, textAlign:"left", marginBottom:4, boxShadow:view===n.id&&!selProject?"0 10px 24px rgba(79,70,229,.28)":"none" }}>
           <span style={{ display:"flex", flexShrink:0, opacity:view===n.id&&!selProject?1:.82 }}><Icon name={n.icon} size={16} /></span> {n.label}
         </button>)}
@@ -824,22 +842,22 @@ export default function App() {
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:isMobile?82:0 }}>
       {customerPreviewProject&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,background:"#EEF2FF",color:"#3730A3",borderBottom:"1px solid #C7D2FE",padding:"9px 14px",fontSize:12,fontWeight:850}}>
         <span>Müşteri görünümü: {customerPreviewProject.customerProfile?.name||customerPreviewProject.customerName||customerPreviewProject.name}</span>
-        <button onClick={()=>{setPreviewCustomerProjectId("");setView("customers");setSelProject(null);}} style={{border:0,borderRadius:8,background:"#fff",color:"#4338CA",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>Yöneticiye Dön</button>
+        <button onClick={()=>{setPreviewCustomerProjectId("");navigateTo("customers");}} style={{border:0,borderRadius:8,background:"#fff",color:"#4338CA",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>Yöneticiye Dön</button>
       </div>}
-      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(isMobile?<SharedMobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>:<SharedDashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>)}
-      {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<SharedManagementWorkspace state={state} setState={setState} currentUser={currentUser} initialSection={adminSection} onNavigate={v=>{if(v==="dashboard"||v==="admin")setAdminSection("overview");setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})} onAddPerson={()=>setModal({type:"addPerson"})} onAssignTask={saveAdminAssignedTask}/>}
+      {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(isMobile?<SharedMobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>:<SharedDashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>)}
+      {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<SharedManagementWorkspace state={state} setState={setState} currentUser={currentUser} initialSection={adminSection} onNavigate={v=>navigateTo(v)} onOpenProject={id=>openProject(id,"setup")} onEditPerson={person=>setModal({type:"editPerson",data:person})} onAddPerson={()=>setModal({type:"addPerson"})} onAssignTask={saveAdminAssignedTask}/>}
       {view==="todos"&&<SharedTodoPage state={state} setState={setState} currentUser={currentUser}/>}
-      {view==="mobilemenu"&&<MobileFeatureMenuPage isAdmin={isAdmin} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);setView(target);}}/>}
+      {view==="mobilemenu"&&<MobileFeatureMenuPage isAdmin={isAdmin} onNavigate={target=>navigateTo(target,{projectScope:target==="projects"?"all":undefined,ticketMineOnly:target==="tickets"})}/>}
       {view==="ai"&&!selProject&&<SharedAIWorkspace projects={visibleProjects}/>}
       {view==="import"&&isAdmin&&!selProject&&<SharedImportCenter state={state} setState={setState} currentUser={currentUser}/>}
       {view==="mailcenter"&&isAdmin&&!selProject&&<SharedMailCenterPage state={state} setState={setState}/>}
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <SharedProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={project.customerContacts||[]} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>setProjectTab("setup")} formatDate={fmt} mapsUrlForLocation={mapsUrl} moduleOptions={DEFAULT_ACTIVE_MODULES}/>
+        <SharedProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={project.customerContacts||[]} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>openProjectTab("setup")} formatDate={fmt} mapsUrlForLocation={mapsUrl} moduleOptions={DEFAULT_ACTIVE_MODULES}/>
         <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:isMobile?"8px clamp(12px,2.2vw,22px) 10px":"0 clamp(12px,2.2vw,22px) 10px"}}>
           <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:3,scrollbarWidth:"thin"}}>
-            {projectTabs.map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{padding:"7px 11px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:600,fontSize:12,background:projectTab===id?(project.customerProfile?.accentColor||project.color):"#F1F5FF",color:projectTab===id?"#fff":"#64748B",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",flexShrink:0}}><Icon name={icon} size={14}/>{label}</button>)}
+            {projectTabs.map(([id,icon,label])=><button key={id} onClick={()=>openProjectTab(id)} style={{padding:"7px 11px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:600,fontSize:12,background:projectTab===id?(project.customerProfile?.accentColor||project.color):"#F1F5FF",color:projectTab===id?"#fff":"#64748B",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",flexShrink:0}}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
         </div>
         {false&&<div style={{ background:"#fff", borderBottom:"1px solid #E2E8F0", padding:"13px 20px" }}>
@@ -847,7 +865,7 @@ export default function App() {
             <span style={{ width:11, height:11, borderRadius:"50%", background:project.color }} />
             <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"#1E293B", background:"#fff", borderRadius:6, padding:"2px 4px" }}>{project.name}</h2>
             <Badge label={project.status} />
-            <button onClick={()=>setProjectTab("setup")} style={{border:0,background:readinessScore(project)>=Number(project.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(project)>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800,cursor:"pointer"}}>Başlangıç: {readinessScore(project)}/100</button>
+            <button onClick={()=>openProjectTab("setup")} style={{border:0,background:readinessScore(project)>=Number(project.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(project)>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800,cursor:"pointer"}}>Başlangıç: {readinessScore(project)}/100</button>
             {project.commissioningTracking&&<span style={{background:"#ECFDF5",color:"#047857",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800}}>Devreye Alma: %{projectCommissioningPercent}</span>}
             {overdueC>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Gecikmiş: {overdueC}</span>}
             {criticalC>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Kritik: {criticalC}</span>}
@@ -865,7 +883,7 @@ export default function App() {
             <span style={{ fontSize:12, fontWeight:700, color:project.color }}>{progress}%</span>
           </div>}
           <div style={{ display:"flex", gap:5, marginTop:10, overflowX:"auto", paddingBottom:3, scrollbarWidth:"thin" }}>
-            {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje Planı"],["tasks","tasks","Görevler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>setProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
+            {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje Planı"],["tasks","tasks","Görevler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>openProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
         </div>}
 
@@ -938,9 +956,9 @@ export default function App() {
           {isAdmin&&<Btn onClick={()=>setModal({type:"addProject"})}>+ Proje Oluştur</Btn>}
         </div>}
         {projectViewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,marginBottom:14}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:980}}><thead><tr>{["Proje","Müşteri","PM","Durum","İlerleme","Görev","Gecikme","Ticket","Makine"].map(label=><th key={label} style={{padding:"11px 10px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{listedProjects.map(project=>{const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);const done=tasks.filter(task=>task.status==="Tamamlandı").length;const progress=tasks.length?Math.round(done/tasks.length*100):0;const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];const pms=projectPmIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");return <tr key={project.id} onClick={()=>setExpandedProjectRows(current=>({...current,[project.id]:!current[project.id]}))} style={{borderTop:"1px solid #EEF2F7",cursor:"pointer"}}><td style={{padding:10,fontSize:12,fontWeight:850}}>{project.name}</td><td style={{padding:10,fontSize:11,color:"#64748B"}}>{project.customerProfile?.name||project.customerName||"-"}</td><td style={{padding:10,fontSize:11,color:"#475569"}}>{pms||"-"}</td><td style={{padding:10}}><Badge label={project.status}/></td><td style={{padding:10,fontSize:11,fontWeight:850,color:project.color}}>%{progress}</td><td style={{padding:10,fontSize:11}}>{done}/{tasks.length}</td><td style={{padding:10,fontSize:11,color:delayed?"#E11D48":"#64748B",fontWeight:delayed?850:600}}>{delayed}</td><td style={{padding:10,fontSize:11}}>{((state.projectTickets||{})[project.id]||[]).length}</td><td style={{padding:10,fontSize:11}}>{machines.filter(machine=>machine.commissioned).length}/{machines.length}</td></tr>;})}</tbody></table></div>}
-        {projectViewMode==="list"&&listedProjects.filter(project=>expandedProjectRows[project.id]).map(project=><div key={`ms-${project.id}`} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:14,padding:12,margin:"-4px 0 14px"}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><b style={{fontSize:12}}>{project.name} · Milestonelar</b><Btn small onClick={()=>{setSelProject(project.id);setSelMilestone(null);setProjectTab("setup");}}>Projeyi Aç</Btn></div><div style={{display:"grid",gap:7}}>{project.milestones.map(milestone=>{const tasks=milestone.tasks||[];const done=tasks.filter(task=>task.status==="Tamamlandı").length;return <div key={milestone.id} style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto auto",gap:8,alignItems:"center",background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"9px 10px"}}><span style={{minWidth:0,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{milestone.name}</span><span style={{fontSize:10,color:"#64748B"}}>{done}/{tasks.length}</span><Badge label={milestone.status}/></div>;})}</div></div>)}
+        {projectViewMode==="list"&&listedProjects.filter(project=>expandedProjectRows[project.id]).map(project=><div key={`ms-${project.id}`} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:14,padding:12,margin:"-4px 0 14px"}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><b style={{fontSize:12}}>{project.name} · Milestonelar</b><Btn small onClick={()=>openProject(project.id,"setup")}>Projeyi Aç</Btn></div><div style={{display:"grid",gap:7}}>{project.milestones.map(milestone=>{const tasks=milestone.tasks||[];const done=tasks.filter(task=>task.status==="Tamamlandı").length;return <div key={milestone.id} style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto auto",gap:8,alignItems:"center",background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"9px 10px"}}><span style={{minWidth:0,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{milestone.name}</span><span style={{fontSize:10,color:"#64748B"}}>{done}/{tasks.length}</span><Badge label={milestone.status}/></div>;})}</div></div>)}
         <div style={{ display:projectViewMode==="cards"?"grid":"none", gridTemplateColumns:"repeat(auto-fill,minmax(265px,1fr))", gap:13 }}>
-          {listedProjects.map(p=><SharedProjectListCard key={p.id} project={p} people={state.people} isAdmin={isAdmin} onOpen={()=>{setSelProject(p.id);setSelMilestone(null);setProjectTab("setup");}} onEdit={()=>setModal({type:"editProject",data:p})} onReport={()=>generateHTMLReport(p,state.people,state.logs)} onDelete={()=>confirm("Projeyi sil?")&&deleteProject(p.id)} formatDate={fmt} readinessScoreForProject={readinessScore}/>)}
+          {listedProjects.map(p=><SharedProjectListCard key={p.id} project={p} people={state.people} isAdmin={isAdmin} onOpen={()=>openProject(p.id,"setup")} onEdit={()=>setModal({type:"editProject",data:p})} onReport={()=>generateHTMLReport(p,state.people,state.logs)} onDelete={()=>confirm("Projeyi sil?")&&deleteProject(p.id)} formatDate={fmt} readinessScoreForProject={readinessScore}/>)}
           {false&&listedProjects.map(p=>{
             const total=p.milestones.reduce((a,m)=>a+m.tasks.length,0);
             const done=p.milestones.reduce((a,m)=>a+m.tasks.filter(t=>t.status==="Tamamland\u0131").length,0);
@@ -950,7 +968,7 @@ export default function App() {
             const pms=projectPmIds(p).map(id=>state.people.find(pe=>pe.id===id)).filter(Boolean);
             const stakeholders=projectStakeholders(p).map(item=>({...item,person:state.people.find(pe=>pe.id===item.userId)})).filter(item=>item.person);
             const aMs=p.milestones.find(m=>m.status!=="Tamamland\u0131");
-            return <div key={p.id} onClick={()=>{ setSelProject(p.id); setSelMilestone(null); setProjectTab("setup"); }}
+            return <div key={p.id} onClick={()=>openProject(p.id,"setup")}
               style={{ background:"#fff", borderRadius:13, padding:"17px", border:"1.5px solid #E2E8F0", cursor:"pointer", boxShadow:"0 2px 6px rgba(0,0,0,0.04)", borderTop:`4px solid ${p.color}` }}
               onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 16px rgba(0,0,0,0.1)";e.currentTarget.style.transform="translateY(-2px)";}}
               onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 2px 6px rgba(0,0,0,0.04)";e.currentTarget.style.transform="none";}}>
@@ -979,13 +997,13 @@ export default function App() {
       </div>}
 
       {view==="mytasks"&&<SharedMyTasksPage currentUser={currentUser} state={state} setState={setState} addLog={addLog} isAdmin={isAdmin} initialTaskId={taskToOpen} onTaskOpened={()=>setTaskToOpen("")}/>}
-      {view==="fieldops"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("actions");}}/>}
-      {view==="fieldplan"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("actions");}}/>}
-      {view==="fieldvisits"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("actions");}}/>}
-      {view==="deadlines"&&<SharedDeadlinePage warnings={deadlineWarnings} people={state.people} onOpenTask={id=>{setTaskToOpen(id);setView("mytasks");setSelProject(null);}} onOpenTodos={()=>setView("todos")}/>}
+      {view==="fieldops"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>openProject(id,"actions")}/>}
+      {view==="fieldplan"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>openProject(id,"actions")}/>}
+      {view==="fieldvisits"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>openProject(id,"actions")}/>}
+      {view==="deadlines"&&<SharedDeadlinePage warnings={deadlineWarnings} people={state.people} onOpenTask={id=>{setTaskToOpen(id);navigateTo("mytasks");}} onOpenTodos={()=>navigateTo("todos")}/>}
       {view==="tickets"&&<SharedTicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} initialMine={ticketMineOnly} generateTicketStatusReport={generateTicketStatusReport}/>}
       {view==="reports"&&<SharedReportsPage state={state} people={state.people} isAdmin={isAdmin} />}
-      {view==="customers"&&isAdmin&&!selProject&&<SharedCustomersPage state={state} setState={setState} onInviteUser={addPerson} onPreviewCustomer={projectId=>{setPreviewCustomerProjectId(projectId);setView("projects");setProjectScope("all");setSelProject(projectId);setProjectTab("setup");}}/>}
+      {view==="customers"&&isAdmin&&!selProject&&<SharedCustomersPage state={state} setState={setState} onInviteUser={addPerson} onPreviewCustomer={projectId=>{setPreviewCustomerProjectId(projectId);openProject(projectId,"setup",{projectScope:"all"});}}/>}
 
       {view==="people"&&<div style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
@@ -1031,10 +1049,10 @@ export default function App() {
       </div>}
 
       {view==="logs"&&<SharedLogPage logs={state.logs} projects={state.projects} />}
-      {view==="notifications"&&<SharedNotificationsPage notifications={state.notifications||[]} currentUser={currentUser} setState={setState} onOpenTask={id=>{setTaskToOpen(id);setView("mytasks");setSelProject(null);}} />}
+      {view==="notifications"&&<SharedNotificationsPage notifications={state.notifications||[]} currentUser={currentUser} setState={setState} onOpenTask={id=>{setTaskToOpen(id);navigateTo("mytasks");}} />}
     </div>
 
-    {isMobile&&<MobileBottomNav view={view} isAdminMode={useAdminHome} taskCount={useAdminHome?managerAssignedOpenCount:myOpenTaskCount} deadlineCount={deadlineWarnings.length} onQuick={()=>setMobileQuickSheet(true)} onProfile={()=>setModal({type:"editProfile"})} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="dashboard"){setAdminSection("overview");setView("dashboard");return;}if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);if(target==="mytasks"&&useAdminHome){setAdminSection("assigned");setView("admin");return;}setView(target);}}/>}
+    {isMobile&&<MobileBottomNav view={view} isAdminMode={useAdminHome} taskCount={useAdminHome?managerAssignedOpenCount:myOpenTaskCount} deadlineCount={deadlineWarnings.length} onQuick={()=>setMobileQuickSheet(true)} onProfile={()=>setModal({type:"editProfile"})} onNavigate={target=>{if(target==="mytasks"&&useAdminHome){navigateTo("admin",{adminSection:"assigned"});return;}navigateTo(target,{projectScope:target==="projects"?"all":undefined,ticketMineOnly:target==="tickets"});}}/>}
 
     {/* MODALS */}
     {modal?.type==="addProject"&&<SharedAddProjectModal onClose={()=>setModal(null)} onSave={addProject} people={state.people} roles={organizationRoles(state)} templates={MES_TEMPLATES} buildFromTemplate={buildFromTemplate} colors={COLORS} createId={uid} todayString={todayStr} />}
@@ -1050,7 +1068,7 @@ export default function App() {
     {modal?.type==="editProfile"&&<SharedUserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
     {modal?.type==="timeLog"&&<SharedTimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} createId={uid} getTimestamp={now} formatDate={fmt} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
     {modal?.type==="addPersonal"&&<SharedPersonalTaskModal title="Görev Ata" people={state.people} projects={state.projects} isAdmin currentUser={currentUser} waitOptions={WAIT} todayString={todayStr} currentTimeString={currentTimeStr} onClose={()=>setModal(null)} onSave={saveAdminAssignedTask} />}
-    {mobileQuickSheet&&<MobileQuickSheet isAdminMode={useAdminHome} onClose={()=>setMobileQuickSheet(false)} onSelect={target=>{setMobileQuickSheet(false);if(target==="assign"){setModal({type:"addPersonal"});return;}if(target==="todo"||target==="action")setMobileQuick(target);else{setSelProject(null);setSelMilestone(null);if(target==="ticket")setTicketMineOnly(true);setView(target==="ticket"?"tickets":target);}}}/>}
+    {mobileQuickSheet&&<MobileQuickSheet isAdminMode={useAdminHome} onClose={()=>setMobileQuickSheet(false)} onSelect={target=>{setMobileQuickSheet(false);if(target==="assign"){setModal({type:"addPersonal"});return;}if(target==="todo"||target==="action")setMobileQuick(target);else navigateTo(target==="ticket"?"tickets":target,{ticketMineOnly:target==="ticket"});}}/>}
     {mobileQuick==="todo"&&<QuickTodoModal projects={state.projects} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickTodo}/>}
     {mobileQuick==="action"&&<QuickActionModal projects={state.projects} actionTags={DEFAULT_ACTION_TAGS} onClose={()=>setMobileQuick(null)} onSave={saveMobileQuickAction}/>}
   </div></>;
