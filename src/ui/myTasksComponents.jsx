@@ -40,7 +40,7 @@ function CompactTaskCard({task,people=[],projectName="",projectColor="#4A6CF7",f
         </div>
       </div>
     </div>
-    {onStatusChange&&<select onClick={event=>event.stopPropagation()} value={task.status||"Bekliyor"} onChange={event=>onStatusChange(event.target.value)} style={{...iStyle,width:"100%",marginTop:11,fontSize:11,borderRadius:10,background:"#F8FAFC",padding:"8px 10px"}}>
+    {onStatusChange&&<select onClick={event=>event.stopPropagation()} value={task.status||"Bekliyor"} onChange={event=>onStatusChange(event.target.value)} style={{width:"100%",marginTop:11,fontSize:11,borderRadius:10,background:"#F8FAFC",padding:"8px 10px",border:"1px solid #CBD5E1",outline:"none",fontFamily:"inherit",color:"#334155"}}>
       {["Bekliyor","Devam Ediyor","Engellendi","Tamamlandı"].map(status=><option key={status}>{status}</option>)}
       {!["Bekliyor","Devam Ediyor","Engellendi","Tamamlandı"].includes(task.status)&&task.status&&<option>{task.status}</option>}
     </select>}
