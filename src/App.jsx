@@ -10,11 +10,6 @@ import {
   projectStakeholders,
   ticketNumber,
 } from "./domain/projectHelpers.js";
-import {
-  CustomerContactEditor,
-  PeopleMultiSelect,
-  StakeholderEditor,
-} from "./ui/formControls.jsx";
 import { OrganizationPanel as SharedOrganizationPanel } from "./ui/managementComponents.jsx";
 import { DashboardPage as SharedDashboardPage, MobileHomePage as SharedMobileHomePage } from "./ui/dashboardComponents.jsx";
 import { FieldOperationsPage as SharedFieldOperationsPage } from "./ui/fieldOperationsComponents.jsx";
@@ -28,6 +23,7 @@ import { ImportCenter as SharedImportCenter } from "./ui/importComponents.jsx";
 import { AIWorkspace as SharedAIWorkspace } from "./ui/aiComponents.jsx";
 import { MyTasksPage as SharedMyTasksPage } from "./ui/myTasksComponents.jsx";
 import { ManagementWorkspace as SharedManagementWorkspace } from "./ui/managementDashboardComponents.jsx";
+import { AddProjectModal as SharedAddProjectModal, MilestoneModal as SharedMilestoneModal, PersonModal as SharedPersonModal, ProjectModal as SharedProjectModal, UserEditModal as SharedUserEditModal } from "./ui/projectModalComponents.jsx";
 import {
   MailCenterPage as SharedMailCenterPage,
   ReportsPage as SharedReportsPage,
@@ -52,7 +48,7 @@ import {
   ProjectBusinessCard as SharedProjectBusinessCard,
   ProjectListCard as SharedProjectListCard,
 } from "./ui/projectCards.jsx";
-import { GanttChart as SharedGanttChart, MilestoneTaskPanel as SharedMilestoneTaskPanel, PlanListTable as SharedPlanListTable, TemplatePicker as SharedTemplatePicker } from "./ui/projectPlanComponents.jsx";
+import { GanttChart as SharedGanttChart, MilestoneTaskPanel as SharedMilestoneTaskPanel, PlanListTable as SharedPlanListTable } from "./ui/projectPlanComponents.jsx";
 import {
   PersonalTaskModal as SharedPersonalTaskModal,
   TaskCard as SharedTaskCard,
@@ -454,46 +450,6 @@ const normalizeTicketNumbers=(state)=>{
   };
 };
 
-/* eslint-disable no-unused-vars */
-function LegacyRemoteAccessPanel({project,state,setState,currentUser,isAdmin,canManage}) {
-  const empty={name:"",url:"",username:"",password:"",status:"Hazır",routing:"",note:""};
-  const [showForm,setShowForm]=useState(false);
-  const [editingId,setEditingId]=useState(null);
-  const [form,setForm]=useState(empty);
-  const [visibleSecrets,setVisibleSecrets]=useState({});
-  const [copied,setCopied]=useState("");
-  const items=project.remoteAccess||[];
-  const canEdit=isAdmin||canManage;
-  const saveItems=(next)=>setState(current=>({...current,projects:current.projects.map(item=>item.id===project.id?{...item,remoteAccess:next}:item)}));
-  const copy=async(value,key)=>{
-    if(!value)return;
-    await navigator.clipboard.writeText(value);
-    setCopied(key);
-    setTimeout(()=>setCopied(""),1200);
-  };
-  const openAdd=()=>{setEditingId(null);setForm(empty);setShowForm(true);};
-  const openEdit=item=>{setEditingId(item.id);setForm({...empty,...item});setShowForm(true);};
-  const submit=()=>{
-    if(!form.name.trim())return;
-    const entry={...form,name:form.name.trim(),updatedAt:now(),updatedBy:currentUser.name};
-    saveItems(editingId?items.map(item=>item.id===editingId?{...item,...entry}:item):[{...entry,id:uid(),createdAt:now()},...items]);
-    setShowForm(false);setEditingId(null);setForm(empty);
-  };
-  return <div style={{flex:1,overflow:"auto",padding:"18px 22px"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:14}}><div><h3 style={{margin:0,fontSize:16}}>Uzaktan Erişim</h3><p style={{margin:"3px 0 0",fontSize:11,color:"#64748B"}}>Sunucu, VPN ve yönlendirme bilgileri. Parolalar yalnızca yetkili proje kullanıcılarına gösterilir.</p></div>{canEdit&&<Btn small onClick={openAdd}>+ Erişim Ekle</Btn>}</div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(320px,100%),1fr))",gap:10,marginBottom:14}}>{items.map(item=><div key={item.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${item.status==="Hazır"?"#059669":"#EA6C00"}`,borderRadius:13,padding:14}}>
-      <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center"}}><b style={{fontSize:13}}>{item.name}</b><span style={{fontSize:9,fontWeight:850,color:item.status==="Hazır"?"#047857":"#C2410C",background:item.status==="Hazır"?"#ECFDF5":"#FFF7ED",padding:"3px 6px",borderRadius:7}}>{item.status}</span></div>
-      <div style={{display:"grid",gap:7,marginTop:10}}>{[["Adres",item.url,"url"],["Kullanıcı",item.username,"username"]].filter(([,value])=>value).map(([label,value,key])=><div key={key} style={{display:"flex",alignItems:"center",gap:7,background:"#F8FAFC",borderRadius:8,padding:"7px 9px"}}><span style={{fontSize:9,color:"#64748B",width:54}}>{label}</span><b style={{fontSize:10,flex:1,wordBreak:"break-all"}}>{value}</b><button onClick={()=>copy(value,`${item.id}-${key}`)} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:6,padding:"4px 7px",fontSize:9,fontWeight:800,cursor:"pointer"}}>{copied===`${item.id}-${key}`?"Kopyalandı":"Kopyala"}</button></div>)}
-        {item.password&&<div style={{display:"flex",alignItems:"center",gap:7,background:"#FFF7ED",borderRadius:8,padding:"7px 9px"}}><span style={{fontSize:9,color:"#9A3412",width:54}}>Parola</span><b style={{fontSize:11,flex:1,letterSpacing:visibleSecrets[item.id]?0:2}}>{visibleSecrets[item.id]?item.password:"••••••••••"}</b><button onClick={()=>setVisibleSecrets(current=>({...current,[item.id]:!current[item.id]}))} style={{border:0,background:"transparent",color:"#C2410C",fontSize:9,fontWeight:800,cursor:"pointer"}}>{visibleSecrets[item.id]?"Gizle":"Göster"}</button><button onClick={()=>copy(item.password,`${item.id}-password`)} style={{border:0,background:"#FFEDD5",color:"#9A3412",borderRadius:6,padding:"4px 7px",fontSize:9,fontWeight:800,cursor:"pointer"}}>{copied===`${item.id}-password`?"Kopyalandı":"Kopyala"}</button></div>}
-      </div>
-      {item.routing&&<div style={{fontSize:10,color:"#475569",lineHeight:1.5,marginTop:9}}><b>VPN / Yönlendirme:</b> {item.routing}</div>}{item.note&&<div style={{fontSize:10,color:"#64748B",lineHeight:1.5,marginTop:5}}>{item.note}</div>}
-      {canEdit&&<div style={{display:"flex",gap:9,marginTop:10}}><button onClick={()=>openEdit(item)} style={{border:0,background:"transparent",color:"#4A6CF7",fontSize:10,fontWeight:800,cursor:"pointer"}}>Düzenle</button><button onClick={()=>confirm("Erişim kaydı silinsin mi?")&&saveItems(items.filter(entry=>entry.id!==item.id))} style={{border:0,background:"transparent",color:"#E11D48",fontSize:10,fontWeight:800,cursor:"pointer"}}>Sil</button></div>}
-    </div>)}</div>
-    {!items.length&&!showForm&&<div style={{padding:38,textAlign:"center",border:"1px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Uzaktan erişim kaydı bulunmuyor.</div>}
-    {showForm&&canEdit&&<div style={{background:"#fff",border:"1.5px solid #CBD5E1",borderRadius:14,padding:16}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><b style={{fontSize:13}}>{editingId?"Erişim Kaydını Düzenle":"Yeni Erişim Kaydı"}</b><button onClick={()=>setShowForm(false)} style={{border:0,background:"transparent",fontSize:18,color:"#94A3B8",cursor:"pointer"}}>×</button></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:9}}>{[["name","Sistem / Sunucu","text"],["url","Bağlantı Adresi","text"],["username","Kullanıcı Adı","text"],["password","Parola","password"],["routing","VPN / Yönlendirme","text"]].map(([key,label,type])=><Field key={key} label={label}><input type={type} autoComplete="off" style={iStyle} value={form[key]} onChange={event=>setForm(current=>({...current,[key]:event.target.value}))}/></Field>)}<Field label="Durum"><select style={iStyle} value={form.status} onChange={event=>setForm(current=>({...current,status:event.target.value}))}>{["Hazır","Test Bekliyor","Erişim Yok","Süresi Doldu"].map(status=><option key={status}>{status}</option>)}</select></Field></div><Field label="Not"><input style={iStyle} value={form.note} onChange={event=>setForm(current=>({...current,note:event.target.value}))}/></Field><div style={{display:"flex",justifyContent:"flex-end",gap:7}}><Btn variant="ghost" onClick={()=>setShowForm(false)}>İptal</Btn><Btn onClick={submit}>{editingId?"Güncelle":"Kaydet"}</Btn></div></div>}
-  </div>;
-}
-/* eslint-enable no-unused-vars */
 
 
 
@@ -1392,17 +1348,17 @@ export default function App() {
     {isMobile&&<MobileBottomNav view={view} isAdminMode={useAdminHome} taskCount={useAdminHome?managerAssignedOpenCount:myOpenTaskCount} deadlineCount={deadlineWarnings.length} onQuick={()=>setMobileQuickSheet(true)} onProfile={()=>setModal({type:"editProfile"})} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="dashboard"){setAdminSection("overview");setView("dashboard");return;}if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);if(target==="mytasks"&&useAdminHome){setAdminSection("assigned");setView("admin");return;}setView(target);}}/>}
 
     {/* MODALS */}
-    {modal?.type==="addProject"&&<AddProjectModal onClose={()=>setModal(null)} onSave={addProject} people={state.people} roles={organizationRoles(state)} />}
-    {modal?.type==="editProject"&&<ProjectModal title="Projeyi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(data)=>updateProjectById(modal.data.id,data)} people={state.people} roles={organizationRoles(state)} />}
-    {modal?.type==="addMilestone"&&<MilestoneModal title="Yeni Milestone" onClose={()=>setModal(null)} onSave={addMilestone} />}
-    {modal?.type==="editMilestone"&&<MilestoneModal title="Milestone Duzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateMilestone(modal.data.id,d)} />}
+    {modal?.type==="addProject"&&<SharedAddProjectModal onClose={()=>setModal(null)} onSave={addProject} people={state.people} roles={organizationRoles(state)} templates={MES_TEMPLATES} buildFromTemplate={buildFromTemplate} colors={COLORS} createId={uid} todayString={todayStr} />}
+    {modal?.type==="editProject"&&<SharedProjectModal title="Projeyi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(data)=>updateProjectById(modal.data.id,data)} people={state.people} roles={organizationRoles(state)} colors={COLORS} createId={uid} />}
+    {modal?.type==="addMilestone"&&<SharedMilestoneModal title="Yeni Milestone" onClose={()=>setModal(null)} onSave={addMilestone} waitOptions={WAIT} />}
+    {modal?.type==="editMilestone"&&<SharedMilestoneModal title="Milestone Duzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateMilestone(modal.data.id,d)} waitOptions={WAIT} />}
     {modal?.type==="addTask"&&<SharedTaskModal title="Yeni Görev" onClose={()=>setModal(null)} onSave={(d)=>addTask(modal.msId,d)} people={state.people} waitOptions={WAIT} responsibilityGroups={RESPONSIBILITY_GROUPS} />}
     {modal?.type==="editTask"&&<SharedTaskModal title="Görevi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateTask(modal.msId,modal.data.id,d)} people={state.people} waitOptions={WAIT} responsibilityGroups={RESPONSIBILITY_GROUPS} />}
-    {modal?.type==="addPerson"&&<PersonModal people={state.people} roles={organizationRoles(state)} onClose={()=>setModal(null)} onSave={addPerson} />}
-    {modal?.type==="editPerson"&&<UserEditModal title="Kullanıcıyı Düzenle" person={modal.data} people={state.people} roles={organizationRoles(state)} allowAdmin onClose={()=>setModal(null)} onSave={(d)=>updatePerson(modal.data.id,d)} />}
+    {modal?.type==="addPerson"&&<SharedPersonModal people={state.people} roles={organizationRoles(state)} onClose={()=>setModal(null)} onSave={addPerson} />}
+    {modal?.type==="editPerson"&&<SharedUserEditModal title="Kullanıcıyı Düzenle" person={modal.data} people={state.people} roles={organizationRoles(state)} allowAdmin onClose={()=>setModal(null)} onSave={(d)=>updatePerson(modal.data.id,d)} />}
     {modal?.type==="personDetail"&&<SharedPersonDetailModal person={modal.data} projects={state.projects} personalTasks={state.personalTasks} onClose={()=>setModal(null)} />}
     {modal?.type==="addRisk"&&<SharedRiskModal onClose={()=>setModal(null)} onSave={addRisk} />}
-    {modal?.type==="editProfile"&&<UserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
+    {modal?.type==="editProfile"&&<SharedUserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
     {modal?.type==="timeLog"&&<SharedTimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} createId={uid} getTimestamp={now} formatDate={fmt} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
     {modal?.type==="addPersonal"&&<SharedPersonalTaskModal title="Görev Ata" people={state.people} projects={state.projects} isAdmin currentUser={currentUser} waitOptions={WAIT} todayString={todayStr} currentTimeString={currentTimeStr} onClose={()=>setModal(null)} onSave={saveAdminAssignedTask} />}
     {mobileQuickSheet&&<MobileQuickSheet isAdminMode={useAdminHome} onClose={()=>setMobileQuickSheet(false)} onSelect={target=>{setMobileQuickSheet(false);if(target==="assign"){setModal({type:"addPersonal"});return;}if(target==="todo"||target==="action")setMobileQuick(target);else{setSelProject(null);setSelMilestone(null);if(target==="ticket")setTicketMineOnly(true);setView(target==="ticket"?"tickets":target);}}}/>}
@@ -1414,153 +1370,3 @@ export default function App() {
 
 
 // ─── Plan List Table ─────────────────────────────────────────────────────────
-
-function UserEditModal({ person, people=[], roles=ORG_LEVELS, onClose, onSave, title="Profilimi Düzenle", allowAdmin=false }) {
-  const [name, setName] = useState(person.name);
-  const [email,setEmail]=useState(person.email||"");
-  const [phone,setPhone]=useState(person.phone||"");
-  const [city,setCity]=useState(person.location?.city||person.city||"");
-  const [district,setDistrict]=useState(person.location?.district||person.district||"");
-  const [whatsappEnabled,setWhatsappEnabled]=useState(person.whatsappEnabled!==false);
-  const [orgLevel,setOrgLevel]=useState(person.orgLevel||"");
-  const [managerId,setManagerId]=useState(person.managerId||"");
-  const [isAdmin,setIsAdmin]=useState(Boolean(person.isAdmin));
-  const [ticketOnly,setTicketOnly]=useState(Boolean(person.ticketOnly));
-  const [defaultDashboard,setDefaultDashboard]=useState(person.defaultDashboard||"team");
-  const canChooseDashboard=Boolean(person.isAdmin||allowAdmin);
-  return <Modal title={title} onClose={onClose} wide>
-    <Field label="Ad Soyad *"><input style={iStyle} value={name} onChange={e=>setName(e.target.value)} /></Field>
-    <Field label="E-posta"><input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" /></Field>
-    <Field label="WhatsApp Telefonu"><input type="tel" style={iStyle} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="905551234567" /></Field>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-      <Field label="İl"><input style={iStyle} value={city} onChange={e=>setCity(e.target.value)} placeholder="İstanbul"/></Field>
-      <Field label="İlçe"><input style={iStyle} value={district} onChange={e=>setDistrict(e.target.value)} placeholder="Kadıköy"/></Field>
-    </div>
-    <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={whatsappEnabled} onChange={e=>setWhatsappEnabled(e.target.checked)}/> WhatsApp görev bildirimlerini al</label>
-    {allowAdmin&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-      <Field label="Organizasyon Seviyesi"><select style={iStyle} value={orgLevel} onChange={e=>setOrgLevel(e.target.value)}><option value="">- Atanmamış -</option>{roles.map(level=><option key={level.id} value={level.id}>{level.label}</option>)}</select></Field>
-      <Field label="Bağlı Olduğu Yönetici"><select style={iStyle} value={managerId} onChange={e=>setManagerId(e.target.value)}><option value="">- Yönetici yok -</option>{people.filter(item=>item.id!==person.id).map(item=><option key={item.id} value={item.id}>{item.name} - {orgLevelLabel(item.orgLevel)}</option>)}</select></Field>
-    </div>}
-    {allowAdmin&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={isAdmin} onChange={e=>setIsAdmin(e.target.checked)}/> Yönetici yetkisi</label>}
-    {allowAdmin&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={ticketOnly} onChange={e=>setTicketOnly(e.target.checked)}/> Yalnızca ticket modülünü kullanabilir</label>}
-    {canChooseDashboard&&<Field label="Alt ana sayfa"><select style={iStyle} value={defaultDashboard} onChange={e=>setDefaultDashboard(e.target.value)}><option value="team">Ekip dashboardu</option><option value="admin">Yönetici dashboardu</option></select></Field>}
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!name.trim())return; onSave({name:name.trim(),email:email.trim(),phone:phone.replace(/\D/g,""),city:city.trim(),district:district.trim(),location:{...(person.location||{}),city:city.trim(),district:district.trim()},whatsappEnabled,defaultDashboard:canChooseDashboard?defaultDashboard:"team",...(allowAdmin?{isAdmin,orgLevel,managerId,ticketOnly,role:roles.find(item=>item.id===orgLevel)?.label||"Atanmamış"}:{})}); onClose(); }}>Kaydet</Btn></div>
-  </Modal>;
-}
-
-// ─── Notifications Page ──────────────────────────────────────────────────────
-function AddProjectModal({ onClose, onSave, people, roles }) {
-  const [step,setStep]=useState("template");
-  const [tplData,setTplData]=useState(null);
-  const [f,setF]=useState({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:todayStr(), endDate:"", pmIds:[], stakeholders:[], customerContacts:[], commissioningTracking:false, connectedSupplier:false });
-  const upd=(k,v)=>setF(s=>({...s,[k]:v}));
-  const handleTplSelect=(tpl)=>{ setTplData(tpl); setF(s=>({...s,color:tpl.color})); setStep("form"); };
-  const handleSave=()=>{ if(!f.name.trim())return; const built=tplData?buildFromTemplate(tplData,f.startDate||todayStr()):{milestones:[]}; onSave({...f,...built,risks:[]}); onClose(); };
-  return <Modal title="Yeni Proje" onClose={onClose} wide>
-    {step==="template"&&<SharedTemplatePicker templates={MES_TEMPLATES} onSelect={handleTplSelect} onSkip={()=>setStep("form")} />}
-    {step==="form"&&<div>
-      {tplData&&<div style={{ background:tplData.color+"15", border:`1.5px solid ${tplData.color}44`, borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:12 }}>
-        <strong style={{ color:tplData.color }}>Sablon: {tplData.name}</strong>
-        <span style={{ color:"#64748B", marginLeft:8 }}>{tplData.milestones.length} milestone otomatik eklenecek</span>
-        <button onClick={()=>setStep("template")} style={{ marginLeft:12, background:"none", border:"none", cursor:"pointer", color:tplData.color, fontSize:11, textDecoration:"underline" }}>Degistir</button>
-      </div>}
-      <Field label="Proje Adı *"><input style={iStyle} value={f.name} onChange={e=>upd("name",e.target.value)} placeholder="Proje adi" /></Field>
-      <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
-      <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
-      <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)} createId={uid}/></Field>
-      <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)} createId={uid}/></Field>
-      <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F0FDFA",border:"1.5px solid #99F6E4",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.connectedSupplier)} onChange={e=>upd("connectedSupplier",e.target.checked)} style={{marginTop:2}}/><span><b>Connected Supplier</b><span style={{display:"block",color:"#0F766E",marginTop:3}}>Bu proje Connected Supplier kapsamında ayrı takip ve filtrelere dahil edilir.</span></span></label><label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
-      <Field label="Renk"><div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-        <Field label="Başlangıç"><input type="date" style={iStyle} value={f.startDate} onChange={e=>upd("startDate",e.target.value)} /></Field>
-        <Field label="Bitiş"><input type="date" style={iStyle} value={f.endDate} onChange={e=>upd("endDate",e.target.value)} /></Field>
-      </div>
-      <Field label="Durum"><select style={iStyle} value={f.status} onChange={e=>upd("status",e.target.value)}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></Field>
-      <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={handleSave}>Kaydet</Btn></div>
-    </div>}
-  </Modal>;
-}
-function ProjectModal({ title, initial, onClose, onSave, people, roles }) {
-  const [f,setF]=useState(()=>({ name:"", description:"", color:"#4A6CF7", status:"Bekliyor", startDate:"", endDate:"", ...initial, pmIds:projectPmIds(initial||{}), stakeholders:projectStakeholders(initial||{}) }));
-  const upd=(k,v)=>setF(s=>({...s,[k]:v}));
-  return <Modal title={title} onClose={onClose}>
-    <Field label="Proje Adı *"><input style={iStyle} value={f.name} onChange={e=>upd("name",e.target.value)} /></Field>
-    <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
-    <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
-    <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)} createId={uid}/></Field>
-    <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)} createId={uid}/></Field>
-    <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F0FDFA",border:"1.5px solid #99F6E4",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.connectedSupplier)} onChange={e=>upd("connectedSupplier",e.target.checked)} style={{marginTop:2}}/><span><b>Connected Supplier</b><span style={{display:"block",color:"#0F766E",marginTop:3}}>Bu proje Connected Supplier kapsamında ayrı takip ve filtrelere dahil edilir.</span></span></label><label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
-    <Field label="Renk"><div style={{ display:"flex", gap:7 }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Başlangıç"><input type="date" style={iStyle} value={f.startDate} onChange={e=>upd("startDate",e.target.value)} /></Field>
-      <Field label="Bitiş"><input type="date" style={iStyle} value={f.endDate} onChange={e=>upd("endDate",e.target.value)} /></Field>
-    </div>
-    <Field label="Durum"><select style={iStyle} value={f.status} onChange={e=>upd("status",e.target.value)}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></Field>
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.name.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>
-  </Modal>;
-}
-function MilestoneModal({ title, initial, onClose, onSave }) {
-  const [f,setF]=useState({ name:"", startDate:"", dueDate:"", actualStart:"", actualEnd:"", status:"Bekliyor", waitSource:"", ...initial });
-  const upd=(k,v)=>setF(s=>({...s,[k]:v}));
-  return <Modal title={title} onClose={onClose}>
-    <Field label="Milestone Adı *"><input style={iStyle} value={f.name} onChange={e=>upd("name",e.target.value)} /></Field>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Hedef Başlangıç"><input type="date" style={iStyle} value={f.startDate} onChange={e=>upd("startDate",e.target.value)} /></Field>
-      <Field label="Hedef Termin"><input type="date" style={iStyle} value={f.dueDate} onChange={e=>upd("dueDate",e.target.value)} /></Field>
-    </div>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-      <Field label="Gerçekleşen Başlangıç"><input type="date" style={iStyle} value={f.actualStart||""} onChange={e=>upd("actualStart",e.target.value)} /></Field>
-      <Field label="Gerçekleşen Bitiş"><input type="date" style={iStyle} value={f.actualEnd||""} onChange={e=>upd("actualEnd",e.target.value)} /></Field>
-    </div>
-    <div style={{background:"#F1F5F9",borderRadius:9,padding:"9px 11px",fontSize:11,color:"#64748B",marginBottom:13}}>Milestone durumu içindeki görevlerin durumuna göre otomatik hesaplanır.</div>
-    <Field label="Bekleme Kaynağı"><select style={iStyle} value={f.waitSource} onChange={e=>upd("waitSource",e.target.value)}><option value="">- Yok -</option>{WAIT.map(s=><option key={s}>{s}</option>)}</select></Field>
-    <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={()=>{ if(!f.name.trim())return; onSave(f); onClose(); }}>Kaydet</Btn></div>
-  </Modal>;
-}
-function PersonModal({ people=[], roles=ORG_LEVELS, onClose, onSave }) {
-  const [name, setName] = useState("");
-  const [email,setEmail]=useState("");
-  const [phone,setPhone]=useState("");
-  const [city,setCity]=useState("");
-  const [district,setDistrict]=useState("");
-  const [whatsappEnabled,setWhatsappEnabled]=useState(true);
-  const [orgLevel,setOrgLevel]=useState("");
-  const [managerId,setManagerId]=useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [ticketOnly,setTicketOnly]=useState(false);
-  return (
-    <Modal title="Ekip Üyesi Ekle" onClose={onClose}>
-      <Field label="Ad Soyad *">
-        <input style={iStyle} value={name} onChange={e=>setName(e.target.value)} placeholder="Ad soyad" />
-      </Field>
-      <Field label="Organizasyon Seviyesi"><select style={iStyle} value={orgLevel} onChange={e=>setOrgLevel(e.target.value)}><option value="">- Atanmamış -</option>{roles.map(level=><option key={level.id} value={level.id}>{level.label}</option>)}</select></Field>
-      <Field label="Bağlı Olduğu Yönetici"><select style={iStyle} value={managerId} onChange={e=>setManagerId(e.target.value)}><option value="">- Yönetici yok -</option>{people.map(item=><option key={item.id} value={item.id}>{item.name} · {orgLevelLabel(item.orgLevel)}</option>)}</select></Field>
-      <Field label="E-posta">
-        <input type="email" style={iStyle} value={email} onChange={e=>setEmail(e.target.value)} placeholder="kullanici@sirket.com" />
-      </Field>
-      <Field label="WhatsApp Telefonu">
-        <input type="tel" style={iStyle} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="905551234567" />
-      </Field>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        <Field label="İl"><input style={iStyle} value={city} onChange={e=>setCity(e.target.value)} placeholder="İstanbul"/></Field>
-        <Field label="İlçe"><input style={iStyle} value={district} onChange={e=>setDistrict(e.target.value)} placeholder="Kadıköy"/></Field>
-      </div>
-      <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={whatsappEnabled} onChange={e=>setWhatsappEnabled(e.target.checked)}/> WhatsApp görev bildirimlerini al</label>
-      <Field label="Yetki">
-        <div style={{ display:"flex", gap:10 }}>
-          <div onClick={()=>setIsAdmin(false)} style={{ flex:1, padding:"10px", borderRadius:8, border:`1.5px solid ${!isAdmin?"#4A6CF7":"#E2E8F0"}`, cursor:"pointer", textAlign:"center", background:!isAdmin?"#F1F5FF":"#fff", fontSize:12, fontWeight:600, color:!isAdmin?"#4A6CF7":"#64748B" }}>
-            Ekip Üyesi
-          </div>
-          <div onClick={()=>setIsAdmin(true)} style={{ flex:1, padding:"10px", borderRadius:8, border:`1.5px solid ${isAdmin?"#4A6CF7":"#E2E8F0"}`, cursor:"pointer", textAlign:"center", background:isAdmin?"#F1F5FF":"#fff", fontSize:12, fontWeight:600, color:isAdmin?"#4A6CF7":"#64748B" }}>
-            Yönetici
-          </div>
-        </div>
-      </Field>
-      <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,marginBottom:16}}><input type="checkbox" checked={ticketOnly} onChange={e=>setTicketOnly(e.target.checked)}/> Yalnızca ticket modülünü kullanabilir</label>
-      <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}>
-        <Btn variant="ghost" onClick={onClose}>İptal</Btn>
-        <Btn onClick={()=>{ if(!name.trim())return; onSave({name,email:email.trim(),phone:phone.replace(/\D/g,""),city:city.trim(),district:district.trim(),location:{city:city.trim(),district:district.trim()},whatsappEnabled,orgLevel,managerId,ticketOnly,role:roles.find(item=>item.id===orgLevel)?.label||"Atanmamış",isAdmin}); onClose(); }}>Kaydet</Btn>
-      </div>
-    </Modal>
-  );
-}
