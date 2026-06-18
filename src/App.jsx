@@ -1055,22 +1055,6 @@ function AdminBoardCard({id,size="medium",draggedId,onDragStart,onDragEnd,onDrop
   </div>;
 }
 
-function ManagerAssignedTasks({state,currentUser}) {
-  const tasks=(state.personalTasks||[]).filter(task=>task.createdBy===currentUser.id);
-  const rows=tasks.map(task=>({...task,person:state.people.find(person=>person.id===task.assignee)}));
-  const active=rows.filter(task=>task.status!=="Tamamland\u0131");
-  return <div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:10,marginBottom:14}}>
-      {[["Toplam Atama",rows.length,"#4A6CF7"],["Aktif",active.length,"#EA6C00"],["Geciken",active.filter(task=>delayLvl(task.dueDate,task.status)).length,"#E11D48"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${color}`,borderRadius:12,padding:13}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><b style={{fontSize:23,color}}>{value}</b></div>)}
-    </div>
-    <div style={{display:"grid",gap:7}}>{rows.map(task=><div key={task.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:11,padding:"11px 13px",display:"flex",alignItems:"center",gap:10}}>
-      <Avatar initials={task.person?.avatar||"?"} imageUrl={task.person?.avatarUrl} size={28}/>
-      <div style={{flex:1,minWidth:0}}><b style={{fontSize:12}}>{task.title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>{task.person?.name||"Atanmamış"} · {fmt(task.dueDate)} · {task.status}</div></div>
-      {delayLvl(task.dueDate,task.status)&&<DelayBadge dateStr={task.dueDate} status={task.status}/>}
-    </div>)}{!rows.length&&<div style={{padding:35,textAlign:"center",color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px dashed #CBD5E1"}}>Henüz yönetici ataması bulunmuyor.</div>}</div>
-  </div>;
-}
-
 function ManagerAssignedTasksV2({state,setState,currentUser,onAssignTask}) {
   const [personFilter,setPersonFilter]=useState("all");
   const [modal,setModal]=useState(null);
