@@ -40,7 +40,11 @@ import { sendTaskAssignedSlack } from "./services/slack.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
 import { askPortfolioAI, askProjectAI } from "./services/projectAI.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
-import { authenticateRequest } from "./auth.js";
+import {
+  authenticateRequest,
+  ensureApplicationUser,
+  requireAdmin,
+} from "./auth.js";
 import {
   filterStateForProfile,
   mergeStateForProfile,
@@ -602,6 +606,13 @@ const handleManualTemplateEmail = async (request, response, auth) => {
   json(response, 200, { sent: !result.skipped, emailId: result.id || null });
 };
 
+const handleEnsureAuthUser = async (request, response, auth) => {
+  requireAdmin(auth);
+  const body = parseJson(await readBody(request));
+  const result = await ensureApplicationUser(body.person || body);
+  json(response, 200, result);
+};
+
 const handleProjectAI = async (request, response, auth) => {
   const body = parseJson(await readBody(request));
   const question = String(body.question || "").trim();
@@ -786,6 +797,9 @@ const server = createServer(async (request, response) => {
     } else if (request.method === "POST" && url.pathname === "/api/email/send-template") {
       if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
       await handleManualTemplateEmail(request, response, auth);
+    } else if (request.method === "POST" && url.pathname === "/api/auth/users/ensure") {
+      if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
+      await handleEnsureAuthUser(request, response, auth);
     } else if (
       remoteAccessMatch &&
       ["GET", "POST", "PUT", "DELETE"].includes(request.method)

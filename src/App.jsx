@@ -345,6 +345,23 @@ const authHeaders = async () => {
   const {data}=await supabase.auth.getSession();
   return data.session?.access_token?{Authorization:`Bearer ${data.session.access_token}`}:{};
 };
+const ensureAuthUserForPerson = async (person) => {
+  const email = String(person?.email || "").trim();
+  if (!REQUIRE_AUTH || !email) return { skipped: true };
+  const response = await fetch(apiUrl("/api/auth/users/ensure"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(await authHeaders()),
+    },
+    body: JSON.stringify({ person }),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Auth kullanıcısı oluşturulamadı (${response.status}): ${text}`);
+  }
+  return response.json();
+};
 const loadFromSupabase = async () => {
   if(USE_DATA_API){
     const response=await fetch(apiUrl("/api/state"),{headers:await authHeaders()});
@@ -3084,15 +3101,30 @@ export default function App() {
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
 
   const addProject=(data)=>{ const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,members:[...new Set([...(data.members||[]),...assigned])],pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));setSelProject(p.id);setView("projects");setProjectTab("setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
-  const addPerson=(data)=>{
+  const addPerson=async(data)=>{
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
-    setState(s=>({...s,people:[...s.people,{id:uid(),avatar,...data}]}));
-    addLog(currentUser.name,"general",`Ekip üyesi eklendi: ${data.name}`);
+    const person={id:uid(),avatar,...data};
+    setState(s=>({...s,people:[...s.people,person]}));
+    addLog(currentUser.name,"general",`Ekip ?yesi eklendi: ${data.name}`);
+    try{
+      await ensureAuthUserForPerson(person);
+    }catch(error){
+      console.warn("Auth kullan?c?s? olu?turulamad?",error);
+      alert(`Ki?i eklendi ancak giri? hesab? olu?turulamad?: ${error.message}`);
+    }
   };
-  const updatePerson=(id,data)=>{
+  const updatePerson=async(id,data)=>{
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
-    setState(s=>({...s,people:s.people.map(person=>person.id===id?{...person,...data,avatar}:person)}));
-    addLog(currentUser.name,"general",`Ekip üyesi güncellendi: ${data.name}`);
+    const existing=state.people.find(person=>person.id===id)||{};
+    const person={...existing,...data,avatar,id};
+    setState(s=>({...s,people:s.people.map(item=>item.id===id?person:item)}));
+    addLog(currentUser.name,"general",`Ekip ?yesi g?ncellendi: ${data.name}`);
+    try{
+      await ensureAuthUserForPerson(person);
+    }catch(error){
+      console.warn("Auth kullan?c?s? g?ncellenemedi",error);
+      alert(`Ki?i g?ncellendi ancak giri? hesab? senkronlanamad?: ${error.message}`);
+    }
   };
   const deletePerson=(id)=>setState(s=>({...s,
     people:s.people.filter(person=>person.id!==id).map(person=>person.managerId===id?{...person,managerId:""}:person),

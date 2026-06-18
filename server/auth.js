@@ -101,3 +101,99 @@ export const requireAdmin = (auth) => {
     throw Object.assign(new Error("Administrator permission required"), { status: 403 });
   }
 };
+
+const cleanEmail = (value) => String(value || "").trim().toLowerCase();
+
+const findAuthUserByEmail = async (client, email) => {
+  const { data, error } = await client.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (error) throw error;
+  return (data.users || []).find(
+    (user) => cleanEmail(user.email) === email,
+  );
+};
+
+export const ensureApplicationUser = async (person) => {
+  const email = cleanEmail(person?.email);
+  const legacyId = String(person?.id || "").trim();
+  const name = String(person?.name || "").trim();
+  if (!email || !legacyId || !name) {
+    throw Object.assign(new Error("person.id, person.name and person.email are required"), {
+      status: 400,
+    });
+  }
+
+  const client = getAuthClient();
+  let authUser = await findAuthUserByEmail(client, email);
+  let createdAuthUser = false;
+  if (!authUser) {
+    const { data, error } = await client.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { name, legacy_id: legacyId },
+    });
+    if (error) throw Object.assign(new Error(error.message), { status: 422 });
+    authUser = data.user;
+    createdAuthUser = true;
+  } else {
+    const { error: updateAuthError } = await client.auth.admin.updateUserById(authUser.id, {
+      email_confirm: true,
+      user_metadata: {
+        ...(authUser.user_metadata || {}),
+        name,
+        legacy_id: legacyId,
+      },
+    });
+    if (updateAuthError) {
+      throw Object.assign(new Error(updateAuthError.message), { status: 422 });
+    }
+  }
+
+  const { data: legacyProfile, error: legacyProfileError } = await client
+    .from("profiles")
+    .select("id,email,legacy_id")
+    .eq("legacy_id", legacyId)
+    .maybeSingle();
+  if (legacyProfileError) {
+    throw Object.assign(new Error("Profile lookup failed"), { status: 500 });
+  }
+  let existingProfile = legacyProfile;
+  if (!existingProfile) {
+    const { data: emailProfile, error: emailProfileError } = await client
+      .from("profiles")
+      .select("id,email,legacy_id")
+      .eq("email", email)
+      .maybeSingle();
+    if (emailProfileError) {
+      throw Object.assign(new Error("Profile lookup failed"), { status: 500 });
+    }
+    existingProfile = emailProfile;
+  }
+
+  const profile = {
+    id: existingProfile?.id || authUser.id,
+    legacy_id: legacyId,
+    email,
+    name,
+    role_title: person.role || "",
+    phone: person.phone || "",
+    avatar: person.avatar || "",
+    is_admin: Boolean(person.isAdmin),
+    whatsapp_enabled: person.whatsappEnabled !== false,
+    active: person.active !== false,
+    payload: person,
+    updated_at: new Date().toISOString(),
+  };
+  const { error: upsertError } = await client
+    .from("profiles")
+    .upsert(profile, { onConflict: "id" });
+  if (upsertError) {
+    throw Object.assign(new Error("Profile could not be saved"), { status: 500 });
+  }
+
+  return {
+    userId: authUser.id,
+    profileId: profile.id,
+    createdAuthUser,
+    updatedProfile: Boolean(existingProfile),
+  };
+};
