@@ -12,6 +12,9 @@ test("routeFromLocation opens project detail tabs from URL", () => {
     selProject: "project-1",
     projectTab: "tickets",
     ticketMineOnly: false,
+    taskId: "",
+    ticketProjectId: "",
+    ticketId: "",
   });
 });
 
@@ -32,6 +35,35 @@ test("routeFromLocation keeps legacy view query links working", () => {
   assert.equal(route.selProject, null);
 });
 
+test("routeFromLocation reads task and ticket deep links", () => {
+  assert.deepEqual(routeFromLocation({
+    pathname: "/my-tasks",
+    search: "?task=task-1",
+  }), {
+    view: "mytasks",
+    selProject: null,
+    projectTab: "setup",
+    adminSection: "overview",
+    ticketMineOnly: false,
+    taskId: "task-1",
+    ticketProjectId: "",
+    ticketId: "",
+  });
+  assert.deepEqual(routeFromLocation({
+    pathname: "/ticketlar",
+    search: "?mine=1&project=project-1&ticket=ticket-1",
+  }), {
+    view: "tickets",
+    selProject: null,
+    projectTab: "setup",
+    adminSection: "overview",
+    ticketMineOnly: true,
+    taskId: "",
+    ticketProjectId: "project-1",
+    ticketId: "ticket-1",
+  });
+});
+
 test("pathForRouteState builds stable app URLs", () => {
   assert.equal(pathForRouteState({ view: "dashboard" }), "/");
   assert.equal(pathForRouteState({ view: "tickets" }), "/ticketlar");
@@ -47,5 +79,13 @@ test("pathForRouteState builds stable app URLs", () => {
   assert.equal(
     pathForRouteState({ view: "admin", adminSection: "assigned" }),
     "/admin/assigned",
+  );
+  assert.equal(
+    pathForRouteState({ view: "mytasks", taskId: "task-1" }),
+    "/my-tasks?task=task-1",
+  );
+  assert.equal(
+    pathForRouteState({ view: "tickets", ticketMineOnly: true, ticketProjectId: "project-1", ticketId: "ticket-1" }),
+    "/ticketlar?mine=1&project=project-1&ticket=ticket-1",
   );
 });

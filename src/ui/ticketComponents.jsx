@@ -35,10 +35,9 @@ const applyTicketWorkflow=(data)=>{
   return data;
 };
 
-export function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false,generateTicketStatusReport}){
-  const ticketLink=typeof window!=="undefined"?new URLSearchParams(window.location.search):null;
-  const linkedProject=ticketLink?.get("project")||"";
-  const linkedTicket=ticketLink?.get("ticket")||"";
+export function TicketsPage({state,setState,currentUser,isAdmin,initialMine=false,initialProjectId="",initialTicketId="",onTicketOpened,generateTicketStatusReport}){
+  const linkedProject=initialProjectId||"";
+  const linkedTicket=initialTicketId||"";
   const linkedTicketData=linkedProject&&linkedTicket?((state.projectTickets||{})[linkedProject]||[]).find(ticket=>ticket.id===linkedTicket):null;
   const [activeTab,setActiveTab]=useState("tickets");
   const [projectFilters,setProjectFilters]=useState(linkedProject?[linkedProject]:[]);
@@ -57,6 +56,14 @@ export function TicketsPage({state,setState,currentUser,isAdmin,initialMine=fals
     const haystack=`${ticket.ticketNo||""} ${ticket.title||""} ${ticket.description||""} ${project?.name||""} ${state.people.find(p=>p.id===ticket.assignedTo)?.name||""}`.toLocaleLowerCase("tr-TR");
     return (!projectFilters.length||projectFilters.includes(projectId))&&(!statusFilters.length||statusFilters.includes(ticket.status))&&(!mineOnly||ticket.assignedTo===currentUser.id||ticket.author===currentUser.name)&&(!search.trim()||haystack.includes(search.trim().toLocaleLowerCase("tr-TR")));
   });
+  useEffect(()=>{
+    if(!linkedProject||!linkedTicket)return;
+    const ticket=((state.projectTickets||{})[linkedProject]||[]).find(item=>item.id===linkedTicket);
+    if(!ticket)return;
+    setProjectFilters(current=>current.includes(linkedProject)?current:[linkedProject]);
+    setModal({type:"detail",projectId:linkedProject,data:ticket});
+    onTicketOpened?.();
+  },[linkedProject,linkedTicket,state.projectTickets,onTicketOpened]);
   const save=(projectId,tickets)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[projectId]:tickets}}));
   const add=async(projectId,data)=>{
     const createdAt=now();

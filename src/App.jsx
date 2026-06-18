@@ -204,7 +204,8 @@ export default function App() {
   const [projectViewMode,setProjectViewMode]=useState("cards");
   const [expandedProjectRows,setExpandedProjectRows]=useState({});
   const [ticketMineOnly,setTicketMineOnly]=useState(Boolean(initialRoute.ticketMineOnly));
-  const [taskToOpen,setTaskToOpen]=useState("");
+  const [taskToOpen,setTaskToOpen]=useState(initialRoute.taskId||"");
+  const [ticketToOpen,setTicketToOpen]=useState({projectId:initialRoute.ticketProjectId||"",ticketId:initialRoute.ticketId||""});
   const [responsibilityFilters,setResponsibilityFilters]=useState([]);
   const [previewCustomerProjectId,setPreviewCustomerProjectId]=useState("");
   const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<768);
@@ -390,6 +391,8 @@ export default function App() {
       setProjectTab(next.projectTab||DEFAULT_PROJECT_TAB);
       setAdminSection(next.adminSection||"overview");
       setTicketMineOnly(Boolean(next.ticketMineOnly));
+      setTaskToOpen(next.taskId||"");
+      setTicketToOpen({projectId:next.ticketProjectId||"",ticketId:next.ticketId||""});
     };
     window.addEventListener("popstate",onPopState);
     return ()=>window.removeEventListener("popstate",onPopState);
@@ -397,14 +400,14 @@ export default function App() {
 
   useEffect(()=>{
     if(typeof window==="undefined")return;
-    const nextPath=pathForRouteState({view,selProject,projectTab,adminSection,ticketMineOnly});
+    const nextPath=pathForRouteState({view,selProject,projectTab,adminSection,ticketMineOnly,taskId:taskToOpen,ticketProjectId:ticketToOpen.projectId,ticketId:ticketToOpen.ticketId});
     const currentPath=`${window.location.pathname}${window.location.search}`;
     const applying=routeApplyingRef.current;
     routeApplyingRef.current=false;
     if(currentPath===nextPath)return;
     const method=applying?"replaceState":"pushState";
     window.history[method]({corjectRoute:true},"",nextPath);
-  },[view,selProject,projectTab,adminSection,ticketMineOnly]);
+  },[view,selProject,projectTab,adminSection,ticketMineOnly,taskToOpen,ticketToOpen.projectId,ticketToOpen.ticketId]);
 
   const navigateTo=(target,options={})=>{
     const nextView=target==="ticket"?"tickets":target;
@@ -412,6 +415,10 @@ export default function App() {
     else if(options.adminSection)setAdminSection(options.adminSection);
     if(nextView==="projects"&&options.projectScope)setProjectScope(options.projectScope);
     if(nextView==="tickets")setTicketMineOnly(Boolean(options.ticketMineOnly));
+    if(nextView!=="mytasks"&&!options.taskId)setTaskToOpen("");
+    else if(options.taskId)setTaskToOpen(options.taskId);
+    if(nextView!=="tickets"&&!options.ticketId)setTicketToOpen({projectId:"",ticketId:""});
+    else if(options.ticketId)setTicketToOpen({projectId:options.ticketProjectId||"",ticketId:options.ticketId});
     setView(nextView);
     setSelProject(null);
     setSelMilestone(null);
@@ -422,6 +429,8 @@ export default function App() {
     setView("projects");
     setSelProject(projectId);
     setSelMilestone(null);
+    setTaskToOpen("");
+    setTicketToOpen({projectId:"",ticketId:""});
     setProjectTab(tab);
     if(options.closeMobile!==false)setMobileMenuOpen(false);
   };
@@ -1000,8 +1009,8 @@ export default function App() {
       {view==="fieldops"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>openProject(id,"actions")}/>}
       {view==="fieldplan"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>openProject(id,"actions")}/>}
       {view==="fieldvisits"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>openProject(id,"actions")}/>}
-      {view==="deadlines"&&<SharedDeadlinePage warnings={deadlineWarnings} people={state.people} onOpenTask={id=>{setTaskToOpen(id);navigateTo("mytasks");}} onOpenTodos={()=>navigateTo("todos")}/>}
-      {view==="tickets"&&<SharedTicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} initialMine={ticketMineOnly} generateTicketStatusReport={generateTicketStatusReport}/>}
+      {view==="deadlines"&&<SharedDeadlinePage warnings={deadlineWarnings} people={state.people} onOpenTask={id=>navigateTo("mytasks",{taskId:id})} onOpenTodos={()=>navigateTo("todos")}/>}
+      {view==="tickets"&&<SharedTicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} initialMine={ticketMineOnly} initialProjectId={ticketToOpen.projectId} initialTicketId={ticketToOpen.ticketId} onTicketOpened={()=>setTicketToOpen({projectId:"",ticketId:""})} generateTicketStatusReport={generateTicketStatusReport}/>}
       {view==="reports"&&<SharedReportsPage state={state} people={state.people} isAdmin={isAdmin} />}
       {view==="customers"&&isAdmin&&!selProject&&<SharedCustomersPage state={state} setState={setState} onInviteUser={addPerson} onPreviewCustomer={projectId=>{setPreviewCustomerProjectId(projectId);navigateTo("dashboard");}}/>}
 
@@ -1049,7 +1058,7 @@ export default function App() {
       </div>}
 
       {view==="logs"&&<SharedLogPage logs={state.logs} projects={state.projects} />}
-      {view==="notifications"&&<SharedNotificationsPage notifications={state.notifications||[]} currentUser={currentUser} setState={setState} onOpenTask={id=>{setTaskToOpen(id);navigateTo("mytasks");}} />}
+      {view==="notifications"&&<SharedNotificationsPage notifications={state.notifications||[]} currentUser={currentUser} setState={setState} onOpenTask={id=>navigateTo("mytasks",{taskId:id})} />}
     </div>
 
     {isMobile&&<MobileBottomNav view={view} isAdminMode={useAdminHome} taskCount={useAdminHome?managerAssignedOpenCount:myOpenTaskCount} deadlineCount={deadlineWarnings.length} onQuick={()=>setMobileQuickSheet(true)} onProfile={()=>setModal({type:"editProfile"})} onNavigate={target=>{if(target==="mytasks"&&useAdminHome){navigateTo("admin",{adminSection:"assigned"});return;}navigateTo(target,{projectScope:target==="projects"?"all":undefined,ticketMineOnly:target==="tickets"});}}/>}

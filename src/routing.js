@@ -49,6 +49,9 @@ export const routeFromLocation = (locationLike) => {
       selProject: parts[1],
       projectTab: tab,
       ticketMineOnly: false,
+      taskId: "",
+      ticketProjectId: "",
+      ticketId: "",
     };
   }
 
@@ -59,6 +62,9 @@ export const routeFromLocation = (locationLike) => {
       projectTab: DEFAULT_PROJECT_TAB,
       adminSection: parts[1] || "overview",
       ticketMineOnly: false,
+      taskId: "",
+      ticketProjectId: "",
+      ticketId: "",
     };
   }
 
@@ -70,6 +76,9 @@ export const routeFromLocation = (locationLike) => {
     projectTab: DEFAULT_PROJECT_TAB,
     adminSection: "overview",
     ticketMineOnly: view === "tickets" && search.get("mine") === "1",
+    taskId: view === "mytasks" ? search.get("task") || "" : "",
+    ticketProjectId: view === "tickets" ? search.get("project") || "" : "",
+    ticketId: view === "tickets" ? search.get("ticket") || "" : "",
   };
 };
 
@@ -79,6 +88,9 @@ export const pathForRouteState = ({
   projectTab = DEFAULT_PROJECT_TAB,
   adminSection = "overview",
   ticketMineOnly = false,
+  taskId = "",
+  ticketProjectId = "",
+  ticketId = "",
 }) => {
   if (selProject) {
     const tab = PROJECT_ROUTE_TABS.has(projectTab) ? projectTab : DEFAULT_PROJECT_TAB;
@@ -90,6 +102,12 @@ export const pathForRouteState = ({
       : "/admin";
   }
   const base = VIEW_TO_PATH[view] || "/";
-  if (view === "tickets" && ticketMineOnly) return `${base}?mine=1`;
+  const search = new URLSearchParams();
+  if (view === "tickets" && ticketMineOnly) search.set("mine", "1");
+  if (view === "tickets" && ticketProjectId) search.set("project", ticketProjectId);
+  if (view === "tickets" && ticketId) search.set("ticket", ticketId);
+  if (view === "mytasks" && taskId) search.set("task", taskId);
+  const query = search.toString();
+  if (query) return `${base}?${query}`;
   return base;
 };
