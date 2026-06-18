@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 import { assignTasksWithNotification } from "./email";
 import { apiHeaders, apiUrl, isPublicCorjectHost } from "./api";
-import { COLORS, DEFAULT_ACTION_TAGS, DEFAULT_ACTIVE_MODULES, MES_TEMPLATES, ORG_LEVELS, RESPONSIBILITY_GROUPS, WAIT, buildFromTemplate, createReadinessChecklist, load, mapsUrl, normalizeTicketNumbers, organizationRoles, orgLevelLabel, readinessScore } from "./appData.js";
+import { COLORS, DEFAULT_ACTION_TAGS, DEFAULT_ACTIVE_MODULES, MES_TEMPLATES, ORG_LEVELS, RESPONSIBILITY_GROUPS, WAIT, buildFromTemplate, createReadinessChecklist, load, mapsUrl, normalizeMilestone, normalizeTicketNumbers, organizationRoles, orgLevelLabel, readinessScore } from "./appData.js";
 import {
   commissioningMachines,
   fieldPlanHours,
@@ -36,6 +36,7 @@ import {
   generatePortfolioReport,
   generateTicketStatusReport,
 } from "./ui/reportComponents.jsx";
+import { resolveTenantProfile } from "../server/services/emailTemplate.js";
 import {
   EmptyMobileRow,
   MobileBottomNav,
@@ -918,8 +919,8 @@ export default function App() {
 
       {view==="mytasks"&&<SharedMyTasksPage currentUser={currentUser} state={state} setState={setState} addLog={addLog} isAdmin={isAdmin} initialTaskId={taskToOpen} onTaskOpened={()=>setTaskToOpen("")}/>}
       {view==="fieldops"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("actions");}}/>}
-      {view==="fieldplan"&&<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>}
-      {view==="fieldvisits"&&<FieldVisitsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("actions");}}/>}
+      {view==="fieldplan"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("actions");}}/>}
+      {view==="fieldvisits"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("actions");}}/>}
       {view==="deadlines"&&<SharedDeadlinePage warnings={deadlineWarnings} people={state.people} onOpenTask={id=>{setTaskToOpen(id);setView("mytasks");setSelProject(null);}} onOpenTodos={()=>setView("todos")}/>}
       {view==="tickets"&&<SharedTicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} initialMine={ticketMineOnly} generateTicketStatusReport={generateTicketStatusReport}/>}
       {view==="reports"&&<SharedReportsPage state={state} people={state.people} isAdmin={isAdmin} />}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getJiraIssue } from "../jira";
 import { createTicketWithNotification, notifyTicketAssignment } from "../email";
+import { DEFAULT_ACTIVE_MODULES } from "../appData.js";
 import { nextTicketNumber, ticketNumber } from "../domain/projectHelpers.js";
 import { MultiChoiceFilter } from "./formControls.jsx";
 import { Btn, Field, Icon, Modal, iStyle } from "./primitives.jsx";

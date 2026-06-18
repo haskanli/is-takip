@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { normalizeMilestone } from "../appData.js";
 import { Btn, Field, iStyle } from "./primitives.jsx";
 import { PRIORITIES, STATUSES } from "./status.jsx";
 

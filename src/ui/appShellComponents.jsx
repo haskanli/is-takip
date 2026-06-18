@@ -83,7 +83,7 @@ export const GlobalStyle = () => (
   `}</style>
 );
 
-export function AppLoadingScreen({progress=10,status="Oturum haz?rlan?yor",logoSrc=""}) {
+export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logoSrc=""}) {
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
   return <div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:20,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 50% 30%,#312E81 0,#172033 42%,#0F172A 100%)",color:"#fff",zIndex:9999,overflow:"hidden"}}>
     <div style={{width:"min(430px,100%)",textAlign:"center"}}>

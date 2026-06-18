@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Avatar, Btn, Field, Icon, Modal, iStyle } from "./primitives.jsx";
-import { daysDiff } from "./status.jsx";
+import { Badge, DelayBadge, daysDiff, delayLvl } from "./status.jsx";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const now = () => new Date().toISOString();
 const todayStr = () => new Date().toISOString().slice(0, 10);
+const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "-";
 const LOG_META = {
   task_done: { icon: "✓", color: "#059669", bg: "#ECFDF5", label: "Tamamlandı" },
   task_add: { icon: "+", color: "#4A6CF7", bg: "#F1F5FF", label: "Görev Eklendi" },

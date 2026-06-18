@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiUrl } from "../api";
+import { COLORS } from "../appData.js";
 import { commissioningMachines, fieldPlanHours } from "../domain/projectHelpers.js";
 import { CommissioningPanel as SharedCommissioningPanel } from "./commissioningComponents.jsx";
 import { MachinePanel as SharedMachinePanel } from "./machineComponents.jsx";
@@ -566,4 +567,3 @@ export function ProjectNotesPanel({ project, currentUser, state, setState, isAdm
     </>}
   </div>;
 }
-
