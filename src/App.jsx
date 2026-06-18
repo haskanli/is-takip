@@ -16,6 +16,12 @@ import {
   projectStakeholders,
   ticketNumber,
 } from "./domain/projectHelpers.js";
+import {
+  CustomerContactEditor,
+  MultiChoiceFilter,
+  PeopleMultiSelect,
+  StakeholderEditor,
+} from "./ui/formControls.jsx";
 import { Avatar, Btn, Card, Field, Icon, Modal, iStyle, lStyle } from "./ui/primitives.jsx";
 import {
   Badge,
@@ -431,35 +437,6 @@ const normalizeTicketNumbers=(state)=>{
     projectTickets:Object.fromEntries(Object.entries(state?.projectTickets||{}).map(([projectId,tickets])=>[projectId,(tickets||[]).map(ticket=>({...ticket,ticketNo:numbers.get(`${projectId}:${ticket.id}`)}))]))
   };
 };
-
-function PeopleMultiSelect({people,value,onChange}) {
-  return <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:6,padding:9,border:"1.5px solid #E2E8F0",borderRadius:9,background:"#FAFBFC"}}>
-    {people.map(person=><label key={person.id} style={{display:"flex",alignItems:"center",gap:7,fontSize:11,fontWeight:600,color:"#475569",cursor:"pointer"}}><input type="checkbox" checked={value.includes(person.id)} onChange={e=>onChange(e.target.checked?[...value,person.id]:value.filter(id=>id!==person.id))}/>{person.name}</label>)}
-  </div>;
-}
-
-function MultiChoiceFilter({label,options,value,onChange}) {
-  const [open,setOpen]=useState(false);
-  return <div style={{position:"relative"}}>
-    <button type="button" onClick={()=>setOpen(current=>!current)} style={{...iStyle,width:"auto",minWidth:170,background:value.length?"#EEF2FF":"#fff",color:value.length?"#4338CA":"#475569",cursor:"pointer",fontWeight:750,textAlign:"left"}}>{label}{value.length?` (${value.length})`:""}</button>
-    {open&&<div style={{position:"absolute",top:"calc(100% + 5px)",left:0,zIndex:30,minWidth:230,maxHeight:280,overflow:"auto",background:"#fff",border:"1px solid #CBD5E1",borderRadius:11,padding:8,boxShadow:"0 16px 35px rgba(15,23,42,.16)"}}>
-      {options.map(option=><label key={option.value} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 8px",fontSize:11,cursor:"pointer",borderRadius:7}}><input type="checkbox" checked={value.includes(option.value)} onChange={event=>onChange(event.target.checked?[...value,option.value]:value.filter(item=>item!==option.value))}/><span>{option.label}</span></label>)}
-      {value.length>0&&<button type="button" onClick={()=>onChange([])} style={{width:"100%",border:0,borderTop:"1px solid #E2E8F0",background:"transparent",color:"#E11D48",padding:"8px 4px 2px",fontSize:10,fontWeight:800,cursor:"pointer"}}>Seçimi temizle</button>}
-    </div>}
-  </div>;
-}
-
-function StakeholderEditor({people,roles=[],value,onChange}) {
-  const add=()=>onChange([...value,{id:uid(),userId:"",role:roles[0]?.label||"Ürün Yöneticisi"}]);
-  const update=(id,data)=>onChange(value.map(item=>item.id===id?{...item,...data}:item));
-  return <div><div style={{display:"flex",flexDirection:"column",gap:7}}>{value.map(item=><div key={item.id} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:7}}><select style={iStyle} value={item.userId} onChange={e=>update(item.id,{userId:e.target.value})}><option value="">Kişi seçin</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><select style={iStyle} value={item.role} onChange={e=>update(item.id,{role:e.target.value})}>{item.role&&!roles.some(role=>role.label===item.role)&&<option>{item.role}</option>}{roles.map(role=><option key={role.id} value={role.label}>{role.label}</option>)}</select><button type="button" onClick={()=>onChange(value.filter(x=>x.id!==item.id))} style={{border:0,borderRadius:8,background:"#FFF1F2",color:"#E11D48",padding:"0 10px",cursor:"pointer"}}>×</button></div>)}</div><Btn small variant="secondary" style={{marginTop:7}} onClick={add}>+ Proje Rolü Ata</Btn></div>;
-}
-
-function CustomerContactEditor({value=[],onChange}) {
-  const add=()=>onChange([...value,{id:uid(),name:"",title:"",email:"",phone:""}]);
-  const update=(id,data)=>onChange(value.map(item=>item.id===id?{...item,...data}:item));
-  return <div><div style={{display:"grid",gap:7}}>{value.map(item=><div key={item.id} style={{display:"grid",gridTemplateColumns:"1.1fr 1fr 1.2fr 1fr auto",gap:7}}>{[["name","Ad Soyad"],["title","Unvan"],["email","E-posta"],["phone","Telefon"]].map(([key,placeholder])=><input key={key} type={key==="email"?"email":"text"} style={iStyle} value={item[key]||""} onChange={event=>update(item.id,{[key]:event.target.value})} placeholder={placeholder}/>) }<button type="button" onClick={()=>onChange(value.filter(entry=>entry.id!==item.id))} style={{border:0,borderRadius:8,background:"#FFF1F2",color:"#E11D48",padding:"0 10px",cursor:"pointer"}}>×</button></div>)}</div><Btn small variant="secondary" style={{marginTop:7}} onClick={add}>+ Müşteri Kontağı</Btn></div>;
-}
 
 /* eslint-disable no-unused-vars */
 function LegacyRemoteAccessPanel({project,state,setState,currentUser,isAdmin,canManage}) {
@@ -1119,9 +1096,10 @@ function ManagerAssignedTasks({state,currentUser}) {
   </div>;
 }
 
-function ManagerAssignedTasksV2({state,setState,currentUser}) {
+function ManagerAssignedTasksV2({state,setState,currentUser,onAssignTask}) {
   const [personFilter,setPersonFilter]=useState("all");
   const [modal,setModal]=useState(null);
+  const [assignmentNotice,setAssignmentNotice]=useState("");
   const tasks=(state.personalTasks||[]).filter(task=>task.createdBy===currentUser.id);
   const peopleWithTasks=state.people.filter(person=>tasks.some(task=>task.assignee===person.id));
   const rows=tasks
@@ -1147,24 +1125,37 @@ function ManagerAssignedTasksV2({state,setState,currentUser}) {
     }
     return {...current,personalTasks:(current.personalTasks||[]).map(task=>task.id===id?{...task,...data}:task),notifications:[...notices,...(current.notifications||[])]};
   });
+  const assignTask=async(data)=>{
+    setAssignmentNotice("");
+    const result=await onAssignTask(data);
+    const created=result?.tasks?.length||0;
+    const whatsapp=result?.notifications?.filter(item=>item.sent&&item.channel==="whatsapp").length||0;
+    const email=result?.notifications?.filter(item=>item.sent&&item.channel==="email").length||0;
+    const failed=result?.notifications?.filter(item=>!item.sent).length||0;
+    setAssignmentNotice(`${created} görev oluşturuldu · WhatsApp: ${whatsapp} · E-posta: ${email}${failed?` · Ulaşmayan: ${failed}`:""}`);
+    setModal(null);
+  };
   return <div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(135px,1fr))",gap:10,marginBottom:14}}>
       {[["Toplam Atama",tasks.length,"#4A6CF7"],["Aktif",active.length,"#EA6C00"],["Geciken",active.filter(task=>delayLvl(task.dueDate,task.status)).length,"#E11D48"],["Tamamlanan",tasks.filter(task=>task.status==="Tamamlandı").length,"#059669"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${color}`,borderRadius:12,padding:13}}><div style={{fontSize:10,color:"#64748B"}}>{label}</div><b style={{fontSize:23,color}}>{value}</b></div>)}
     </div>
     <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:12}}>
       <div style={{fontSize:12,color:"#64748B",fontWeight:800}}>Geciken görevler listede üstte görünür.</div>
-      <select style={{...iStyle,width:220,background:"#fff"}} value={personFilter} onChange={event=>setPersonFilter(event.target.value)}><option value="all">Tüm kişiler</option>{peopleWithTasks.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}</select>
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><Btn small onClick={()=>setModal({type:"addPersonal"})}>+ Yeni Gorev Ata</Btn><select style={{...iStyle,width:220,background:"#fff"}} value={personFilter} onChange={event=>setPersonFilter(event.target.value)}><option value="all">Tum kisiler</option>{peopleWithTasks.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}</select></div>
     </div>
+    {assignmentNotice&&<div style={{margin:"0 0 12px",padding:"10px 13px",borderRadius:10,background:"#ECFDF5",color:"#047857",fontSize:12,fontWeight:800}}>{assignmentNotice}</div>}
     <div style={{display:"grid",gap:8}}>{rows.map(task=><div key={task.id} style={{background:"#fff",border:`1.5px solid ${delayLvl(task.dueDate,task.status)?"#FCA5A5":"#E2E8F0"}`,borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:10,minWidth:0}}>
       <Avatar initials={task.person?.avatar||"?"} imageUrl={task.person?.avatarUrl} size={30}/>
       <button onClick={()=>setModal({type:"taskDetail",data:task})} style={{flex:1,minWidth:0,border:0,background:"transparent",textAlign:"left",cursor:"pointer",padding:0}}><b style={{fontSize:12,display:"block",lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.title}</b><div style={{fontSize:10,color:"#64748B",marginTop:3,lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.person?.name||"Atanmamış"} · {task.project?.name||"Projesiz"} · {fmt(task.dueDate)}{task.dueTime?` ${task.dueTime}`:""} · {task.status}</div>{task.firstSeenAt&&<div style={{fontSize:10,color:"#059669",marginTop:3,fontWeight:800}}>İlk görüntüleme: {new Date(task.firstSeenAt).toLocaleString("tr-TR")}</div>}{task.notes&&<div style={{fontSize:10,color:"#94A3B8",marginTop:3,lineHeight:1.4,wordBreak:"break-word",overflowWrap:"anywhere"}}>{task.notes}</div>}</button>
       {delayLvl(task.dueDate,task.status)&&<DelayBadge dateStr={task.dueDate} status={task.status}/>}
+      <select onClick={event=>event.stopPropagation()} style={{...iStyle,width:150,background:"#F8FAFC",fontSize:11}} value={task.status||"Bekliyor"} onChange={event=>updateTask(task.id,{status:event.target.value})}>{STATUSES.map(status=><option key={status}>{status}</option>)}</select>
     </div>)}{!rows.length&&<div style={{padding:35,textAlign:"center",color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px dashed #CBD5E1"}}>Bu filtrede yönetici ataması bulunmuyor.</div>}</div>
     {modal?.type==="taskDetail"&&<TaskDetailModal task={(state.personalTasks||[]).find(task=>task.id===modal.data.id)||modal.data} people={state.people} currentUser={currentUser} onClose={()=>setModal(null)} onUpdate={data=>updateTask(modal.data.id,data)} />}
+    {modal?.type==="addPersonal"&&<PersonalTaskModal title="Gorev Ata" people={state.people} projects={state.projects} isAdmin currentUser={currentUser} onClose={()=>setModal(null)} onSave={assignTask} />}
   </div>;
 }
 
-function ManagementWorkspace({state,setState,currentUser,onOpenProject,onNavigate,onEditPerson,onAddPerson,initialSection="overview"}) {
+function ManagementWorkspace({state,setState,currentUser,onOpenProject,onNavigate,onEditPerson,onAddPerson,onAssignTask,initialSection="overview"}) {
   const [section,setSection]=useState(initialSection);
   const [newRole,setNewRole]=useState("");
   const roles=organizationRoles(state);
@@ -1183,7 +1174,7 @@ function ManagementWorkspace({state,setState,currentUser,onOpenProject,onNavigat
       {tabs}
     </div>
     {section==="overview"&&<AdminDashboard state={state} setState={setState} currentUser={currentUser} onOpenProject={onOpenProject} onNavigate={onNavigate} showHeader={false}/>}
-    {section==="assigned"&&<ManagerAssignedTasksV2 state={state} setState={setState} currentUser={currentUser}/>}
+    {section==="assigned"&&<ManagerAssignedTasksV2 state={state} setState={setState} currentUser={currentUser} onAssignTask={onAssignTask}/>}
     {section==="organization"&&<><div style={{display:"flex",justifyContent:"flex-end",gap:7,marginBottom:10,flexWrap:"wrap"}}><input style={{...iStyle,width:220}} value={newRole} onChange={event=>setNewRole(event.target.value)} onKeyDown={event=>event.key==="Enter"&&addRole()} placeholder="Yeni organizasyon rolü"/><Btn small onClick={addRole}>Rol Ekle</Btn><Btn small variant="secondary" onClick={onAddPerson}>Kişi Ekle</Btn></div><OrganizationPanel people={state.people} roles={roles} onEdit={onEditPerson}/></>}
   </div>;
 }
@@ -2031,7 +2022,7 @@ ${projLogs.length>0?`<div class="card"><h2>Son Aktiviteler</h2><table><thead><tr
 }
 
 // ─── Task Card ───────────────────────────────────────────────────────────────
-function TaskCard({ task, people, projectColor, onCheck, onEdit, onDelete, onTime, onOpen, showProject, projectName, canEdit }) {
+function TaskCard({ task, people, projectColor, onCheck, onStatusChange, onEdit, onDelete, onTime, onOpen, showProject, projectName, canEdit }) {
   const assignee=people.find(p=>p.id===task.assignee);
   const dl=delayLvl(task.dueDate,task.status);
   return <div style={{ background:"#fff", borderRadius:10, padding:"11px 15px", border:`1.5px solid ${dl==="critical"?"#FCA5A5":dl==="normal"?"#FED7AA":"#E2E8F0"}`, display:"flex", alignItems:"flex-start", gap:11, boxShadow:"0 1px 3px rgba(0,0,0,0.04)", opacity:task.status==="Tamamland\u0131"?0.75:1 }}>
@@ -2059,6 +2050,7 @@ function TaskCard({ task, people, projectColor, onCheck, onEdit, onDelete, onTim
       {(task.waitingHistory||[]).length>0&&<details style={{marginTop:7}}><summary style={{fontSize:10,color:"#64748B",cursor:"pointer",fontWeight:700}}>Bekleme geçmişi ({task.waitingHistory.length})</summary><div style={{display:"grid",gap:4,marginTop:6}}>{task.waitingHistory.slice().reverse().map(entry=><div key={entry.id} style={{fontSize:10,color:"#475569",background:"#F8FAFC",borderRadius:7,padding:"6px 8px"}}><b>{entry.source}</b> · {entry.reason} · {fmtFull(entry.startAt)} - {entry.endAt?fmtFull(entry.endAt):"Devam ediyor"}</div>)}</div></details>}
     </div>
     <div style={{ display:"flex", gap:4, flexShrink:0 }}>
+      {onStatusChange&&<select onClick={event=>event.stopPropagation()} value={task.status||"Bekliyor"} onChange={event=>onStatusChange(event.target.value)} style={{...iStyle,width:145,fontSize:11,background:"#F8FAFC",padding:"5px 8px"}}>{STATUSES.map(status=><option key={status}>{status}</option>)}</select>}
       {onTime&&<Btn small variant="ghost" onClick={onTime} style={{ color:"#7C3AED" }}>Efor</Btn>}
       {canEdit&&onEdit&&<Btn small variant="ghost" onClick={onEdit} style={{ display:"inline-flex", alignItems:"center", padding:"5px 7px" }}><Icon name="edit" size={15}/></Btn>}
       {canEdit&&onDelete&&<Btn small variant="danger" onClick={onDelete}>x</Btn>}
@@ -2186,6 +2178,7 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
       const failed=result.notifications.filter(n=>!n.sent).length;
       setAssignmentNotice(`${result.tasks.length} görev oluşturuldu · WhatsApp: ${whatsapp} · E-posta: ${email}${failed?` · Ulaşmayan: ${failed}`:""}`);
       addLog(currentUser.name,"task_add",`${task.title} (${result.tasks.length} kişi)`);
+    return result;
       return;
     }
     const t={id:uid(),...data,assignee:currentUser.id,createdBy:currentUser.id,createdByName:currentUser.name,createdAt:new Date().toISOString(),comments:[]};
@@ -2217,9 +2210,10 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
           <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{section==="all"?"Tüm Görevler":section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {sectionActive.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel Görev"} canEdit
-              onOpen={()=>openTaskDetail(t)}
-              onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
-              onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
+               onOpen={()=>openTaskDetail(t)}
+               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
+               onStatusChange={(status)=>{ if(t.source==="personal")updatePersonal(t.id,{status}); else updateProjTask(t.projId,t.msId,t.id,{status}); }}
+               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
               onTime={()=>setModal({type:"time",data:t})}
             />)}
@@ -2229,9 +2223,10 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
           <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({sectionCompleted.length})</button>
           {showDone&&<div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {sectionCompleted.map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel"} canEdit
-              onOpen={()=>openTaskDetail(t)}
-              onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
-              onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
+               onOpen={()=>openTaskDetail(t)}
+               onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
+               onStatusChange={(status)=>{ if(t.source==="personal")updatePersonal(t.id,{status}); else updateProjTask(t.projId,t.msId,t.id,{status}); }}
+               onEdit={t.source==="personal"?()=>setModal({type:"editPersonal",data:t}):null}
               onDelete={t.source==="personal"?()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}:null}
               onTime={()=>setModal({type:"time",data:t})}
             />)}
@@ -2242,9 +2237,10 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
           {(state.personalTasks||[]).length===0&&<div style={{ color:"#94A3B8", fontSize:12 }}>Genel görev yok.</div>}
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {(state.personalTasks||[]).map(t=><TaskCard key={t.id} task={t} people={state.people} projectColor={null} showProject canEdit
-              onOpen={()=>openTaskDetail({...t,source:"personal"})}
-              onCheck={(c)=>updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"})}
-              onEdit={()=>setModal({type:"editPersonal",data:t})}
+               onOpen={()=>openTaskDetail({...t,source:"personal"})}
+               onCheck={(c)=>updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"})}
+               onStatusChange={(status)=>updatePersonal(t.id,{status})}
+               onEdit={()=>setModal({type:"editPersonal",data:t})}
               onDelete={()=>{if(confirm("Silinsin mi?"))deletePersonal(t.id);}}
               onTime={()=>setModal({type:"time",data:{...t,source:"personal"}})}
             />)}
@@ -4252,7 +4248,7 @@ export default function App() {
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:isMobile?82:0 }}>
       {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(isMobile?<MobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>:<DashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>{setView(v);setSelProject(null);if(v==="projects")setProjectScope("all");if(v==="tickets")setTicketMineOnly(true);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}}/>)}
-      {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} initialSection={adminSection} onNavigate={v=>{if(v==="dashboard"||v==="admin")setAdminSection("overview");setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})} onAddPerson={()=>setModal({type:"addPerson"})}/>}
+      {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<ManagementWorkspace state={state} setState={setState} currentUser={currentUser} initialSection={adminSection} onNavigate={v=>{if(v==="dashboard"||v==="admin")setAdminSection("overview");setView(v);setSelProject(null);}} onOpenProject={id=>{setSelProject(id);setView("projects");setProjectTab("setup");}} onEditPerson={person=>setModal({type:"editPerson",data:person})} onAddPerson={()=>setModal({type:"addPerson"})} onAssignTask={saveAdminAssignedTask}/>}
       {view==="todos"&&<TodoPage state={state} setState={setState} currentUser={currentUser}/>}
       {view==="mobilemenu"&&<MobileFeatureMenuPage isAdmin={isAdmin} onNavigate={target=>{setSelProject(null);setSelMilestone(null);if(target==="projects")setProjectScope("all");if(target==="tickets")setTicketMineOnly(true);setView(target);}}/>}
       {view==="ai"&&!selProject&&<AIWorkspace projects={visibleProjects}/>}
@@ -4954,8 +4950,8 @@ function AddProjectModal({ onClose, onSave, people, roles }) {
       <Field label="Proje Adı *"><input style={iStyle} value={f.name} onChange={e=>upd("name",e.target.value)} placeholder="Proje adi" /></Field>
       <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
       <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
-      <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
-      <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)}/></Field>
+      <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)} createId={uid}/></Field>
+      <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)} createId={uid}/></Field>
       <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F0FDFA",border:"1.5px solid #99F6E4",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.connectedSupplier)} onChange={e=>upd("connectedSupplier",e.target.checked)} style={{marginTop:2}}/><span><b>Connected Supplier</b><span style={{display:"block",color:"#0F766E",marginTop:3}}>Bu proje Connected Supplier kapsamında ayrı takip ve filtrelere dahil edilir.</span></span></label><label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
       <Field label="Renk"><div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
@@ -4974,8 +4970,8 @@ function ProjectModal({ title, initial, onClose, onSave, people, roles }) {
     <Field label="Proje Adı *"><input style={iStyle} value={f.name} onChange={e=>upd("name",e.target.value)} /></Field>
     <Field label="Açıklama"><input style={iStyle} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
     <Field label="Proje Yöneticileri (birden fazla seçilebilir)"><PeopleMultiSelect people={people} value={f.pmIds} onChange={value=>upd("pmIds",value)}/></Field>
-    <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)}/></Field>
-    <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)}/></Field>
+    <Field label="Proje Rolleri ve Katılımcılar"><StakeholderEditor people={people} roles={roles} value={f.stakeholders} onChange={value=>upd("stakeholders",value)} createId={uid}/></Field>
+    <Field label="Müşteri Kontakları"><CustomerContactEditor value={f.customerContacts||[]} onChange={value=>upd("customerContacts",value)} createId={uid}/></Field>
     <label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F0FDFA",border:"1.5px solid #99F6E4",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.connectedSupplier)} onChange={e=>upd("connectedSupplier",e.target.checked)} style={{marginTop:2}}/><span><b>Connected Supplier</b><span style={{display:"block",color:"#0F766E",marginTop:3}}>Bu proje Connected Supplier kapsamında ayrı takip ve filtrelere dahil edilir.</span></span></label><label style={{display:"flex",alignItems:"flex-start",gap:9,padding:"11px 12px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:10,marginBottom:13,fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={Boolean(f.commissioningTracking)} onChange={e=>upd("commissioningTracking",e.target.checked)} style={{marginTop:2}}/><span><b>Hiyerarşik devreye alma takibi</b><span style={{display:"block",color:"#64748B",marginTop:3}}>Sektör, üretim merkezi, işyeri, hat ve makine bazında yüzdesel takip ekranını açar.</span></span></label>
     <Field label="Renk"><div style={{ display:"flex", gap:7 }}>{COLORS.map(c=><div key={c} onClick={()=>upd("color",c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border:f.color===c?"3px solid #1E293B":"3px solid transparent" }} />)}</div></Field>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>

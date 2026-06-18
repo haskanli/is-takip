@@ -159,19 +159,25 @@ const handleSaveApplicationState = async (request, auth, response) => {
   if (!body?.state || !Number.isFinite(Number(body.version))) {
     throw Object.assign(new Error("state and version are required"), { status: 400 });
   }
+  const profile = auth?.profile || {
+    id: "local-dev",
+    legacy_id: "local-dev",
+    name: "Local Dev",
+    is_admin: true,
+  };
   const current = await loadStateRecord();
   if (current.version !== Number(body.version)) {
     throw Object.assign(new Error("State changed by another user"), { status: 409 });
   }
   const incoming = { ...body.state };
   delete incoming.currentUserId;
-  const shared = mergeStateForProfile(current.state, incoming, auth?.profile);
+  const shared = mergeStateForProfile(current.state, incoming, profile);
   const saved = await saveStateRecord({
     state: shared,
     expectedVersion: Number(body.version),
   });
   logger.info("application.state.saved", {
-    actorId: auth?.profile?.id || null,
+    actorId: profile.id || null,
     version: saved.version,
   });
   json(response, 200, saved);
@@ -771,10 +777,8 @@ const server = createServer(async (request, response) => {
       if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
       json(response, 200, { profile: auth?.profile || null });
     } else if (request.method === "GET" && url.pathname === "/api/state") {
-      if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
       await handleGetApplicationState(auth, response);
     } else if (request.method === "PUT" && url.pathname === "/api/state") {
-      if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
       await handleSaveApplicationState(request, auth, response);
     } else if (request.method === "POST" && url.pathname === "/api/ai/project-insight") {
       if (!config.requireAuth) throw Object.assign(new Error("Not found"), { status: 404 });
