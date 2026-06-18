@@ -184,6 +184,7 @@ export function MobileFeatureMenuPage({ isAdmin, onNavigate }) {
     ["deadlines", "clock", "Termin Uyarıları", "Gecikmeler ve yaklaşan işler", "#E11D48"],
     ["todos", "tasks", "To-Do", "Kişisel aksiyonlar", "#DB2777"],
     ["people", "people", "Ekip", "Organizasyon ve kişiler", "#0369A1"],
+    ...(isAdmin ? [["customers", "people", "Müşteri Görünümü", "Müşteri portalını ve proje erişimini kontrol et", "#0F766E"]] : []),
     ...(isAdmin
       ? [
           ["admin", "admin", "Yönetici", "KPI ve yönetim paneli", "#111827"],
