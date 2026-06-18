@@ -145,6 +145,36 @@ test("member cannot save an unsafe profile image URL", () => {
   );
 });
 
+test("member can update assigned manager task status and first seen time", () => {
+  const current = {
+    ...state,
+    personalTasks: [
+      ...state.personalTasks,
+      {
+        id: "pt-managed",
+        assignee: "member",
+        createdBy: "admin",
+        title: "Assigned by manager",
+        status: "Bekliyor",
+      },
+    ],
+  };
+  const incoming = filterStateForProfile(current, member);
+  const task = incoming.personalTasks.find((item) => item.id === "pt-managed");
+  task.status = "Devam Ediyor";
+  task.firstSeenAt = "2026-06-18T09:00:00.000Z";
+  task.statusUpdatedAt = "2026-06-18T09:01:00.000Z";
+  task.statusUpdatedBy = "member";
+
+  const merged = mergeStateForProfile(current, incoming, member);
+  const updated = merged.personalTasks.find((item) => item.id === "pt-managed");
+
+  assert.equal(updated.status, "Devam Ediyor");
+  assert.equal(updated.firstSeenAt, "2026-06-18T09:00:00.000Z");
+  assert.equal(updated.statusUpdatedAt, "2026-06-18T09:01:00.000Z");
+  assert.equal(updated.statusUpdatedBy, "member");
+});
+
 test("project manager can update only a managed project", () => {
   const profile = { ...member, legacy_id: "pm", name: "PM" };
   const incoming = filterStateForProfile(state, profile);

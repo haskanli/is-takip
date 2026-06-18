@@ -1123,13 +1123,16 @@ function ManagerAssignedTasksV2({state,setState,currentUser,onAssignTask}) {
     const old=(current.personalTasks||[]).find(task=>task.id===id);
     if(!old)return current;
     const notices=[];
+    const patch={...data};
     if(data.status&&old.status!==data.status){
+      patch.statusUpdatedAt=now();
+      patch.statusUpdatedBy=currentUser.id;
       [old.assignee,old.createdBy].filter(Boolean).filter((userId,index,array)=>array.indexOf(userId)===index&&userId!==currentUser.id).forEach(userId=>notices.push({id:uid(),ts:now(),userId,msg:`"${old.title}" görevinin durumu ${data.status} oldu.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_status",read:false}));
     }
     if(data.comments&&data.comments.length>(old.comments||[]).length&&old.assignee&&old.assignee!==currentUser.id){
       notices.push({id:uid(),ts:now(),userId:old.assignee,msg:`"${old.title}" görevine yeni not eklendi.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_comment",read:false});
     }
-    return {...current,personalTasks:(current.personalTasks||[]).map(task=>task.id===id?{...task,...data}:task),notifications:[...notices,...(current.notifications||[])]};
+    return {...current,personalTasks:(current.personalTasks||[]).map(task=>task.id===id?{...task,...patch}:task),notifications:[...notices,...(current.notifications||[])]};
   });
   const assignTask=async(data)=>{
     setAssignmentNotice("");
@@ -2116,7 +2119,29 @@ function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, initialTas
   const sectionCompleted=sectionAll.filter(t=>t.status==="Tamamland\u0131");
   const linkedTaskId=initialTaskId||new URLSearchParams(window.location.search).get("task");
 
-  const updatePersonal=(id,data)=>setState(s=>{const old=(s.personalTasks||[]).find(t=>t.id===id);const notices=[];if(data.status&&old?.status!==data.status){addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);if(data.status==="Tamamlandı"){[old.assignee,old.createdBy].filter(Boolean).filter((userId,index,array)=>array.indexOf(userId)===index&&userId!==currentUser.id).forEach(userId=>notices.push({id:uid(),ts:now(),userId,msg:`"${old.title}" görevi tamamlandı.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_done",read:false}));}}if(data.comments&&data.comments.length>(old?.comments||[]).length&&old?.assignee&&old.assignee!==currentUser.id){notices.push({id:uid(),ts:now(),userId:old.assignee,msg:`"${old.title}" görevine yeni not eklendi.`,projectName:"Yönetici Ataması",taskId:old.id,type:"task_comment",read:false});}return {...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...data}:t),notifications:[...notices,...(s.notifications||[])]};});
+  const updatePersonal=(id,data)=>setState(s=>{
+    const old=(s.personalTasks||[]).find(t=>t.id===id);
+    const notices=[];
+    const patch={...data};
+    if(data.status&&old?.status!==data.status){
+      patch.statusUpdatedAt=now();
+      patch.statusUpdatedBy=currentUser.id;
+      addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} \u2192 ${data.status}`);
+      if(data.status==="Tamamland\u0131"){
+        [old.assignee,old.createdBy].filter(Boolean).filter((userId,index,array)=>array.indexOf(userId)===index&&userId!==currentUser.id).forEach(userId=>notices.push({id:uid(),ts:now(),userId,msg:`"${old.title}" g\u00f6revi tamamland\u0131.`,projectName:"Y\u00f6netici Atamas\u0131",taskId:old.id,type:"task_done",read:false}));
+      }
+    }
+    if(data.comments&&data.comments.length>(old?.comments||[]).length&&old?.assignee&&old.assignee!==currentUser.id){
+      notices.push({id:uid(),ts:now(),userId:old.assignee,msg:`"${old.title}" g\u00f6revine yeni not eklendi.`,projectName:"Y\u00f6netici Atamas\u0131",taskId:old.id,type:"task_comment",read:false});
+    }
+    return {...s,personalTasks:(s.personalTasks||[]).map(t=>t.id===id?{...t,...patch}:t),notifications:[...notices,...(s.notifications||[])]};
+  });
+  useEffect(()=>{
+    const unseen=(state.personalTasks||[]).filter(t=>t.assignee===currentUser.id&&!t.firstSeenAt);
+    if(!unseen.length)return;
+    const seenAt=now();
+    setState(s=>({...s,personalTasks:(s.personalTasks||[]).map(t=>t.assignee===currentUser.id&&!t.firstSeenAt?{...t,firstSeenAt:seenAt}:t)}));
+  },[currentUser.id,state.personalTasks,setState]);
   const updateProjTask=(pId,mId,tId,data)=>setState(s=>{const old=s.projects.find(p=>p.id===pId)?.milestones.find(m=>m.id===mId)?.tasks.find(t=>t.id===tId);const upd={...s,projects:s.projects.map(p=>p.id!==pId?p:{...p,milestones:p.milestones.map(m=>m.id!==mId?m:{...m,tasks:m.tasks.map(t=>t.id!==tId?t:{...t,...data})})})};if(data.status&&old?.status!==data.status)addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`);return upd;});
   const openTaskDetail=t=>{
     if(t.source==="personal"&&t.assignee===currentUser.id&&!t.firstSeenAt)updatePersonal(t.id,{firstSeenAt:now()});
@@ -4141,6 +4166,7 @@ export default function App() {
       return {...current,personalTasks:[...(current.personalTasks||[]),...result.tasks.filter(task=>!(current.personalTasks||[]).some(existing=>existing.id===task.id))],recurringTasks:result.recurringTemplate?[...(current.recurringTasks||[]).filter(item=>item.id!==result.recurringTemplate.id),result.recurringTemplate]:(current.recurringTasks||[]),notifications:[...localNotices,...(current.notifications||[])]};
     });
     addLog(currentUser.name,"task_add",`${task.title} (${result.tasks.length} kişi)`);
+    return result;
   };
   const saveMobileQuickTodo=(data)=>{
     const todo={id:uid(),customer:data.customer||"",projectId:data.projectId||"",dueDate:data.dueDate||"",action:data.action,text:data.action,done:false,createdAt:now()};
