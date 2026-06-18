@@ -25,6 +25,16 @@ const PATH_TO_VIEW = Object.fromEntries(
 );
 
 export const DEFAULT_PROJECT_TAB = "setup";
+export const PROJECT_ROUTE_TABS = new Set([
+  "setup",
+  "gantt",
+  "tasks",
+  "tickets",
+  "actions",
+  "risks",
+  "notlar",
+  "projlogs",
+]);
 
 export const routeFromLocation = (locationLike) => {
   const pathname = locationLike?.pathname || "/";
@@ -33,10 +43,11 @@ export const routeFromLocation = (locationLike) => {
   const legacyView = search.get("view");
 
   if (parts[0] === "projects" && parts[1]) {
+    const tab = PROJECT_ROUTE_TABS.has(parts[2]) ? parts[2] : DEFAULT_PROJECT_TAB;
     return {
       view: "projects",
       selProject: parts[1],
-      projectTab: parts[2] || DEFAULT_PROJECT_TAB,
+      projectTab: tab,
       ticketMineOnly: false,
     };
   }
@@ -70,7 +81,7 @@ export const pathForRouteState = ({
   ticketMineOnly = false,
 }) => {
   if (selProject) {
-    const tab = projectTab || DEFAULT_PROJECT_TAB;
+    const tab = PROJECT_ROUTE_TABS.has(projectTab) ? projectTab : DEFAULT_PROJECT_TAB;
     return `/projects/${encodeURIComponent(selProject)}/${encodeURIComponent(tab)}`;
   }
   if (view === "admin") {

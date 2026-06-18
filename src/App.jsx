@@ -4,7 +4,7 @@ import { assignTasksWithNotification } from "./email";
 import { apiHeaders, apiUrl, isPublicCorjectHost } from "./api";
 import { COLORS, DEFAULT_ACTION_TAGS, DEFAULT_ACTIVE_MODULES, MES_TEMPLATES, ORG_LEVELS, RESPONSIBILITY_GROUPS, WAIT, buildFromTemplate, createReadinessChecklist, load, mapsUrl, normalizeMilestone, normalizeTicketNumbers, organizationRoles, orgLevelLabel, readinessScore } from "./appData.js";
 import { CUSTOMER_VISIBLE_PROJECT_TABS, canCustomerAccessProject, isCustomerUser } from "./customerAccess.js";
-import { DEFAULT_PROJECT_TAB, pathForRouteState, routeFromLocation } from "./routing.js";
+import { DEFAULT_PROJECT_TAB, PROJECT_ROUTE_TABS, pathForRouteState, routeFromLocation } from "./routing.js";
 import {
   commissioningMachines,
   fieldPlanHours,
@@ -359,6 +359,24 @@ export default function App() {
     if(!customerView||CUSTOMER_VISIBLE_PROJECT_TABS.has(projectTab))return;
     setProjectTab("setup");
   },[customerView,projectTab]);
+
+  useEffect(()=>{
+    if(!dataLoaded||!currentUser||!selProject)return;
+    const routeProject=state.projects.find(item=>item.id===selProject);
+    const allowedProject=routeProject&&(
+      !customerView||
+      routeProject.customerId===effectiveCustomerId||
+      canCustomerAccessProject(currentUser,routeProject)
+    );
+    if(!allowedProject){
+      setSelProject(null);
+      setSelMilestone(null);
+      setProjectTab(DEFAULT_PROJECT_TAB);
+      setView("projects");
+      return;
+    }
+    if(!PROJECT_ROUTE_TABS.has(projectTab))setProjectTab(DEFAULT_PROJECT_TAB);
+  },[dataLoaded,currentUser,selProject,projectTab,customerView,effectiveCustomerId,state.projects]);
 
   useEffect(()=>{
     if(typeof window==="undefined")return;

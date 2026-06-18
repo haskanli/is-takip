@@ -15,6 +15,14 @@ test("routeFromLocation opens project detail tabs from URL", () => {
   });
 });
 
+test("routeFromLocation normalizes unknown project tabs", () => {
+  const route = routeFromLocation({
+    pathname: "/projects/project-1/unknown-tab",
+    search: "",
+  });
+  assert.equal(route.projectTab, "setup");
+});
+
 test("routeFromLocation keeps legacy view query links working", () => {
   const route = routeFromLocation({
     pathname: "/",
@@ -31,6 +39,10 @@ test("pathForRouteState builds stable app URLs", () => {
   assert.equal(
     pathForRouteState({ view: "projects", selProject: "project-1", projectTab: "setup" }),
     "/projects/project-1/setup",
+  );
+  assert.equal(
+    pathForRouteState({ view: "projects", selProject: "customer/project 1", projectTab: "unknown" }),
+    "/projects/customer%2Fproject%201/setup",
   );
   assert.equal(
     pathForRouteState({ view: "admin", adminSection: "assigned" }),
