@@ -76,6 +76,7 @@ export function TicketsPage({
   const setSearch=onSearchChange||setLocalSearch;
   const mineOnly=controlledMineOnly??localMineOnly;
   const setMineOnly=onMineOnlyChange||setLocalMineOnly;
+  const customerMode=isCustomerUser(currentUser);
   const TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
   const PRIOS=["Düşük","Orta","Yüksek","Kritik"];
   const all=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>{
@@ -124,25 +125,25 @@ export function TicketsPage({
       <div><h2 style={{margin:0,fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#1E293B"}}><Icon name="ticket" size={20}/>Ticketlar</h2><p style={{margin:"3px 0 0",fontSize:12,color:"#64748B"}}>{filtered.length} kayıt gösteriliyor</p></div>
       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{isAdmin&&<Btn variant="secondary" onClick={()=>generateTicketStatusReport(state,state.people)}>Durum Raporu</Btn>}<Btn onClick={()=>setModal({type:"add",projectId:state.projects[0]?.id||""})}>+ Ticket Ekle</Btn></div>
     </div>
-    <div style={{display:"flex",gap:6,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
+    {!customerMode&&<div style={{display:"flex",gap:6,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
       {[["tickets","Ticket Takibi"],["recurring","Tekrar Eden Problemler"]].map(([id,label])=><button key={id} onClick={()=>setActiveTab(id)} style={{border:0,borderBottom:`3px solid ${activeTab===id?"#4F46E5":"transparent"}`,background:"transparent",color:activeTab===id?"#4338CA":"#64748B",padding:"9px 12px",fontSize:11,fontWeight:850,cursor:"pointer"}}>{label}</button>)}
-    </div>
-    {activeTab==="tickets"&&<><div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
+    </div>}
+    {(customerMode||activeTab==="tickets")&&<><div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
       <input style={{...iStyle,width:"auto",minWidth:220,flex:"1 1 220px"}} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Ticket, proje veya sorumlu ara..."/>
-      <button onClick={()=>setMineOnly(v=>!v)} style={{border:0,borderRadius:8,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:700,background:mineOnly?"#4A6CF7":"#F1F5FF",color:mineOnly?"#fff":"#64748B"}}>Ticketlarım</button>
-      <MultiChoiceFilter label="Projeler" options={state.projects.map(project=>({value:project.id,label:project.name}))} value={projectFilters} onChange={setProjectFilters}/>
+      {!customerMode&&<button onClick={()=>setMineOnly(v=>!v)} style={{border:0,borderRadius:8,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:700,background:mineOnly?"#4A6CF7":"#F1F5FF",color:mineOnly?"#fff":"#64748B"}}>Ticketlarım</button>}
+      {!customerMode&&<MultiChoiceFilter label="Projeler" options={state.projects.map(project=>({value:project.id,label:project.name}))} value={projectFilters} onChange={setProjectFilters}/>}
       <MultiChoiceFilter label="Durumlar" options={TICKET_STATUSES.map(status=>({value:status,label:status}))} value={statusFilters} onChange={setStatusFilters}/>
     </div>
     {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"#ECFDF5":"#FFF7ED",color:mailNotice.includes("gönderildi")?"#047857":"#C2410C",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(360px,100%),1fr))",gap:10}}>{[...filtered].sort((a,b)=>String(b.ticket.updatedAt||b.ticket.ts||"").localeCompare(String(a.ticket.updatedAt||a.ticket.ts||""))).map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${project?.color||"#4A6CF7"}`,borderRadius:13,padding:"14px 15px",cursor:"pointer",boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
-      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontSize:10,fontWeight:850,color:"#4338CA",background:"#EEF2FF",padding:"3px 7px",borderRadius:7}}>{ticketNumber(ticket)}</span><b style={{fontSize:13}}>{ticket.title}</b><select value={ticket.status||"Açık"} onClick={event=>event.stopPropagation()} onChange={event=>update(projectId,ticket.id,{status:event.target.value})} style={{fontSize:10,border:"1px solid #CBD5E1",borderRadius:7,padding:"3px 6px",background:"#fff"}}>{TICKET_STATUSES.map(status=><option key={status}>{status}</option>)}</select><span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span><span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
-      <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"#64748B"}}><span>Sorumlu: <b>{assignee?.name||"Atanmamış"}</b></span><span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span>{(isAdmin||ticket.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();if(confirm("Ticket silinsin mi?"))remove(projectId,ticket.id);}} style={{marginLeft:"auto",border:0,background:"transparent",color:"#E11D48",fontSize:11,fontWeight:700,cursor:"pointer"}}>Sil</button>}</div>
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontSize:10,fontWeight:850,color:"#4338CA",background:"#EEF2FF",padding:"3px 7px",borderRadius:7}}>{ticketNumber(ticket)}</span><b style={{fontSize:13}}>{ticket.title}</b>{customerMode?<span style={{fontSize:10,borderRadius:999,padding:"4px 8px",background:"#F8FAFC",color:"#475569",fontWeight:850}}>{ticket.status||"Açık"}</span>:<select value={ticket.status||"Açık"} onClick={event=>event.stopPropagation()} onChange={event=>update(projectId,ticket.id,{status:event.target.value})} style={{fontSize:10,border:"1px solid #CBD5E1",borderRadius:7,padding:"3px 6px",background:"#fff"}}>{TICKET_STATUSES.map(status=><option key={status}>{status}</option>)}</select>}<span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span><span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
+      <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"#64748B"}}><span>Sorumlu: <b>{assignee?.name||"Atanmamış"}</b></span><span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span>{!customerMode&&(isAdmin||ticket.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();if(confirm("Ticket silinsin mi?"))remove(projectId,ticket.id);}} style={{marginLeft:"auto",border:0,background:"transparent",color:"#E11D48",fontSize:11,fontWeight:700,cursor:"pointer"}}>Sil</button>}</div>
     </div>})}</div>
     {!filtered.length&&<div style={{padding:40,textAlign:"center",background:"#fff",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Filtreye uygun ticket yok.</div>}
     </>}
-    {activeTab==="recurring"&&<RecurringProblemsPanel entries={all}/>}
-    {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}><Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><TicketForm project={state.projects.find(p=>p.id===modal.projectId)} types={TYPES} prios={PRIOS} people={state.people} onClose={()=>setModal(null)} onSave={async data=>{if(!modal.projectId)return;await add(modal.projectId,data);setModal(null);}}/></Modal>}
-    {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} canEdit={isAdmin||modal.data.author===currentUser.name} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)} onResend={()=>notifyTicketAssignment(modal.projectId,((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data)}/>}
+    {!customerMode&&activeTab==="recurring"&&<RecurringProblemsPanel entries={all}/>}
+    {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}><Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><TicketForm project={state.projects.find(p=>p.id===modal.projectId)} types={TYPES} prios={PRIOS} people={state.people} customerMode={customerMode} onClose={()=>setModal(null)} onSave={async data=>{if(!modal.projectId)return;await add(modal.projectId,data);setModal(null);}}/></Modal>}
+    {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} canEdit={!customerMode&&(isAdmin||modal.data.author===currentUser.name)} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)} onResend={!customerMode?()=>notifyTicketAssignment(modal.projectId,((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data):undefined}/>}
   </div>;
 }
 
@@ -153,6 +154,7 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin })
   const [mailNotice,setMailNotice]=useState("");
   const allTickets=((state.projectTickets||{})[project.id])||[];
   const tickets=visibleTicketsForUser(allTickets,currentUser);
+  const customerMode=isCustomerUser(currentUser);
   const saveTickets=(t)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[project.id]:t}}));
   const addTicket=async(data)=>{
     const createdAt=now();
@@ -185,7 +187,7 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin })
       <Btn small onClick={()=>setModal({type:"add"})}>+ Ticket Ekle</Btn>
     </div>
     {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"#ECFDF5":"#FFF7ED",color:mailNotice.includes("gönderildi")?"#047857":"#C2410C",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
-    <RecurringProblemsPanel entries={tickets.map(ticket=>({ticket,project}))}/>
+    {!customerMode&&<RecurringProblemsPanel entries={tickets.map(ticket=>({ticket,project}))}/>}
     {tickets.length===0&&<div style={{ textAlign:"center", padding:"40px", background:"#fff", borderRadius:12, border:"1.5px dashed #E2E8F0", color:"#94A3B8" }}>Henüz ticket yok.</div>}
     <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
       {[...tickets].sort((a,b)=>String(b.updatedAt||b.ts||"").localeCompare(String(a.updatedAt||a.ts||""))).map(t=><div key={t.id} onClick={()=>setModal({type:"detail",data:t})} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:"1.5px solid #E2E8F0", display:"flex", gap:12, alignItems:"flex-start", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", cursor:"pointer" }}>
@@ -198,22 +200,23 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin })
             <span style={{ background:"#F1F5FF", color:"#4A6CF7", borderRadius:8, padding:"1px 8px", fontSize:11 }}>{t.priority}</span>
             {(t.jiraKey||t.jiraId)&&<a href={t.jiraLink||"#"} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ background:"#DEEBFF", color:"#0052CC", borderRadius:6, padding:"1px 7px", fontSize:11, fontWeight:700, textDecoration:"none" }}>{t.jiraKey||t.jiraId}</a>}
             {t.jiraStatus&&<span style={{ background:"#E8F5E9", color:"#16794A", borderRadius:6, padding:"1px 7px", fontSize:11, fontWeight:700 }}>Jira: {t.jiraStatus}</span>}
-            <select value={t.status||"Açık"} onClick={e=>e.stopPropagation()} onChange={e=>updateTicket(t.id,{status:e.target.value})} style={{ fontSize:11, borderRadius:6, border:"1px solid #E2E8F0", padding:"2px 6px", fontFamily:"inherit" }}>
+            {!customerMode&&<select value={t.status||"Açık"} onClick={e=>e.stopPropagation()} onChange={e=>updateTicket(t.id,{status:e.target.value})} style={{ fontSize:11, borderRadius:6, border:"1px solid #E2E8F0", padding:"2px 6px", fontFamily:"inherit" }}>
               {!TICKET_STATUSES.includes(t.status)&&t.status&&<option>{t.status}</option>}
               {TICKET_STATUSES.map(s=><option key={s}>{s}</option>)}
-            </select>
+            </select>}
+            {customerMode&&<span style={{fontSize:11,borderRadius:8,padding:"2px 8px",background:"#F8FAFC",color:"#475569",fontWeight:750}}>{t.status||"Açık"}</span>}
           </div>
           {t.description&&<div style={{ fontSize:12, color:"#64748B", marginBottom:4 }}>{t.description}</div>}
           <div style={{ fontSize:11, color:"#94A3B8" }}>{t.author} · {new Date(t.ts).toLocaleDateString("tr-TR")}</div>
           {t.assignedTo&&<div style={{fontSize:11,color:"#4A6CF7",marginTop:3}}>Sorumlu: {state.people.find(p=>p.id===t.assignedTo)?.name||"Atanmamış"}</div>}
         </div>
-        {(isAdmin||t.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();deleteTicket(t.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:16 }}>×</button>}
+        {!customerMode&&(isAdmin||t.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();deleteTicket(t.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:16 }}>×</button>}
       </div>)}
     </div>
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>
-      <TicketForm project={project} onSave={async d=>{await addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />
+      <TicketForm project={project} onSave={async d=>{await addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} customerMode={customerMode} />
     </Modal>}
-    {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} canEdit={isAdmin||modal.data.author===currentUser.name} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} onResend={()=>notifyTicketAssignment(project.id,tickets.find(t=>t.id===modal.data.id)||modal.data)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />}
+    {modal?.type==="detail"&&<TicketDetail ticket={tickets.find(t=>t.id===modal.data.id)||modal.data} canEdit={!customerMode&&(isAdmin||modal.data.author===currentUser.name)} onClose={()=>setModal(null)} onUpdate={(data)=>updateTicket(modal.data.id,data)} onResend={!customerMode?()=>notifyTicketAssignment(project.id,tickets.find(t=>t.id===modal.data.id)||modal.data):undefined} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} />}
   </div>;
 }
 function RecurringProblemsPanel({entries=[]}) {
@@ -236,7 +239,7 @@ function RecurringProblemsPanel({entries=[]}) {
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:9}}>{repeated.map(group=><div key={`${group.label}-${group.items.length}`} style={{background:"linear-gradient(145deg,#FFF7ED,#fff)",border:"1px solid #FED7AA",borderRadius:11,padding:"12px 13px",fontSize:10,color:"#475569"}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:12,color:"#7C2D12"}}>{group.label}</b><span style={{background:"#FFEDD5",color:"#C2410C",borderRadius:12,padding:"2px 7px",fontWeight:900}}>{group.items.length} kez</span></div><div style={{marginTop:8}}>{group.effort.toFixed(1)} saat efor · {[...group.projects].length} proje</div><span style={{display:"block",color:"#94A3B8",marginTop:4}}>{group.explicit?"Ortak problem koduyla eşleşti":"Başlık benzerliğine göre aday"}</span></div>)}</div>
   </div>;
 }
-function TicketForm({ project, onSave, onClose, types, prios, people }) {
+function TicketForm({ project, onSave, onClose, types, prios, people, customerMode=false }) {
   const [f,setF]=useState({ title:"", customer:project?.customerProfile?.name||project?.customerName||project?.name||"", module:(project?.activeModules||[])[0]||"", subModule:"", functionButton:"", pageUrl:"", type:"Görev", category:"Operasyonel", ownerTeam:"Operasyon", priority:"Orta", description:"", requestRequirements:[""], completionCriteria:[""], status:"Açık", jiraKey:"", assignedTo:"", testResult:"", recurrenceKey:"", rootCause:"", resolution:"", effortHours:"" });
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
@@ -269,21 +272,21 @@ function TicketForm({ project, onSave, onClose, types, prios, people }) {
       <Field label="Tip"><select style={iStyle} value={f.type} onChange={e=>upd("type",e.target.value)}>{types.map(t=><option key={t}>{t}</option>)}</select></Field>
       <Field label="Öncelik"><select style={iStyle} value={f.priority} onChange={e=>upd("priority",e.target.value)}>{prios.map(p=><option key={p}>{p}</option>)}</select></Field>
     </div>
-    <Field label="Durum"><select style={iStyle} value={f.status} onChange={e=>upd("status",e.target.value)}>{TICKET_STATUSES.map(s=><option key={s}>{s}</option>)}</select></Field>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
+    {!customerMode&&<Field label="Durum"><select style={iStyle} value={f.status} onChange={e=>upd("status",e.target.value)}>{TICKET_STATUSES.map(s=><option key={s}>{s}</option>)}</select></Field>}
+    <div style={{display:"grid",gridTemplateColumns:customerMode?"1fr":"1fr 1fr",gap:11}}>
       <Field label="Kategori"><select style={iStyle} value={f.category} onChange={e=>upd("category",e.target.value)}>{TICKET_CATEGORIES.map(category=><option key={category}>{category}</option>)}</select></Field>
-      <Field label="Sahip Ekip"><select style={iStyle} value={f.ownerTeam} onChange={e=>upd("ownerTeam",e.target.value)}>{["Operasyon","Ürün","Yazılım"].map(team=><option key={team}>{team}</option>)}</select></Field>
+      {!customerMode&&<Field label="Sahip Ekip"><select style={iStyle} value={f.ownerTeam} onChange={e=>upd("ownerTeam",e.target.value)}>{["Operasyon","Ürün","Yazılım"].map(team=><option key={team}>{team}</option>)}</select></Field>}
     </div>
     <Field label="Talep Açıklaması"><textarea style={{ ...iStyle, height:80, resize:"vertical" }} value={f.description} onChange={e=>upd("description",e.target.value)} /></Field>
     <StepListEditor title="Talep İsterleri" items={f.requestRequirements} onAdd={()=>addListItem("requestRequirements")} onRemove={index=>removeListItem("requestRequirements",index)} onChange={(index,value)=>updList("requestRequirements",index,value)}/>
     <StepListEditor title="Tamamlanma Kriterleri" items={f.completionCriteria} onAdd={()=>addListItem("completionCriteria")} onRemove={index=>removeListItem("completionCriteria",index)} onChange={(index,value)=>updList("completionCriteria",index,value)}/>
-    <Field label="Atanan Kullanıcı"><select style={iStyle} value={f.assignedTo} onChange={e=>upd("assignedTo",e.target.value)}><option value="">- Atanmamış -</option>{people.map(person=><option key={person.id} value={person.id}>{person.name}{person.email?` · ${person.email}`:""}</option>)}</select></Field>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
+    {!customerMode&&<Field label="Atanan Kullanıcı"><select style={iStyle} value={f.assignedTo} onChange={e=>upd("assignedTo",e.target.value)}><option value="">- Atanmamış -</option>{people.map(person=><option key={person.id} value={person.id}>{person.name}{person.email?` · ${person.email}`:""}</option>)}</select></Field>}
+    {!customerMode&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
       <Field label="Tekrar Eden Problem Kodu"><input style={iStyle} value={f.recurrenceKey} onChange={e=>upd("recurrenceKey",e.target.value)} placeholder="Örn. VPN-KOPMA"/></Field>
       <Field label="Harcanan Efor (saat)"><input type="number" min="0" step="0.25" style={iStyle} value={f.effortHours} onChange={e=>upd("effortHours",e.target.value)}/></Field>
-    </div>
-    <Field label="Jira Task Key"><input style={iStyle} value={f.jiraKey} onChange={e=>upd("jiraKey",e.target.value)} placeholder="PROJ-123" /></Field>
-    <div style={{ fontSize:11, color:"#64748B", marginBottom:11 }}>Mevcut bir Jira taskıyla ilişkilendirmek için issue key girin.</div>
+    </div>}
+    {!customerMode&&<Field label="Jira Task Key"><input style={iStyle} value={f.jiraKey} onChange={e=>upd("jiraKey",e.target.value)} placeholder="PROJ-123" /></Field>}
+    {!customerMode&&<div style={{ fontSize:11, color:"#64748B", marginBottom:11 }}>Mevcut bir Jira taskıyla ilişkilendirmek için issue key girin.</div>}
     {error&&<div style={{background:"#FFF1F2",color:"#BE123C",borderRadius:8,padding:"8px 10px",fontSize:11,fontWeight:700,marginBottom:10}}>{error}</div>}
     <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" disabled={saving} onClick={onClose}>İptal</Btn><Btn disabled={saving} onClick={submit}>{saving?"Kaydediliyor...":"Kaydet"}</Btn></div>
   </div>;
@@ -309,13 +312,14 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
   const [editing,setEditing]=useState(false);
   const [form,setForm]=useState(ticket);
   const [jira,setJira]=useState(null);
-  const [loading,setLoading]=useState(Boolean(ticket.jiraKey||ticket.jiraId));
+  const canSyncJira=Boolean(canEdit&&onUpdate);
+  const [loading,setLoading]=useState(Boolean(canSyncJira&&(ticket.jiraKey||ticket.jiraId)));
   const [error,setError]=useState("");
   const [mailStatus,setMailStatus]=useState({loading:false,message:"",error:false});
   const jiraKey=(ticket.jiraKey||ticket.jiraId||"").trim().toUpperCase();
   const upd=(k,v)=>setForm(s=>({...s,[k]:v}));
   const refreshJira=async()=>{
-    if(!jiraKey)return;
+    if(!jiraKey||!canSyncJira)return;
     setLoading(true);
     setError("");
     try{
@@ -326,7 +330,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
     finally{setLoading(false);}
   };
   useEffect(()=>{
-    if(!jiraKey)return;
+    if(!jiraKey||!canSyncJira){setLoading(false);return;}
     let active=true;
     getJiraIssue(jiraKey).then(issue=>{
       if(!active)return;
@@ -338,7 +342,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
     return()=>{active=false;};
     // onUpdate changes with parent renders; Jira should refresh only when its key changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[jiraKey]);
+  },[jiraKey,canSyncJira]);
   const save=()=>{
     const key=(form.jiraKey||form.jiraId||"").trim().toUpperCase();
     if(key!==jiraKey){setJira(null);setError("");setLoading(Boolean(key));}
@@ -397,7 +401,7 @@ function TicketDetail({ ticket, canEdit, onClose, onUpdate, onResend, types, pri
       {ticket.assignedTo&&<div style={{fontSize:12,color:"#4A6CF7",marginBottom:14}}>Atanan: <b>{people.find(person=>person.id===ticket.assignedTo)?.name||"Bilinmiyor"}</b></div>}
       {mailStatus.message&&<div style={{fontSize:11,fontWeight:700,color:mailStatus.error?"#BE123C":"#059669",background:mailStatus.error?"#FFF1F2":"#ECFDF5",borderRadius:8,padding:"8px 10px",marginBottom:12}}>{mailStatus.message}</div>}
       <div style={{border:"1.5px solid #DDE7F5",borderRadius:12,padding:14,background:"#F8FBFF",marginBottom:16}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:jiraKey?10:0}}><div style={{fontWeight:800,fontSize:13,color:"#0052CC"}}>Jira Task</div>{jiraKey&&<button onClick={refreshJira} disabled={loading} style={{border:"none",background:"none",color:"#4A6CF7",fontSize:11,cursor:"pointer"}}>{loading?"Güncelleniyor...":"Yenile"}</button>}</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:jiraKey?10:0}}><div style={{fontWeight:800,fontSize:13,color:"#0052CC"}}>Jira Task</div>{jiraKey&&canSyncJira&&<button onClick={refreshJira} disabled={loading} style={{border:"none",background:"none",color:"#4A6CF7",fontSize:11,cursor:"pointer"}}>{loading?"Güncelleniyor...":"Yenile"}</button>}</div>
         {!jiraKey&&<div style={{fontSize:12,color:"#64748B"}}>Bu ticket henüz bir Jira taskıyla ilişkilendirilmemiş.</div>}
         {jiraKey&&error&&<div style={{fontSize:11,color:"#BE123C",background:"#FFF1F2",borderRadius:7,padding:"7px 9px",marginBottom:9}}>{error} Son alınan bilgiler gösteriliyor.</div>}
         {jiraKey&&<div>

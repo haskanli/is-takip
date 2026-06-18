@@ -97,6 +97,11 @@ export const GlobalStyle = () => (
       .admin-kpi-info { position:absolute !important; right:9px !important; bottom:8px !important; width:16px !important; height:16px !important; font-size:9px !important; opacity:.72; }
       .admin-board-tools { opacity:1; }
       .admin-board-small, .admin-board-medium, .admin-board-large, .admin-board-full { grid-column:span 12; }
+      .manager-assigned-row { display:grid !important; grid-template-columns:auto minmax(0,1fr) !important; align-items:start !important; padding:12px !important; border-radius:16px !important; box-shadow:0 8px 22px rgba(15,23,42,.055); }
+      .manager-assigned-row > button { grid-column:2 !important; }
+      .manager-assigned-row > .manager-assigned-status { grid-column:1 / -1 !important; width:100% !important; margin-top:4px !important; border-radius:10px !important; padding:8px 10px !important; }
+      .manager-assigned-row > span,
+      .manager-assigned-row > div[style*="display: inline-flex"] { grid-column:1 / -1 !important; justify-self:start !important; }
     }
     @media (min-width: 761px) and (max-width: 1100px) {
       .admin-main-grid { grid-template-columns: 1fr !important; }
