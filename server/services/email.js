@@ -22,8 +22,8 @@ export const userTaskUrl = (userId, taskId = "") => {
   const { appBaseUrl } = getEmailConfig();
   if (!appBaseUrl) return "";
   const url = new URL(appBaseUrl);
+  url.pathname = "/my-tasks";
   url.searchParams.set("user", userId);
-  url.searchParams.set("view", "mytasks");
   if (taskId) url.searchParams.set("task", taskId);
   return url.toString();
 };
@@ -32,8 +32,8 @@ export const userTicketUrl = (userId, projectId, ticketId) => {
   const { appBaseUrl } = getEmailConfig();
   if (!appBaseUrl) return "";
   const url = new URL(appBaseUrl);
+  url.pathname = "/ticketlar";
   url.searchParams.set("user", userId);
-  url.searchParams.set("view", "tickets");
   url.searchParams.set("project", projectId);
   url.searchParams.set("ticket", ticketId);
   return url.toString();

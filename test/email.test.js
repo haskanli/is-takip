@@ -17,18 +17,18 @@ process.env.APP_BASE_URL = "https://corject.example.com";
 test("userTaskUrl creates a direct My Tasks link", () => {
   assert.equal(
     userTaskUrl("person-1"),
-    "https://corject.example.com/?user=person-1&view=mytasks",
+    "https://corject.example.com/my-tasks?user=person-1",
   );
   assert.equal(
     userTaskUrl("person-1", "task-1"),
-    "https://corject.example.com/?user=person-1&view=mytasks&task=task-1",
+    "https://corject.example.com/my-tasks?user=person-1&task=task-1",
   );
 });
 
 test("userTicketUrl creates a direct ticket link", () => {
   assert.equal(
     userTicketUrl("person-1", "project-1", "ticket-1"),
-    "https://corject.example.com/?user=person-1&view=tickets&project=project-1&ticket=ticket-1",
+    "https://corject.example.com/ticketlar?user=person-1&project=project-1&ticket=ticket-1",
   );
 });
 

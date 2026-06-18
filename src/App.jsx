@@ -4,6 +4,7 @@ import { assignTasksWithNotification } from "./email";
 import { apiHeaders, apiUrl, isPublicCorjectHost } from "./api";
 import { COLORS, DEFAULT_ACTION_TAGS, DEFAULT_ACTIVE_MODULES, MES_TEMPLATES, ORG_LEVELS, RESPONSIBILITY_GROUPS, WAIT, buildFromTemplate, createReadinessChecklist, load, mapsUrl, normalizeMilestone, normalizeTicketNumbers, organizationRoles, orgLevelLabel, readinessScore } from "./appData.js";
 import { CUSTOMER_VISIBLE_PROJECT_TABS, canCustomerAccessProject, isCustomerUser } from "./customerAccess.js";
+import { DEFAULT_PROJECT_TAB, pathForRouteState, routeFromLocation } from "./routing.js";
 import {
   commissioningMachines,
   fieldPlanHours,
@@ -181,12 +182,13 @@ const saveToSupabase = (state, onStatus) => {
 // ─── Log action types ───────────────────────────────────────────────────────
 
 export default function App() {
-  const deepLink=typeof window!=="undefined"?new URLSearchParams(window.location.search):null;
+  const initialRoute=useRef(typeof window!=="undefined"?routeFromLocation(window.location):routeFromLocation()).current;
+  const initialSearch=useRef(typeof window!=="undefined"?new URLSearchParams(window.location.search):new URLSearchParams()).current;
   const [state,setState]=useState(load);
-  const [view,setView]=useState(deepLink?.get("view")||"dashboard");
-  const [selProject,setSelProject]=useState(null);
+  const [view,setView]=useState(initialRoute.view||"dashboard");
+  const [selProject,setSelProject]=useState(initialRoute.selProject||null);
   const [selMilestone,setSelMilestone]=useState(null);
-  const [projectTab,setProjectTab]=useState("tasks");
+  const [projectTab,setProjectTab]=useState(initialRoute.projectTab||DEFAULT_PROJECT_TAB);
   const [modal,setModal]=useState(null);
   const [showDoneTasks,setShowDoneTasks]=useState(false);
   const [dataLoaded,setDataLoaded]=useState(false);
@@ -195,13 +197,13 @@ export default function App() {
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
   const [mobileQuick,setMobileQuick]=useState(null);
   const [mobileQuickSheet,setMobileQuickSheet]=useState(false);
-  const [adminSection,setAdminSection]=useState("overview");
+  const [adminSection,setAdminSection]=useState(initialRoute.adminSection||"overview");
   const [projectScope,setProjectScope]=useState("all");
   const [projectSearch,setProjectSearch]=useState("");
   const [projectSegment,setProjectSegment]=useState("all");
   const [projectViewMode,setProjectViewMode]=useState("cards");
   const [expandedProjectRows,setExpandedProjectRows]=useState({});
-  const [ticketMineOnly,setTicketMineOnly]=useState(false);
+  const [ticketMineOnly,setTicketMineOnly]=useState(Boolean(initialRoute.ticketMineOnly));
   const [taskToOpen,setTaskToOpen]=useState("");
   const [responsibilityFilters,setResponsibilityFilters]=useState([]);
   const [previewCustomerId,setPreviewCustomerId]=useState("");
@@ -213,7 +215,7 @@ export default function App() {
   const [loadedAuthUserId,setLoadedAuthUserId]=useState("");
   const fileRef=useRef();
   const skipNextSave=useRef(true);
-  const selectedProjectHistoryRef=useRef("");
+  const routeApplyingRef=useRef(false);
   const touchStartRef=useRef(null);
 
   // Start waking the API while Supabase restores the persisted session.
@@ -252,9 +254,9 @@ export default function App() {
     let cancelled=false;
     // Once localStorage'dan kullanici kimligini geri yukle
     try{
-      const savedUid=REQUIRE_AUTH?"":deepLink?.get("user")||localStorage.getItem("corject_uid");
+      const savedUid=REQUIRE_AUTH?"":initialSearch.get("user")||localStorage.getItem("corject_uid");
       if(savedUid) setState(s=>({...s,currentUserId:savedUid}));
-      if(!REQUIRE_AUTH&&deepLink?.get("user"))localStorage.setItem("corject_uid",deepLink.get("user"));
+      if(!REQUIRE_AUTH&&initialSearch.get("user"))localStorage.setItem("corject_uid",initialSearch.get("user"));
     }catch(e){}
     (async()=>{
       try{
@@ -266,7 +268,7 @@ export default function App() {
         skipNextSave.current=true;
         // currentUserId'yi localStorage'dan koru, Supabase'den geleni kullanma
         let savedUid="";
-        try{ savedUid=REQUIRE_AUTH?"":deepLink?.get("user")||localStorage.getItem("corject_uid")||""; }catch(e){}
+        try{ savedUid=REQUIRE_AUTH?"":initialSearch.get("user")||localStorage.getItem("corject_uid")||""; }catch(e){}
         setState(s=>({ ...remote, currentUserId:savedUid||s.currentUserId }));
         setLoadedAuthUserId(authSession?.user?.id||"legacy");
         setDataLoaded(true);
@@ -360,24 +362,30 @@ export default function App() {
 
   useEffect(()=>{
     if(typeof window==="undefined")return;
-    if(selProject&&selectedProjectHistoryRef.current!==selProject){
-      selectedProjectHistoryRef.current=selProject;
-      window.history.pushState({corjectProject:selProject},"",window.location.href);
-    }
-    if(!selProject)selectedProjectHistoryRef.current="";
-  },[selProject]);
-
-  useEffect(()=>{
-    if(typeof window==="undefined")return;
     const onPopState=()=>{
-      if(selProject){
-        setSelProject(null);
-        setSelMilestone(null);
-      }
+      const next=routeFromLocation(window.location);
+      routeApplyingRef.current=true;
+      setView(next.view||"dashboard");
+      setSelProject(next.selProject||null);
+      setSelMilestone(null);
+      setProjectTab(next.projectTab||DEFAULT_PROJECT_TAB);
+      setAdminSection(next.adminSection||"overview");
+      setTicketMineOnly(Boolean(next.ticketMineOnly));
     };
     window.addEventListener("popstate",onPopState);
     return ()=>window.removeEventListener("popstate",onPopState);
-  },[selProject]);
+  },[]);
+
+  useEffect(()=>{
+    if(typeof window==="undefined")return;
+    const nextPath=pathForRouteState({view,selProject,projectTab,adminSection,ticketMineOnly});
+    const currentPath=`${window.location.pathname}${window.location.search}`;
+    const applying=routeApplyingRef.current;
+    routeApplyingRef.current=false;
+    if(currentPath===nextPath)return;
+    const method=applying?"replaceState":"pushState";
+    window.history[method]({corjectRoute:true},"",nextPath);
+  },[view,selProject,projectTab,adminSection,ticketMineOnly]);
 
   const addLog=(user,action,detail,project,milestone)=>{
     setState(s=>({...s,logs:[{id:uid(),ts:now(),user,userId:s.currentUserId,action,detail,project:project||"",milestone:milestone||""},...s.logs]}));
