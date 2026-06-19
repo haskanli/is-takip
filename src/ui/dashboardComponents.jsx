@@ -98,7 +98,7 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 16 }}>
         {[
           ["Genel İlerleme", `%${averageProgress}`, `${doneTasks}/${totalTasks} görev tamamlandı`, "#4A6CF7"],
-          ["Başlangıç Sağlığı", averageReadiness ? `%${averageReadiness}` : "-", "Hazırlık skoru", "#059669"],
+          ["Proje Sağlığı", averageReadiness ? `%${averageReadiness}` : "-", "Hazırlık skoru", "#059669"],
           ["Açık Ticket", openTickets, `${totalTickets} görünür ticket`, "#EA6C00"],
           ["Geciken İş", totalOverdue, "Müşteri görünür plan", "#E11D48"],
         ].map(([label, value, desc, color]) => <div key={label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderTop: `4px solid ${color}`, borderRadius: 18, padding: 16, boxShadow: "0 10px 26px rgba(15,23,42,.05)", minWidth: 0 }}>

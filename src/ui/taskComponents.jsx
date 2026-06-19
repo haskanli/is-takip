@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Avatar, Btn, Field, Icon, Modal, iStyle } from "./primitives.jsx";
 import { PeopleMultiSelect } from "./formControls.jsx";
 import {
@@ -16,8 +16,8 @@ const defaultCreateId = () => Math.random().toString(36).slice(2, 9);
 const defaultGetTimestamp = () => new Date().toISOString();
 const defaultTodayString = () => new Date().toISOString().slice(0, 10);
 const defaultCurrentTimeString = () => new Date().toTimeString().slice(0, 5);
-const DEFAULT_WAIT_OPTIONS = ["PM", "Müşteri", "ERP", "Tedarikçi", "Teknik", "Ürün-Teknoloji", "Yönetim", "Diğer"];
-const DEFAULT_RESPONSIBILITY_GROUPS = ["Proje Ekibi", "Ürün Ekibi", "Yazılım Ekibi", "Müşteri", "Tedarikçi", "Diğer"];
+const DEFAULT_WAIT_OPTIONS = ["PM", "MÃ¼ÅŸteri", "ERP", "TedarikÃ§i", "Teknik", "ÃœrÃ¼n-Teknoloji", "YÃ¶netim", "DiÄŸer"];
+const DEFAULT_RESPONSIBILITY_GROUPS = ["Proje Ekibi", "ÃœrÃ¼n Ekibi", "YazÄ±lÄ±m Ekibi", "MÃ¼ÅŸteri", "TedarikÃ§i", "DiÄŸer"];
 
 export function TaskCard({
   task,
@@ -37,7 +37,7 @@ export function TaskCard({
 }) {
   const assignee = people.find((person) => person.id === task.assignee);
   const delayLevel = delayLvl(task.dueDate, task.status);
-  const isDone = task.status === "Tamamlandı";
+  const isDone = task.status === "TamamlandÄ±";
 
   return (
     <div
@@ -75,7 +75,7 @@ export function TaskCard({
             fontSize: 12,
           }}
         >
-          {isDone ? "✓" : "○"}
+          {isDone ? "âœ“" : "â—‹"}
         </span>
       )}
 
@@ -118,7 +118,7 @@ export function TaskCard({
           )}
           {task.startDate && (
             <span style={{ fontSize: 11, color: "#94A3B8" }}>
-              Başl: {formatDate(task.startDate)}
+              BaÅŸl: {formatDate(task.startDate)}
               {task.startTime ? ` ${task.startTime}` : ""}
             </span>
           )}
@@ -220,7 +220,7 @@ export function TaskCard({
         {(task.waitingHistory || []).length > 0 && (
           <details style={{ marginTop: 7 }}>
             <summary style={{ fontSize: 10, color: "#64748B", cursor: "pointer", fontWeight: 700 }}>
-              Bekleme geçmişi ({task.waitingHistory.length})
+              Bekleme geÃ§miÅŸi ({task.waitingHistory.length})
             </summary>
             <div style={{ display: "grid", gap: 4, marginTop: 6 }}>
               {task.waitingHistory
@@ -237,7 +237,7 @@ export function TaskCard({
                       padding: "6px 8px",
                     }}
                   >
-                    <b>{entry.source}</b> · {entry.reason} · {formatFullDate(entry.startAt)} -{" "}
+                    <b>{entry.source}</b> Â· {entry.reason} Â· {formatFullDate(entry.startAt)} -{" "}
                     {entry.endAt ? formatFullDate(entry.endAt) : "Devam ediyor"}
                   </div>
                 ))}
@@ -287,6 +287,7 @@ export function TaskModal({
   people,
   waitOptions = DEFAULT_WAIT_OPTIONS,
   responsibilityGroups = DEFAULT_RESPONSIBILITY_GROUPS,
+  milestone = null,
 }) {
   const [form, setForm] = useState({
     title: "",
@@ -304,6 +305,7 @@ export function TaskModal({
     ...initial,
   });
   const update = (key, value) => setForm((state) => ({ ...state, [key]: value }));
+  const exceedsMilestoneDue = Boolean(form.dueDate && milestone?.dueDate && new Date(form.dueDate) > new Date(milestone.dueDate));
 
   const save = () => {
     if (!form.title.trim()) return;
@@ -313,7 +315,7 @@ export function TaskModal({
 
   return (
     <Modal title={title} onClose={onClose}>
-      <Field label="Görev Başlığı *">
+      <Field label="GÃ¶rev BaÅŸlÄ±ÄŸÄ± *">
         <input style={iStyle} value={form.title} onChange={(event) => update("title", event.target.value)} />
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
@@ -324,7 +326,7 @@ export function TaskModal({
             ))}
           </select>
         </Field>
-        <Field label="Öncelik">
+        <Field label="Ã–ncelik">
           <select style={iStyle} value={form.priority} onChange={(event) => update("priority", event.target.value)}>
             {PRIORITIES.map((priority) => (
               <option key={priority}>{priority}</option>
@@ -333,9 +335,9 @@ export function TaskModal({
         </Field>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
-        <Field label="Sorumlu Kişi">
+        <Field label="Sorumlu KiÅŸi">
           <select style={iStyle} value={form.assignee} onChange={(event) => update("assignee", event.target.value)}>
-            <option value="">- Seç -</option>
+            <option value="">- SeÃ§ -</option>
             {people.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.name}
@@ -363,26 +365,30 @@ export function TaskModal({
           style={iStyle}
           value={form.estimatedHours || ""}
           onChange={(event) => update("estimatedHours", event.target.value)}
-          placeholder="Örn. 8"
+          placeholder="Ã–rn. 8"
         />
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
-        <Field label="Hedef Başlangıç">
+        <Field label="Hedef BaÅŸlangÄ±Ã§">
           <input type="date" style={iStyle} value={form.startDate || ""} onChange={(event) => update("startDate", event.target.value)} />
         </Field>
-        <Field label="Başlangıç Saati">
+        <Field label="BaÅŸlangÄ±Ã§ Saati">
           <input type="time" style={iStyle} value={form.startTime || ""} onChange={(event) => update("startTime", event.target.value)} />
         </Field>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
-        <Field label="Hedef Bitiş">
+        <Field label="Hedef BitiÅŸ">
           <input type="date" style={iStyle} value={form.dueDate} onChange={(event) => update("dueDate", event.target.value)} />
         </Field>
         <Field label="Hedef Saat">
           <input type="time" style={iStyle} value={form.dueTime || ""} onChange={(event) => update("dueTime", event.target.value)} />
         </Field>
       </div>
-      <Field label="Bekleme Kaynağı">
+      {exceedsMilestoneDue && (
+        <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", color: "#9A3412", borderRadius: 10, padding: "8px 10px", fontSize: 11, fontWeight: 700, marginBottom: 13 }}>
+          Uyarı: görev termini milestone termininden ileri. Milestone termini: {milestone.dueDate}
+        </div>
+      )}      <Field label="Bekleme KaynaÄŸÄ±">
         <select style={iStyle} value={form.waitSource} onChange={(event) => update("waitSource", event.target.value)}>
           <option value="">- Yok -</option>
           {waitOptions.map((source) => (
@@ -413,7 +419,7 @@ export function TaskModal({
       </Field>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 7 }}>
         <Btn variant="ghost" onClick={onClose}>
-          İptal
+          Ä°ptal
         </Btn>
         <Btn onClick={save}>Kaydet</Btn>
       </div>
@@ -433,6 +439,7 @@ export function PersonalTaskModal({
   waitOptions = DEFAULT_WAIT_OPTIONS,
   todayString = defaultTodayString,
   currentTimeString = defaultCurrentTimeString,
+  lockStartAt = false,
 }) {
   const editing = Boolean(initial?.id);
   const [form, setForm] = useState({
@@ -462,11 +469,11 @@ export function PersonalTaskModal({
   const save = async () => {
     if (!form.title.trim()) return;
     if (isAdmin && !editing && !form.assigneeIds.length) {
-      setError("En az bir kişi seçmelisiniz.");
+      setError("En az bir kiÅŸi seÃ§melisiniz.");
       return;
     }
     if (form.recurring && !form.nextRunDate) {
-      setError("Periyodik görev için ilk tekrar tarihini seçmelisiniz.");
+      setError("Periyodik gÃ¶rev iÃ§in ilk tekrar tarihini seÃ§melisiniz.");
       return;
     }
     setSaving(true);
@@ -482,7 +489,7 @@ export function PersonalTaskModal({
       });
       onClose();
     } catch (errorValue) {
-      setError(errorValue.message || "Görev kaydedilemedi.");
+      setError(errorValue.message || "GÃ¶rev kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -490,12 +497,12 @@ export function PersonalTaskModal({
 
   return (
     <Modal title={title} onClose={onClose}>
-      <Field label="Görev Başlığı *">
+      <Field label="GÃ¶rev BaÅŸlÄ±ÄŸÄ± *">
         <input style={iStyle} value={form.title} onChange={(event) => update("title", event.target.value)} />
       </Field>
-      <Field label="İlişkili Proje">
+      <Field label="Ä°liÅŸkili Proje">
         <select style={iStyle} value={form.projectId || ""} onChange={(event) => update("projectId", event.target.value)}>
-          <option value="">- Projesiz / Genel iş -</option>
+          <option value="">- Projesiz / Genel iÅŸ -</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}
@@ -511,7 +518,7 @@ export function PersonalTaskModal({
             ))}
           </select>
         </Field>
-        <Field label="Öncelik">
+        <Field label="Ã–ncelik">
           <select style={iStyle} value={form.priority} onChange={(event) => update("priority", event.target.value)}>
             {PRIORITIES.map((priority) => (
               <option key={priority}>{priority}</option>
@@ -522,9 +529,9 @@ export function PersonalTaskModal({
 
       {isAdmin ? (
         editing ? (
-          <Field label="Atanan Kişi">
+          <Field label="Atanan KiÅŸi">
             <select style={iStyle} value={form.assignee} onChange={(event) => update("assignee", event.target.value)}>
-              <option value="">- Seç -</option>
+              <option value="">- SeÃ§ -</option>
               {people.map((person) => (
                 <option key={person.id} value={person.id}>
                   {person.name}
@@ -533,7 +540,7 @@ export function PersonalTaskModal({
             </select>
           </Field>
         ) : (
-          <Field label="Atanacak Kişiler *">
+          <Field label="Atanacak KiÅŸiler *">
             <PeopleMultiSelect people={people} value={form.assigneeIds} onChange={(value) => update("assigneeIds", value)} />
           </Field>
         )
@@ -548,12 +555,12 @@ export function PersonalTaskModal({
             color: "#4A6CF7",
           }}
         >
-          Görev size atanacak: <b>{currentUser.name}</b>
+          GÃ¶rev size atanacak: <b>{currentUser.name}</b>
         </div>
       )}
 
       {isAdmin && !editing && (
-        <Field label="Destek Sorumluları">
+        <Field label="Destek SorumlularÄ±">
           <PeopleMultiSelect
             people={people.filter((person) => !form.assigneeIds.includes(person.id))}
             value={form.supportAssigneeIds}
@@ -570,26 +577,27 @@ export function PersonalTaskModal({
           style={iStyle}
           value={form.estimatedHours || ""}
           onChange={(event) => update("estimatedHours", event.target.value)}
-          placeholder="Örn. 4"
+          placeholder="Ã–rn. 4"
         />
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
-        <Field label="Hedef Başlangıç">
-          <input type="date" style={iStyle} value={form.startDate || ""} onChange={(event) => update("startDate", event.target.value)} />
+        <Field label="Hedef BaÅŸlangÄ±Ã§">
+          <input type="date" disabled={lockStartAt && !editing} style={{ ...iStyle, background: lockStartAt && !editing ? "#F1F5F9" : iStyle.background }} value={form.startDate || ""} onChange={(event) => update("startDate", event.target.value)} />
         </Field>
-        <Field label="Başlangıç Saati">
-          <input type="time" style={iStyle} value={form.startTime || ""} onChange={(event) => update("startTime", event.target.value)} />
+        <Field label="BaÅŸlangÄ±Ã§ Saati">
+          <input type="time" disabled={lockStartAt && !editing} style={{ ...iStyle, background: lockStartAt && !editing ? "#F1F5F9" : iStyle.background }} value={form.startTime || ""} onChange={(event) => update("startTime", event.target.value)} />
         </Field>
       </div>
+      {lockStartAt && !editing && <div style={{ fontSize: 10, color: "#64748B", margin: "-6px 0 10px" }}>Yönetici atamalarında başlangıç tarih ve saati atama anı olarak kilitlenir.</div>}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
-        <Field label="Hedef Bitiş">
+        <Field label="Hedef BitiÅŸ">
           <input type="date" style={iStyle} value={form.dueDate} onChange={(event) => update("dueDate", event.target.value)} />
         </Field>
         <Field label="Hedef Saat">
           <input type="time" style={iStyle} value={form.dueTime || ""} onChange={(event) => update("dueTime", event.target.value)} />
         </Field>
       </div>
-      <Field label="Bekleme Kaynağı">
+      <Field label="Bekleme KaynaÄŸÄ±">
         <select style={iStyle} value={form.waitSource} onChange={(event) => update("waitSource", event.target.value)}>
           <option value="">- Yok -</option>
           {waitOptions.map((source) => (
@@ -605,18 +613,18 @@ export function PersonalTaskModal({
         <div style={{ background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 10, padding: 12, marginBottom: 13 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             <input type="checkbox" checked={form.recurring} onChange={(event) => update("recurring", event.target.checked)} /> Periyodik
-            takip görevi
+            takip gÃ¶revi
           </label>
           {form.recurring && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9, marginTop: 11 }}>
-              <Field label="Sıklık">
+              <Field label="SÄ±klÄ±k">
                 <select style={iStyle} value={form.frequency} onChange={(event) => update("frequency", event.target.value)}>
-                  <option value="daily">Her gün</option>
+                  <option value="daily">Her gÃ¼n</option>
                   <option value="weekly">Her hafta</option>
                   <option value="monthly">Her ay</option>
                 </select>
               </Field>
-              <Field label="İlk Tekrar Tarihi">
+              <Field label="Ä°lk Tekrar Tarihi">
                 <input type="date" style={iStyle} value={form.nextRunDate} onChange={(event) => update("nextRunDate", event.target.value)} />
               </Field>
             </div>
@@ -627,7 +635,7 @@ export function PersonalTaskModal({
       {error && <div style={{ color: "#DC2626", fontSize: 12, fontWeight: 600, marginBottom: 10 }}>{error}</div>}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 7 }}>
         <Btn variant="ghost" onClick={onClose}>
-          İptal
+          Ä°ptal
         </Btn>
         <Btn disabled={saving} onClick={save}>
           {saving ? "Kaydediliyor..." : "Kaydet"}
@@ -671,17 +679,17 @@ export function TaskDetailModal({
   };
 
   return (
-    <Modal title="Görev Detayı" onClose={onClose} wide>
+    <Modal title="GÃ¶rev DetayÄ±" onClose={onClose} wide>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 15, flexWrap: "wrap" }}>
         <div style={{ minWidth: 0, flex: "1 1 260px" }}>
           <h2 style={{ fontSize: 18, margin: "0 0 5px", lineHeight: 1.25, wordBreak: "break-word", overflowWrap: "anywhere" }}>
             {task.title}
           </h2>
           <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.4, wordBreak: "break-word", overflowWrap: "anywhere" }}>
-            {assignee?.name || "Atanmamış"}
-            {linkedProjectName ? ` · ${linkedProjectName}` : ""} · Termin: {formatDate(task.dueDate) || "Belirtilmedi"}
+            {assignee?.name || "AtanmamÄ±ÅŸ"}
+            {linkedProjectName ? ` Â· ${linkedProjectName}` : ""} Â· Termin: {formatDate(task.dueDate) || "Belirtilmedi"}
             {task.dueTime ? ` ${task.dueTime}` : ""}
-            {task.firstSeenAt ? ` · İlk bakış: ${new Date(task.firstSeenAt).toLocaleString("tr-TR")}` : ""}
+            {task.firstSeenAt ? ` Â· Ä°lk bakÄ±ÅŸ: ${new Date(task.firstSeenAt).toLocaleString("tr-TR")}` : ""}
           </div>
         </div>
         {task.assignmentRole && (
@@ -728,21 +736,21 @@ export function TaskDetailModal({
           <div key={item.id} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: "10px 12px", minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 10, color: "#64748B", marginBottom: 4, flexWrap: "wrap" }}>
               <b style={{ color: "#334155", wordBreak: "break-word", overflowWrap: "anywhere" }}>
-                {item.userName || people.find((person) => person.id === item.userId)?.name || "Kullanıcı"}
+                {item.userName || people.find((person) => person.id === item.userId)?.name || "KullanÄ±cÄ±"}
               </b>
               <span>{item.ts ? new Date(item.ts).toLocaleString("tr-TR") : ""}</span>
             </div>
             <div style={{ fontSize: 12, lineHeight: 1.5, wordBreak: "break-word", overflowWrap: "anywhere" }}>{item.text}</div>
           </div>
         ))}
-        {!comments.length && <div style={{ fontSize: 12, color: "#94A3B8" }}>Henüz yorum eklenmedi.</div>}
+        {!comments.length && <div style={{ fontSize: 12, color: "#94A3B8" }}>HenÃ¼z yorum eklenmedi.</div>}
       </div>
 
       <textarea
         style={{ ...iStyle, minHeight: 80, resize: "vertical" }}
         value={comment}
         onChange={(event) => setComment(event.target.value)}
-        placeholder="Bu görevle ilgili yorumunuzu yazın..."
+        placeholder="Bu gÃ¶revle ilgili yorumunuzu yazÄ±n..."
       />
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 7, marginTop: 9 }}>
         <Btn variant="ghost" onClick={onClose}>
@@ -773,7 +781,7 @@ export function TimeLogModal({
   const add = () => {
     const parsedHours = parseFloat(hours);
     if (!parsedHours || parsedHours <= 0) {
-      alert("Geçerli saat girin.");
+      alert("GeÃ§erli saat girin.");
       return;
     }
     onSave([
@@ -795,7 +803,7 @@ export function TimeLogModal({
   const remove = (id) => onSave(entries.filter((entry) => entry.id !== id));
 
   return (
-    <Modal title={`Süre Girişi — ${task.title}`} onClose={onClose} wide>
+    <Modal title={`SÃ¼re GiriÅŸi â€” ${task.title}`} onClose={onClose} wide>
       <div
         style={{
           background: "#F5F3FF",
@@ -832,17 +840,17 @@ export function TimeLogModal({
         </Field>
       </div>
 
-      <Field label="Açıklama">
+      <Field label="AÃ§Ä±klama">
         <input
           style={iStyle}
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          placeholder="Ne yapıldı?"
+          placeholder="Ne yapÄ±ldÄ±?"
         />
       </Field>
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 18 }}>
-        <Btn onClick={add}>+ Süre Ekle</Btn>
+        <Btn onClick={add}>+ SÃ¼re Ekle</Btn>
       </div>
 
       {entries.length > 0 && (
@@ -857,7 +865,7 @@ export function TimeLogModal({
               marginBottom: 8,
             }}
           >
-            Kayıtlar ({entries.length})
+            KayÄ±tlar ({entries.length})
           </div>
           {entries
             .slice()
@@ -878,9 +886,9 @@ export function TimeLogModal({
               >
                 <span style={{ fontWeight: 800, fontSize: 14, color: "#7C3AED", minWidth: 55 }}>{entry.hours} sa</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "#1E293B" }}>{entry.note || "—"}</div>
+                  <div style={{ fontSize: 12, color: "#1E293B" }}>{entry.note || "â€”"}</div>
                   <div style={{ fontSize: 10, color: "#94A3B8" }}>
-                    {entry.user} · {formatDate(entry.date)}
+                    {entry.user} Â· {formatDate(entry.date)}
                   </div>
                 </div>
                 <button
@@ -896,3 +904,4 @@ export function TimeLogModal({
     </Modal>
   );
 }
+

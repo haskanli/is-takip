@@ -63,6 +63,11 @@ export function MilestoneTaskPanel({
           )}
         </div>
       </div>
+      {milestone.successCriteria && (
+        <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: "9px 11px", fontSize: 11, color: "#334155", marginBottom: 12, lineHeight: 1.5 }}>
+          <b>Başarı kriteri / müşteri kazancı:</b> {milestone.successCriteria}
+        </div>
+      )}
 
       {active.length === 0 && done.length === 0 && (
         <div style={{ textAlign: "center", padding: 28, color: "#94A3B8", fontSize: 12 }}>Görev yok.</div>

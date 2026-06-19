@@ -153,7 +153,7 @@ export function ProjectBusinessCard({
       {expanded && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 7, fontSize: 11 }}>
           <button onClick={onOpenSetup} style={{ border: 0, background: readiness >= Number(project.readinessThreshold || 80) ? "#ECFDF5" : "#FFF1F2", color: readiness >= Number(project.readinessThreshold || 80) ? "#047857" : "#BE123C", borderRadius: 12, padding: "5px 9px", fontSize: 11, fontWeight: 850, cursor: "pointer" }}>
-            Başlangıç: {readiness}/100
+            Proje Sağlığı: %{readiness}
           </button>
           {commissioningPercent !== null && <span style={{ background: "#ECFDF5", color: "#047857", borderRadius: 12, padding: "5px 9px", fontWeight: 850 }}>Devreye Alma: %{commissioningPercent}</span>}
           {overdueC > 0 && <span style={{ background: "#FFF7ED", color: "#EA6C00", borderRadius: 12, padding: "5px 9px", fontWeight: 850 }}>Gecikmiş: {overdueC}</span>}
@@ -242,7 +242,7 @@ export function ProjectListCard({
         </div>
         {activeMs && <div style={{ fontSize: 11, color: "#4A6CF7", marginBottom: 7, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Aktif: {activeMs.name} - {formatDate(activeMs.dueDate)}</div>}
         <div style={{ display: "flex", gap: 7, marginBottom: 8, flexWrap: "wrap" }}>
-          <span style={{ color: readiness >= Number(project.readinessThreshold || 80) ? "#047857" : "#BE123C", fontSize: 10, fontWeight: 850 }}>Başlangıç {readiness}/100</span>
+          <span style={{ color: readiness >= Number(project.readinessThreshold || 80) ? "#047857" : "#BE123C", fontSize: 10, fontWeight: 850 }}>Proje Sağlığı %{readiness}</span>
           {overdue > 0 && <span style={{ color: "#EA6C00", fontSize: 10, fontWeight: 800 }}>Gecikmiş: {overdue}</span>}
           {critical > 0 && <span style={{ color: "#E11D48", fontSize: 10, fontWeight: 800 }}>Kritik: {critical}</span>}
           {stakeholders.slice(0, 2).map((item) => <span key={item.id} style={{ fontSize: 10, color: "#64748B" }}>{item.role}: {item.person.name}</span>)}
