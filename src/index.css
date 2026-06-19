@@ -188,6 +188,54 @@ code,
   border: 1px dashed color-mix(in srgb, var(--border) 78%, var(--accent));
 }
 
+.org-person-card {
+  border: 1px solid var(--glass-border);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 82%), rgb(246 250 251 / 62%));
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 16px 34px -30px rgb(17 35 39 / 42%);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.org-person-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  box-shadow: 0 22px 46px -36px rgb(17 35 39 / 52%);
+  transform: translateY(-1px);
+}
+
+.org-level-badge {
+  color: var(--text);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background:
+    radial-gradient(circle at 18% 0%, rgb(11 138 148 / 12%), transparent 34%),
+    linear-gradient(145deg, rgb(255 255 255 / 80%), rgb(246 250 251 / 66%));
+  box-shadow: var(--shadow-soft);
+}
+
+.org-level-badge span {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.org-level-people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 7px;
+  border: 1px dashed var(--glass-border);
+  border-radius: 16px;
+  padding: 8px;
+  background: rgb(255 255 255 / 42%);
+}
+
 .ui-chip {
   display: inline-flex;
   align-items: center;
@@ -778,6 +826,24 @@ textarea:focus {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 720px) {
+  .org-level-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .org-level-people {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-assigned-row {
+    flex-wrap: wrap;
+  }
+
+  .manager-assigned-status {
+    width: 100% !important;
   }
 }
 
