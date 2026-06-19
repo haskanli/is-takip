@@ -5,14 +5,14 @@ export function Avatar({ initials, imageUrl = "", size = 28, color = "#4A6CF7" }
         width: size,
         height: size,
         borderRadius: "38%",
-        background: color + "22",
-        border: `2px solid ${color}44`,
+        background: "var(--accent-ink, #def5f8)",
+        border: "2px solid var(--glass-border, rgb(207 224 227 / 68%))",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         fontSize: size * 0.35,
         fontWeight: 700,
-        color,
+        color: color || "var(--accent, #0b8a94)",
         flexShrink: 0,
         fontFamily: "var(--font-ui, Manrope, system-ui, sans-serif)",
         overflow: "hidden",
@@ -209,19 +209,19 @@ export function Modal({ title, onClose, wide, children }) {
 
 export const iStyle = {
   width: "100%",
-  padding: "10px 12px",
+  padding: "10px 14px",
   borderRadius: 12,
-  border: "1.5px solid var(--border, #cfe0e3)",
-  fontSize: 13,
+  border: "1px solid var(--border, #cfe0e3)",
+  fontSize: 14,
   color: "var(--text, #112327)",
   outline: "none",
   boxSizing: "border-box",
   fontFamily: "inherit",
-  background: "var(--surface-soft, #f6fafb)",
+  background: "var(--surface, #ffffff)",
   boxShadow: "inset 0 1px 0 rgb(255 255 255 / 70%)",
 };
 
-export const lStyle = { fontSize: 11, fontWeight: 800, color: "var(--muted, #5b6f74)", display: "block", marginBottom: 5, letterSpacing: ".025em" };
+export const lStyle = { fontSize: 11, fontWeight: 800, color: "var(--muted, #5b6f74)", display: "block", marginBottom: 6, letterSpacing: ".025em" };
 
 export const Field = ({ label, children }) => (
   <div style={{ marginBottom: 13 }}>
@@ -232,20 +232,21 @@ export const Field = ({ label, children }) => (
 
 export const Btn = ({ children, onClick, variant = "primary", small, style: s, disabled }) => {
   const variants = {
-    primary: { background: "linear-gradient(135deg, var(--accent, #0b8a94), #08727a)", color: "#fff", boxShadow: "0 16px 32px -24px rgb(11 138 148 / 80%)" },
-    secondary: { background: "var(--accent-ink, #def5f8)", color: "var(--accent, #0b8a94)" },
-    danger: { background: "#fff3f0", color: "var(--danger, #b93f33)" },
+    primary: { background: "var(--accent, #0b8a94)", color: "#fff", boxShadow: "var(--shadow-soft, 0 18px 40px -26px rgb(17 35 39 / 34%))" },
+    secondary: { background: "var(--surface, #ffffff)", color: "var(--text, #112327)", borderColor: "var(--border, #cfe0e3)" },
+    danger: { background: "color-mix(in srgb, var(--danger, #b93f33) 10%, white)", color: "var(--danger, #b93f33)" },
     ghost: { background: "transparent", color: "var(--muted, #5b6f74)" },
-    warning: { background: "#fff7e8", color: "var(--warning, #bf7a12)" },
-    success: { background: "#eaf7f1", color: "var(--success, #19835c)" },
+    warning: { background: "color-mix(in srgb, var(--warning, #bf7a12) 12%, white)", color: "var(--warning, #bf7a12)" },
+    success: { background: "color-mix(in srgb, var(--success, #19835c) 11%, white)", color: "var(--success, #19835c)" },
   };
 
   return (
     <button
+      className="btn-base"
       disabled={disabled}
       style={{
         borderRadius: 12,
-        border: variant === "ghost" ? "1px solid transparent" : "1px solid rgb(255 255 255 / 24%)",
+        border: variant === "ghost" ? "1px solid transparent" : "1px solid var(--border, #cfe0e3)",
         cursor: disabled ? "default" : "pointer",
         fontWeight: 600,
         fontSize: small ? 12 : 13,
@@ -253,7 +254,6 @@ export const Btn = ({ children, onClick, variant = "primary", small, style: s, d
         fontFamily: "inherit",
         opacity: disabled ? 0.5 : 1,
         minHeight: small ? 34 : 42,
-        transition: "transform .18s ease, box-shadow .18s ease, background .18s ease",
         ...variants[variant],
         ...s,
       }}

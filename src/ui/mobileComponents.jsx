@@ -76,11 +76,11 @@ export function QuickActionModal({ projects, onClose, onSave, actionTags = DEFAU
 
 export function MobileFeedCard({ title, actionLabel, onAction, children }) {
   return (
-    <section style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 20, padding: 14, marginBottom: 12, boxShadow: "0 8px 24px rgba(15,23,42,.05)" }}>
+    <section className="liquid-card" style={{ borderRadius: 20, padding: 14, marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 9 }}>
         <h3 style={{ margin: 0, fontSize: 14 }}>{title}</h3>
         {actionLabel && (
-          <button onClick={onAction} style={{ border: 0, background: "#EEF2FF", color: "#4338CA", borderRadius: 10, padding: "6px 9px", fontSize: 10, fontWeight: 900, cursor: "pointer" }}>
+          <button className="btn-base" onClick={onAction} style={{ border: "1px solid var(--border, #cfe0e3)", background: "var(--surface, #ffffff)", color: "var(--accent, #0b8a94)", borderRadius: 10, padding: "6px 9px", fontSize: 10, fontWeight: 900, cursor: "pointer" }}>
             {actionLabel}
           </button>
         )}
@@ -92,20 +92,20 @@ export function MobileFeedCard({ title, actionLabel, onAction, children }) {
 
 export function MobileFeedRow({ color, icon, title, meta, onClick }) {
   return (
-    <button onClick={onClick} style={{ border: 0, background: "#F8FAFC", borderRadius: 14, padding: 10, display: "flex", gap: 10, alignItems: "center", textAlign: "left", cursor: "pointer" }}>
+    <button className="btn-base" onClick={onClick} style={{ border: "1px solid var(--border, #cfe0e3)", background: "var(--surface-soft, #f6fafb)", borderRadius: 14, padding: 10, display: "flex", gap: 10, alignItems: "center", textAlign: "left", cursor: "pointer" }}>
       <span style={{ width: 34, height: 34, borderRadius: 12, background: color + "16", color, display: "grid", placeItems: "center", flexShrink: 0 }}>
         <Icon name={icon} size={16} />
       </span>
       <span style={{ minWidth: 0, flex: 1 }}>
         <b style={{ display: "block", fontSize: 12, lineHeight: 1.35, wordBreak: "break-word", overflowWrap: "anywhere" }}>{title}</b>
-        <small style={{ display: "block", fontSize: 10, color: "#94A3B8", marginTop: 2, lineHeight: 1.35, wordBreak: "break-word", overflowWrap: "anywhere" }}>{meta}</small>
+        <small style={{ display: "block", fontSize: 10, color: "var(--muted, #5b6f74)", marginTop: 2, lineHeight: 1.35, wordBreak: "break-word", overflowWrap: "anywhere" }}>{meta}</small>
       </span>
     </button>
   );
 }
 
 export function EmptyMobileRow({ text }) {
-  return <div style={{ padding: "14px 10px", fontSize: 11, color: "#94A3B8", textAlign: "center", background: "#F8FAFC", borderRadius: 14 }}>{text}</div>;
+  return <div style={{ padding: "14px 10px", fontSize: 11, color: "var(--muted, #5b6f74)", textAlign: "center", background: "var(--surface-soft, #f6fafb)", borderRadius: 14 }}>{text}</div>;
 }
 
 export function MobileQuickSheet({ onClose, onSelect, isAdminMode = false }) {
@@ -122,7 +122,7 @@ export function MobileQuickSheet({ onClose, onSelect, isAdminMode = false }) {
       ];
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 980, background: "rgb(17 35 39 / 42%)", backdropFilter: "blur(8px)", display: "flex", alignItems: "flex-end", padding: 12 }}>
+    <div className="modal-scrim" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 980, display: "flex", alignItems: "flex-end", padding: 12 }}>
       <div className="glass-surface" onClick={(event) => event.stopPropagation()} style={{ width: "100%", borderRadius: 28, padding: 16, boxShadow: "0 -22px 62px -36px rgb(17 35 39 / 64%)" }}>
         <div style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", margin: "0 auto 14px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -130,7 +130,7 @@ export function MobileQuickSheet({ onClose, onSelect, isAdminMode = false }) {
             <b style={{ fontSize: 16 }}>Hızlı Ekle</b>
             <div style={{ fontSize: 11, color: "#64748B", marginTop: 3 }}>Ne eklemek istiyorsun?</div>
           </div>
-          <button onClick={onClose} style={{ border: 0, background: "#F1F5F9", borderRadius: 12, width: 34, height: 34, cursor: "pointer" }}>×</button>
+          <button className="btn-base" onClick={onClose} style={{ border: "1px solid var(--border, #cfe0e3)", background: "var(--surface, #ffffff)", color: "var(--muted, #5b6f74)", borderRadius: 12, width: 34, height: 34, cursor: "pointer" }}>×</button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
           {options.map(([id, icon, title, desc, color]) => (
