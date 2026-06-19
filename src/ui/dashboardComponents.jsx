@@ -70,7 +70,7 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
     : 0;
 
   if (!projectSummaries.length) {
-    return <div style={{ flex: 1, overflow: "auto", padding: "clamp(18px,4vw,34px)", background: "#F8FAFC" }}>
+    return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(18px,4vw,34px)", background: "#F8FAFC" }}>
       <div style={{ maxWidth: 920, margin: "0 auto", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 24, padding: 26, boxShadow: "0 18px 45px rgba(15,23,42,.06)" }}>
         <div style={{ width: 54, height: 54, borderRadius: 18, background: "#EEF2FF", color: "#4A6CF7", display: "grid", placeItems: "center", marginBottom: 14 }}><Icon name="projects" size={25} /></div>
         <h2 style={{ margin: 0, fontSize: 24 }}>Proje özeti hazırlanıyor</h2>
@@ -79,7 +79,7 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
     </div>;
   }
 
-  return <div style={{ flex: 1, overflow: "auto", padding: "clamp(16px,4vw,34px)", background: "linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)" }}>
+  return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(16px,4vw,34px)", background: "linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)" }}>
     <div style={{ maxWidth: 1160, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div>
@@ -203,7 +203,7 @@ export function DashboardPage({state,setState,currentUser,isAdmin,myProjects,dea
     setQuick(null);
     if(project)onOpenProject(project.id);
   };
-  return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto",background:"radial-gradient(circle at 16% 4%,rgb(11 138 148 / 10%),transparent 28%),radial-gradient(circle at 88% 0%,rgb(191 122 18 / 9%),transparent 24%)"}}>
+  return <div className="theme-work-page dashboard-theme-page" style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto",background:"radial-gradient(circle at 16% 4%,rgb(11 138 148 / 10%),transparent 28%),radial-gradient(circle at 88% 0%,rgb(191 122 18 / 9%),transparent 24%)"}}>
     <div style={{marginBottom:22}}><h2 style={{margin:0,fontSize:22}}>Merhaba, {currentUser.name}</h2><p style={{margin:"5px 0 0",color:"#64748B",fontSize:13}}>Bugün neye odaklanmak istersiniz?</p></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:12,marginBottom:18}}>
       <button className="liquid-card" onClick={()=>setQuick("todo")} style={{border:0,borderRadius:18,padding:16,textAlign:"left",cursor:"pointer",color:"var(--text, #112327)"}}><b style={{display:"block",fontSize:16,color:"var(--accent, #0b8a94)"}}>+ Hızlı To-Do</b><span style={{fontSize:11,color:"var(--muted, #5b6f74)"}}>Müşteri, termin ve aksiyonu hemen kaydet</span></button>
@@ -266,7 +266,7 @@ export function MobileHomePage({state,setState,currentUser,myProjects,deadlineWa
     {id:"ai",label:"AI",value:"",color:"var(--accent, #0b8a94)",icon:"activity",action:()=>onNavigate("ai")},
     {id:"modules",label:"Modüller",value:"",color:"var(--chart-5, #5b6f74)",icon:"reports",action:()=>onNavigate("reports")},
   ];
-  return <div style={{minHeight:"100%",background:"radial-gradient(circle at 14% -12%, rgb(11 138 148 / 14%), transparent 34%), radial-gradient(circle at 96% -6%, rgb(191 122 18 / 10%), transparent 30%), var(--bg, #f1f5f6)",padding:"12px 13px 92px",overflow:"auto"}}>
+  return <div className="theme-work-page mobile-dashboard-theme-page" style={{minHeight:"100%",background:"radial-gradient(circle at 14% -12%, rgb(11 138 148 / 14%), transparent 34%), radial-gradient(circle at 96% -6%, rgb(191 122 18 / 10%), transparent 30%), var(--bg, #f1f5f6)",padding:"12px 13px 92px",overflow:"auto"}}>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:9,padding:"4px 0 14px"}}>
       {storyItems.map(item=><button className="liquid-card" key={item.id} onClick={item.action} style={{borderRadius:18,padding:"10px 7px",cursor:"pointer",textAlign:"center",minWidth:0}}>
         <span style={{width:46,height:42,borderRadius:14,display:"grid",placeItems:"center",margin:"0 auto 7px",background:"var(--surface-soft, #f6fafb)",border:"1px solid var(--border, #cfe0e3)",color:item.color,position:"relative"}}>
