@@ -3,7 +3,7 @@ import { getJiraIssue } from "../jira";
 import { createTicketWithNotification, notifyTicketAssignment } from "../email";
 import { DEFAULT_ACTIVE_MODULES } from "../appData.js";
 import { isCustomerUser, visibleTicketsForUser } from "../customerAccess.js";
-import { nextTicketNumber, ticketNumber } from "../domain/projectHelpers.js";
+import { nextTicketNumber, projectResponsibleIds, ticketNumber } from "../domain/projectHelpers.js";
 import { MultiChoiceFilter } from "./formControls.jsx";
 import { Btn, Field, Icon, Modal, iStyle } from "./primitives.jsx";
 import { daysDiff } from "./status.jsx";
@@ -109,7 +109,7 @@ export function TicketsPage({
     const createdAt=now();
     const project=customerProjectList.find(item=>item.id===projectId)||state.projects.find(item=>item.id===projectId);
     const customerTicket=customerMode;
-    const pmIds=[...(project?.pmIds||[]),project?.pm].filter(Boolean);
+    const pmIds=projectResponsibleIds(project);
     const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?projectId:data.customerId||project?.customerId||projectId||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data,assignedTo:customerTicket?(pmIds[0]||""):data.assignedTo||""};
     save(projectId,[...((state.projectTickets||{})[projectId]||[]),ticket]);
     if(customerTicket){
@@ -169,7 +169,7 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin, c
   const addTicket=async(data)=>{
     const createdAt=now();
     const customerTicket=customerMode;
-    const pmIds=[...(project.pmIds||[]),project.pm].filter(Boolean);
+    const pmIds=projectResponsibleIds(project);
     const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?project.id:data.customerId||project.customerId||project.id||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data,assignedTo:customerTicket?(pmIds[0]||""):data.assignedTo||""};
     saveTickets([...allTickets,ticket]);
     if(customerTicket){

@@ -53,6 +53,9 @@ const PROJECT_COLUMNS = [
   "Logo URL",
   "Kullanılan Modüller",
   "Connected Supplier",
+  "UAT Alındı",
+  "UAT / Devir Tarihi",
+  "Customer Success E-postaları",
   "Adres",
   "İlçe",
   "İl",
@@ -73,6 +76,9 @@ const PROJECT_SAMPLE = [
   "https://ornek.com/logo.png",
   "Üretim Takip, Kalite, Connected Supplier",
   "Evet",
+  "Hayır",
+  "",
+  "cs@sirket.com",
   "Organize Sanayi Bölgesi No:1",
   "Nilüfer",
   "Bursa",
@@ -105,6 +111,8 @@ function buildProjectPatch(row,currentProject,projectId) {
   });
   const activeModules = modules.length ? modules : currentProject?.activeModules || PROJECT_MODULES;
   const connectedSupplier = importBool(rowText(row,"Connected Supplier")) || activeModules.some(module=>module.toLocaleLowerCase("tr-TR").includes("connected supplier"));
+  const uatValue = rowText(row,"UAT Alındı","UAT Alindi");
+  const uatAccepted = uatValue ? importBool(uatValue) : Boolean(currentProject?.uatAccepted);
   return {
     importCode: projectCodeFromRow(row),
     name: projectNameFromRow(row),
@@ -125,6 +133,8 @@ function buildProjectPatch(row,currentProject,projectId) {
     },
     activeModules,
     connectedSupplier,
+    uatAccepted,
+    uatAcceptedAt: uatAccepted ? rowText(row,"UAT / Devir Tarihi","UAT Tarihi") || currentProject?.uatAcceptedAt || "" : currentProject?.uatAcceptedAt || "",
   };
 }
 
@@ -249,12 +259,18 @@ export function ImportCenter({state,setState,currentUser,importType: controlledI
         const target = existingByCode || existingByName;
         if(target) {
           const patch = buildProjectPatch(row,target,target.id);
-          Object.assign(target,patch,{customerProfile:{...(target.customerProfile || {}),...(patch.customerProfile || {})}});
+          const customerSuccessIds = splitList(rowText(row,"Customer Success E-postaları","Customer Success E-postalari"))
+            .map(email=>personByEmail.get(email.toLocaleLowerCase("tr-TR"))?.id)
+            .filter(Boolean);
+          Object.assign(target,patch,{customerSuccessIds:customerSuccessIds.length?customerSuccessIds:(target.customerSuccessIds || []),members:[...new Set([...(target.members || []),...customerSuccessIds])],customerProfile:{...(target.customerProfile || {}),...(patch.customerProfile || {})}});
           projectByCode.set(code,target);
           return;
         }
         const id = uid();
         const patch = buildProjectPatch(row,null,id);
+        const customerSuccessIds = splitList(rowText(row,"Customer Success E-postaları","Customer Success E-postalari"))
+          .map(email=>personByEmail.get(email.toLocaleLowerCase("tr-TR"))?.id)
+          .filter(Boolean);
         const project = {
           id,
           ...patch,
@@ -263,8 +279,9 @@ export function ImportCenter({state,setState,currentUser,importType: controlledI
           machines:[],
           commissioningTree:[],
           commissioningTracking:false,
-          members:[],
+          members:customerSuccessIds,
           pmIds:[],
+          customerSuccessIds,
           stakeholders:[],
           readinessChecklist:createReadinessChecklist(),
           readinessThreshold:80,

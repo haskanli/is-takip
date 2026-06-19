@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { projectPmIds, projectStakeholders } from "../domain/projectHelpers.js";
+import { projectResponsibleIds, projectStakeholders } from "../domain/projectHelpers.js";
 import { Field, Icon, iStyle } from "./primitives.jsx";
 import { Badge, delayLvl } from "./status.jsx";
 
@@ -58,6 +58,7 @@ export function ProjectBusinessCard({
   const accent = customer.accentColor || project.color || "#4A6CF7";
   const mapUrl = mapsUrlForLocation(location);
   const website = customer.website ? (customer.website.startsWith("http") ? customer.website : `https://${customer.website}`) : "";
+  const responsibleLabel = project.uatAccepted ? "Customer Success" : "PM";
 
   const updateCustomer = (data) => onChange({ customerProfile: { ...customer, ...data } });
   const updateLocation = (key, value) => onChange({ location: { ...location, [key]: value } });
@@ -116,7 +117,7 @@ export function ProjectBusinessCard({
               {customerName}
             </h2>
             <div style={{ marginTop: 5, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", fontSize: 10, color: "rgba(255,255,255,.82)", lineHeight: 1.35 }}>
-              {activePMs.length > 0 && <span>PM: <b style={{ color: "#fff" }}>{activePMs.map((person) => person.name).join(", ")}</b></span>}
+              {activePMs.length > 0 && <span>{responsibleLabel}: <b style={{ color: "#fff" }}>{activePMs.map((person) => person.name).join(", ")}</b></span>}
               {website && <a href={website} target="_blank" rel="noreferrer" style={{ color: "#fff", textDecoration: "none", fontWeight: 850, maxWidth: 190, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{customer.website}</a>}
               {expanded && mapUrl && <a href={mapUrl} target="_blank" rel="noreferrer" style={{ color: "#fff", textDecoration: "none", fontWeight: 850 }}>Yol tarifi</a>}
               {expanded && modules.slice(0, 5).map((module) => <span key={module}>{module}</span>)}
@@ -206,7 +207,7 @@ export function ProjectListCard({
   const progress = total ? Math.round((done / total) * 100) : 0;
   const overdue = project.milestones.reduce((sum, milestone) => sum + milestone.tasks.filter((task) => delayLvl(task.dueDate, task.status)).length, 0);
   const critical = project.milestones.reduce((sum, milestone) => sum + milestone.tasks.filter((task) => delayLvl(task.dueDate, task.status) === "critical").length, 0);
-  const pms = projectPmIds(project).map((id) => people.find((person) => person.id === id)).filter(Boolean);
+  const pms = projectResponsibleIds(project).map((id) => people.find((person) => person.id === id)).filter(Boolean);
   const stakeholders = projectStakeholders(project).map((item) => ({ ...item, person: people.find((person) => person.id === item.userId) })).filter((item) => item.person);
   const activeMs = project.milestones.find((milestone) => milestone.status !== "Tamamlandı");
   const customer = project.customerProfile || {};
@@ -214,6 +215,7 @@ export function ProjectListCard({
   const accent = customer.accentColor || project.color;
   const website = customer.website ? (customer.website.startsWith("http") ? customer.website : `https://${customer.website}`) : "";
   const readiness = readinessScoreForProject(project);
+  const responsibleLabel = project.uatAccepted ? "CS" : "PM";
 
   return (
     <div
@@ -229,7 +231,7 @@ export function ProjectListCard({
         <span style={{ minWidth: 0 }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 950, lineHeight: 1.12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#fff", textShadow: "0 2px 12px rgba(0,0,0,.75)" }}>{customerName}</h3>
           <span style={{ display: "flex", gap: 8, marginTop: 5, fontSize: 10, color: "rgba(255,255,255,.86)", overflow: "hidden" }}>
-            {pms.length > 0 && <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>PM: <b style={{ color: "#fff" }}>{pms.map((pm) => pm.name).join(", ")}</b></span>}
+            {pms.length > 0 && <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{responsibleLabel}: <b style={{ color: "#fff" }}>{pms.map((pm) => pm.name).join(", ")}</b></span>}
             {website && <a href={website} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} style={{ color: "#fff", fontWeight: 850, textDecoration: "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{customer.website}</a>}
           </span>
         </span>
@@ -242,6 +244,7 @@ export function ProjectListCard({
         </div>
         {activeMs && <div style={{ fontSize: 11, color: "#4A6CF7", marginBottom: 7, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Aktif: {activeMs.name} - {formatDate(activeMs.dueDate)}</div>}
         <div style={{ display: "flex", gap: 7, marginBottom: 8, flexWrap: "wrap" }}>
+          {project.uatAccepted && <span style={{ color: "#0369A1", fontSize: 10, fontWeight: 900 }}>UAT alındı · CS devrinde</span>}
           <span style={{ color: readiness >= Number(project.readinessThreshold || 80) ? "#047857" : "#BE123C", fontSize: 10, fontWeight: 850 }}>Proje Sağlığı %{readiness}</span>
           {overdue > 0 && <span style={{ color: "#EA6C00", fontSize: 10, fontWeight: 800 }}>Gecikmiş: {overdue}</span>}
           {critical > 0 && <span style={{ color: "#E11D48", fontSize: 10, fontWeight: 800 }}>Kritik: {critical}</span>}

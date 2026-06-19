@@ -9,7 +9,9 @@ import {
   commissioningMachines,
   fieldPlanHours,
   nextTicketNumber,
+  projectCustomerSuccessIds,
   projectPmIds,
+  projectResponsibleIds,
   projectStakeholders,
   ticketNumber,
 } from "./domain/projectHelpers.js";
@@ -569,12 +571,12 @@ export default function App() {
   const visibleProjects=customerView
     ? state.projects.filter(project=>project.id===effectiveCustomerId||project.customerId===effectiveCustomerId||canCustomerAccessProject(currentUser,project))
     : state.projects;
-  const myProjects=customerView?visibleProjects:state.projects.filter(p=>projectPmIds(p).includes(currentUser.id)||projectStakeholders(p).some(item=>item.userId===currentUser.id)||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
+  const myProjects=customerView?visibleProjects:state.projects.filter(p=>projectPmIds(p).includes(currentUser.id)||projectCustomerSuccessIds(p).includes(currentUser.id)||projectStakeholders(p).some(item=>item.userId===currentUser.id)||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
   const listedProjects=(projectScope==="mine"?myProjects:visibleProjects)
-    .filter(item=>projectSegment==="connected"?Boolean(item.connectedSupplier):projectSegment==="standard"?!item.connectedSupplier:true)
+    .filter(item=>projectSegment==="connected"?Boolean(item.connectedSupplier):projectSegment==="uat"?Boolean(item.uatAccepted):projectSegment==="standard"?!item.connectedSupplier&&!item.uatAccepted:true)
     .filter(item=>`${item.name||""} ${item.description||""} ${(item.customerProfile?.website)||""}`.toLocaleLowerCase("tr-TR").includes(projectSearch.trim().toLocaleLowerCase("tr-TR")));
   const exportListedProjects=()=>downloadXlsx([
-    ["Proje","Müşteri","Durum","PM","Başlangıç","Hedef Bitiş","İlerleme %","Görev","Geciken","Ticket","Makine","Devrede"],
+    ["Proje","Müşteri","Durum","Sorumluluk","Sorumlu","UAT / Devir","Başlangıç","Hedef Bitiş","İlerleme %","Görev","Geciken","Ticket","Makine","Devrede"],
     ...listedProjects.map(project=>{
       const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);
       const done=tasks.filter(task=>task.status==="Tamamlandı").length;
@@ -582,8 +584,8 @@ export default function App() {
       const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;
       const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];
       const commissioned=machines.filter(machine=>machine.commissioned).length;
-      const pms=projectPmIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");
-      return [project.name,project.customerProfile?.name||project.customerName||"",project.status||"",pms,project.startDate||"",project.endDate||"",progress,`${done}/${tasks.length}`,delayed,((state.projectTickets||{})[project.id]||[]).length,machines.length,commissioned];
+      const responsibles=projectResponsibleIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");
+      return [project.name,project.customerProfile?.name||project.customerName||"",project.status||"",project.uatAccepted?"Customer Success":"PM",responsibles,project.uatAcceptedAt||"",project.startDate||"",project.endDate||"",progress,`${done}/${tasks.length}`,delayed,((state.projectTickets||{})[project.id]||[]).length,machines.length,commissioned];
     })
   ],`projeler-toplu-${todayStr()}.xlsx`,"Projeler");
   const taskDeadlineWarnings=visibleProjects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectId:proj.id,projectName:proj.name,projectColor:proj.color,level:delayLvl(t.dueDate,t.status),days:daysDiff(t.dueDate)}))));
@@ -593,9 +595,9 @@ export default function App() {
   const project=state.projects.find(p=>p.id===selProject);
   const milestone=project?.milestones.find(m=>m.id===selMilestone);
   const currentMs=project?.milestones.find(m=>m.status!=="Tamamland\u0131");
-  const activePMs=project?projectPmIds(project).map(id=>state.people.find(p=>p.id===id)).filter(Boolean):[];
+  const activePMs=project?projectResponsibleIds(project).map(id=>state.people.find(p=>p.id===id)).filter(Boolean):[];
   const activeStakeholders=project?projectStakeholders(project).map(item=>({...item,person:state.people.find(p=>p.id===item.userId)})).filter(item=>item.person):[];
-  const canManageProjectActions=!customerView&&(isAdmin||(project?projectPmIds(project).includes(currentUser.id):false));
+  const canManageProjectActions=!customerView&&(isAdmin||(project?projectResponsibleIds(project).includes(currentUser.id):false));
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
   const projectTabs=[
     ["setup","projects","Proje Bilgileri"],
@@ -608,7 +610,7 @@ export default function App() {
     ["projlogs","activity","Log"],
   ].filter(([id])=>!customerView||CUSTOMER_VISIBLE_PROJECT_TABS.has(id));
 
-  const addProject=(data)=>{ const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,members:[...new Set([...(data.members||[]),...assigned])],pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));openProject(p.id,"setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
+  const addProject=(data)=>{ const assigned=[...(data.pmIds||[]),...(data.customerSuccessIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,pmIds:[],customerSuccessIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,members:[...new Set([...(data.members||[]),...assigned])],pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));openProject(p.id,"setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
   const addPerson=async(data)=>{
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
     const person={id:uid(),avatar,...data};
@@ -637,10 +639,10 @@ export default function App() {
   };
   const deletePerson=(id)=>setState(s=>({...s,
     people:s.people.filter(person=>person.id!==id).map(person=>person.managerId===id?{...person,managerId:""}:person),
-    projects:s.projects.map(p=>({...p,pm:p.pm===id?"":p.pm,pmIds:projectPmIds(p).filter(pmId=>pmId!==id),stakeholders:projectStakeholders(p).filter(item=>item.userId!==id),members:(p.members||[]).filter(memberId=>memberId!==id),milestones:p.milestones.map(ms=>({...ms,tasks:ms.tasks.map(t=>t.assignee===id?{...t,assignee:""}:t)}))})),
+    projects:s.projects.map(p=>({...p,pm:p.pm===id?"":p.pm,pmIds:projectPmIds(p).filter(pmId=>pmId!==id),customerSuccessIds:projectCustomerSuccessIds(p).filter(userId=>userId!==id),stakeholders:projectStakeholders(p).filter(item=>item.userId!==id),members:(p.members||[]).filter(memberId=>memberId!==id),milestones:p.milestones.map(ms=>({...ms,tasks:ms.tasks.map(t=>t.assignee===id?{...t,assignee:""}:t)}))})),
     personalTasks:(s.personalTasks||[]).map(t=>t.assignee===id?{...t,assignee:""}:t)
   }));
-  const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>{if(p.id!==id)return p;const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);return {...p,...data,members:[...new Set([...(p.members||[]),...assigned])],pm:data.pmIds?.[0]||""};})}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
+  const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>{if(p.id!==id)return p;const assigned=[...(data.pmIds||[]),...(data.customerSuccessIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);return {...p,...data,members:[...new Set([...(p.members||[]),...assigned])],pm:data.pmIds?.[0]||""};})}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
   const deleteProject=(id)=>{ if(!isAdmin)return; const name=state.projects.find(p=>p.id===id)?.name; setState(s=>{const projectActions={...(s.projectActions||{})};delete projectActions[id];return {...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id),projectActions};}); navigateTo("projects"); addLog(currentUser.name,"general","Proje silindi: "+name); };
   const addRisk=(data)=>{ mutProject(p=>({...p,risks:[...(p.risks||[]),{id:uid(),...data}]})); addLog(currentUser.name,"risk_add",data.title,project?.name); };
   const updateRisk=(rId,data)=>mutProject(p=>({...p,risks:(p.risks||[]).map(r=>r.id===rId?{...r,...data}:r)}));
@@ -963,7 +965,7 @@ export default function App() {
             {criticalC>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Kritik: {criticalC}</span>}
           </div>
           <div style={{ display:"flex", gap:16, fontSize:12, color:"#64748B", flexWrap:"wrap", alignItems:"center" }}>
-            {activePMs.length>0&&<span>PM: <b>{activePMs.map(p=>p.name).join(", ")}</b></span>}
+            {activePMs.length>0&&<span>{project.uatAccepted?"Customer Success":"PM"}: <b>{activePMs.map(p=>p.name).join(", ")}</b></span>}
             {activeStakeholders.map(item=><span key={item.id} style={{background:"#F8FAFC",borderRadius:7,padding:"2px 7px"}}>{item.role}: <b>{item.person.name}</b></span>)}
             {(project.customerContacts||[]).map(contact=><span key={contact.id} style={{background:"#F0F9FF",color:"#0369A1",borderRadius:7,padding:"3px 7px"}}><b>{contact.name}</b>{contact.title?` · ${contact.title}`:""}{contact.email?` · ${contact.email}`:""}{contact.phone?` · ${contact.phone}`:""}</span>)}
             <span>{fmt(project.startDate)} - {fmt(project.endDate)}</span>
@@ -1035,7 +1037,7 @@ export default function App() {
               <button onClick={()=>setProjectScope("mine")} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectScope==="mine"||!isAdmin?"#fff":"transparent",color:projectScope==="mine"||!isAdmin?"#4A6CF7":"#64748B"}}>Projelerim</button>
             </div>
             <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
-              {[["all","Tüm"],["connected","Connected Supplier"],["standard","Standart"]].map(([id,label])=><button key={id} onClick={()=>setProjectSegment(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectSegment===id?"#fff":"transparent",color:projectSegment===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
+              {[["all","Tüm"],["connected","Connected Supplier"],["uat","UAT Alınanlar"],["standard","Standart"]].map(([id,label])=><button key={id} onClick={()=>setProjectSegment(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectSegment===id?"#fff":"transparent",color:projectSegment===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
             </div>
             <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
               {[["cards","Kart"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setProjectViewMode(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectViewMode===id?"#fff":"transparent",color:projectViewMode===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
@@ -1047,7 +1049,7 @@ export default function App() {
           <div style={{ fontSize:14, fontWeight:700, marginBottom:8 }}>Proje yok</div>
           {isAdmin&&<Btn onClick={()=>setModal({type:"addProject"})}>+ Proje Oluştur</Btn>}
         </div>}
-        {projectViewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,marginBottom:14}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:980}}><thead><tr>{["Proje","Müşteri","PM","Durum","İlerleme","Görev","Gecikme","Ticket","Makine"].map(label=><th key={label} style={{padding:"11px 10px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{listedProjects.map(project=>{const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);const done=tasks.filter(task=>task.status==="Tamamlandı").length;const progress=tasks.length?Math.round(done/tasks.length*100):0;const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];const pms=projectPmIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");return <tr key={project.id} onClick={()=>setExpandedProjectRows(current=>({...current,[project.id]:!current[project.id]}))} style={{borderTop:"1px solid #EEF2F7",cursor:"pointer"}}><td style={{padding:10,fontSize:12,fontWeight:850}}>{project.name}</td><td style={{padding:10,fontSize:11,color:"#64748B"}}>{project.customerProfile?.name||project.customerName||"-"}</td><td style={{padding:10,fontSize:11,color:"#475569"}}>{pms||"-"}</td><td style={{padding:10}}><Badge label={project.status}/></td><td style={{padding:10,fontSize:11,fontWeight:850,color:project.color}}>%{progress}</td><td style={{padding:10,fontSize:11}}>{done}/{tasks.length}</td><td style={{padding:10,fontSize:11,color:delayed?"#E11D48":"#64748B",fontWeight:delayed?850:600}}>{delayed}</td><td style={{padding:10,fontSize:11}}>{((state.projectTickets||{})[project.id]||[]).length}</td><td style={{padding:10,fontSize:11}}>{machines.filter(machine=>machine.commissioned).length}/{machines.length}</td></tr>;})}</tbody></table></div>}
+        {projectViewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,marginBottom:14}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:1040}}><thead><tr>{["Proje","Müşteri","Sorumluluk","Sorumlu","Durum","İlerleme","Görev","Gecikme","Ticket","Makine"].map(label=><th key={label} style={{padding:"11px 10px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{listedProjects.map(project=>{const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);const done=tasks.filter(task=>task.status==="Tamamlandı").length;const progress=tasks.length?Math.round(done/tasks.length*100):0;const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];const responsibles=projectResponsibleIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");return <tr key={project.id} onClick={()=>setExpandedProjectRows(current=>({...current,[project.id]:!current[project.id]}))} style={{borderTop:"1px solid #EEF2F7",cursor:"pointer"}}><td style={{padding:10,fontSize:12,fontWeight:850}}>{project.name}</td><td style={{padding:10,fontSize:11,color:"#64748B"}}>{project.customerProfile?.name||project.customerName||"-"}</td><td style={{padding:10,fontSize:11,fontWeight:850,color:project.uatAccepted?"#0369A1":"#475569"}}>{project.uatAccepted?"Customer Success":"PM"}</td><td style={{padding:10,fontSize:11,color:"#475569"}}>{responsibles||"-"}</td><td style={{padding:10}}><Badge label={project.status}/></td><td style={{padding:10,fontSize:11,fontWeight:850,color:project.color}}>%{progress}</td><td style={{padding:10,fontSize:11}}>{done}/{tasks.length}</td><td style={{padding:10,fontSize:11,color:delayed?"#E11D48":"#64748B",fontWeight:delayed?850:600}}>{delayed}</td><td style={{padding:10,fontSize:11}}>{((state.projectTickets||{})[project.id]||[]).length}</td><td style={{padding:10,fontSize:11}}>{machines.filter(machine=>machine.commissioned).length}/{machines.length}</td></tr>;})}</tbody></table></div>}
         {projectViewMode==="list"&&listedProjects.filter(project=>expandedProjectRows[project.id]).map(project=><div key={`ms-${project.id}`} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:14,padding:12,margin:"-4px 0 14px"}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><b style={{fontSize:12}}>{project.name} · Milestonelar</b><Btn small onClick={()=>openProject(project.id,"setup")}>Projeyi Aç</Btn></div><div style={{display:"grid",gap:7}}>{project.milestones.map(milestone=>{const tasks=milestone.tasks||[];const done=tasks.filter(task=>task.status==="Tamamlandı").length;return <div key={milestone.id} style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto auto",gap:8,alignItems:"center",background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"9px 10px"}}><span style={{minWidth:0,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{milestone.name}</span><span style={{fontSize:10,color:"#64748B"}}>{done}/{tasks.length}</span><Badge label={milestone.status}/></div>;})}</div></div>)}
         <div style={{ display:projectViewMode==="cards"?"grid":"none", gridTemplateColumns:"repeat(auto-fill,minmax(265px,1fr))", gap:13 }}>
           {listedProjects.map(p=><SharedProjectListCard key={p.id} project={p} people={state.people} isAdmin={isAdmin} onOpen={()=>openProject(p.id,"setup")} onEdit={()=>setModal({type:"editProject",data:p})} onReport={()=>generateHTMLReport(p,state.people,state.logs)} onDelete={()=>confirm("Projeyi sil?")&&deleteProject(p.id)} formatDate={fmt} readinessScoreForProject={readinessScore}/>)}

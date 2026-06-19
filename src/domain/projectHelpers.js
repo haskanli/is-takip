@@ -2,6 +2,13 @@ export const projectPmIds = (project) => [
   ...new Set([...(project?.pmIds || []), project?.pm].filter(Boolean)),
 ];
 
+export const projectCustomerSuccessIds = (project) => [
+  ...new Set([...(project?.customerSuccessIds || []), project?.customerSuccessId].filter(Boolean)),
+];
+
+export const projectResponsibleIds = (project) =>
+  project?.uatAccepted ? projectCustomerSuccessIds(project) : projectPmIds(project);
+
 export const projectStakeholders = (project) => project?.stakeholders || [];
 
 export const fieldPlanHours = (plan) => {
