@@ -242,41 +242,38 @@ export function ProjectListCard({
   const responsibleLabel = project.uatAccepted ? "CS" : "PM";
   const responsibleNames = pms.map((pm) => pm.name).join(", ");
   const healthOk = readiness >= Number(project.readinessThreshold || 80);
+  const alertText = critical > 0 ? `${critical} kritik` : overdue > 0 ? `${overdue} gecikme` : "Sorun yok";
+  const alertColor = critical > 0 ? "var(--danger)" : overdue > 0 ? "var(--warning)" : "var(--muted)";
 
   return (
     <div className="project-list-card" onClick={onOpen}>
       <div className="project-list-card-header">
-        <LogoTile customer={customer} customerName={customerName} size={40} />
+        <LogoTile customer={customer} customerName={customerName} size={38} />
         <span style={{ minWidth: 0 }}>
-          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, lineHeight: 1.18, color: "var(--text)", ...textClamp }}>{customerName}</h3>
-          <span style={{ display: "block", marginTop: 4, fontSize: 10.5, color: "var(--muted)", fontWeight: 750, ...textClamp }}>
+          <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, lineHeight: 1.22, color: "var(--text)", letterSpacing: "-.015em", ...textClamp }}>{customerName}</h3>
+          <span style={{ display: "block", marginTop: 3, fontSize: 10.5, color: "var(--muted)", fontWeight: 600, ...textClamp }}>
             {responsibleNames ? `${responsibleLabel}: ${responsibleNames}` : project.name}
           </span>
         </span>
-        <span style={{ display: "grid", justifyItems: "end", gap: 2 }}>
-          <b style={{ fontSize: 18, fontWeight: 900, lineHeight: 1, color: "var(--accent)" }}>{progress}%</b>
-          <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 800 }}>ilerleme</span>
-        </span>
       </div>
-      <div style={{ padding: "12px 15px 14px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 10 }}>
-          <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 800, ...textClamp }}>{project.name}</span>
+      <div style={{ padding: "10px 14px 13px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 9 }}>
+          <span style={{ fontSize: 10.5, color: "var(--muted)", fontWeight: 650, ...textClamp }}>{project.name}</span>
           <Badge label={project.status} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center", marginBottom: 10 }}>
-          <span className={`project-metric-pill ${healthOk ? "is-good" : "is-danger"}`} style={{ justifyContent: "center", minWidth: 0 }}>
-            Sağlık %{readiness}
-          </span>
-          <span style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "flex-end", minWidth: 0 }}>
-            {project.uatAccepted && <span className="project-metric-pill">UAT</span>}
-            {critical > 0 ? <span className="project-metric-pill is-danger">{critical} kritik</span> : overdue > 0 ? <span className="project-metric-pill is-warn">{overdue} gecikme</span> : null}
-          </span>
+        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 8, alignItems: "center", marginBottom: 8, fontSize: 10.5, color: "var(--muted)", fontWeight: 650 }}>
+          <span>Sağlık <b style={{ color: healthOk ? "var(--success)" : "var(--danger)", fontWeight: 750 }}>%{readiness}</b></span>
+          <span style={{ minWidth: 0, height: 1, background: "var(--border)", opacity: .75 }} />
+          <span style={{ color: alertColor, fontWeight: critical || overdue ? 750 : 650 }}>{project.uatAccepted ? "UAT · " : ""}{alertText}</span>
         </div>
-        <div className="project-progress-track">
-          <div className="project-progress-fill" style={{ width: `${progress}%` }} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 9, alignItems: "center" }}>
+          <div className="project-progress-track">
+            <div className="project-progress-fill" style={{ width: `${progress}%` }} />
+          </div>
+          <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 760, minWidth: 34, textAlign: "right" }}>{progress}%</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10 }}>
-          <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 750 }}>{done}/{total} görev tamamlandı</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 9 }}>
+          <div style={{ fontSize: 10.5, color: "var(--muted)", fontWeight: 620 }}>{done}/{total} görev</div>
           {isAdmin && (
             <div style={{ display: "flex", gap: 5 }}>
               {[
