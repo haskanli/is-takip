@@ -6,10 +6,9 @@ export const GlobalStyle = () => (
       font-family: var(--font-ui, Manrope, Segoe UI, sans-serif);
       color: var(--text, #112327);
       background:
-        radial-gradient(circle at 14% -12%, rgb(11 138 148 / 12%), transparent 34%),
-        radial-gradient(circle at 96% -6%, rgb(191 122 18 / 8%), transparent 30%),
-        var(--scene-image, linear-gradient(180deg, rgb(7 9 14 / 38%), rgb(9 12 20 / 34%))),
-        var(--bg, #f1f5f6);
+        radial-gradient(circle at 14% -12%, rgb(11 138 148 / 10%), transparent 34%),
+        radial-gradient(circle at 96% -6%, rgb(191 122 18 / 7%), transparent 30%),
+        var(--scene-image, linear-gradient(156deg, #e9f4f8 0%, #f3f6fb 30%, #efe9e2 58%, #edf5f6 100%));
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -25,8 +24,8 @@ export const GlobalStyle = () => (
     .sidebar-nav::-webkit-scrollbar { display: none; }
     .login-users { scrollbar-width: thin; scrollbar-color: var(--muted, #5b6f74) transparent; }
     @keyframes corjectLoadingFloat {
-      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); filter: drop-shadow(0 12px 30px rgba(99,102,241,.45)); }
-      50% { transform: translateY(-7px) rotate(5deg) scale(1.05); filter: drop-shadow(0 18px 38px rgba(34,211,238,.55)); }
+      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); filter: drop-shadow(0 12px 30px rgba(11 138 148,.24)); }
+      50% { transform: translateY(-7px) rotate(5deg) scale(1.05); filter: drop-shadow(0 18px 38px rgba(191 122 18,.24)); }
     }
     .corject-loading-logo { animation: corjectLoadingFloat 1.8s ease-in-out infinite; }
     @keyframes corjectRingSweep {
@@ -166,7 +165,7 @@ export const GlobalStyle = () => (
   `}</style>
 );
 
-function LegacyAppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logoSrc=""}) {
+function LegacyAppLoadingScreen({progress=10,status="Oturum hazirlanıyor",logoSrc=""}) {
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
   const localAnimationCss = `
     @keyframes corjectRingSweep { 0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 12px rgba(37,99,235,.28)); } 55% { transform: rotate(174deg) scale(1.02); filter: drop-shadow(0 0 20px rgba(34,211,238,.38)); } 100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 14px rgba(124,58,237,.32)); } }
@@ -179,9 +178,9 @@ function LegacyAppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logo
     @keyframes corjectGlowPulse { 0%, 100% { opacity:.25; transform: scale(.9); } 50% { opacity:.6; transform: scale(1.03); } }
     @keyframes corjectDots { 0%, 80%, 100% { opacity:.25; transform: translateY(0); } 40% { opacity:1; transform: translateY(-3px); } }
   `;
-  return <><style>{localAnimationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:20,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 50% 18%,rgba(74,108,247,.22),transparent 34%),radial-gradient(circle at 58% 70%,rgba(34,211,238,.16),transparent 28%),linear-gradient(145deg,#020617 0%,#0B1020 48%,#111827 100%)",color:"#fff",zIndex:9999,overflow:"hidden"}}>
+  return <><style>{localAnimationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:20,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 50% 18%,rgba(11 138 148,.14),transparent 34%),radial-gradient(circle at 58% 70%,rgba(191 122 18,.13),transparent 30%),var(--scene-image, linear-gradient(156deg,#e9f4f8 0%, #f3f6fb 30%, #efe9e2 58%, #edf5f6 100%))",color:"var(--text)",zIndex:9999,overflow:"hidden"}}>
     <div style={{position:"absolute",inset:"auto 12% 9%",height:90,background:"radial-gradient(ellipse,rgba(37,99,235,.42),transparent 65%)",filter:"blur(16px)"}} />
-    <div style={{width:"min(390px,100%)",textAlign:"center",border:"1px solid rgba(148,163,184,.18)",borderRadius:32,padding:"34px 28px 30px",background:"linear-gradient(180deg,rgba(15,23,42,.78),rgba(2,6,23,.62))",boxShadow:"0 30px 90px rgba(0,0,0,.42)",backdropFilter:"blur(16px)",position:"relative"}}>
+    <div style={{width:"min(390px,100%)",textAlign:"center",border:"1px solid rgba(15,23,42,.12)",borderRadius:32,padding:"34px 28px 30px",background:"linear-gradient(180deg,rgba(255,255,255,.85),rgba(246,250,251,.75))",boxShadow:"0 30px 90px rgba(15,23,42,.2)",backdropFilter:"blur(16px)",position:"relative"}}>
       <div style={{width:150,height:150,margin:"0 auto 18px",position:"relative",display:"grid",placeItems:"center"}}>
         <div style={{position:"absolute",inset:8,borderRadius:"50%",background:"conic-gradient(from 18deg,#2563EB 0 116deg,transparent 116deg 174deg,#7C3AED 174deg 306deg,transparent 306deg 360deg)",animation:"corjectRingSweep 3.6s cubic-bezier(.45,0,.2,1) infinite"}} />
         <div style={{position:"absolute",inset:32,borderRadius:"50%",background:"#050A16",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.06)"}} />
@@ -196,13 +195,13 @@ function LegacyAppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logo
         <span style={{position:"absolute",inset:48,borderRadius:"50%",background:"radial-gradient(circle,rgba(34,211,238,.3),transparent 62%)",animation:"corjectGlowPulse 1.8s ease-in-out infinite"}} />
         {logoSrc&&<img className="corject-loading-logo" src={logoSrc} alt="Corject" style={{position:"absolute",width:1,height:1,opacity:0,pointerEvents:"none"}}/>}
       </div>
-      <div style={{fontSize:32,fontWeight:950,letterSpacing:"-.04em",color:"#fff",lineHeight:1}}>Corject</div>
-      <div style={{fontSize:13,color:"#CBD5E1",marginTop:10,minHeight:18}}>{status}</div>
+      <div style={{fontSize:32,fontWeight:950,letterSpacing:"-.04em",color:"var(--text)",lineHeight:1}}>Corject</div>
+      <div style={{fontSize:13,color:"var(--muted)",marginTop:10,minHeight:18}}>{status}</div>
       <div style={{display:"flex",justifyContent:"center",gap:7,margin:"13px 0 22px"}}>
         {[0,1,2].map(index=><span key={index} style={{width:7,height:7,borderRadius:"50%",background:index===1?"#8B5CF6":"#22D3EE",animation:`corjectDots 1.2s ease-in-out ${index*.16}s infinite`}} />)}
       </div>
-      <div style={{height:8,borderRadius:20,background:"rgba(148,163,184,.16)",overflow:"hidden",border:"1px solid rgba(148,163,184,.16)"}}><div style={{height:"100%",width:`${safeProgress}%`,borderRadius:20,background:"linear-gradient(90deg,#2563EB,#7C3AED,#22D3EE)",transition:"width .35s ease",boxShadow:"0 0 24px rgba(34,211,238,.42)"}}/></div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#94A3B8",marginTop:9}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"#C4B5FD"}}>%{safeProgress}</b></div>
+      <div style={{height:8,borderRadius:20,background:"rgba(15,23,42,.12)",overflow:"hidden",border:"1px solid rgba(15,23,42,.12)"}}><div style={{height:"100%",width:`${safeProgress}%`,borderRadius:20,background:"linear-gradient(90deg,#4A6CF7,#0B8A94,#BF7A12)",transition:"width .35s ease",boxShadow:"0 0 24px rgba(11,138,148,.24)"}}/></div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted)",marginTop:9}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"#0B8A94"}}>%{safeProgress}</b></div>
     </div>
   </div></>;
 }
@@ -229,7 +228,7 @@ export function AppLoadingScreen({progress=10,status="Oturum haz\u0131rlan\u0131
     @keyframes corjectBarFlow { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
     @keyframes corjectStatusGlow { 0%,100% { opacity:.75; } 50% { opacity:1; } }
   `;
-  return <><style>{animationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:22,fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)",background:"linear-gradient(180deg, rgb(7 9 14 / 46%), rgb(17 35 39 / 28%), var(--scene-image, linear-gradient(180deg, rgb(7 9 14 / 38%), rgb(9 12 20 / 34%)))",backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",backgroundAttachment:"fixed",color:"var(--text, #112327)",zIndex:9999,overflow:"hidden"}}>
+  return <><style>{animationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:22,fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)",background:"radial-gradient(circle at 50% 14%,rgba(11 138 148,.14),transparent 34%),radial-gradient(circle at 82% 8%,rgba(191 122 18,.12),transparent 32%),var(--scene-image, linear-gradient(156deg,#e9f4f8 0%, #f3f6fb 30%, #efe9e2 58%, #edf5f6 100%))",backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",backgroundAttachment:"fixed",color:"var(--text)",zIndex:9999,overflow:"hidden"}}>
     <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 8% 10%, rgb(11 138 148 / 16%), transparent 38%),radial-gradient(circle at 92% 6%, rgb(191 122 18 / 14%), transparent 34%),radial-gradient(circle at 50% 100%, rgb(17 35 39 / 14%), transparent 38%)",animation:"corjectFieldPulse 4.4s ease-in-out infinite",pointerEvents:"none"}} />
     <span style={{position:"absolute",left:"-20vw",top:"-12vh",width:"40vw",height:"40vh",borderRadius:"50%",background:"radial-gradient(circle, rgb(11 138 148 / 30%), transparent 70%)",filter:"blur(18px)",animation:"corjectFieldPulse 5.2s ease-in-out infinite"}} />
     <span style={{position:"absolute",right:"-22vw",bottom:"-10vh",width:"38vw",height:"38vh",borderRadius:"50%",background:"radial-gradient(circle, rgb(191 122 18 / 28%), transparent 70%)",filter:"blur(20px)",animation:"corjectFieldPulse 5.8s ease-in-out 900ms infinite"}} />
@@ -264,3 +263,4 @@ export function AppLoadingScreen({progress=10,status="Oturum haz\u0131rlan\u0131
     </div>
   </div></>;
 }
+

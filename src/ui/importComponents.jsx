@@ -398,45 +398,46 @@ export function ImportCenter({state,setState,currentUser,importType: controlledI
   };
 
   const counts = preview && Object.entries(sheetDefinitions).map(([key,[label]])=>[label,preview[key].length]).filter(([,value])=>value > 0);
-  return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}>
+  return <div className="project-workspace" style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}>
     <div style={{maxWidth:980,margin:"0 auto"}}>
       <div style={{marginBottom:18}}>
         <h2 style={{margin:0,fontSize:22}}>Import Merkezi</h2>
-        <p style={{margin:"5px 0 0",fontSize:12,color:"#64748B"}}>Başka uygulamalardaki temel operasyon verilerini kontrollü olarak Corject'e taşıyın.</p>
-        <div style={{marginTop:9,display:"inline-block",background:"#FFF7ED",color:"#9A3412",borderRadius:8,padding:"6px 9px",fontSize:9,fontWeight:700}}>Güvenlik nedeniyle parola ve uzaktan erişim sırları Excel importuna dahil edilmez.</div>
+        <p style={{margin:"5px 0 0",fontSize:12,color:"var(--muted)"}}>Başka uygulamalardaki temel operasyon verilerini kontrollü olarak Corject'e taşıyın.</p>
+        <div style={{marginTop:9,display:"inline-block",background:"color-mix(in srgb, var(--warning) 14%, transparent)",color:"var(--warning)",borderRadius:8,padding:"6px 9px",fontSize:9,fontWeight:700}}>Güvenlik nedeniyle parola ve uzaktan erişim sırları Excel importuna dahil edilmez.</div>
       </div>
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17,marginBottom:14}}>
+      <div className="soft-panel" style={{borderRadius:15,padding:17,marginBottom:14}}>
         <div style={{fontSize:13,fontWeight:850,marginBottom:10}}>Import edilecek veri grubunu seçin</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8}}>
-          {importModules.map(([id,label,description])=><button key={id} onClick={()=>{setImportType(id);setPreview(null);setMessage("");}} style={{border:`1.5px solid ${importType===id?"#4A6CF7":"#E2E8F0"}`,background:importType===id?"#EEF2FF":"#fff",borderRadius:11,padding:11,textAlign:"left",cursor:"pointer"}}>
-            <b style={{display:"block",fontSize:11,color:importType===id?"#4338CA":"#1E293B"}}>{label}</b>
-            <span style={{display:"block",fontSize:9,color:"#64748B",lineHeight:1.4,marginTop:3}}>{description}</span>
+          {importModules.map(([id,label,description])=><button key={id} onClick={()=>{setImportType(id);setPreview(null);setMessage("");}} style={{border:`1.5px solid ${importType===id?"color-mix(in srgb, var(--accent) 44%, transparent)":"var(--border)"}`,background:importType===id?"color-mix(in srgb, var(--accent) 11%, var(--surface))":"var(--surface)",borderRadius:11,padding:11,textAlign:"left",cursor:"pointer"}}>
+            <b style={{display:"block",fontSize:11,color:importType===id?"var(--accent)":"var(--text)"}}>{label}</b>
+            <span style={{display:"block",fontSize:9,color:"var(--muted)",lineHeight:1.4,marginTop:3}}>{description}</span>
           </button>)}
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12,marginBottom:14}}>
-        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17}}>
+        <div className="soft-panel" style={{borderRadius:15,padding:17}}>
           <b style={{fontSize:13}}>1. Şablonu indirin</b>
-          <p style={{fontSize:11,color:"#64748B",lineHeight:1.55}}>Seçili veri grubunun kolonlarını değiştirmeden doldurun. Müşteri / Proje şablonu firma adı, kullanılan modüller, lokasyon, web sitesi ve logo bilgisini de taşır.</p>
+          <p style={{fontSize:11,color:"var(--muted)",lineHeight:1.55}}>Seçili veri grubunun kolonlarını değiştirmeden doldurun. Müşteri / Proje şablonu firma adı, kullanılan modüller, lokasyon, web sitesi ve logo bilgisini de taşır.</p>
           <Btn variant="secondary" onClick={()=>downloadTemplate(importType)}>Seçili XLSX Şablonunu İndir</Btn>
         </div>
-        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:17}}>
+        <div className="soft-panel" style={{borderRadius:15,padding:17}}>
           <b style={{fontSize:13}}>2. Dolu dosyayı seçin</b>
-          <p style={{fontSize:11,color:"#64748B",lineHeight:1.55}}>Önce önizleme yapılır; onay vermeden hiçbir kayıt değiştirilmez.</p>
-          <label style={{display:"inline-flex",background:"#4A6CF7",color:"#fff",borderRadius:9,padding:"9px 12px",fontSize:11,fontWeight:800,cursor:"pointer"}}>XLSX Seç<input type="file" accept=".xlsx,.xls" onChange={readFile} style={{display:"none"}}/></label>
+          <p style={{fontSize:11,color:"var(--muted)",lineHeight:1.55}}>Önce önizleme yapılır; onay vermeden hiçbir kayıt değiştirilmez.</p>
+          <label style={{display:"inline-flex",background:"var(--accent)",color:"#fff",borderRadius:9,padding:"9px 12px",fontSize:11,fontWeight:800,cursor:"pointer"}}>XLSX Seç<input type="file" accept=".xlsx,.xls" onChange={readFile} style={{display:"none"}}/></label>
         </div>
       </div>
-      {preview && <div style={{background:"#fff",border:`1.5px solid ${preview.errors.length?"#FDA4AF":"#C7D2FE"}`,borderRadius:15,padding:17}}>
+      {preview && <div className="soft-panel" style={{border:`1.5px solid ${preview.errors.length?"color-mix(in srgb, var(--danger) 40%, transparent)":"color-mix(in srgb, var(--accent) 40%, transparent)"}`,borderRadius:15,padding:17}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-          <div><b>{fileName}</b><div style={{fontSize:10,color:"#64748B",marginTop:3}}>Import önizlemesi</div></div>
+          <div><b>{fileName}</b><div style={{fontSize:10,color:"var(--muted)",marginTop:3}}>Import önizlemesi</div></div>
           <Btn disabled={preview.errors.length>0} onClick={applyImport}>Importu Uygula</Btn>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:13}}>
-          {counts.map(([label,value])=><div key={label} style={{background:"#F8FAFC",borderRadius:10,padding:10}}><b style={{fontSize:20,color:"#4F46E5"}}>{value}</b><div style={{fontSize:9,color:"#64748B"}}>{label}</div></div>)}
+          {counts.map(([label,value])=><div key={label} style={{background:"color-mix(in srgb, var(--surface-soft) 78%, transparent)",borderRadius:10,padding:10}}><b style={{fontSize:20,color:"var(--accent)"}}>{value}</b><div style={{fontSize:9,color:"var(--muted)"}}>{label}</div></div>)}
         </div>
-        {preview.errors.length > 0 && <div style={{marginTop:12,background:"#FFF1F2",color:"#BE123C",borderRadius:10,padding:11,fontSize:10,lineHeight:1.6}}>{preview.errors.map(error=><div key={error}>{error}</div>)}</div>}
+        {preview.errors.length > 0 && <div style={{marginTop:12,background:"color-mix(in srgb, var(--danger) 16%, var(--surface))",color:"var(--danger)",borderRadius:10,padding:11,fontSize:10,lineHeight:1.6}}>{preview.errors.map(error=><div key={error}>{error}</div>)}</div>}
       </div>}
-      {message && <div style={{marginTop:12,background:message.startsWith("Import")?"#ECFDF5":"#FFF1F2",color:message.startsWith("Import")?"#047857":"#BE123C",borderRadius:10,padding:12,fontSize:11}}>{message}</div>}
+      {message && <div style={{marginTop:12,background:message.startsWith("Import")?"color-mix(in srgb, var(--success) 16%, var(--surface))":"color-mix(in srgb, var(--danger) 16%, var(--surface))",color:message.startsWith("Import")?"var(--success)":"var(--danger)",borderRadius:10,padding:12,fontSize:11}}>{message}</div>}
     </div>
   </div>;
 }
+

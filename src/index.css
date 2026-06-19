@@ -2,7 +2,12 @@
 
 :root {
   --bg: #f1f5f6;
-  --scene-image: linear-gradient(180deg, rgb(255 255 255 / 8%), rgb(255 255 255 / 22%)), url("/bg-sunrise-mountain.png");
+  --scene-image:
+    radial-gradient(circle at 18% 14%, rgba(11, 138, 148, 0.22) 0 18%, transparent 38%),
+    radial-gradient(circle at 78% 18%, rgba(191, 122, 18, 0.12) 0 16%, transparent 40%),
+    radial-gradient(circle at 36% 78%, rgba(74, 108, 247, 0.16) 0 14%, transparent 42%),
+    radial-gradient(circle at 82% 74%, rgba(15, 118, 110, 0.14) 0 16%, transparent 38%),
+    linear-gradient(156deg, #e9f4f8 0%, #f3f6fb 30%, #efe9e2 58%, #edf5f6 100%);
   --surface: #ffffff;
   --surface-soft: #f6fafb;
   --text: #112327;
@@ -59,8 +64,7 @@ body {
   min-height: 100svh;
   color: var(--text);
   background:
-    radial-gradient(circle at 12% -12%, rgb(255 255 255 / 12%), transparent 30%),
-    radial-gradient(circle at 96% -4%, rgb(255 255 255 / 8%), transparent 28%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.22)),
     var(--scene-image);
   position: relative;
   background-size: cover;
@@ -79,9 +83,9 @@ body::before {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(70px);
+  filter: blur(100px) saturate(1.08);
   transform: scale(1.08);
-  opacity: 0.82;
+  opacity: 0.76;
   z-index: -1;
   pointer-events: none;
 }

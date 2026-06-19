@@ -9,13 +9,80 @@ import { DEFAULT_EMAIL_TEMPLATES, renderManagedTemplate, resolveEmailTemplates, 
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "?";
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 9);
+const reportThemeStyle = `
+:root{
+  --r-bg:#f1f5f6;
+  --r-surface:#ffffff;
+  --r-surface-soft:#f6fafb;
+  --r-text:#112327;
+  --r-muted:#5b6f74;
+  --r-accent:#0b8a94;
+  --r-ok:#19835c;
+  --r-warn:#bf7a12;
+  --r-danger:#b93f33;
+  --r-border:#cfe0e3;
+  --r-ink:#def5f8;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Manrope,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:linear-gradient(145deg,#f1f7f8 0%,var(--r-bg) 55%,#edf4f7);color:var(--r-text);line-height:1.45;padding:22px}
+.r-wrap{max-width:1240px;margin:0 auto}
+.r-header{border:1px solid color-mix(in srgb, var(--r-border) 72%, transparent);border-radius:20px;padding:24px;background:linear-gradient(135deg,#0b8a94,#1f9cad 54%,#7bcad1);color:#fff;display:flex;gap:18px;justify-content:space-between;align-items:flex-start;position:relative;overflow:hidden}
+.r-title{margin:0;font-size:30px;letter-spacing:-0.02em;word-break:break-word;max-width:70%}
+.r-sub{margin:10px 0 0;opacity:.95}
+.r-sub,.r-meta{font-size:12px;color:#d8f4f8}
+.r-print{background:#fff;color:#0b8a94;border:0;border-radius:12px;padding:9px 14px;font-weight:900;cursor:pointer}
+.r-body{margin-top:18px;display:grid;gap:14px}
+.r-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.r-kpi{background:var(--r-surface);border:1px solid var(--r-border);border-radius:14px;padding:15px}
+.r-kpi small{font-size:11px;color:var(--r-muted)}
+.r-kpi b{display:block;font-size:27px;margin-top:2px}
+.r-card{background:var(--r-surface);border:1px solid var(--r-border);border-radius:18px;padding:18px}
+.r-card-title{margin:0 0 10px}
+.r-table{width:100%;border-collapse:collapse;overflow:auto}
+.r-table th,.r-table td{padding:8px 10px;text-align:left;border-bottom:1px solid #e4eef0;font-size:12px}
+.r-table th{color:#4f5f64;font-size:11px;font-weight:700;background:#f8fbfc}
+.r-table tr:hover td{background:color-mix(in srgb, var(--r-accent) 8%, transparent)}
+.r-pills{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.r-pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;color:#0b2930;background:color-mix(in srgb, var(--r-accent) 16%, transparent)}
+.r-pill.warn{color:#8a4e0c;background:#fff3dc}
+.r-pill.danger{color:#a61f2e;background:#ffe6ea}
+.r-pill.ok{color:#105e43;background:#dff4eb}
+.r-section{display:flex;justify-content:space-between;gap:10px}
+.r-section h3{margin:0;font-size:16px}
+.r-foot{margin-top:14px;color:var(--r-muted);font-size:11px}
+.r-log-badge{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px}
+@media print{
+  body{background:#fff;padding:0}
+  .r-print{display:none}
+  .r-kpi,.r-card{box-shadow:none!important}
+}
+`;
+
+const buildThemeReport = ({title, subtitle, accent = "#0b8a94", content}) => `<!doctype html><html lang="tr"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width">
+  <title>${escapeHtml(title)}</title>
+  <style>${reportThemeStyle}</style>
+</head><body>
+  <div class="r-wrap">
+    <header class="r-header" style="--r-accent:${accent}">
+      <div>
+        <h1 class="r-title">${escapeHtml(title)}</h1>
+        <div class="r-sub">${escapeHtml(subtitle || "")}</div>
+      </div>
+      <button class="r-print" onclick="window.print()">Yazdır / PDF</button>
+    </header>
+    <main class="r-body">${content}</main>
+    <div class="r-foot">Tarih: ${new Date().toLocaleString("tr-TR")}</div>
+  </div>
+</body></html>`;
+
 const escapeHtml = (value="") => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
 const commissioningRows=(sectors=[])=>sectors.flatMap(sector=>(sector.productionCenters||[]).flatMap(center=>(center.workplaces||[]).flatMap(workplace=>(workplace.lines||[]).flatMap(line=>(line.machines||[]).map(machine=>({sector:sector.name,productionCenter:center.name,workplace:workplace.name,line:line.name,machine}))))));
 const LOG_META = {
   task_done:{ icon:"?", color:"#059669", bg:"#ECFDF5", label:"Tamamland?" },
-  task_add:{ icon:"+", color:"#4A6CF7", bg:"#F1F5FF", label:"G?rev Eklendi" },
-  task_delete:{ icon:"?", color:"#E11D48", bg:"#FFF1F2", label:"G?rev Silindi" },
-  status_change:{ icon:"?", color:"#EA6C00", bg:"#FFF7ED", label:"Durum De?i?ti" },
+  task_add:{ icon:"+", color:"#4A6CF7", bg:"#F1F5FF", label:"Görev Eklendi" },
+  task_delete:{ icon:"?", color:"#E11D48", bg:"#FFF1F2", label:"Görev Silindi" },
+  status_change:{ icon:"?", color:"#EA6C00", bg:"#FFF7ED", label:"Durum Değişti" },
   milestone_add:{ icon:"?", color:"#7C3AED", bg:"#F5F3FF", label:"Milestone" },
   project_create:{ icon:"?", color:"#0EA5E9", bg:"#F0F9FF", label:"Proje" },
   risk_add:{ icon:"!", color:"#E11D48", bg:"#FFF1F2", label:"Risk" },
@@ -90,225 +157,482 @@ export function generateSummaryReport(project,people,{customer=false}={}){
   const tasks=project.milestones.flatMap(ms=>ms.tasks.map(task=>({...task,milestone:ms.name})));
   const done=tasks.filter(t=>t.status==="Tamamlandı").length;
   const delayed=tasks.filter(t=>delayLvl(t.dueDate,t.status));
-  const machines=project.machines||[];
-  const commissioned=machines.filter(m=>m.commissioned).length;
+  const allMachines=(project.machines||[]).concat(commissioningRows(project.commissioningTree||[]).map(r=>r.machine));
+  const commissioned=allMachines.filter(m=>m.commissioned).length;
   const hours=tasks.reduce((sum,t)=>sum+(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0);
-  const rows=tasks.map(t=>`<tr><td>${t.milestone}</td><td>${t.title}</td><td>${t.status}</td><td>${fmt(t.dueDate)}</td>${customer?"":`<td>${people.find(p=>p.id===t.assignee)?.name||"Atanmamış"}</td><td>${(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0)} sa</td>`}</tr>`).join("");
-  const machineRows=machines.map(m=>`<tr><td>${m.code||"-"}</td><td>${m.name}</td><td>${m.type==="virtual"?"Sanal":"Fiziksel"}</td><td>${m.commissioned?"Devrede":"Bekliyor"}</td><td>${m.commissioned?fmt(m.commissionedAt):(customer?"Planlanıyor":m.note||"-")}</td></tr>`).join("");
-  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>${project.name} - ${customer?"Müşteri":"İç"} Rapor</title><style>body{font-family:Arial,sans-serif;color:#1e293b;padding:32px}h1{margin-bottom:4px}.meta{color:#64748b;margin-bottom:24px}.stats{display:flex;gap:12px;margin:20px 0}.stat{border:1px solid #e2e8f0;border-radius:10px;padding:14px 20px}.stat b{display:block;font-size:24px}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border-bottom:1px solid #e2e8f0;padding:8px;text-align:left;font-size:12px}th{background:#f8fafc}button{float:right;padding:8px 14px}@media print{button{display:none}}</style></head><body><button onclick="window.print()">Yazdır / PDF</button><h1>${project.name}</h1><div class="meta">${customer?"Müşteri İlerleme Raporu":"İç Operasyon Raporu"} · ${new Date().toLocaleDateString("tr-TR")}</div><div class="stats"><div class="stat"><b>${tasks.length?Math.round(done/tasks.length*100):0}%</b>İlerleme</div><div class="stat"><b>${done}/${tasks.length}</b>Görev</div><div class="stat"><b>${commissioned}/${machines.length}</b>Makine</div><div class="stat"><b>${delayed.length}</b>Gecikme</div>${customer?"":`<div class="stat"><b>${hours}</b>Saat</div>`}</div><h2>Görev Durumu</h2><table><thead><tr><th>Milestone</th><th>Görev</th><th>Durum</th><th>Termin</th>${customer?"":"<th>Sorumlu</th><th>Efor</th>"}</tr></thead><tbody>${rows}</tbody></table><h2>Makine Devreye Alma</h2><table><thead><tr><th>Kod</th><th>Makine</th><th>Tip</th><th>Durum</th><th>${customer?"Plan":"Açıklama"}</th></tr></thead><tbody>${machineRows||"<tr><td colspan='5'>Makine kaydı yok.</td></tr>"}</tbody></table>${!customer&&delayed.length?`<h2>Gecikmeler</h2><ul>${delayed.map(t=>`<li>${t.title} · ${daysDiff(t.dueDate)} gün · ${t.waitSource||"Neden belirtilmedi"}</li>`).join("")}</ul>`:""}</body></html>`;
-  downloadTextFile(html,`${safeFileName(project.name)}-${customer?"musteri":"ic"}-rapor.html`,"text/html;charset=utf-8");
+  const taskRows=tasks.map(task=>{
+    const assigneeName=people.find(p=>p.id===task.assignee)?.name||"Atanmamış";
+    const effort=(task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0);
+    const pillClass=task.status==="Tamamlandı"?"ok":delayLvl(task.dueDate,task.status)?"danger":"warn";
+    return `<tr><td>${escapeHtml(task.milestone)}</td><td>${escapeHtml(task.title)}</td><td><span class="r-pill ${pillClass}">${escapeHtml(task.status)}</span></td><td>${escapeHtml(fmt(task.dueDate))}</td>${customer?"":`<td>${escapeHtml(assigneeName)}</td><td>${effort} saat</td>`}</tr>`;
+  }).join("");
+  const machineRows=allMachines.map(m=>`<tr><td>${escapeHtml(m.code||"-")}</td><td>${escapeHtml(m.name)}</td><td>${escapeHtml(m.type==="virtual"?"Sanal":"Fiziksel")}</td><td>${escapeHtml(m.commissioned?"Devrede":"Bekliyor")}</td><td>${escapeHtml(m.commissioned?fmt(m.commissionedAt):(customer?"Planlanıyor":m.note||"-"))}</td></tr>`).join("");
+  const delays=delayed.map(t=>`<li><b>${escapeHtml(t.title)}</b> · ${daysDiff(t.dueDate)} gün · ${escapeHtml(t.waitSource||"Neden belirtilmedi")}</li>`).join("");
+  const content=`
+    <section class="r-grid">
+      <div class="r-kpi"><small>Genel İlerleme</small><b>${tasks.length?Math.round(done/tasks.length*100):0}%</b></div>
+      <div class="r-kpi"><small>Tamamlanan / Toplam</small><b>${done}/${tasks.length}</b></div>
+      <div class="r-kpi"><small>Devreye Alınan</small><b>${commissioned}/${allMachines.length}</b></div>
+      <div class="r-kpi"><small>Gecikme</small><b>${delayed.length}</b></div>
+      ${customer?"":`<div class="r-kpi"><small>Toplam Efor</small><b>${hours} saat</b></div>`}
+    </section>
+    <section class="r-card">
+      <h3 class="r-card-title">Görev Durumu</h3>
+      <div style="overflow:auto">
+        <table class="r-table">
+          <thead><tr><th>Milestone</th><th>Görev</th><th>Durum</th><th>Termin</th>${customer?"":"<th>Sorumlu</th><th>Efor</th>"}</tr></thead>
+          <tbody>${taskRows||"<tr><td colspan='6'>Kayıt yok.</td></tr>"}</tbody>
+        </table>
+      </div>
+    </section>
+    <section class="r-card">
+      <h3 class="r-card-title">Makine Devreye Alma</h3>
+      <div style="overflow:auto">
+        <table class="r-table">
+          <thead><tr><th>Kod</th><th>Makine</th><th>Tip</th><th>Durum</th><th>${customer?"Plan":"Açıklama"}</th></tr></thead>
+          <tbody>${machineRows||"<tr><td colspan='5'>Makine kaydı yok.</td></tr>"}</tbody>
+        </table>
+      </div>
+    </section>
+    ${!customer&&delayed.length?`<section class="r-card"><h3 class="r-card-title">Gecikme Gerekçeleri</h3><ul>${delays}</ul></section>`:""}
+  `;
+  const html=buildThemeReport({
+    title:`${project.name} - ${customer?"Müşteri":"İç"} Rapor`,
+    subtitle:`${customer?"Müşteri İlerleme Raporu":"İç Operasyon Raporu"} · ${new Date().toLocaleDateString("tr-TR")}`,
+    content,
+    accent: project.color || "#0b8a94"
+  });
+  downloadTextFile(html,`${safeFileName(project.name)}-${customer?"musteri":"ic"}-rapor.html`,`text/html;charset=utf-8`);
 }
 
 export function generateVisualReport(project,people,{customer=false,fieldHours=0}={}){
-  const tasks=project.milestones.flatMap(ms=>ms.tasks.map(task=>({...task,milestone:ms.name})));
-  const count=(status)=>tasks.filter(t=>t.status===status).length;
-  const done=count("Tamamlandı"), active=count("Devam Ediyor"), waiting=count("Bekliyor");
-  const delayed=tasks.filter(t=>delayLvl(t.dueDate,t.status));
-  const machines=project.machines||[];
-  const commissioned=machines.filter(m=>m.commissioned).length;
-  const hours=tasks.reduce((sum,t)=>sum+(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0)+fieldHours;
-  const progress=tasks.length?Math.round(done/tasks.length*100):0;
-  const taskRows=tasks.map(t=>`<tr><td>${t.milestone}</td><td><b>${t.title}</b></td><td><span class="pill ${t.status==="Tamamlandı"?"green":t.status==="Devam Ediyor"?"blue":"orange"}">${t.status}</span></td><td>${fmt(t.dueDate)}</td>${customer?"":`<td>${people.find(p=>p.id===t.assignee)?.name||"Atanmamış"}</td><td>${(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0)} sa</td>`}</tr>`).join("");
-  const machineRows=machines.map(m=>`<tr><td>${m.code||"-"}</td><td><b>${m.name}</b></td><td>${m.type==="virtual"?"Sanal":"Fiziksel"}</td><td><span class="pill ${m.commissioned?"green":"orange"}">${m.commissioned?"Devrede":"Bekliyor"}</span></td><td>${m.commissioned?fmt(m.commissionedAt):(customer?"Planlanıyor":m.note||"-")}</td></tr>`).join("");
-  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${project.name} Raporu</title><style>
-*{box-sizing:border-box}body{margin:0;padding:32px;background:linear-gradient(135deg,#eef2ff,#f8fafc 55%,#f5f3ff);font-family:Inter,Segoe UI,Arial;color:#172033}.wrap{max-width:1180px;margin:auto}.hero{background:linear-gradient(125deg,#172554,#4338ca,#7c3aed);color:#fff;border-radius:24px;padding:30px;box-shadow:0 20px 45px #312e8130}.hero h1{margin:0 0 6px;font-size:29px}.hero p{margin:0;color:#c7d2fe}.print{float:right;border:0;border-radius:10px;background:#fff;color:#4338ca;padding:9px 15px;font-weight:800;cursor:pointer}.overview{display:grid;grid-template-columns:1fr 2fr;gap:18px;margin:18px 0}.card{background:#fff;border-radius:18px;padding:21px;border:1px solid #e2e8f0;box-shadow:0 8px 24px #33415512}.donut{width:150px;height:150px;border-radius:50%;margin:auto;display:grid;place-items:center;background:conic-gradient(#4f46e5 0 ${progress}%,#e2e8f0 ${progress}% 100%)}.donut:after{content:"${progress}%";width:108px;height:108px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:27px;font-weight:900;color:#4338ca}.stats{display:grid;grid-template-columns:repeat(${customer?4:5},1fr);gap:10px}.stat{border-radius:14px;padding:16px;color:#fff;min-height:92px}.stat b{font-size:25px;display:block}.s1{background:linear-gradient(135deg,#2563eb,#4f46e5)}.s2{background:linear-gradient(135deg,#059669,#10b981)}.s3{background:linear-gradient(135deg,#dc2626,#f43f5e)}.s4{background:linear-gradient(135deg,#ea580c,#f59e0b)}.s5{background:linear-gradient(135deg,#7c3aed,#a855f7)}.bar{display:flex;height:13px;border-radius:8px;overflow:hidden;background:#e2e8f0;margin-top:18px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:#64748b}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}h2{font-size:17px;margin:0 0 14px}.table{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;text-align:left;border-bottom:1px solid #eef2f7;font-size:12px}th{background:#f8fafc;color:#64748b}.pill{display:inline-block;border-radius:99px;padding:3px 8px;font-size:10px;font-weight:800}.pill.green{background:#d1fae5;color:#047857}.pill.blue{background:#dbeafe;color:#1d4ed8}.pill.orange{background:#ffedd5;color:#c2410c}@media(max-width:760px){body{padding:14px}.overview{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.hero{padding:20px}}@media print{body{padding:0;background:#fff}.print{display:none}.hero,.card{box-shadow:none}}
-</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>${project.name}</h1><p>${customer?"Müşteri İlerleme Raporu":"İç Operasyon Raporu"} · ${new Date().toLocaleDateString("tr-TR")} · ${fmt(project.startDate)} - ${fmt(project.endDate)}</p></div><div class="overview"><div class="card"><h2>Genel İlerleme</h2><div class="donut"></div><div class="bar"><span style="width:${tasks.length?done/tasks.length*100:0}%;background:#10b981"></span><span style="width:${tasks.length?active/tasks.length*100:0}%;background:#3b82f6"></span><span style="width:${tasks.length?waiting/tasks.length*100:0}%;background:#f59e0b"></span></div><div class="legend"><span><i class="dot" style="background:#10b981"></i>Tamamlandı ${done}</span><span><i class="dot" style="background:#3b82f6"></i>Devam ${active}</span><span><i class="dot" style="background:#f59e0b"></i>Bekliyor ${waiting}</span></div></div><div class="stats"><div class="stat s1"><b>${done}/${tasks.length}</b>Görev</div><div class="stat s2"><b>${commissioned}/${machines.length}</b>Makine</div><div class="stat s3"><b>${delayed.length}</b>Gecikme</div><div class="stat s4"><b>${project.milestones.length}</b>Milestone</div>${customer?"":`<div class="stat s5"><b>${hours}</b>Efor Saati</div>`}</div></div><div class="card"><h2>Görev Durumu</h2><div class="table"><table><thead><tr><th>Milestone</th><th>Görev</th><th>Durum</th><th>Termin</th>${customer?"":"<th>Sorumlu</th><th>Efor</th>"}</tr></thead><tbody>${taskRows||"<tr><td colspan='6'>Görev kaydı yok.</td></tr>"}</tbody></table></div></div><div class="card" style="margin-top:18px"><h2>Makine Devreye Alma</h2><div class="table"><table><thead><tr><th>Kod</th><th>Makine</th><th>Tip</th><th>Durum</th><th>${customer?"Plan":"Açıklama"}</th></tr></thead><tbody>${machineRows||"<tr><td colspan='5'>Makine kaydı yok.</td></tr>"}</tbody></table></div></div>${!customer&&delayed.length?`<div class="card" style="margin-top:18px;border-left:5px solid #ef4444"><h2 style="color:#dc2626">Gecikme Analizi</h2>${delayed.map(t=>`<div style="padding:8px 0;border-bottom:1px solid #fee2e2"><b>${t.title}</b><span style="float:right;color:#dc2626;font-weight:800">${daysDiff(t.dueDate)} gün</span><div style="font-size:11px;color:#64748b">${t.waitSource||"Neden belirtilmedi"}</div></div>`).join("")}</div>`:""}</div></body></html>`;
-  downloadTextFile(html,`${safeFileName(project.name)}-${customer?"musteri":"ic"}-rapor.html`,"text/html;charset=utf-8");
-}
+  const tasks = project.milestones.flatMap(ms=>ms.tasks.map(task=>({...task,milestone:ms.name})));
+  const totalTasks = tasks.length;
+  const done = tasks.filter(t=>t.status === "Tamamlandı").length;
+  const active = tasks.filter(t=>t.status === "Devam Ediyor").length;
+  const waiting = tasks.filter(t=>t.status === "Bekliyor").length;
+  const delayed = tasks.filter(t=>delayLvl(t.dueDate,t.status));
+  const progress = totalTasks ? Math.round((done/totalTasks) * 100) : 0;
+  const machines = project.milestones && project.milestones.length ? project.commissioningTracking ? commissioningMachines(project.commissioningTree||[]) : (project.machines||[]) : (project.machines||[]);
+  const allMachines = machines.map(item=>item);
+  const commissioned = allMachines.filter(m=>m.commissioned).length;
+  const effort = tasks.reduce((sum,t)=>sum+(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0)+fieldHours;
 
-export function generatePortfolioReport(state,people){
-  const data=state.projects.map(project=>{
-    const tasks=project.milestones.flatMap(ms=>ms.tasks), done=tasks.filter(t=>t.status==="Tamamlandı").length;
-    const fieldHours=(state.fieldPlans||[]).filter(plan=>plan.projectId===project.id&&(plan.status==="completed"||plan.completedAt)).reduce((sum,plan)=>sum+fieldPlanHours(plan),0);
-    const actionHours=((state.projectActions||{})[project.id]||[]).reduce((sum,action)=>sum+(parseFloat(action.effortHours)||0),0);
-    return {project,tasks,done,progress:tasks.length?Math.round(done/tasks.length*100):0,delayed:tasks.filter(t=>delayLvl(t.dueDate,t.status)).length,hours:tasks.reduce((sum,t)=>sum+(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0)+fieldHours+actionHours,machines:project.machines||[]};
+  const taskRows = tasks.map(task=>{
+    const assigneeName = people.find(p=>p.id===task.assignee)?.name || "Atanmamış";
+    const eff = (task.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0);
+    const statusClass = task.status === "Tamamlandı" ? "ok" : task.status === "Devam Ediyor" ? "warn" : "warn";
+    return `<tr><td>${escapeHtml(task.milestone)}</td><td>${escapeHtml(task.title)}</td><td><span class="r-pill ${statusClass}">${escapeHtml(task.status)}</span></td><td>${fmt(task.dueDate)}</td>${customer ? "" : `<td>${escapeHtml(assigneeName)}</td><td>${eff} saat</td>`}<td>${task.estimatedHours || 0} saat</td></tr>`;
+  }).join("");
+
+  const machineRows = allMachines.map(machine => {
+    const statusLabel = machine.commissioned ? "Devrede" : "Bekliyor";
+    const statusClass = machine.commissioned ? "ok" : "warn";
+    return `<tr><td>${escapeHtml(machine.code || "-")}</td><td>${escapeHtml(machine.name || "-")}</td><td>${escapeHtml(machine.type==="virtual"?"Sanal":"Fiziksel")}</td><td><span class="r-pill ${statusClass}">${statusLabel}</span></td><td>${machine.commissioned ? fmt(machine.commissionedAt) : customer ? "Planlanıyor" : escapeHtml(machine.note || "-")}</td></tr>`;
+  }).join("");
+
+  const taskWarnings = delayed.map(task=>`<li><b>${escapeHtml(task.title)}</b> · ${daysDiff(task.dueDate)} gün gecikme · ${escapeHtml(task.waitSource || "Neden belirtilmedi")}</li>`).join("");
+
+  const content = `
+    <section class="r-grid">
+      <div class="r-kpi"><small>Genel İlerleme</small><b>${progress}%</b></div>
+      <div class="r-kpi"><small>Tamamlanan / Toplam</small><b>${done}/${totalTasks}</b></div>
+      <div class="r-kpi"><small>Beklemede</small><b>${waiting}</b></div>
+      <div class="r-kpi"><small>Devreye Alınan</small><b>${commissioned}/${allMachines.length}</b></div>
+      <div class="r-kpi"><small>Gecikme</small><b>${delayed.length}</b></div>
+      ${customer ? "" : `<div class="r-kpi"><small>Toplam Efor</small><b>${effort} saat</b></div>`}
+    </section>
+
+    <section class="r-card">
+      <h3 class="r-card-title">Görev Durumu</h3>
+      <div style="overflow:auto">
+        <table class="r-table">
+          <thead>
+            <tr><th>Milestone</th><th>Görev</th><th>Durum</th><th>Tarih</th>${customer?"":"<th>Sorumlu</th><th>Girilen Saat</th>"}<th>Plan Saat</th></tr>
+          </thead>
+          <tbody>${taskRows || "<tr><td colspan='6'>Görev kaydı yok.</td></tr>"}</tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="r-card">
+      <h3 class="r-card-title">Makine Devreye Alma</h3>
+      <div style="overflow:auto">
+        <table class="r-table">
+          <thead>
+            <tr><th>Kod</th><th>Makine</th><th>Tip</th><th>Durum</th><th>Not</th></tr>
+          </thead>
+          <tbody>${machineRows || "<tr><td colspan='5'>Makine kaydı yok.</td></tr>"}</tbody>
+        </table>
+      </div>
+    </section>
+
+    ${delayed.length ? `<section class="r-card"><h3 class="r-card-title">Gecikme Uyarıları</h3><ul>${taskWarnings}</ul></section>` : ""}
+  `;
+
+  const html = buildThemeReport({
+    title: `${project.name} - ${customer ? "Müşteri" : "İç"} Raporu`,
+    subtitle: customer ? "Müşteri İlerleme Raporu" : "İç Operasyon Raporu",
+    accent: project.color || "#0b8a94",
+    content,
   });
-  const totalTasks=data.reduce((a,r)=>a+r.tasks.length,0), totalDone=data.reduce((a,r)=>a+r.done,0), totalDelayed=data.reduce((a,r)=>a+r.delayed,0), totalHours=data.reduce((a,r)=>a+r.hours,0);
-  const tableRows=data.map(r=>`<tr><td><b>${r.project.name}</b></td><td>${projectPmIds(r.project).map(id=>people.find(p=>p.id===id)?.name).filter(Boolean).join(", ")||"Atanmamış"}</td><td>${r.project.status}</td><td><span class="track"><i style="width:${r.progress}%;background:${r.project.color}"></i></span><b>${r.progress}%</b></td><td>${r.done}/${r.tasks.length}</td><td class="${r.delayed?"danger":""}">${r.delayed}</td><td>${r.machines.filter(m=>m.commissioned).length}/${r.machines.length}</td><td>${r.hours} sa</td></tr>`).join("");
-  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Corject Genel Durum Raporu</title><style>*{box-sizing:border-box}body{margin:0;padding:32px;background:#f1f5f9;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1250px;margin:auto}.hero{background:linear-gradient(120deg,#172554,#4338ca,#7c3aed);color:#fff;border-radius:24px;padding:30px;box-shadow:0 20px 45px #312e8130}.hero h1{margin:0}.hero p{color:#c7d2fe}.print{float:right;border:0;border-radius:10px;background:#fff;color:#4338ca;padding:9px 15px;font-weight:800}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat{padding:18px;border-radius:16px;color:#fff}.stat b{font-size:28px;display:block}.blue{background:linear-gradient(135deg,#2563eb,#4f46e5)}.green{background:linear-gradient(135deg,#059669,#10b981)}.red{background:linear-gradient(135deg,#dc2626,#f43f5e)}.purple{background:linear-gradient(135deg,#7c3aed,#a855f7)}.portfolio{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:18px}.project,.card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:17px}.project h3{margin:0 0 10px}.ring,.track{display:inline-block;background:#e2e8f0;border-radius:8px;overflow:hidden}.ring{display:block;height:8px}.ring i,.track i{display:block;height:100%;border-radius:8px}.track{width:80px;height:7px;margin-right:7px}.card{box-shadow:0 8px 24px #33415510}.table{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;text-align:left;border-bottom:1px solid #eef2f7;font-size:12px}th{background:#f8fafc;color:#64748b}.danger{color:#dc2626;font-weight:800}@media(max-width:760px){body{padding:14px}.stats{grid-template-columns:1fr 1fr}.hero{padding:20px}}@media print{body{padding:0;background:#fff}.print{display:none}.hero,.card{box-shadow:none}}</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>Corject Genel Durum Raporu</h1><p>${new Date().toLocaleDateString("tr-TR")} · ${state.projects.length} proje portföyü</p></div><div class="stats"><div class="stat blue"><b>${state.projects.length}</b>Toplam Proje</div><div class="stat green"><b>${totalDone}/${totalTasks}</b>Tamamlanan Görev</div><div class="stat red"><b>${totalDelayed}</b>Geciken Görev</div><div class="stat purple"><b>${totalHours}</b>Toplam Efor</div></div><div class="portfolio">${data.map(r=>`<div class="project" style="border-top:4px solid ${r.project.color}"><h3>${r.project.name}</h3><div class="ring"><i style="width:${r.progress}%;background:${r.project.color}"></i></div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:#64748b"><span>${r.progress}% tamamlandı</span><span style="color:${r.delayed?"#dc2626":"#059669"}">${r.delayed} gecikme</span></div></div>`).join("")}</div><div class="card"><h2>Proje Karşılaştırması</h2><div class="table"><table><thead><tr><th>Proje</th><th>PM</th><th>Durum</th><th>İlerleme</th><th>Görev</th><th>Gecikme</th><th>Makine</th><th>Efor</th></tr></thead><tbody>${tableRows||"<tr><td colspan='8'>Proje yok.</td></tr>"}</tbody></table></div></div></div></body></html>`;
-  downloadTextFile(html,`corject-genel-durum-${todayStr()}.html`,"text/html;charset=utf-8");
-}
 
+  downloadTextFile(html, `${safeFileName(project.name)}-${customer ? "musteri" : "ic"}-rapor.html`, "text/html;charset=utf-8");
+}
+export function generatePortfolioReport(state,people){
+  const data = state.projects.map(project=>{
+    const tasks = project.milestones.flatMap(ms=>ms.tasks || []);
+    const done = tasks.filter(t=>t.status === "Tamamlandı").length;
+    const delayed = tasks.filter(t=>delayLvl(t.dueDate,t.status)).length;
+    const fieldHours = (state.fieldPlans||[])
+      .filter(plan=>plan.projectId === project.id && (plan.status === "completed" || plan.completedAt))
+      .reduce((sum,plan)=>sum+fieldPlanHours(plan),0);
+    const actionHours = ((state.projectActions||{})[project.id]||[]).reduce((sum,action)=>sum+(parseFloat(action.effortHours)||0),0);
+    const taskHours = tasks.reduce((sum,t)=>sum+(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0),0);
+    return {
+      project,
+      tasks: tasks.length,
+      done,
+      delayed,
+      progress: tasks.length ? Math.round(done / tasks.length * 100) : 0,
+      hours: taskHours + fieldHours + actionHours,
+      machines: project.milestones && project.commissioningTracking ? commissioningMachines(project.commissioningTree||[]) : (project.machines || []),
+      pmNames: projectPmIds(project).map(id => people.find(p=>p.id===id)?.name).filter(Boolean).join(", "),
+    };
+  });
+
+  const totalTasks = data.reduce((sum,item)=>sum+item.tasks,0);
+  const totalDone = data.reduce((sum,item)=>sum+item.done,0);
+  const totalDelayed = data.reduce((sum,item)=>sum+item.delayed,0);
+  const totalHours = data.reduce((sum,item)=>sum+item.hours,0);
+
+  const projectCards = data.map(item => `
+    <div style="padding:13px;border:1px solid #d8ebef;border-radius:12px;background:#fff;margin-bottom:8px;">
+      <div class="r-section">
+        <h3 style="font-size:13px;margin:0">${escapeHtml(item.project.name)}</h3>
+        <span class="r-pill ${item.progress >= 80 ? "ok" : item.progress >= 40 ? "warn" : "danger"}">${item.progress}%</span>
+      </div>
+      <div style="height:7px;background:#e8f4f6;border-radius:999px;overflow:hidden;margin:9px 0 10px"><i style="display:block;height:100%;width:${item.progress}%;background:${item.project.color || "#0b8a94"}"></i></div>
+      <div style="font-size:11px;color:#5b6f74;display:flex;gap:12px;flex-wrap:wrap">
+        <span>PM: ${escapeHtml(item.pmNames || "Atanmamış")}</span>
+        <span>Görev: ${item.done}/${item.tasks}</span>
+        <span>Gecikme: <b>${item.delayed}</b></span>
+        <span>Makine: ${item.machines.filter(machine=>machine.commissioned).length}/${item.machines.length}</span>
+      </div>
+    </div>`
+  ).join("");
+
+  const tableRows = data.map(item => {
+    return `<tr>
+      <td>${escapeHtml(item.project.name)}</td>
+      <td>${escapeHtml(item.pmNames || "Atanmamış")}</td>
+      <td><span class="r-pill ${item.project.status === "Aktif" ? "ok" : "warn"}">${escapeHtml(item.project.status || "-")}</span></td>
+      <td>${item.progress}%</td>
+      <td>${item.done} / ${item.tasks}</td>
+      <td>${item.delayed}</td>
+      <td>${item.machines.filter(machine=>machine.commissioned).length}/${item.machines.length}</td>
+      <td>${item.hours}</td>
+    </tr>`;
+  }).join("");
+
+  const html = buildThemeReport({
+    title: "Corject Genel Durum Raporu",
+    subtitle: `${state.projects.length} projelik portföy özeti`,
+    accent: "#7c3aed",
+    content: `
+      <section class="r-grid">
+        <div class="r-kpi"><small>Toplam Proje</small><b>${state.projects.length}</b></div>
+        <div class="r-kpi"><small>Tamamlanan Görev</small><b>${totalDone}/${totalTasks}</b></div>
+        <div class="r-kpi"><small>Gecikmiş Görev</small><b>${totalDelayed}</b></div>
+        <div class="r-kpi"><small>Toplam Efor</small><b>${Math.round(totalHours)} saat</b></div>
+      </section>
+      <section class="r-card">
+        <h3 class="r-card-title">Proje Özeti</h3>
+        ${projectCards || "<p>Proje verisi bulunmuyor.</p>"}
+      </section>
+      <section class="r-card">
+        <h3 class="r-card-title">Karşılaştırmalı Tablo</h3>
+        <div style="overflow:auto">
+          <table class="r-table">
+            <thead>
+              <tr><th>Proje</th><th>PM</th><th>Durum</th><th>İlerleme</th><th>Görev</th><th>Gecikme</th><th>Makine</th><th>Efor</th></tr>
+            </thead>
+            <tbody>${tableRows || "<tr><td colspan='8'>Proje yok.</td></tr>"}</tbody>
+          </table>
+        </div>
+      </section>
+    `,
+  });
+
+  downloadTextFile(html, `corject-genel-durum-${todayStr()}.html`, "text/html;charset=utf-8");
+}
 // ─── HTML Report ─────────────────────────────────────────────────────────────
 export function generateHTMLReport(project, people, logs) {
-  const findName=(id)=>people.find(p=>p.id===id)?.name||"Atanmamış";
-  const allTasks=project.milestones.flatMap(ms=>ms.tasks.map(t=>({...t,msName:ms.name,msDue:ms.dueDate})));
-  const done=allTasks.filter(t=>t.status==="Tamamland\u0131");
-  const active=allTasks.filter(t=>t.status==="Devam Ediyor");
-  const waiting=allTasks.filter(t=>t.status==="Bekliyor");
-  const delayed=allTasks.filter(t=>delayLvl(t.dueDate,t.status));
-  const progress=allTasks.length?Math.round((done.length/allTasks.length)*100):0;
-  const pmNames=projectPmIds(project).map(id=>people.find(p=>p.id===id)?.name).filter(Boolean).join(", ");
-  const projLogs=logs.filter(l=>l.project===project.name).slice(0,10);
+  const findName = (id)=>people.find(p=>p.id===id)?.name || "Atanmamış";
+  const tasks = project.milestones.flatMap(ms=>ms.tasks.map(task=>({...task,milestone:ms.name, msDue:ms.dueDate})));
+  const done = tasks.filter(t=>t.status === "Tamamlandı");
+  const active = tasks.filter(t=>t.status === "Devam Ediyor");
+  const waiting = tasks.filter(t=>t.status === "Bekliyor");
+  const delayed = tasks.filter(t=>delayLvl(t.dueDate,t.status));
+  const progress = tasks.length ? Math.round(done.length / tasks.length * 100) : 0;
+  const pmNames = projectPmIds(project).map(id => people.find(p=>p.id === id)?.name).filter(Boolean).join(", ") || "Atanmamış";
 
-  const taskRows=(tasks)=>tasks.map(t=>{
-    const dl=delayLvl(t.dueDate,t.status);
-    const dlCell=dl==="critical"?`<span style="background:#FFF1F2;color:#E11D48;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">Kritik</span>`:dl==="normal"?`<span style="background:#FFF7ED;color:#EA6C00;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">Gecikti</span>`:"";
-    const stColor=S[t.status]?.text||"#64748B";
-    return `<tr><td>${t.msName}</td><td><strong>${t.title}</strong></td><td style="color:${stColor}">${t.status}</td><td>${t.priority}</td><td>${findName(t.assignee)}</td><td>${fmt(t.dueDate)}</td><td>${dlCell}</td></tr>`;
+  const milestoneBars = (project.milestones || []).map(milestone => {
+    const start = new Date(milestone.startDate || project.startDate);
+    const end = new Date(milestone.dueDate || project.endDate);
+    const total = new Date(project.endDate || project.startDate || new Date()).getTime() - new Date(project.startDate || new Date()).getTime() || 1;
+    const left = Math.max(0, Math.min(100, ((start - new Date(project.startDate || start)) / total) * 100));
+    const width = Math.max(1, Math.min(100, ((end - start) / total) * 100));
+    const statusClass = milestone.status === "Tamamlandı" ? "ok" : delayLvl(milestone.dueDate,milestone.status) ? "danger" : "warn";
+    const doneCount = milestone.tasks?.filter(task=>task.status === "Tamamlandı").length || 0;
+    const totalCount = milestone.tasks?.length || 0;
+
+    return `<div style="display:grid;grid-template-columns:120px 1fr 90px;gap:10px;align-items:center;margin:8px 0;font-size:11px">
+      <span style="color:#5b6f74;">${escapeHtml(milestone.name)}</span>
+      <div style="height:18px;background:#e7f2f4;border-radius:999px;position:relative;overflow:hidden">
+        <i style="position:absolute;left:${left}%;width:${width}%;top:0;bottom:0;background:${milestone.status === "Tamamlandı" ? "#19835c" : "#0b8a94"};"></i>
+      </div>
+      <span><span class="r-pill ${statusClass}">${doneCount}/${totalCount}</span></span>
+    </div>`;
   }).join("");
 
-  const logRows=projLogs.map(l=>{
-    const meta=LOG_META[l.action]||LOG_META.general;
-    return `<tr><td style="color:#64748B;font-size:12px">${new Date(l.ts).toLocaleString("tr-TR",{dateStyle:"short",timeStyle:"short"})}</td><td><span style="background:${meta.bg};color:${meta.color};padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">${meta.label}</span></td><td><strong>${l.user}</strong></td><td style="color:#64748B">${l.detail}</td></tr>`;
+  const taskRows = tasks.map(task=>{
+    const badge = delayLvl(task.dueDate,task.status) ? "danger" : task.status === "Tamamlandı" ? "ok" : task.status === "Devam Ediyor" ? "warn" : "warn";
+    return `<tr><td>${escapeHtml(task.milestone)}</td><td>${escapeHtml(task.title)}</td><td><span class="r-pill ${badge}">${escapeHtml(task.status)}</span></td><td>${escapeHtml(task.priority || "-")}</td><td>${escapeHtml(findName(task.assignee))}</td><td>${fmt(task.dueDate)}</td></tr>`;
   }).join("");
 
-  // Simple Gantt as HTML table
-  const ms=project.milestones;
-  const starts=ms.map(m=>m.startDate||project.startDate).filter(Boolean);
-  const ends=ms.map(m=>m.dueDate).filter(Boolean);
-  let ganttHTML="<p style=\"color:#94A3B8;font-size:12px\">Tarih bilgisi eksik.</p>";
-  if(starts.length&&ends.length){
-    const minDate=new Date(Math.min(...starts.map(d=>new Date(d))));
-    const maxDate=new Date(Math.max(...ends.map(d=>new Date(d))));
-    const total=Math.max(1,(maxDate-minDate)/86400000)+4;
-    const pct=(d)=>Math.max(0,Math.min(100,((new Date(d)-minDate)/86400000)/total*100));
-    const wPct=(s,e)=>Math.max(1,(new Date(e)-new Date(s))/86400000/total*100);
-    const todayOff=Math.max(0,(new Date()-minDate)/86400000);
-    const todayPct=Math.min(100,todayOff/total*100);
-    const ganttRows=ms.map(m=>{
-      const s=m.startDate||project.startDate,e=m.dueDate;
-      if(!s||!e)return"";
-      const dl=delayLvl(e,m.status);
-      const barC=m.status==="Tamamland\u0131"?"#059669":dl==="critical"?"#E11D48":dl==="normal"?"#EA6C00":project.color;
-      return `<div style="display:flex;align-items:center;margin-bottom:8px"><div style="width:140px;flex-shrink:0;font-size:11px;font-weight:600;padding-right:8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${m.name}</div><div style="flex:1;position:relative;height:22px;background:#F1F5FF;border-radius:4px"><div style="position:absolute;left:${pct(s)}%;width:${wPct(s,e)}%;top:2px;height:18px;background:${barC};border-radius:3px;display:flex;align-items:center;justify-content:center;min-width:16px"><span style="font-size:9px;color:#fff;padding:0 3px">${fmt(e)}</span></div><div style="position:absolute;left:${todayPct}%;top:0;bottom:0;width:2px;background:#E11D48;z-index:2"></div></div><div style="width:70px;text-align:right;padding-left:6px;font-size:10px;color:#94A3B8">${m.tasks.filter(t=>t.status==="Tamamland\u0131").length}/${m.tasks.length}</div></div>`;
-    }).join("");
-    ganttHTML=ganttRows;
-  }
-
-  const html=`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${project.name} - Yönetici Raporu</title>
-<style>
-body{font-family:Inter,Segoe UI,sans-serif;margin:0;padding:32px;color:#1E293B;background:#F8FAFC}
-h1{font-size:24px;font-weight:800;margin:0 0 4px}
-h2{font-size:16px;font-weight:700;margin:0 0 14px;padding-bottom:8px;border-bottom:2px solid #E2E8F0}
-.meta{font-size:13px;color:#64748B;margin-bottom:24px}
-.card{background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:20px;border:1px solid #E2E8F0;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.stat{background:#fff;border-radius:10px;padding:14px;border:1px solid #E2E8F0;text-align:center}
-.stat-num{font-size:26px;font-weight:800;margin:0}
-.stat-lbl{font-size:11px;color:#64748B;margin-top:2px}
-.prog{height:10px;background:#E2E8F0;border-radius:10px;overflow:hidden;margin:10px 0}
-.prog-bar{height:100%;background:${project.color};border-radius:10px}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:#F8FAFC;padding:8px 10px;text-align:left;font-weight:600;color:#64748B;border-bottom:1px solid #E2E8F0}
-td{padding:8px 10px;border-bottom:1px solid #F1F5FF}
-tr:last-child td{border-bottom:none}
-@media print{body{padding:16px;background:#fff}.card{box-shadow:none;border:1px solid #E2E8F0}button{display:none}}
-</style></head><body>
-<button onclick="window.print()" style="float:right;background:#4A6CF7;color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-weight:600;font-size:13px">Yazdır / PDF</button>
-<h1>${project.name}</h1>
-<div class="meta">Rapor tarihi: ${new Date().toLocaleDateString("tr-TR",{day:"2-digit",month:"long",year:"numeric"})} &nbsp;|&nbsp; PM: ${pmNames||"Atanmamış"} &nbsp;|&nbsp; ${fmt(project.startDate)} - ${fmt(project.endDate)}</div>
-
-<div class="stats">
-  <div class="stat"><div class="stat-num" style="color:#4A6CF7">${progress}%</div><div class="stat-lbl">İlerleme</div></div>
-  <div class="stat"><div class="stat-num" style="color:#059669">${done.length}</div><div class="stat-lbl">Tamamlandı</div></div>
-  <div class="stat"><div class="stat-num" style="color:#EA6C00">${active.length}</div><div class="stat-lbl">Devam Ediyor</div></div>
-  <div class="stat"><div class="stat-num" style="color:#E11D48">${delayed.length}</div><div class="stat-lbl">Gecikmiş</div></div>
-</div>
-
-<div class="card">
-  <h2>Proje Planı</h2>
-  <div class="prog"><div class="prog-bar" style="width:${progress}%"></div></div>
-  <div style="font-size:12px;color:#64748B;margin-bottom:16px">${done.length}/${allTasks.length} görev tamamlandı</div>
-  ${ganttHTML}
-  <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
-    ${[[project.color,"Devam Ediyor"],["#059669","Tamamlandı"],["#EA6C00","Gecikmiş"],["#E11D48","Kritik"]].map(([c,l])=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:8px;border-radius:2px;background:${c}"></div><span style="font-size:11px;color:#64748B">${l}</span></div>`).join("")}
-  </div>
-</div>
-
-${active.length>0?`<div class="card"><h2>Devam Eden Görevler (${active.length})</h2><table><thead><tr><th>Milestone</th><th>Görev</th><th>Durum</th><th>Öncelik</th><th>Sorumlu</th><th>Termin</th><th>Gecikme</th></tr></thead><tbody>${taskRows(active)}</tbody></table></div>`:""}
-
-${delayed.length>0?`<div class="card" style="border-left:4px solid #E11D48"><h2 style="color:#E11D48">Gecikmiş / Kritik Görevler (${delayed.length})</h2><table><thead><tr><th>Milestone</th><th>Görev</th><th>Durum</th><th>Öncelik</th><th>Sorumlu</th><th>Termin</th><th>Gecikme</th></tr></thead><tbody>${taskRows(delayed)}</tbody></table></div>`:""}
-
-${(()=>{
-  const timeByPerson={};
-  let grandTotal=0;
-  allTasks.forEach(t=>(t.timeEntries||[]).forEach(e=>{
-    const h=parseFloat(e.hours)||0;
-    timeByPerson[e.user]=(timeByPerson[e.user]||0)+h;
-    grandTotal+=h;
-  }));
-  if(grandTotal===0)return"";
-  const personRows=Object.entries(timeByPerson).sort((a,b)=>b[1]-a[1]).map(([name,h])=>`<tr><td><strong>${name}</strong></td><td>${h} saat</td><td>${Math.round(h/grandTotal*100)}%</td></tr>`).join("");
-  const taskRows2=allTasks.filter(t=>(t.timeEntries||[]).length>0).map(t=>{
-    const th=(t.timeEntries||[]).reduce((a,e)=>a+(parseFloat(e.hours)||0),0);
-    return `<tr><td>${t.msName}</td><td><strong>${t.title}</strong></td><td>${findName(t.assignee)}</td><td>${th} saat</td></tr>`;
+  const projectLogs = logs.filter(log=>log.project===project.name).slice(0, 12);
+  const logRows = projectLogs.map(log => {
+    const meta = LOG_META[log.action] || LOG_META.general;
+    const ts = log.ts ? new Date(log.ts).toLocaleString("tr-TR") : "-";
+    return `<tr><td>${ts}</td><td><span class="r-pill" style="background:${meta.bg};color:${meta.color}">${meta.label}</span></td><td>${escapeHtml(log.user||"-")}</td><td>${escapeHtml(log.detail||"")}</td></tr>`;
   }).join("");
-  return `<div class="card"><h2>Harcanan Süre Raporu (Toplam: ${grandTotal} saat)</h2>
-    <table style="margin-bottom:16px"><thead><tr><th>Kisi</th><th>Toplam Saat</th><th>Oran</th></tr></thead><tbody>${personRows}</tbody></table>
-    <table><thead><tr><th>Milestone</th><th>Görev</th><th>Sorumlu</th><th>Sure</th></tr></thead><tbody>${taskRows2}</tbody></table></div>`;
-})()}
 
-<div class="card"><h2>Tamamlanan Görevler (${done.length})</h2><table><thead><tr><th>Milestone</th><th>Görev</th><th>Durum</th><th>Öncelik</th><th>Sorumlu</th><th>Termin</th><th></th></tr></thead><tbody>${taskRows(done)}</tbody></table></div>
+  const content = `
+    <section class="r-grid">
+      <div class="r-kpi"><small>İlerleme</small><b>${progress}%</b></div>
+      <div class="r-kpi"><small>Tamamlanan</small><b>${done.length}</b></div>
+      <div class="r-kpi"><small>Devam Eden</small><b>${active.length}</b></div>
+      <div class="r-kpi"><small>Bekleyen</small><b>${waiting.length}</b></div>
+      <div class="r-kpi"><small>Gecikmiş</small><b>${delayed.length}</b></div>
+    </section>
 
-${projLogs.length>0?`<div class="card"><h2>Son Aktiviteler</h2><table><thead><tr><th>Tarih</th><th>Tip</th><th>Kullanici</th><th>Detay</th></tr></thead><tbody>${logRows}</tbody></table></div>`:""}
+    <section class="r-card">
+      <h3 class="r-card-title">Proje Özeti</h3>
+      <p>PM: ${escapeHtml(pmNames)} · ${fmt(project.startDate)} / ${fmt(project.endDate)} · ${project.status || "Durum belirtilmemiş"}</p>
+    </section>
 
-</body></html>`;
-  const uri = "data:text/html;charset=utf-8," + encodeURIComponent(html);
-  const a = document.createElement("a");
-  a.href = uri;
-  a.download = project.name.replace(/[^a-zA-Z0-9]/g,"_") + "-rapor.html";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+    <section class="r-card">
+      <h3 class="r-card-title">Gantt Görünümü</h3>
+      ${milestoneBars || "<p>Milestone planı eksik.</p>"}
+    </section>
+
+    <section class="r-card">
+      <h3 class="r-card-title">Görev Listesi</h3>
+      <div style="overflow:auto">
+        <table class="r-table">
+          <thead>
+            <tr><th>Milestone</th><th>Görev</th><th>Durum</th><th>Öncelik</th><th>Sorumlu</th><th>Termin</th></tr>
+          </thead>
+          <tbody>${taskRows || "<tr><td colspan='6'>Görev kaydı yok.</td></tr>"}</tbody>
+        </table>
+      </div>
+    </section>
+
+    ${projectLogs.length ? `<section class="r-card"><h3 class="r-card-title">Son Değişiklikler</h3><div style="overflow:auto"><table class="r-table"><thead><tr><th>Zaman</th><th>Tip</th><th>Kullanıcı</th><th>Detay</th></tr></thead><tbody>${logRows || "<tr><td colspan='4'>Kayıt yok.</td></tr>"}</tbody></table></div></section>` : ""}
+  `;
+
+  const html = buildThemeReport({
+    title: `${project.name} - Yönetici Raporu`,
+    subtitle: "Görev, Gantt ve geçmiş notları birleştirilmiş görünüm",
+    accent: project.color || "#4A6CF7",
+    content,
+  });
+
+  downloadTextFile(html, `${safeFileName(project.name)}-rapor.html`, "text/html;charset=utf-8");
 }
-
 
 // ─── Risk Panel ──────────────────────────────────────────────────────────────
 
 
 export function generateTeamCapacityReport(state,people){
-  const tasks=state.projects.flatMap(project=>project.milestones.flatMap(milestone=>milestone.tasks.map(task=>({task,project}))));
-  const rows=people.map(person=>{
-    const assigned=tasks.filter(({task})=>task.assignee===person.id);
-    const active=assigned.filter(({task})=>task.status!=="Tamamland\u0131");
-    const delayed=active.filter(({task})=>delayLvl(task.dueDate,task.status));
-    const hours=assigned.reduce((total,{task})=>total+(task.timeEntries||[]).reduce((sum,entry)=>sum+(parseFloat(entry.hours)||0),0),0)
-      +(state.fieldPlans||[]).filter(plan=>plan.userId===person.id&&(plan.status==="completed"||plan.completedAt)).reduce((total,plan)=>total+fieldPlanHours(plan),0);
-    return {person,assigned:assigned.length,active:active.length,delayed:delayed.length,hours};
-  }).filter(item=>item.assigned||item.hours).sort((a,b)=>b.active-a.active||b.hours-a.hours);
-  const max=Math.max(1,...rows.map(item=>item.active));
-  const cards=rows.map(item=>`<div class="person"><div class="head"><div class="avatar">${item.person.avatar||"?"}</div><div><b>${item.person.name}</b><small>${item.person.role||""}</small></div><strong>${item.active} aktif</strong></div><div class="track"><i style="width:${item.active/max*100}%;background:${item.delayed?"linear-gradient(90deg,#f59e0b,#ef4444)":"linear-gradient(90deg,#4f46e5,#7c3aed)"}"></i></div><div class="meta"><span>${item.assigned} toplam görev</span><span class="${item.delayed?"danger":""}">${item.delayed} gecikmiş</span><span>${item.hours} saat efor</span></div></div>`).join("");
-  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Ekip Kapasite Raporu</title><style>*{box-sizing:border-box}body{margin:0;padding:30px;background:#eef2ff;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1100px;margin:auto}.hero{background:linear-gradient(125deg,#172554,#4338ca,#7c3aed);color:#fff;padding:28px;border-radius:22px;margin-bottom:18px}.hero h1{margin:0}.hero p{color:#c7d2fe}.print{float:right;border:0;border-radius:10px;background:#fff;color:#4338ca;padding:9px 15px;font-weight:800}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.person{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:17px}.head{display:flex;gap:10px;align-items:center}.head>div:nth-child(2){flex:1}.head small{display:block;color:#94a3b8;margin-top:2px}.head strong{color:#4338ca}.avatar{width:38px;height:38px;border-radius:50%;background:#eef2ff;color:#4338ca;display:grid;place-items:center;font-weight:900}.track{height:8px;background:#e2e8f0;border-radius:10px;overflow:hidden;margin:14px 0 8px}.track i{display:block;height:100%;border-radius:10px}.meta{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#64748b}.danger{color:#dc2626;font-weight:800}@media(max-width:700px){body{padding:14px}.grid{grid-template-columns:1fr}}@media print{body{background:#fff;padding:0}.print{display:none}}</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>Ekip Kapasite Raporu</h1><p>${new Date().toLocaleDateString("tr-TR")} · ${state.projects.length} proje · ${tasks.length} görev</p></div><div class="grid">${cards||"<div class='person'>Atanmış görev bulunmuyor.</div>"}</div></div></body></html>`;
-  downloadTextFile(html,`ekip-kapasite-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
+  const tasks = state.projects.flatMap(project => project.milestones.flatMap(milestone=>milestone.tasks.map(task=>({task,project}))));
+  const rows = people.map(person => {
+    const assigned = tasks.filter(({task})=>task.assignee === person.id);
+    const active = assigned.filter(({task})=>task.status !== "Tamamlandı");
+    const delayed = active.filter(({task})=>delayLvl(task.dueDate,task.status));
+    const hours = assigned.reduce((total,{task})=>total+(task.timeEntries||[]).reduce((sum,entry)=>sum+(parseFloat(entry.hours)||0),0),0)
+      + (state.fieldPlans || []).filter(plan=>plan.userId===person.id && (plan.status === "completed" || plan.completedAt)).reduce((total,plan)=>total+fieldPlanHours(plan),0);
+    return {person, assigned: assigned.length, active: active.length, delayed: delayed.length, hours};
+  }).filter(item=>item.assigned || item.hours).sort((a,b)=>b.active-a.active || b.hours-a.hours);
+
+  const max = Math.max(1, ...rows.map(item=>item.assigned));
+  const cards = rows.map(item => `
+    <div class="r-card" style="margin-bottom:10px">
+      <div class="r-section">
+        <div>
+          <b>${escapeHtml(item.person.name)}</b>
+          <div style="font-size:11px;color:#5b6f74">${escapeHtml(item.person.role || "")}</div>
+        </div>
+        <span class="r-pill ${item.delayed ? "danger" : "ok"}">${item.active} aktif</span>
+      </div>
+      <div style="height:8px;background:#e8f4f6;border-radius:999px;overflow:hidden"><i style="display:block;height:100%;width:${Math.min(100,(item.assigned/max)*100)}%;background:${item.delayed ? "linear-gradient(90deg,#f59e0b,#ef4444)" : "linear-gradient(90deg,#4f46e5,#7c3aed)"}"></i></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#5b6f74;margin-top:8px">
+        <span>Toplam Görev ${item.assigned}</span>
+        <span class="${item.delayed ? "danger" : ""}">Gecikmiş ${item.delayed}</span>
+        <span>Toplam Efor ${item.hours} saat</span>
+      </div>
+    </div>`
+  ).join("");
+
+  const html = buildThemeReport({
+    title: "Ekip Kapasite Raporu",
+    subtitle: `${state.projects.length} proje · ${tasks.length} görev dağılımı`,
+    accent: "#7c3aed",
+    content: `
+      <section class="r-grid">
+        <div class="r-kpi"><small>Takım Üyesi</small><b>${rows.length}</b></div>
+        <div class="r-kpi"><small>Atanmış Görev</small><b>${rows.reduce((sum,item)=>sum+item.assigned,0)}</b></div>
+        <div class="r-kpi"><small>Aktif Görev</small><b>${rows.reduce((sum,item)=>sum+item.active,0)}</b></div>
+        <div class="r-kpi"><small>Toplam Efor</small><b>${rows.reduce((sum,item)=>sum+item.hours,0)} saat</b></div>
+      </section>
+      <section class="r-card">
+        <h3 class="r-card-title">Kişi Bazlı Kapasite</h3>
+        ${cards || "<p>Kullanıcı verisi bulunmuyor.</p>"}
+      </section>
+    `,
+  });
+
+  downloadTextFile(html, `ekip-kapasite-raporu-${todayStr()}.html`, "text/html;charset=utf-8");
 }
 
 export function generateRiskPortfolioReport(state){
-  const risks=state.projects.flatMap(project=>(project.risks||[]).map(risk=>({risk,project})));
-  const open=risks.filter(({risk})=>!["Kapal\u0131","Kapalı"].includes(risk.status));
-  const high=open.filter(({risk})=>["Y\u00fcksek","Kritik"].includes(risk.level));
-  const rows=risks.map(({risk,project})=>`<tr><td><b>${risk.title}</b><small>${risk.note||""}</small></td><td>${project.name}</td><td><span class="pill ${["Y\u00fcksek","Kritik"].includes(risk.level)?"red":risk.level==="Orta"?"orange":"green"}">${risk.level||"-"}</span></td><td>${risk.status||"Açık"}</td></tr>`).join("");
-  const projectBars=state.projects.map(project=>{const count=(project.risks||[]).filter(risk=>!["Kapal\u0131","Kapalı"].includes(risk.status)).length;const critical=(project.risks||[]).filter(risk=>["Y\u00fcksek","Kritik"].includes(risk.level)&&!["Kapal\u0131","Kapalı"].includes(risk.status)).length;return `<div class="bar"><div><b>${project.name}</b><span>${count} açık · ${critical} yüksek</span></div><i><em style="width:${Math.min(100,count*20)}%;background:${critical?"#ef4444":count?"#f59e0b":"#10b981"}"></em></i></div>`}).join("");
-  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Risk Portföyü Raporu</title><style>*{box-sizing:border-box}body{margin:0;padding:30px;background:#fff7ed;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1200px;margin:auto}.hero{background:linear-gradient(125deg,#7c2d12,#ea580c,#f59e0b);color:#fff;padding:28px;border-radius:22px}.hero h1{margin:0}.hero p{color:#ffedd5}.print{float:right;border:0;border-radius:10px;background:#fff;color:#c2410c;padding:9px 15px;font-weight:800}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}.stat{background:#fff;border-radius:15px;padding:17px;border:1px solid #fed7aa}.stat b{display:block;font-size:28px;color:#c2410c}.layout{display:grid;grid-template-columns:1fr 1.5fr;gap:14px}.card{background:#fff;border:1px solid #fed7aa;border-radius:17px;padding:19px}.bar{margin-bottom:13px}.bar div{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}.bar span{color:#64748b}.bar i{display:block;height:8px;background:#f1f5f9;border-radius:10px;overflow:hidden}.bar em{display:block;height:100%;border-radius:10px}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #ffedd5;text-align:left;font-size:11px}th{color:#64748b;background:#fffaf5}td small{display:block;color:#94a3b8;margin-top:3px}.pill{padding:3px 7px;border-radius:8px;font-weight:800}.red{background:#fff1f2;color:#dc2626}.orange{background:#fff7ed;color:#ea580c}.green{background:#ecfdf5;color:#059669}@media(max-width:760px){body{padding:14px}.stats,.layout{grid-template-columns:1fr}}@media print{body{background:#fff;padding:0}.print{display:none}}</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>Risk Portföyü Raporu</h1><p>${new Date().toLocaleDateString("tr-TR")} · Yönetici risk görünümü</p></div><div class="stats"><div class="stat"><b>${risks.length}</b>Toplam Risk</div><div class="stat"><b>${open.length}</b>Açık Risk</div><div class="stat"><b>${high.length}</b>Yüksek / Kritik</div></div><div class="layout"><div class="card"><h3>Proje Risk Yoğunluğu</h3>${projectBars||"Proje bulunmuyor."}</div><div class="card"><h3>Risk Envanteri</h3><div style="overflow:auto"><table><thead><tr><th>Risk</th><th>Proje</th><th>Seviye</th><th>Durum</th></tr></thead><tbody>${rows||"<tr><td colspan='4'>Risk bulunmuyor.</td></tr>"}</tbody></table></div></div></div></div></body></html>`;
-  downloadTextFile(html,`risk-portfoyu-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
-}
+  const risks = state.projects.flatMap(project => (project.risks || []).map(risk => ({risk, project})));
+  const open = risks.filter(({risk}) => !["Kapalı", "Kapanmış"].includes(risk.status));
+  const high = open.filter(({risk}) => ["Yüksek", "Kritik"].includes(risk.level));
 
+  const riskByProject = state.projects.map(project => {
+    const openCount = (project.risks || []).filter(risk => !["Kapalı", "Kapanmış"].includes(risk.status)).length;
+    const criticalCount = (project.risks || []).filter(risk => ["Yüksek", "Kritik"].includes(risk.level) && !["Kapalı", "Kapanmış"].includes(risk.status)).length;
+    const total = Math.max(1, (project.risks || []).length);
+    return `<div style="margin-bottom:10px">
+      <div class="r-section"><strong>${escapeHtml(project.name)}</strong><span class="r-pill ${criticalCount ? "danger" : "ok"}">${openCount} açık risk</span></div>
+      <div style="height:8px;background:#e8f4f6;border-radius:999px;overflow:hidden"><i style="display:block;height:100%;width:${(openCount/total)*100}%;background:${criticalCount ? "#E11D48" : "#EA6C00"}"></i></div>
+      <div style="font-size:11px;color:#5b6f74">Yüksek/Kritik: ${criticalCount}</div>
+    </div>`;
+  }).join("");
+
+  const rows = risks.map(({risk,project}) => `<tr><td><b>${escapeHtml(risk.title)}</b><small>${escapeHtml(risk.note || "")}</small></td><td>${escapeHtml(project.name)}</td><td><span class="r-pill ${["Yüksek","Kritik"].includes(risk.level) ? "danger" : risk.level === "Orta" ? "warn" : "ok"}">${escapeHtml(risk.level || "- ")}</span></td><td>${escapeHtml(risk.status || "Açık")}</td></tr>`).join("");
+
+  const html = buildThemeReport({
+    title: "Risk Portföyü Raporu",
+    subtitle: `${risks.length} risk kaydı analizi`,
+    accent: "#f59e0b",
+    content: `
+      <section class="r-grid">
+        <div class="r-kpi"><small>Toplam Risk</small><b>${risks.length}</b></div>
+        <div class="r-kpi"><small>Açık Risk</small><b>${open.length}</b></div>
+        <div class="r-kpi"><small>Yüksek / Kritik</small><b>${high.length}</b></div>
+      </section>
+      <section class="r-card">
+        <h3 class="r-card-title">Proje Bazlı Risk Yoğunluğu</h3>
+        ${riskByProject || "<p>Risk kaydı yok.</p>"}
+      </section>
+      <section class="r-card">
+        <h3 class="r-card-title">Risk Envanteri</h3>
+        <div style="overflow:auto">
+          <table class="r-table">
+            <thead><tr><th>Risk</th><th>Proje</th><th>Seviye</th><th>Durum</th></tr></thead>
+            <tbody>${rows || "<tr><td colspan='4'>Risk bulunmuyor.</td></tr>"}</tbody>
+          </table>
+        </div>
+      </section>
+    `,
+  });
+
+  downloadTextFile(html, `risk-portfoyu-raporu-${todayStr()}.html`, "text/html;charset=utf-8");
+}
 export function generateSteercoReport(project,state,people){
-  if(!project)return;
-  const tasks=project.milestones.flatMap(milestone=>milestone.tasks.map(task=>({task,milestone})));
-  const done=tasks.filter(({task})=>task.status==="Tamamlandı").length;
-  const progress=tasks.length?Math.round(done/tasks.length*100):0;
-  const delayed=tasks.filter(({task})=>delayLvl(task.dueDate,task.status));
-  const risks=(project.risks||[]).filter(risk=>!["Kapalı","Kapal\u0131"].includes(risk.status));
-  const criticalRisks=risks.filter(risk=>["Yüksek","Kritik"].includes(risk.level));
-  const actions=((state.projectActions||{})[project.id]||[]).slice().sort((a,b)=>String(b.actionAt||b.createdAt||"").localeCompare(String(a.actionAt||a.createdAt||""))).slice(0,8);
-  const tickets=((state.projectTickets||{})[project.id]||[]);
-  const openTickets=tickets.filter(ticket=>!["Tamamlandı","İptal Edildi","Done"].includes(ticket.status));
-  const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];
-  const commissioned=machines.filter(machine=>machine.commissioned).length;
-  const machineProgress=machines.length?Math.round(commissioned/machines.length*100):0;
-  const fieldHours=(state.fieldPlans||[]).filter(plan=>plan.projectId===project.id&&(plan.status==="completed"||plan.completedAt)).reduce((sum,plan)=>sum+fieldPlanHours(plan),0);
-  const taskHours=tasks.reduce((sum,{task})=>sum+(task.timeEntries||[]).reduce((total,entry)=>total+(parseFloat(entry.hours)||0),0),0);
-  const actionHours=actions.reduce((sum,action)=>sum+(parseFloat(action.effortHours)||0),0);
-  const totalHours=Math.round((fieldHours+taskHours+actionHours)*10)/10;
-  const health=progress>=75&&criticalRisks.length===0&&delayed.length<3?"Sağlıklı":criticalRisks.length||delayed.length>5?"Yönetici Aksiyonu Gerekli":"Dikkat";
-  const statusColor=health==="Sağlıklı"?"#059669":health==="Dikkat"?"#EA6C00":"#E11D48";
-  const nextTasks=tasks.filter(({task})=>task.status!=="Tamamlandı").sort((a,b)=>String(a.task.dueDate||"9999").localeCompare(String(b.task.dueDate||"9999"))).slice(0,8);
-  const rows=nextTasks.map(({task,milestone})=>`<tr><td><b>${escapeHtml(task.title)}</b><small>${escapeHtml(milestone.name)}</small></td><td>${escapeHtml(people.find(person=>person.id===task.assignee)?.name||"-")}</td><td>${fmt(task.dueDate)}</td><td>${escapeHtml(task.status||"-")}</td></tr>`).join("");
-  const actionRows=actions.map(action=>`<li><b>${fmt(action.actionAt||action.createdAt)}</b><span>${escapeHtml(action.text||"")}</span></li>`).join("");
-  const riskRows=risks.slice(0,6).map(risk=>`<li><b>${escapeHtml(risk.level||"Risk")}</b><span>${escapeHtml(risk.title||"")} ${risk.note?`<small>${escapeHtml(risk.note)}</small>`:""}</span></li>`).join("");
-  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Steerco Raporu - ${escapeHtml(project.name)}</title><style>*{box-sizing:border-box}body{margin:0;padding:30px;background:#eef2ff;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1180px;margin:auto}.hero{background:linear-gradient(125deg,#0f172a,#4338ca,#06b6d4);color:#fff;padding:30px;border-radius:24px;margin-bottom:16px;box-shadow:0 24px 60px rgba(30,41,59,.18)}.hero h1{margin:0;font-size:32px}.hero p{color:#dbeafe;margin:8px 0 0}.print{float:right;border:0;border-radius:12px;background:#fff;color:#4338ca;padding:10px 16px;font-weight:900}.badge{display:inline-block;background:${statusColor};color:#fff;border-radius:999px;padding:7px 12px;font-weight:900;margin-bottom:14px}.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}.stat{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px}.stat b{display:block;font-size:25px;color:#4338ca}.stat span{font-size:11px;color:#64748b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:19px}.card h2{font-size:16px;margin:0 0 12px}.bar{height:12px;background:#e2e8f0;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#4f46e5,#06b6d4)}ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}li{display:flex;gap:10px;font-size:12px;line-height:1.45}li b{min-width:92px;color:#4338ca}li small{display:block;color:#94a3b8;margin-top:3px}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:12px}th{background:#f8fafc;color:#64748b}td small{display:block;color:#94a3b8;margin-top:3px}.wide{grid-column:1/-1}@media(max-width:820px){body{padding:14px}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.hero h1{font-size:24px}}@media print{body{background:#fff;padding:0}.print{display:none}.hero{box-shadow:none}}</style></head><body><div class="wrap"><section class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><span class="badge">${health}</span><h1>Steerco Proje Durum Raporu</h1><p>${escapeHtml(project.name)} · ${new Date().toLocaleDateString("tr-TR")} · Yönetici karar toplantısı çıktısı</p></section><section class="stats"><div class="stat"><span>Genel İlerleme</span><b>%${progress}</b></div><div class="stat"><span>Devreye Alma</span><b>%${machineProgress}</b></div><div class="stat"><span>Geciken İş</span><b>${delayed.length}</b></div><div class="stat"><span>Açık Risk</span><b>${risks.length}</b></div><div class="stat"><span>Açık Ticket</span><b>${openTickets.length}</b></div><div class="stat"><span>Toplam Efor</span><b>${totalHours} sa</b></div></section><section class="grid"><div class="card"><h2>Proje İlerleme Özeti</h2><div class="bar"><i style="width:${progress}%"></i></div><p style="font-size:12px;color:#64748b;line-height:1.6">Tamamlanan görev sayısı ${done}/${tasks.length}. Makine/devreye alma kapsamı ${commissioned}/${machines.length||0}. Yönetim odağı: ${health}.</p></div><div class="card"><h2>Karar / Dikkat Gerektiren Konular</h2><ul>${riskRows||"<li><b>Risk</b><span>Açık kritik risk bulunmuyor.</span></li>"}${delayed.length?`<li><b>Termin</b><span>${delayed.length} geciken görev için aksiyon gerekli.</span></li>`:""}</ul></div><div class="card"><h2>Son Aksiyonlar</h2><ul>${actionRows||"<li><b>Aksiyon</b><span>Henüz aksiyon kaydı yok.</span></li>"}</ul></div><div class="card"><h2>Ticket ve Ürün Takibi</h2><ul><li><b>Açık</b><span>${openTickets.length} ticket açık durumda.</span></li><li><b>Jira</b><span>${tickets.filter(ticket=>ticket.jiraKey).length} ticket Jira ile ilişkilendirilmiş.</span></li><li><b>Müşteri Onayı</b><span>${tickets.filter(ticket=>String(ticket.status||"").toLocaleLowerCase("tr-TR").includes("müşteri")).length} kayıt müşteri aksiyonu bekliyor.</span></li></ul></div><div class="card wide"><h2>Yaklaşan / Açık İşler</h2><table><thead><tr><th>İş</th><th>Sorumlu</th><th>Termin</th><th>Durum</th></tr></thead><tbody>${rows||"<tr><td colspan='4'>Açık görev bulunmuyor.</td></tr>"}</tbody></table></div></section></div></body></html>`;
-  downloadTextFile(html,`steerco-raporu-${safeFileName(project.name)}-${todayStr()}.html`,"text/html;charset=utf-8");
+  if(!project) return;
+  const tasks = project.milestones.flatMap(milestone => milestone.tasks.map(task=>({task,milestone})));
+  const done = tasks.filter(({task})=>task.status === "Tamamlandı").length;
+  const progress = tasks.length ? Math.round(done/tasks.length*100) : 0;
+  const delayed = tasks.filter(({task})=>delayLvl(task.dueDate,task.status));
+  const risks = (project.risks || []).filter(risk => !["Kapalı", "Kapanmış"].includes(risk.status));
+  const criticalRisks = risks.filter(risk=>["Yüksek", "Kritik"].includes(risk.level));
+  const actions = ((state.projectActions || {})[project.id] || []).slice().sort((a,b)=>String(b.actionAt||b.createdAt||"").localeCompare(String(a.actionAt||a.createdAt||""))).slice(0, 8);
+  const tickets = ((state.projectTickets || {})[project.id] || []);
+  const openTickets = tickets.filter(ticket => !["Tamamlandı", "İptal Edildi", "Done"].includes(ticket.status));
+  const machines = project.commissioningTracking ? commissioningMachines(project.commissioningTree || []) : (project.machines || []);
+  const commissioned = machines.filter(machine => machine.commissioned).length;
+  const machineProgress = machines.length ? Math.round(commissioned/machines.length*100) : 0;
+  const fieldHours = (state.fieldPlans || []).filter(plan=>plan.projectId === project.id && (plan.status === "completed" || plan.completedAt)).reduce((sum,plan)=>sum+fieldPlanHours(plan),0);
+  const taskHours = tasks.reduce((sum,{task})=>sum+(task.timeEntries||[]).reduce((total,entry)=>total+(parseFloat(entry.hours)||0),0),0);
+  const actionHours = actions.reduce((sum,action)=>sum+(parseFloat(action.effortHours)||0),0);
+  const totalHours = Math.round((fieldHours + taskHours + actionHours) * 10) / 10;
+  const health = progress>=75 && criticalRisks.length===0 && delayed.length < 3 ? "Sağlıklı" : (criticalRisks.length || delayed.length>5 ? "Yönetici Aksiyonu Gerekli" : "Dikkat");
+
+  const nextTasks = tasks.filter(({task})=>task.status !== "Tamamlandı").sort((a,b)=>String(a.task.dueDate || "9999").localeCompare(String(b.task.dueDate || "9999"))).slice(0, 8);
+  const rows = nextTasks.map(({task,milestone}) => `<tr><td><b>${escapeHtml(task.title)}</b><small>${escapeHtml(milestone.name)}</small></td><td>${escapeHtml(people.find(person=>person.id===task.assignee)?.name||"-")}</td><td>${fmt(task.dueDate)}</td><td>${escapeHtml(task.status || "-")}</td></tr>`).join("");
+  const actionRows = actions.map(action=>`<li><b>${fmt(action.actionAt || action.createdAt)}</b><span>${escapeHtml(action.text || "")}</span></li>`).join("");
+  const riskRows = risks.slice(0,6).map(risk=>`<li><b>${escapeHtml(risk.level || "Risk")}</b><span>${escapeHtml(risk.title || "")} ${risk.note ? `<small>${escapeHtml(risk.note)}</small>` : ""}</span></li>`).join("");
+
+  const content = `
+    <section class="r-grid">
+      <div class="r-kpi"><small>Genel İlerleme</small><b>${progress}%</b></div>
+      <div class="r-kpi"><small>Devreye Alma</small><b>${machineProgress}%</b></div>
+      <div class="r-kpi"><small>Geciken Görev</small><b>${delayed.length}</b></div>
+      <div class="r-kpi"><small>Açık Ticket</small><b>${openTickets.length}</b></div>
+      <div class="r-kpi"><small>Toplam Efor</small><b>${totalHours} saat</b></div>
+      <div class="r-kpi"><small>Durum</small><b>${health}</b></div>
+    </section>
+
+    <section class="r-card">
+      <h3 class="r-card-title">Proje İlerleme Özeti</h3>
+      <p>${escapeHtml(project.name)} için hedefleme, kalite durumu ve yönetici bakış; tamamlanan görev ${done}/${tasks.length}.</p>
+    </section>
+
+    <section class="r-card">
+      <h3 class="r-card-title">Karar / Dikkat Noktaları</h3>
+      <ul>
+        ${riskRows || "<li><b>Risk</b><span>Açık kritik risk bulunmuyor.</span></li>"}
+        ${delayed.length ? `<li><b>Termin</b><span>${delayed.length} geciken görev için aksiyon gerekli.</span></li>` : ""}
+      </ul>
+    </section>
+
+    <section class="r-card">
+      <h3 class="r-card-title">İş ve Sonraki Plan</h3>
+      <div style="overflow:auto">
+        <table class="r-table">
+          <thead><tr><th>İş</th><th>Sorumlu</th><th>Termin</th><th>Durum</th></tr></thead>
+          <tbody>${rows || "<tr><td colspan='4'>Açık iş bulunmuyor.</td></tr>"}</tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="r-card">
+      <h3 class="r-card-title">Son Aksiyonlar</h3>
+      <ul>${actionRows || "<li><b>Aksiyon</b><span>Henüz aksiyon kaydı yok.</span></li>"}</ul>
+    </section>
+
+    <section class="r-card">
+      <h3 class="r-card-title">Ticket ve Ürün Takibi</h3>
+      <ul>
+        <li><b>Açık Ticket</b><span>${openTickets.length} kayıt beklemede.</span></li>
+        <li><b>Jira</b><span>${tickets.filter(ticket=>ticket.jiraKey).length} ticket ile eşleşme.</span></li>
+        <li><b>Müşteri Onayı</b><span>${tickets.filter(ticket=>String(ticket.status||"").toLocaleLowerCase("tr-TR").includes("müşteri")).length} kayıt müşteri onayı bekliyor.</span></li>
+      </ul>
+    </section>
+  `;
+
+  const html = buildThemeReport({
+    title: `Steerco Proje Durum Raporu - ${project.name}`,
+    subtitle: `${new Date().toLocaleDateString("tr-TR")} · Yönetim karar toplantısı özeti`,
+    accent: project.color || "#4f46e5",
+    content,
+  });
+
+  downloadTextFile(html, `steerco-raporu-${safeFileName(project.name)}-${todayStr()}.html`, "text/html;charset=utf-8");
 }
 
 export function downloadProjectActionsReport(state){
@@ -326,6 +650,59 @@ export function downloadFieldVisitsReport(state,people){
     rows.push([state.projects.find(project=>project.id===plan.projectId)?.name||"Silinmiş proje",plan.date||"",people.find(person=>person.id===plan.userId)?.name||"",plan.actualStartTime||plan.startTime||"",plan.actualEndTime||plan.endTime||"",fieldPlanHours(plan),plan.visitNotes||""]);
   });
   downloadXlsx(rows,`saha-ziyaretleri-${todayStr()}.xlsx`,"Saha Ziyaretleri");
+}
+
+export function generateFieldManagementReport(state,people){
+  const plans=(state.fieldPlans||[]).map(plan=>({
+    ...plan,
+    projectName: state.projects.find(p=>p.id===plan.projectId)?.name || "Silinmiş proje",
+    userName: people.find(p=>p.id===plan.userId)?.name || "Bilinmiyor",
+  }));
+  const completed=plans.filter(plan=>plan.status==="completed"||plan.completedAt);
+  const inField=completed.filter(plan=> (plan.workType||"field")==="field");
+  const remote=completed.filter(plan=>plan.workType==="remote");
+  const groupedByDay=completed.reduce((acc,plan)=>{
+    const key=plan.date || "Belirsiz";
+    acc[key]=(acc[key]||0)+1;
+    return acc;
+  },{});
+  const max=Math.max(1,...Object.values(groupedByDay));
+  const list=completed
+    .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")))
+    .map(plan=>`<tr>
+      <td>${escapeHtml(plan.date||"-")}</td>
+      <td>${escapeHtml(plan.projectName)}</td>
+      <td>${escapeHtml(plan.userName)}</td>
+      <td>${plan.workType==="remote"?"Uzaktan":"Saha"}</td>
+      <td>${escapeHtml(fmt(plan.date))}</td>
+      <td>${fieldPlanHours(plan)} saat</td>
+      <td>${escapeHtml(plan.visitNotes||"-")}</td>
+    </tr>`)
+    .join("");
+  const stats=[["Toplam Plan",plans.length,"var(--chart-4)"],["Gerçekleşen",completed.length,"var(--success)"],["Saha",inField.length,"var(--chart-1)"],["Uzaktan",remote.length,"var(--warning)"]]
+    .map(([label,value,color])=>`<div class="r-kpi"><small>${escapeHtml(label)}</small><b style="color:${color}">${value}</b></div>`).join("");
+  const heat=Object.entries(groupedByDay).map(([day,count])=>`<div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--r-muted)"><span>${escapeHtml(day)}</span><span>${count}</span></div><div class="r-table"><div style="height:8px;background:var(--r-surface-soft);border-radius:8px;overflow:hidden"><span style="display:block;height:100%;width:${Math.max(8,(count/max)*100)}%;background:var(--r-accent)"/></div></div>`).join("");
+  const html=buildThemeReport({
+    title:"Saha Yönetim Raporu",
+    subtitle:`${state.projects.length} proje · Son saha faaliyetleri`,
+    content:`
+      <section class="r-grid">${stats}</section>
+      <section class="r-card">
+        <h3 class="r-card-title">Günlük Gerçekleşme Dağılımı</h3>
+        ${heat||"<p>Veri bulunmuyor.</p>"}
+      </section>
+      <section class="r-card">
+        <h3 class="r-card-title">Ziyaret ve Çalışma Listesi</h3>
+        <div style="overflow:auto">
+          <table class="r-table">
+            <thead><tr><th>Tarih</th><th>Proje</th><th>Sorumlu</th><th>Tip</th><th>Başlangıç</th><th>Çalışma</th><th>Not</th></tr></thead>
+            <tbody>${list||"<tr><td colspan='7'>Kayıt yok.</td></tr>"}</tbody>
+          </table>
+        </div>
+      </section>`,
+    accent:"#19835c"
+  });
+  downloadTextFile(html,`saha-yonetim-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
 }
 
 const EMAIL_SAMPLE_VARIABLES = {
@@ -408,7 +785,7 @@ export function MailCenterPage({state,setState}) {
       setSendStatus({loading:false,message:`Mail gönderildi${result.emailId?` · ${result.emailId}`:""}`,error:false});
     }catch(error){setSendStatus({loading:false,message:error.message,error:true});}
   };
-  return <div style={{padding:"22px 26px",flex:1,overflow:"auto"}}>
+  return <div className="project-workspace" style={{padding:"22px 26px",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",flexWrap:"wrap",marginBottom:18}}>
       <div><h1 style={{margin:0,fontSize:22}}>Mail Merkezi</h1><p style={{margin:"5px 0 0",fontSize:12,color:"#64748B"}}>Firma markası, dinamik şablonlar, önizleme ve manuel gönderim.</p></div>
       <Btn onClick={addTemplate}>+ Yeni Şablon</Btn>
@@ -480,39 +857,72 @@ export function ReportsPage({ state, people, isAdmin, projectId: controlledProje
   const hours=taskHours+fieldHours;
   const machines=project?(project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[]):[];
   const cards=[
-    {group:"operations",title:"Gecikme Raporu",desc:"Geciken görevler, gecikme günleri, sorumlu ve bekleme nedeni.",color:"#E11D48",action:()=>downloadDelayReport(state,people),label:"XLSX İndir"},
-    {group:"operations",title:"Efor Raporu",desc:"Görev, saha ziyareti ve proje aksiyonlarından oluşan saat analizi.",color:"#7C3AED",action:()=>downloadEffortReport(state,people),label:"XLSX İndir"},
-    {group:"operations",title:"Proje Aksiyonları",desc:"Tüm proje aksiyonları, tarihleri, sahipleri ve girilen eforlar.",color:"#0F766E",action:()=>downloadProjectActionsReport(state),label:"XLSX İndir"},
-    {group:"operations",title:"Saha Ziyaretleri",desc:"Gerçekleşen ziyaretler, ziyaret notları ve proje eforları.",color:"#059669",action:()=>downloadFieldVisitsReport(state,people),label:"XLSX İndir"},
-    {group:"technical",title:"Makine Devreye Alma",desc:"Fiziksel/sanal makineler, devre durumu ve devreye alınamama açıklamaları.",color:"#059669",action:()=>downloadMachineReport(state),label:"XLSX İndir"},
-    {group:"project",title:"İç Operasyon Raporu",desc:"Grafikler, efor, gecikme, sorumlu, görev ve makine detaylarını içeren yönetim raporu.",color:"#0369A1",action:()=>project&&generateVisualReport(project,people,{fieldHours}),label:"HTML / PDF"},
-    {group:"project",title:"Müşteri İlerleme Raporu",desc:"Renkli ilerleme grafikleri, teslim tarihleri ve makine durumunu sade müşteri görünümünde sunar.",color:"#EA6C00",action:()=>project&&generateVisualReport(project,people,{customer:true,fieldHours}),label:"HTML / PDF"},
-    {group:"project",title:"Steerco Toplantı Raporu",desc:"Yönetim toplantısı için karar, risk, gecikme, ticket, efor ve sonraki adımları high-level özetler.",color:"#0F766E",action:()=>project&&generateSteercoReport(project,state,people),label:"HTML / PDF"},
-    ...(isAdmin?[{group:"management",title:"Genel Durum Raporu",desc:"Tüm projeleri ilerleme, gecikme, makine ve efor göstergeleriyle karşılaştırır.",color:"#4338CA",action:()=>generatePortfolioReport(state,people),label:"HTML / PDF"}]:[]),
-    ...(isAdmin?[{group:"management",title:"Ticket Durum Raporu",desc:"Ticket yaşı, son aksiyon, sorumlu, proje ve Jira durumlarını tüm portföyde gösterir.",color:"#BE123C",action:()=>generateTicketStatusReport(state,people),label:"HTML / PDF"}]:[]),
-    ...(isAdmin?[{group:"management",title:"Ekip Kapasite Raporu",desc:"Kişi bazlı aktif iş yükü, gecikme yoğunluğu ve gerçekleşen eforu görselleştirir.",color:"#4F46E5",action:()=>generateTeamCapacityReport(state,people),label:"HTML / PDF"}]:[]),
-    ...(isAdmin?[{group:"management",title:"Risk Portföyü Raporu",desc:"Açık riskleri proje ve önem seviyesine göre karşılaştırmalı gösterir.",color:"#C2410C",action:()=>generateRiskPortfolioReport(state),label:"HTML / PDF"}]:[]),
+    {group:"operations",title:"Gecikme Raporu",desc:"Gecikme yaşını, nedeni ve sorumluları tek bakışta özetler.",color:"var(--danger)",action:()=>downloadDelayReport(state,people),label:"XLSX İndir"},
+    {group:"operations",title:"Efor Raporu",desc:"Görevler, saha ziyaretleri ve proje aksiyonlarından saat dağılımı.",color:"var(--success)",action:()=>downloadEffortReport(state,people),label:"XLSX İndir"},
+    {group:"operations",title:"Proje Aksiyonları",desc:"Atanan aksiyonların tarih, sahip ve efor bazlı listesi.",color:"#0F766E",action:()=>downloadProjectActionsReport(state),label:"XLSX İndir"},
+    {group:"operations",title:"Saha Ziyaretleri",desc:"Gerçekleşen ziyaretler ve notlarla saha operasyon takibi.",color:"var(--success)",action:()=>downloadFieldVisitsReport(state,people),label:"XLSX İndir"},
+    {group:"operations",title:"Saha Yönetim Raporu",desc:"Planlanan/gerçekleşen saha saatleri, kişi ve proje bazlı saha görünümü.",color:"var(--accent)",action:()=>generateFieldManagementReport(state,people),label:"HTML / PDF"},
+    {group:"technical",title:"Makine Devreye Alma",desc:"Fiziksel/sanal makinelerin devre durumu ve ilerleme durumu.",color:"#2563EB",action:()=>downloadMachineReport(state),label:"XLSX İndir"},
+    {group:"project",title:"İç Operasyon Raporu",desc:"Grafik ve tabloyla görev bazlı yönetim özeti.",color:"var(--chart-4)",action:()=>project&&generateVisualReport(project,people,{fieldHours}),label:"HTML / PDF"},
+    {group:"project",title:"Müşteri İlerleme Raporu",desc:"Müşteri görünümüne uygun sade ilerleme özeti.",color:"var(--warning)",action:()=>project&&generateVisualReport(project,people,{customer:true,fieldHours}),label:"HTML / PDF"},
+    {group:"project",title:"Steerco Toplantı Raporu",desc:"Yönetim toplantısı için karar noktaları ve kritik takip maddeleri.",color:"var(--warning)",action:()=>project&&generateSteercoReport(project,state,people),label:"HTML / PDF"},
+    ...(isAdmin?[{group:"management",title:"Genel Durum Raporu",desc:"Portföy bazında ilerleme, gecikme ve kapasite karşılaştırması.",color:"var(--chart-1)",action:()=>generatePortfolioReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{group:"management",title:"Ticket Durum Raporu",desc:"Ticket yaş, son aksiyon ve Jira eşleştirmesi.",color:"#BE123C",action:()=>generateTicketStatusReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{group:"management",title:"Ekip Kapasite Raporu",desc:"Kişi bazlı aktif iş ve efor odaklı kapasite görünümü.",color:"var(--chart-2)",action:()=>generateTeamCapacityReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{group:"management",title:"Risk Portföyü Raporu",desc:"Açık riskleri önem seviyesine göre filtreleyerek izler.",color:"var(--chart-5)",action:()=>generateRiskPortfolioReport(state),label:"HTML / PDF"}]:[]),
   ];
-  return <div style={{padding:"clamp(16px, 4vw, 28px)",flex:1,overflow:"auto"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,marginBottom:20,flexWrap:"wrap"}}><div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="reports" size={21}/>Raporlar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>İç operasyon ve müşteri paylaşımı için güncel proje çıktıları.</p></div><div style={{minWidth:"min(240px,100%)",flex:"0 1 280px"}}><label style={lStyle}>Rapor Projesi</label><select style={iStyle} value={projectId} onChange={e=>setProjectId(e.target.value)}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div></div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:10,marginBottom:20}}>{[["Geciken Görev",delayed.length,"#E11D48"],["Toplam Efor",`${hours} sa`,"#7C3AED"],["Makine",machines.length,"#0369A1"],["Devrede",machines.filter(m=>m.commissioned).length,"#059669"]].map(([label,value,color])=><div key={label} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:14}}><div style={{fontSize:11,color:"#64748B"}}>{label}</div><div style={{fontSize:24,fontWeight:800,color,marginTop:3}}>{value}</div></div>)}</div>
-    <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>{[["operations","Operasyon"],["project","Proje ve Müşteri"],["technical","Teknik"],...(isAdmin?[["management","Yönetici"]]:[])].map(([id,label])=><button key={id} onClick={()=>setGroup(id)} style={{border:0,borderRadius:9,padding:"8px 12px",background:group===id?"#4338CA":"#F1F5F9",color:group===id?"#fff":"#64748B",fontSize:11,fontWeight:800,cursor:"pointer"}}>{label}</button>)}</div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12}}>{cards.filter(card=>card.group===group).map(card=><div key={card.title} style={{background:"#fff",borderRadius:14,padding:18,border:"1.5px solid #E2E8F0",borderTop:`4px solid ${card.color}`,boxShadow:"0 2px 6px rgba(0,0,0,.04)"}}><div style={{fontWeight:800,fontSize:14,marginBottom:6}}>{card.title}</div><div style={{fontSize:12,color:"#64748B",lineHeight:1.5,minHeight:54}}>{card.desc}</div><Btn style={{marginTop:12,background:card.color}} disabled={!project&&card.title.includes("Raporu")} onClick={card.action}>{card.label}</Btn></div>)}</div>
+  return <div className="project-workspace" style={{padding:"clamp(16px, 4vw, 28px)",flex:1,overflow:"auto"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,marginBottom:20,flexWrap:"wrap"}}><div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="reports" size={21}/>Raporlar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"var(--muted)"}}>İç operasyon ve müşteri paylaşımı için güncel proje çıktıları.</p></div><div style={{minWidth:"min(240px,100%)",flex:"0 1 280px"}}><label style={lStyle}>Rapor Projesi</label><select style={iStyle} value={projectId} onChange={e=>setProjectId(e.target.value)}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:10,marginBottom:20}}>{[["Geciken Görev",delayed.length,"var(--danger)"],["Toplam Efor",`${hours} sa`,"var(--chart-2)"],["Makine",machines.length,"var(--chart-1)"],["Devrede",machines.filter(m=>m.commissioned).length,"var(--success)"]].map(([label,value,color])=><div key={label} className="soft-panel" style={{borderTop:`4px solid ${color}`,padding:14}}><div style={{fontSize:11,color:"var(--muted)"}}>{label}</div><div style={{fontSize:24,fontWeight:800,color,marginTop:3}}>{value}</div></div>)}</div>
+    <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>{[["operations","Operasyon"],["project","Proje ve Müşteri"],["technical","Teknik"],...(isAdmin?[["management","Yönetici"]]:[])].map(([id,label])=><button key={id} onClick={()=>setGroup(id)} style={{border:"1px solid var(--glass-border)",borderRadius:999,padding:"7px 12px",background:group===id?"var(--accent)":"#fff",color:group===id?"#fff":"var(--text)",fontSize:11,fontWeight:800,cursor:"pointer"}}>{label}</button>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12}}>{cards.filter(card=>card.group===group).map(card=><div key={card.title} className="soft-panel" style={{borderRadius:14,padding:18,borderLeft:`4px solid ${card.color}`,minHeight:196}}><div style={{fontWeight:800,fontSize:14,marginBottom:6}}>{card.title}</div><div style={{fontSize:12,color:"var(--muted)",lineHeight:1.5,minHeight:54}}>{card.desc}</div><Btn style={{marginTop:12,background:card.color,borderRadius:999}} disabled={!project&&card.title.includes("Rapor")} onClick={card.action}>{card.label}</Btn></div>)}</div>
   </div>;
 }
 
 export function generateTicketStatusReport(state,people){
-  const tickets=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>{
-    const project=state.projects.find(p=>p.id===projectId);
-    return (list||[]).map(ticket=>({ticket,project}));
+  const tickets = Object.entries(state.projectTickets || {}).flatMap(([projectId,list]) => {
+    const project = state.projects.find(p=>p.id===projectId);
+    return (list || []).map(ticket => ({ticket,project}));
   });
-  const open=tickets.filter(({ticket})=>!["Tamamlandı","İptal Edildi"].includes(ticket.status)).length;
-  const acted=tickets.filter(({ticket})=>(ticket.updatedAt&&ticket.updatedAt!==ticket.ts)||ticket.jiraStatus).length;
-  const rows=tickets.map(({ticket,project})=>{
-    const age=Math.max(0,daysDiff(ticket.ts));
-    const assignee=people.find(p=>p.id===ticket.assignedTo);
-    return `<tr><td><b>${ticketNumber(ticket)}</b><br>${ticket.title}</td><td>${project?.name||"Silinmiş proje"}</td><td>${ticket.status||"Açık"}</td><td>${ticket.priority||"-"}</td><td>${assignee?.name||"Atanmamış"}</td><td>${new Date(ticket.ts).toLocaleDateString("tr-TR")}</td><td class="${age>=7?"danger":""}">${age} gün</td><td>${ticket.updatedAt?new Date(ticket.updatedAt).toLocaleString("tr-TR"):"Aksiyon yok"}</td><td>${ticket.jiraStatus||"-"}</td></tr>`;
+
+  const open = tickets.filter(({ticket}) => !["Tamamlandı", "İptal Edildi"].includes(ticket.status)).length;
+  const acted = tickets.filter(({ticket}) => (ticket.updatedAt && ticket.updatedAt !== ticket.ts) || !!ticket.jiraStatus).length;
+
+  const rows = tickets.map(({ticket,project}) => {
+    const age = Math.max(0, daysDiff(ticket.ts));
+    const assignee = people.find(p => p.id === ticket.assignedTo);
+    return `<tr><td><b>${ticketNumber(ticket)}</b><br>${escapeHtml(ticket.title)}</td><td>${escapeHtml(project?.name || "Silinmiş proje")}</td><td>${escapeHtml(ticket.status || "Açık")}</td><td>${escapeHtml(ticket.priority || "-")}</td><td>${escapeHtml(assignee?.name || "Atanmamış")}</td><td>${ticket.ts ? new Date(ticket.ts).toLocaleDateString("tr-TR") : "-"}</td><td class="${age >= 7 ? "danger" : ""}">${age} gün</td><td>${ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleString("tr-TR") : "Aksiyon yok"}</td><td>${escapeHtml(ticket.jiraStatus || "-")}</td></tr>`;
   }).join("");
-  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Ticket Durum Raporu</title><style>*{box-sizing:border-box}body{margin:0;padding:32px;background:#f1f5f9;color:#172033;font-family:Inter,Segoe UI,Arial}.wrap{max-width:1250px;margin:auto}.hero{background:linear-gradient(125deg,#172554,#4338ca,#7c3aed);color:#fff;padding:28px;border-radius:22px}.hero h1{margin:0}.hero p{color:#c7d2fe}.print{float:right;border:0;border-radius:10px;background:#fff;color:#4338ca;padding:9px 15px;font-weight:800}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat{color:#fff;border-radius:15px;padding:17px}.stat b{font-size:27px;display:block}.blue{background:linear-gradient(135deg,#2563eb,#4f46e5)}.orange{background:linear-gradient(135deg,#ea580c,#f59e0b)}.green{background:linear-gradient(135deg,#059669,#10b981)}.purple{background:linear-gradient(135deg,#7c3aed,#a855f7)}.card{background:#fff;border:1px solid #e2e8f0;border-radius:17px;padding:20px}.table{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left;font-size:12px}th{background:#f8fafc;color:#64748b}.danger{color:#dc2626;font-weight:800}@media(max-width:760px){body{padding:14px}.stats{grid-template-columns:1fr 1fr}}@media print{body{padding:0;background:#fff}.print{display:none}}</style></head><body><div class="wrap"><div class="hero"><button class="print" onclick="window.print()">Yazdır / PDF</button><h1>Ticket Durum Raporu</h1><p>${new Date().toLocaleDateString("tr-TR")} · Tüm projeler</p></div><div class="stats"><div class="stat blue"><b>${tickets.length}</b>Toplam Ticket</div><div class="stat orange"><b>${open}</b>Açık Ticket</div><div class="stat green"><b>${tickets.length-open}</b>Kapanan Ticket</div><div class="stat purple"><b>${acted}</b>Aksiyon Alınan</div></div><div class="card"><div class="table"><table><thead><tr><th>Ticket</th><th>Proje</th><th>Durum</th><th>Öncelik</th><th>Sorumlu</th><th>Açılış</th><th>Geçen Süre</th><th>Son Aksiyon</th><th>Jira</th></tr></thead><tbody>${rows||"<tr><td colspan='9'>Ticket yok.</td></tr>"}</tbody></table></div></div></div></body></html>`;
-  downloadTextFile(html,`ticket-durum-raporu-${todayStr()}.html`,"text/html;charset=utf-8");
+
+  const html = buildThemeReport({
+    title: "Ticket Durum Raporu",
+    subtitle: "Tüm projeler ve son durumu",
+    accent: "#4f46e5",
+    content: `
+      <section class="r-grid">
+        <div class="r-kpi"><small>Toplam Ticket</small><b>${tickets.length}</b></div>
+        <div class="r-kpi"><small>Açık Ticket</small><b>${open}</b></div>
+        <div class="r-kpi"><small>Kapanan Ticket</small><b>${tickets.length - open}</b></div>
+        <div class="r-kpi"><small>Durum Güncelleme</small><b>${acted}</b></div>
+      </section>
+
+      <section class="r-card">
+        <h3 class="r-card-title">Ticket Listesi</h3>
+        <div style="overflow:auto">
+          <table class="r-table">
+            <thead><tr><th>Ticket</th><th>Proje</th><th>Durum</th><th>Öncelik</th><th>Sorumlu</th><th>Açılış</th><th>Geçen Süre</th><th>Son Aksiyon</th><th>Jira</th></tr></thead>
+            <tbody>${rows || "<tr><td colspan='9'>Ticket yok.</td></tr>"}</tbody>
+          </table>
+        </div>
+      </section>
+    `,
+  });
+
+  downloadTextFile(html, `ticket-durum-raporu-${todayStr()}.html`, "text/html;charset=utf-8");
 }
+
+
+
+
+
+
