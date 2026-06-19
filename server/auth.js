@@ -13,6 +13,21 @@ const getAuthClient = () => {
   return authClient;
 };
 
+const expandProfilePayload = (profile) => {
+  if (!profile) return profile;
+  const payload = profile.payload || {};
+  const roleKey = profile.role_key || payload.roleKey || "";
+  const customerId = profile.customer_id || payload.customerId || "";
+  return {
+    ...profile,
+    role_key: roleKey,
+    roleKey,
+    customer_id: customerId,
+    customerId,
+    userType: payload.userType || profile.user_type || "",
+  };
+};
+
 export const authenticateRequest = async (request) => {
   if (!getServerConfig().requireAuth) return null;
   const token = request.headers.authorization?.replace(/^Bearer\s+/i, "");
@@ -26,7 +41,7 @@ export const authenticateRequest = async (request) => {
   const email = String(userData.user.email || "").trim().toLowerCase();
   let { data: profile, error: profileError } = await client
     .from("profiles")
-    .select("id,legacy_id,email,name,is_admin,active")
+    .select("id,legacy_id,email,name,is_admin,active,payload")
     .eq("id", userData.user.id)
     .maybeSingle();
   if (profileError) {
@@ -38,7 +53,7 @@ export const authenticateRequest = async (request) => {
   if (!profile && email) {
     const { data: emailProfile, error: emailProfileError } = await client
       .from("profiles")
-      .select("id,legacy_id,email,name,is_admin,active")
+      .select("id,legacy_id,email,name,is_admin,active,payload")
       .eq("email", email)
       .maybeSingle();
     if (emailProfileError) {
@@ -80,7 +95,7 @@ export const authenticateRequest = async (request) => {
           payload: person,
           updated_at: new Date().toISOString(),
         })
-        .select("id,legacy_id,email,name,is_admin,active")
+        .select("id,legacy_id,email,name,is_admin,active,payload")
         .single();
       if (createError) {
         throw Object.assign(new Error("Application profile could not be created"), {
@@ -91,6 +106,7 @@ export const authenticateRequest = async (request) => {
     }
   }
 
+  profile = expandProfilePayload(profile);
   if (!profile?.active) {
     throw Object.assign(new Error("Active application profile not found"), { status: 403 });
   }
