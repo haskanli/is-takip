@@ -249,7 +249,7 @@ export function ProjectListCard({
     <div className="project-list-card" onClick={onOpen}>
       {isAdmin && (
         <div className="project-card-menu" onClick={(event) => event.stopPropagation()}>
-          <button type="button" className="project-card-menu-trigger" title="Proje aksiyonları" aria-label="Proje aksiyonları">...</button>
+          <button type="button" className="project-card-menu-trigger" title="Proje aksiyonları" aria-label="Proje aksiyonları"><span /></button>
           <div className="project-card-menu-popover">
             {[
               ["edit", onEdit, "Düzenle"],

@@ -330,32 +330,36 @@ code,
 
 .project-card-menu {
   position: absolute;
-  top: 9px;
-  right: 9px;
+  top: 8px;
+  right: 8px;
   z-index: 4;
 }
 
 .project-card-menu-trigger {
-  width: 26px;
-  height: 26px;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 72%);
+  width: 30px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
   color: var(--muted);
   display: grid;
   place-items: center;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1;
-  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
+  transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+
+.project-card-menu-trigger span {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 -6px 0 currentColor, 0 6px 0 currentColor;
 }
 
 .project-card-menu-trigger:hover,
 .project-card-menu:focus-within .project-card-menu-trigger {
-  background: var(--surface);
+  background: rgb(255 255 255 / 62%);
   color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 26%, var(--border));
   transform: translateY(-1px);
 }
 
