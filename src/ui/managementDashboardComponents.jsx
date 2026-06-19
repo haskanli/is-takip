@@ -274,7 +274,14 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate,sho
   kpis.forEach(kpi=>{
     dashboardCards[`kpi-${kpi.id}`]={
       size:"small",
-      node:<div role="button" tabIndex={0} onKeyDown={event=>event.key==="Enter"&&setDetailModal({mode:"detail",...kpi})} onClick={()=>setDetailModal({mode:"detail",...kpi})} className="admin-kpi-card" style={{height:"100%",background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"14px 15px",boxShadow:"0 5px 16px rgba(15,23,42,.045)",borderTop:`3px solid ${kpi.color}`,textAlign:"left",cursor:"pointer",position:"relative"}}>
+      node:<div
+        role="button"
+        tabIndex={0}
+        onKeyDown={event=>event.key==="Enter"&&setDetailModal({mode:"detail",...kpi})}
+        onClick={()=>setDetailModal({mode:"detail",...kpi})}
+        className="admin-kpi-card"
+        style={{height:"100%",borderRadius:14,padding:"14px 15px",borderTop:`3px solid ${kpi.color}`,textAlign:"left",cursor:"pointer",position:"relative"}}
+      >
         <div className="admin-kpi-head" style={{display:"flex",alignItems:"center",gap:5,paddingRight:78,minWidth:0}}><div style={{fontSize:10,color:"#64748B",fontWeight:750,textTransform:"uppercase",letterSpacing:.45,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{kpi.label}</div><button className="admin-kpi-info" title="Hesaplama bilgisi" onClick={event=>{event.stopPropagation();setDetailModal({mode:"info",...kpi});}} style={{width:20,height:20,borderRadius:"50%",border:"1px solid #CBD5E1",background:"#F8FAFC",color:"#64748B",fontSize:11,fontWeight:850,cursor:"pointer",flexShrink:0}}>i</button></div>
         <div style={{fontSize:25,fontWeight:900,color:kpi.color,margin:"4px 0 2px"}}>{kpi.value}</div>
         <div style={{fontSize:10,color:"#94A3B8",lineHeight:1.35,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",overflowWrap:"anywhere"}}>{kpi.detail}</div>
@@ -309,9 +316,9 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate,sho
       {summaryCards.map(card=>{
         const kpi=kpiById[card.id];
         return <button key={card.id} onClick={()=>kpi&&setDetailModal({mode:"detail",...kpi})} className="admin-summary-card" style={{borderTopColor:card.color}}>
-          <div style={{fontSize:10,fontWeight:850,color:"#64748B",letterSpacing:.4,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.label}</div>
-          <div style={{fontSize:27,fontWeight:950,color:card.color,lineHeight:1.05,marginTop:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.value}</div>
-          <div style={{fontSize:10,color:"#94A3B8",lineHeight:1.35,marginTop:6,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{card.detail}</div>
+          <div className="admin-summary-label" style={{fontSize:10,fontWeight:850,color:"#64748B",letterSpacing:.4,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.label}</div>
+          <div className="admin-summary-value" style={{fontSize:27,fontWeight:950,color:card.color,lineHeight:1.05,marginTop:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.value}</div>
+          <div className="admin-summary-detail" style={{fontSize:10,color:"#94A3B8",lineHeight:1.35,marginTop:6,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{card.detail}</div>
         </button>;
       })}
     </div>
