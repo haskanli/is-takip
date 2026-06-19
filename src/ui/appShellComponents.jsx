@@ -167,36 +167,28 @@ function LegacyAppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logo
   </div></>;
 }
 
-export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logoSrc=""}) {
+export function AppLoadingScreen({progress=10,status="Oturum haz\u0131rlan\u0131yor",logoSrc=""}) {
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
   const animationCss=`
-    @keyframes corjectSoftOrbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes corjectLogoBreath { 0%,100% { transform: scale(1); box-shadow:0 18px 38px rgb(11 138 148 / 16%); } 50% { transform: scale(1.035); box-shadow:0 22px 48px rgb(191 122 18 / 18%); } }
-    @keyframes corjectProgressShine { 0% { transform: translateX(-78%); opacity:.12; } 45% { opacity:.72; } 100% { transform: translateX(176%); opacity:.08; } }
-    @keyframes corjectPulseDot { 0%,100% { transform: scale(.82); opacity:.48; } 50% { transform: scale(1); opacity:1; } }
+    @keyframes corjectCalmIn { from { opacity:0; transform:translateY(10px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes corjectLogoBreath { 0%,100% { transform:translateY(0) scale(1); } 50% { transform:translateY(-2px) scale(1.018); } }
+    @keyframes corjectProgressShine { 0% { transform: translateX(-70%); opacity:0; } 28% { opacity:.42; } 100% { transform: translateX(190%); opacity:0; } }
+    @keyframes corjectAmbient { 0%,100% { opacity:.46; transform:scale(.96); } 50% { opacity:.72; transform:scale(1.04); } }
   `;
-  return <><style>{animationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:22,fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)",background:"radial-gradient(circle at 20% 12%,rgb(11 138 148 / 14%),transparent 34%),radial-gradient(circle at 86% 22%,rgb(191 122 18 / 12%),transparent 30%),linear-gradient(180deg,#F7FBFC 0%,#EDF4F5 100%)",color:"var(--text, #112327)",zIndex:9999,overflow:"hidden"}}>
-    <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,rgba(255,255,255,.52) 1px,transparent 1px),linear-gradient(180deg,rgba(255,255,255,.52) 1px,transparent 1px)",backgroundSize:"44px 44px",maskImage:"linear-gradient(180deg,rgba(0,0,0,.48),transparent 72%)",opacity:.34}} />
-    <div style={{width:"min(420px,100%)",textAlign:"center",border:"1px solid var(--border, #cfe0e3)",borderRadius:30,padding:"34px 30px 28px",background:"rgb(255 255 255 / 88%)",boxShadow:"0 30px 90px -52px rgb(17 35 39 / 58%)",backdropFilter:"blur(18px)",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",left:"10%",right:"10%",top:0,height:4,background:"linear-gradient(90deg,var(--accent, #0b8a94),var(--warning, #bf7a12),var(--success, #19835c))",borderRadius:"0 0 999px 999px"}} />
-      <div style={{width:116,height:116,margin:"0 auto 18px",position:"relative",display:"grid",placeItems:"center"}}>
-        <div style={{position:"absolute",inset:0,borderRadius:"50%",background:"conic-gradient(from 90deg,var(--accent, #0b8a94) 0 110deg,transparent 110deg 185deg,var(--warning, #bf7a12) 185deg 278deg,transparent 278deg 360deg)",opacity:.78,animation:"corjectSoftOrbit 5.2s linear infinite"}} />
-        <div style={{position:"absolute",inset:8,borderRadius:"50%",background:"#fff",boxShadow:"inset 0 0 0 1px var(--border, #cfe0e3)"}} />
-        <div style={{position:"relative",width:78,height:78,borderRadius:24,background:"linear-gradient(145deg,#FFFFFF,var(--surface-soft, #f6fafb))",display:"grid",placeItems:"center",animation:"corjectLogoBreath 2.6s ease-in-out infinite",border:"1px solid var(--border, #cfe0e3)"}}>
-          {logoSrc?<img src={logoSrc} alt="Corject" style={{width:56,height:56,objectFit:"contain"}}/>:<span style={{fontSize:32,fontWeight:950,color:"var(--accent, #0b8a94)"}}>C</span>}
+  return <><style>{animationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:22,fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)",background:"radial-gradient(circle at 18% 18%,rgb(11 138 148 / 13%),transparent 34%),radial-gradient(circle at 84% 20%,rgb(191 122 18 / 10%),transparent 30%),linear-gradient(180deg,#F7FBFC 0%,#EDF4F5 100%)",color:"var(--text, #112327)",zIndex:9999,overflow:"hidden"}}>
+    <div style={{position:"absolute",width:330,height:330,left:"50%",top:"50%",transform:"translate(-50%,-50%)",borderRadius:"50%",background:"radial-gradient(circle,rgb(11 138 148 / 10%),transparent 66%)",animation:"corjectAmbient 3.8s ease-in-out infinite"}} />
+    <div style={{width:"min(360px,100%)",textAlign:"center",border:"1px solid var(--glass-border, #cfe0e3)",borderRadius:28,padding:"30px 28px 26px",background:"linear-gradient(145deg,rgb(255 255 255 / 86%),rgb(246 250 251 / 70%))",boxShadow:"0 30px 78px -54px rgb(17 35 39 / 62%)",backdropFilter:"blur(22px) saturate(1.14)",WebkitBackdropFilter:"blur(22px) saturate(1.14)",position:"relative",overflow:"hidden",animation:"corjectCalmIn 360ms cubic-bezier(.2,.8,.2,1) both"}}>
+      <div style={{width:88,height:88,margin:"0 auto 18px",borderRadius:26,display:"grid",placeItems:"center",background:"rgb(255 255 255 / 72%)",border:"1px solid var(--glass-border, #cfe0e3)",boxShadow:"inset 0 1px 0 rgb(255 255 255 / 74%),0 22px 38px -30px rgb(11 138 148 / 58%)",animation:"corjectLogoBreath 2.8s ease-in-out infinite"}}>
+        {logoSrc?<img src={logoSrc} alt="Corject" style={{width:62,height:62,objectFit:"contain"}}/>:<span style={{fontSize:34,fontWeight:950,color:"var(--accent, #0b8a94)"}}>C</span>}
+      </div>
+      <div style={{fontFamily:"var(--font-display, Plus Jakarta Sans, Manrope, sans-serif)",fontSize:28,fontWeight:800,letterSpacing:"-.045em",color:"var(--text, #112327)",lineHeight:1}}>Corject</div>
+      <div style={{fontSize:13,color:"var(--muted, #5b6f74)",marginTop:9,minHeight:20,lineHeight:1.45}}>{status}</div>
+      <div style={{height:8,borderRadius:999,background:"rgb(255 255 255 / 58%)",overflow:"hidden",border:"1px solid var(--glass-border, #cfe0e3)",position:"relative",marginTop:24}}>
+        <div style={{height:"100%",width:`${safeProgress}%`,borderRadius:999,background:"linear-gradient(90deg,var(--accent, #0b8a94),color-mix(in srgb,var(--accent, #0b8a94) 64%,var(--warning, #bf7a12)))",transition:"width .38s cubic-bezier(.2,.8,.2,1)",position:"relative",overflow:"hidden"}}>
+          <span style={{position:"absolute",inset:0,width:"44%",background:"linear-gradient(90deg,transparent,rgb(255 255 255 / 62%),transparent)",animation:"corjectProgressShine 1.9s ease-in-out infinite"}} />
         </div>
       </div>
-      <div style={{fontFamily:"var(--font-display, Fraunces, Georgia, serif)",fontSize:31,fontWeight:800,letterSpacing:"-.045em",color:"var(--text, #112327)",lineHeight:1}}>Corject</div>
-      <div style={{fontSize:13,color:"var(--muted, #5b6f74)",marginTop:10,minHeight:18}}>{status}</div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,margin:"15px 0 22px"}}>
-        {[0,1,2].map(index=><span key={index} style={{width:8,height:8,borderRadius:"50%",background:["var(--accent, #0b8a94)","var(--warning, #bf7a12)","var(--success, #19835c)"][index],animation:`corjectPulseDot 1.25s ease-in-out ${index*.15}s infinite`}} />)}
-      </div>
-      <div style={{height:10,borderRadius:999,background:"var(--surface-soft, #f6fafb)",overflow:"hidden",border:"1px solid var(--border, #cfe0e3)",position:"relative"}}>
-        <div style={{height:"100%",width:`${safeProgress}%`,borderRadius:999,background:"linear-gradient(90deg,var(--accent, #0b8a94),var(--warning, #bf7a12),var(--success, #19835c))",transition:"width .35s ease",position:"relative",overflow:"hidden"}}>
-          <span style={{position:"absolute",inset:0,width:"42%",background:"linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent)",animation:"corjectProgressShine 1.7s ease-in-out infinite"}} />
-        </div>
-      </div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted, #5b6f74)",marginTop:10}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"var(--accent, #0b8a94)"}}>%{safeProgress}</b></div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted, #5b6f74)",marginTop:10,gap:12}}><span>{"G\u00fcvenli \u00e7al\u0131\u015fma alan\u0131 y\u00fckleniyor"}</span><b style={{color:"var(--accent, #0b8a94)"}}>%{safeProgress}</b></div>
     </div>
   </div></>;
 }
