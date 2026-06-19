@@ -22,7 +22,7 @@ function CompactTaskCard({task,people=[],projectName="",projectColor="#4A6CF7",f
   const delayed=delayLvl(task.dueDate,task.status);
   const done=task.status==="Tamamlandı";
   const role=task.assignmentRole||task.responsibilityGroup||task.sourceLabel||"Görev";
-  return <div onClick={onOpen} style={{background:"#fff",border:`1px solid ${delayed?"#FDBA74":"#E2E8F0"}`,borderLeft:`4px solid ${delayed?"#EA6C00":projectColor||"#4A6CF7"}`,borderRadius:16,padding:"12px 13px",boxShadow:"0 8px 22px rgba(15,23,42,.055)",cursor:onOpen?"pointer":"default",opacity:done?0.72:1,overflow:"hidden"}}>
+  return <div className="compact-list-card task-mobile-card" onClick={onOpen} style={{background:"var(--surface)",border:`1px solid ${delayed?"var(--warning)":"var(--glass-border)"}`,borderLeft:`4px solid ${delayed?"var(--warning)":projectColor||"var(--accent)"}`,borderRadius:16,padding:"12px 13px",boxShadow:"var(--shadow-soft)",cursor:onOpen?"pointer":"default",opacity:done?0.72:1,overflow:"hidden"}}>
     <div style={{display:"flex",alignItems:"flex-start",gap:10,minWidth:0}}>
       <button type="button" onClick={event=>{event.stopPropagation();onCheck?.(!done);}} style={{width:24,height:24,borderRadius:9,border:`1.5px solid ${done?"#10B981":"#CBD5E1"}`,background:done?"#ECFDF5":"#F8FAFC",color:done?"#059669":"#94A3B8",display:"grid",placeItems:"center",fontWeight:900,flexShrink:0,cursor:"pointer"}}>{done?"✓":" "}</button>
       <div style={{flex:1,minWidth:0}}>
@@ -30,9 +30,9 @@ function CompactTaskCard({task,people=[],projectName="",projectColor="#4A6CF7",f
           <b style={{fontSize:13,lineHeight:1.32,color:done?"#94A3B8":"#172033",textDecoration:done?"line-through":"none",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",overflowWrap:"anywhere"}}>{task.title}</b>
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
-          {projectName&&<span style={{maxWidth:"100%",fontSize:10,fontWeight:800,color:"#4338CA",background:"#EEF2FF",borderRadius:999,padding:"4px 8px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{projectName}</span>}
-          <span style={{fontSize:10,fontWeight:800,color:delayed?"#C2410C":"#64748B",background:delayed?"#FFF7ED":"#F8FAFC",borderRadius:999,padding:"4px 8px"}}>{task.dueDate?`${formatDate(task.dueDate)}${task.dueTime?` ${task.dueTime}`:""}`:"Terminsiz"}</span>
-          <span style={{fontSize:10,fontWeight:800,color:"#0F766E",background:"#ECFDF5",borderRadius:999,padding:"4px 8px"}}>{role}</span>
+          {projectName&&<span className="task-mobile-chip-soft" style={{maxWidth:"100%",color:"var(--accent)",background:"var(--accent-ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{projectName}</span>}
+          <span className="task-mobile-chip-soft" style={{color:delayed?"var(--warning)":"var(--muted)"}}>{task.dueDate?`${formatDate(task.dueDate)}${task.dueTime?` ${task.dueTime}`:""}`:"Terminsiz"}</span>
+          <span className="task-mobile-chip-soft" style={{color:"var(--success)"}}>{role}</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:7,marginTop:9,minWidth:0}}>
           {assignee&&<span style={{fontSize:10,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{assignee.name}</span>}

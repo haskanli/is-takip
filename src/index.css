@@ -8,6 +8,10 @@
     radial-gradient(circle at 36% 78%, rgba(74, 108, 247, 0.16) 0 14%, transparent 42%),
     radial-gradient(circle at 82% 74%, rgba(15, 118, 110, 0.14) 0 16%, transparent 38%),
     linear-gradient(156deg, #e9f4f8 0%, #f3f6fb 30%, #efe9e2 58%, #edf5f6 100%);
+  --scene-overlay: linear-gradient(to right, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.22)),
+    radial-gradient(circle at 12% 12%, rgba(11, 138, 148, 0.1), transparent 34%),
+    radial-gradient(circle at 86% 16%, rgba(191, 122, 18, 0.08), transparent 32%);
+  --scene-blur: 100px;
   --surface: #ffffff;
   --surface-soft: #f6fafb;
   --text: #112327;
@@ -64,7 +68,7 @@ body {
   min-height: 100svh;
   color: var(--text);
   background:
-    linear-gradient(to right, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.22)),
+    var(--scene-overlay),
     var(--scene-image);
   position: relative;
   background-size: cover;
@@ -83,9 +87,9 @@ body::before {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(100px) saturate(1.08);
+  filter: blur(var(--scene-blur)) saturate(1.08);
   transform: scale(1.08);
-  opacity: 0.76;
+  opacity: 0.78;
   z-index: -1;
   pointer-events: none;
 }
@@ -771,6 +775,274 @@ code,
 .data-list-table tbody tr:hover {
   transform: translateY(-1px);
   filter: drop-shadow(0 18px 22px rgb(17 35 39 / 8%));
+}
+
+.mobile-page-shell {
+  --page-pad-x: clamp(12px, 4vw, 20px);
+  padding-left: var(--page-pad-x);
+  padding-right: var(--page-pad-x);
+}
+
+.mobile-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mobile-task-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 10px;
+}
+
+.mobile-task-filter-row > button,
+.mobile-task-filter-row > .ui-chip {
+  font-size: 11px;
+  border-radius: 10px;
+}
+
+.mobile-task-filter-row .view-switch {
+  border-color: color-mix(in srgb, var(--border) 68%, var(--surface));
+}
+
+.mobile-task-filter-row .view-switch button {
+  min-height: 30px;
+}
+
+.ticket-mobile-card {
+  border-left: 3px solid var(--accent);
+  padding: 12px !important;
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 84%), rgb(246 250 251 / 68%));
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 18px 44px -36px rgb(17 35 39 / 44%);
+}
+
+.ticket-mobile-card-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+
+.ticket-mobile-card-line > .compact-title {
+  font-size: 13px;
+  color: var(--text);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  word-break: break-word;
+}
+
+.ticket-mobile-card-line > * {
+  min-width: 0;
+}
+
+.ticket-mobile-meta {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  background: rgb(255 255 255 / 48%);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 8px;
+}
+
+.ticket-mobile-meta span {
+  min-width: 0;
+}
+
+.ticket-mobile-meta b {
+  color: var(--text);
+}
+
+.mobile-status-select {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 4px 7px;
+  font-size: 10px;
+  font-family: inherit;
+}
+
+.task-mobile-card {
+  padding: 12px;
+}
+
+.task-mobile-chip-row {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.task-mobile-chip-soft {
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.mobile-ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-ticket-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-ticket-card-inner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+}
+
+.mobile-ticket-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-top: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--surface) 72%, transparent);
+}
+
+.ticket-card-age {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.ticket-card-age-late {
+  color: var(--danger);
+}
+
+.ticket-mobile-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+  border-radius: 999px;
+}
+
+.ticket-mobile-chip-soft {
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  padding: 3px 8px;
+  background: rgb(255 255 255 / 54%);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.ticket-mobile-chip-main {
+  color: var(--accent);
+  background: rgb(222 245 248 / 70%);
+  border-color: rgb(11 138 148 / 14%);
+}
+
+.ticket-mobile-chip-link {
+  text-decoration: none;
+}
+
+.ticket-mobile-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ticket-mobile-card .compact-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .ticket-mobile-card-line {
+    row-gap: 6px;
+  }
+
+  .ticket-mobile-chip-soft {
+    padding: 2px 7px;
+    font-size: 9px;
+  }
+
+  .ticket-mobile-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .task-mobile-card {
+    padding: 11px;
+  }
+
+  .ticket-mobile-card-line {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .ticket-mobile-meta {
+    padding: 7px;
+    gap: 6px;
+  }
+
+  .ticket-mobile-delete {
+    align-self: flex-end;
+    font-size: 15px;
+    color: var(--danger);
+  }
+
+  .ticket-mobile-card {
+    border-radius: 14px;
+  }
+
+  .ticket-page-grid {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 760px) {
+  .mobile-page-shell {
+    --page-pad-x: 11px;
+  }
+
+  .ticket-mobile-card {
+    border-radius: 14px;
+    box-shadow: 0 8px 20px -18px rgb(17 35 39 / 40%);
+  }
+
+  .ticket-mobile-meta {
+    margin-top: 10px;
+    gap: 6px;
+    padding: 7px;
+  }
+
+  .compact-list-card {
+    border-color: color-mix(in srgb, var(--border) 90%, var(--accent));
+  }
 }
 
 .surface-card {

@@ -105,6 +105,142 @@ const slackAvatarUrl = (user) => {
     return "";
   }
 };
+
+const WEATHER_SCENES = [
+  {
+    ids: [0],
+    scene: {
+      image:
+        "radial-gradient(circle at 20% 16%, rgba(243, 226, 170, 0.42) 0 24%, transparent 45%), radial-gradient(circle at 78% 16%, rgba(94, 165, 255, 0.28) 0 20%, transparent 44%), radial-gradient(circle at 42% 76%, rgba(30, 58, 138, 0.22) 0 16%, transparent 46%), linear-gradient(150deg, #fef3c7 0%, #e0f2fe 30%, #dbeafe 56%, #dbeafe 100%)",
+      overlay:
+        "radial-gradient(circle at 10% 15%, rgba(250, 204, 21, 0.16), transparent 40%), radial-gradient(circle at 82% 14%, rgba(37, 99, 235, 0.14), transparent 32%), linear-gradient(to right, rgba(250, 204, 21, 0.06), rgba(59, 130, 246, 0.1))",
+      blur: "132px",
+    },
+  },
+  {
+    ids: [1, 2, 3],
+    scene: {
+      image:
+        "radial-gradient(circle at 18% 14%, rgba(56, 189, 248, 0.26) 0 18%, transparent 38%), radial-gradient(circle at 76% 18%, rgba(167, 139, 250, 0.2) 0 18%, transparent 44%), radial-gradient(circle at 40% 80%, rgba(14, 165, 233, 0.18) 0 16%, transparent 44%), linear-gradient(150deg, #f8fafc 0%, #e2e8f0 34%, #e0e7ff 62%, #c7d2fe 100%)",
+      overlay:
+        "radial-gradient(circle at 12% 12%, rgba(56, 189, 248, 0.14), transparent 36%), radial-gradient(circle at 88% 15%, rgba(129, 140, 248, 0.12), transparent 34%), linear-gradient(to right, rgba(241, 245, 249, 0.12), rgba(219, 234, 254, 0.26))",
+      blur: "132px",
+    },
+  },
+  {
+    ids: [45, 48, 51, 53, 55, 56, 57],
+    scene: {
+      image:
+        "radial-gradient(circle at 20% 12%, rgba(148, 163, 184, 0.28) 0 16%, transparent 38%), radial-gradient(circle at 70% 78%, rgba(71, 85, 105, 0.26) 0 24%, transparent 40%), linear-gradient(150deg, #e2e8f0 0%, #cbd5e1 36%, #94a3b8 68%, #64748b 100%)",
+      overlay:
+        "linear-gradient(to right, rgba(148, 163, 184, 0.2), rgba(100, 116, 139, 0.3)), radial-gradient(circle at 16% 78%, rgba(203, 213, 225, 0.18), transparent 44%)",
+      blur: "136px",
+    },
+  },
+  {
+    ids: [61, 63, 65, 66, 67, 80, 81, 82],
+    scene: {
+      image:
+        "radial-gradient(circle at 20% 14%, rgba(56, 189, 248, 0.28) 0 20%, transparent 40%), radial-gradient(circle at 76% 18%, rgba(6, 95, 70, 0.2) 0 18%, transparent 42%), radial-gradient(circle at 36% 82%, rgba(8, 47, 73, 0.24) 0 18%, transparent 48%), linear-gradient(150deg, #ecfeff 0%, #e0f2fe 34%, #cffafe 56%, #67e8f9 100%)",
+      overlay:
+        "radial-gradient(circle at 12% 14%, rgba(14, 116, 144, 0.16), transparent 34%), radial-gradient(circle at 84% 84%, rgba(8, 145, 178, 0.14), transparent 40%)",
+      blur: "138px",
+    },
+  },
+  {
+    ids: [71, 73, 75, 77, 85, 86],
+    scene: {
+      image:
+        "radial-gradient(circle at 16% 14%, rgba(240, 253, 244, 0.4) 0 20%, transparent 38%), radial-gradient(circle at 74% 18%, rgba(186, 230, 253, 0.24) 0 18%, transparent 44%), radial-gradient(circle at 42% 82%, rgba(148, 163, 184, 0.2) 0 20%, transparent 46%), linear-gradient(150deg, #f8fafc 0%, #e2e8f0 32%, #bfdbfe 62%, #7dd3fc 100%)",
+      overlay:
+        "radial-gradient(circle at 12% 18%, rgba(186, 230, 253, 0.22), transparent 40%), radial-gradient(circle at 82% 78%, rgba(56, 189, 248, 0.14), transparent 42%)",
+      blur: "140px",
+    },
+  },
+  {
+    ids: [95, 96, 99],
+    scene: {
+      image:
+        "radial-gradient(circle at 20% 16%, rgba(147, 197, 253, 0.26) 0 18%, transparent 40%), radial-gradient(circle at 74% 20%, rgba(248, 113, 113, 0.2) 0 16%, transparent 40%), radial-gradient(circle at 48% 78%, rgba(55, 48, 163, 0.22) 0 16%, transparent 46%), linear-gradient(150deg, #f1f5f9 0%, #e0f2fe 34%, #c7d2fe 62%, #a78bfa 100%)",
+      overlay:
+        "linear-gradient(to right, rgba(79, 70, 229, 0.09), rgba(14, 116, 144, 0.12)), radial-gradient(circle at 18% 78%, rgba(248, 113, 113, 0.14), transparent 44%)",
+      blur: "142px",
+    },
+  },
+];
+
+const normalizeWeatherCode = (code) => {
+  const numeric = Number(code);
+  if (!Number.isFinite(numeric)) return 1;
+  for (const theme of WEATHER_SCENES) {
+    if (theme.ids.includes(numeric)) return theme.scene;
+  }
+  if (numeric >= 11 && numeric <= 24) return WEATHER_SCENES[1].scene;
+  if (numeric >= 95 && numeric <= 99) return WEATHER_SCENES[5].scene;
+  return WEATHER_SCENES[0].scene;
+};
+
+const WEATHER_CACHE_KEY = "corject:weatherScene";
+const DEFAULT_WEATHER_CACHE_MS = 45 * 60 * 1000;
+
+const safeSetWeatherTheme = (scene) => {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (!root?.style) return;
+  const { image, overlay, blur } = scene || {};
+  if (image) root.style.setProperty("--scene-image", image);
+  if (overlay) root.style.setProperty("--scene-overlay", overlay);
+  if (blur) root.style.setProperty("--scene-blur", blur);
+};
+
+const applyWeatherThemeFromGeo = async () => {
+  if (typeof navigator === "undefined" || typeof window === "undefined") return;
+  const now = Date.now();
+  const cached = (() => {
+    try { return localStorage.getItem(WEATHER_CACHE_KEY); } catch { return null; }
+  })();
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      const isFresh = now - Number(parsed.ts || 0) < DEFAULT_WEATHER_CACHE_MS && parsed.scene;
+      if (isFresh) {
+        safeSetWeatherTheme(parsed.scene);
+        return;
+      }
+    } catch {
+      try { localStorage.removeItem(WEATHER_CACHE_KEY); } catch {}
+    }
+  }
+  const geolocation = await new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve(pos),
+      (err) => reject(err),
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+    );
+  });
+  const { latitude, longitude } = geolocation.coords || {};
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+  const response = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`
+  );
+  if (!response.ok) return;
+  const payload = await response.json();
+  const weatherCode = payload?.current_weather?.weathercode;
+  const scene = normalizeWeatherCode(weatherCode);
+  safeSetWeatherTheme(scene);
+  try {
+    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ ts: now, scene }));
+  } catch {}
+};
+
+const restoreDefaultWeatherTheme = () => {
+  const root = typeof document !== "undefined" ? document.documentElement : null;
+  if (!root) return;
+  root.style.removeProperty("--scene-image");
+  root.style.removeProperty("--scene-overlay");
+  root.style.removeProperty("--scene-blur");
+};
+
 const isNotificationForUser = (notification, user) => {
   if (!notification || !user) return false;
   if (notification.userId && notification.userId === user.id) return true;
@@ -243,6 +379,32 @@ export default function App() {
   useEffect(()=>{
     if(USE_DATA_API)fetch(apiUrl("/health")).catch(()=>{});
   },[]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        await applyWeatherThemeFromGeo();
+      } catch (error) {
+        if (!active) return;
+        if (error?.code === 1 || error?.code === 2) {
+          console.info("Konum izni reddedildi, varsayilan arkaplan kullaniliyor.");
+          return;
+        }
+        console.warn("Hava durumu teması uygulanirken hata:", error);
+      }
+    })();
+    const timer = setInterval(() => {
+      if (!active) return;
+      applyWeatherThemeFromGeo().catch(() => {});
+    }, 30 * 60 * 1000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => () => restoreDefaultWeatherTheme(), []);
 
   useEffect(()=>{
     if(dataLoaded)return;
