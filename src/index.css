@@ -163,6 +163,203 @@ code,
   box-shadow: var(--shadow-soft);
 }
 
+.project-filter-shell {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 76%), rgb(246 250 251 / 62%));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.segmented-control {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  background: rgb(255 255 255 / 54%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%);
+}
+
+.segmented-control button {
+  min-height: 32px;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 7px 11px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 850;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+.segmented-control button:hover {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.segmented-control button.is-active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 12px 26px -22px rgb(11 138 148 / 70%);
+}
+
+.project-business-shell {
+  background:
+    radial-gradient(circle at 12% -20%, rgb(11 138 148 / 10%), transparent 34%),
+    rgb(255 255 255 / 58%);
+  border-bottom: 1px solid var(--glass-border);
+  padding: 8px clamp(10px, 2vw, 18px) 8px;
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+}
+
+.project-business-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 88%), rgb(246 250 251 / 68%));
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.project-business-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  transform: translateY(-1px);
+}
+
+.project-business-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 0%, rgb(11 138 148 / 13%), transparent 34%),
+    radial-gradient(circle at 96% 6%, rgb(191 122 18 / 10%), transparent 30%);
+}
+
+.project-logo-tile {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  background: rgb(255 255 255 / 84%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 80%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.project-metric-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 68%);
+  color: var(--muted);
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.project-metric-pill.is-good {
+  border-color: color-mix(in srgb, var(--success) 24%, var(--border));
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+  color: var(--success);
+}
+
+.project-metric-pill.is-warn {
+  border-color: color-mix(in srgb, var(--warning) 24%, var(--border));
+  background: color-mix(in srgb, var(--warning) 11%, var(--surface));
+  color: var(--warning);
+}
+
+.project-metric-pill.is-danger {
+  border-color: color-mix(in srgb, var(--danger) 24%, var(--border));
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
+.project-list-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--glass-border);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 84%), rgb(246 250 251 / 68%));
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.project-list-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  box-shadow: 0 24px 54px -38px rgb(17 35 39 / 46%);
+  transform: translateY(-2px);
+}
+
+.project-list-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--warning) 70%, var(--accent)));
+}
+
+.project-list-card-header {
+  position: relative;
+  padding: 14px 14px 11px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  background:
+    radial-gradient(circle at 4% -10%, rgb(11 138 148 / 11%), transparent 42%),
+    radial-gradient(circle at 100% 0%, rgb(191 122 18 / 8%), transparent 34%);
+}
+
+.project-progress-track {
+  height: 5px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent-ink) 48%, var(--surface-soft));
+}
+
+.project-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 72%, var(--success)));
+}
+
+.project-icon-action {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 72%);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform .15s ease, color .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.project-icon-action:hover {
+  transform: translateY(-1px);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: var(--accent-ink);
+}
+
 .project-workspace {
   background:
     radial-gradient(circle at 12% -10%, rgb(11 138 148 / 12%), transparent 34%),
