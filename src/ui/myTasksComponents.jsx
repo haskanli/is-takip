@@ -141,7 +141,7 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
     <div className="unified-page-header tasks-page-header">
       <div className="unified-title-row">
         <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="tasks" size={20}/>Görevlerim</h2><p style={{ margin:"3px 0 0", color:"#64748B", fontSize:13 }}>{active.length} aktif · {completed.length} tamamlandı</p></div>
-        <Btn onClick={()=>setModal({type:"addPersonal"})}>+ Görev Ekle</Btn>
+        <Btn className="icon-only-action" title="Gorev ekle" aria-label="Gorev ekle" onClick={()=>setModal({type:"addPersonal"})}>+</Btn>
       </div>
       {assignmentNotice&&<div style={{margin:"10px 0",padding:"10px 13px",borderRadius:9,background:"#ECFDF5",color:"#047857",fontSize:12,fontWeight:700}}>{assignmentNotice}</div>}
       {overdue.length>0&&<button className="compact-alert compact-alert-warning" onClick={()=>setOnlyOverdue(value=>!value)} style={{width:"100%",display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",background:onlyOverdue?"#FFF1F2":"#FFFBEB",border:`1.5px solid ${onlyOverdue?"#FCA5A5":"#FDE68A"}`,borderRadius:12,padding:"8px 11px",margin:"10px 0 4px",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>

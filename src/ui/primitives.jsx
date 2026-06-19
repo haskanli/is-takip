@@ -230,7 +230,7 @@ export const Field = ({ label, children }) => (
   </div>
 );
 
-export const Btn = ({ children, onClick, variant = "primary", small, style: s, disabled }) => {
+export const Btn = ({ children, onClick, variant = "primary", small, style: s, disabled, className = "", title, "aria-label": ariaLabel }) => {
   const variants = {
     primary: { background: "var(--accent, #0b8a94)", color: "#fff", boxShadow: "var(--shadow-soft, 0 18px 40px -26px rgb(17 35 39 / 34%))" },
     secondary: { background: "var(--surface, #ffffff)", color: "var(--text, #112327)", borderColor: "var(--border, #cfe0e3)" },
@@ -242,7 +242,9 @@ export const Btn = ({ children, onClick, variant = "primary", small, style: s, d
 
   return (
     <button
-      className="btn-base"
+      className={`btn-base ${className}`.trim()}
+      title={title}
+      aria-label={ariaLabel}
       disabled={disabled}
       style={{
         borderRadius: 12,

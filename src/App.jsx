@@ -1054,7 +1054,7 @@ export default function App() {
     ? fullNav.filter(item=>["dashboard","tickets"].includes(item.id)).map(item=>item.id==="dashboard"?{...item,label:"Özet"}:item)
     : currentUser.ticketOnly?fullNav.filter(item=>["tickets"].includes(item.id)):fullNav;
 
-  return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)", background:"var(--bg, #f1f5f6)", color:"var(--text, #112327)", overflow:"hidden", position:"relative" }}>
+  return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)", background:"transparent", color:"var(--text, #112327)", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
     {isMobile&&<div className="glass-surface mobile-glass-topbar" style={{ position:"fixed", top:0, left:0, right:0, height:58, borderTop:0, borderLeft:0, borderRight:0, display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
       <button className="mobile-brand-button" onClick={()=>navigateTo("dashboard")} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:34,height:34,objectFit:"contain"}}/><span style={{fontFamily:"var(--font-display, Fraunces, Georgia, serif)",fontSize:20,fontWeight:800,color:"var(--text, #112327)",letterSpacing:"-.035em",maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
@@ -1188,12 +1188,15 @@ export default function App() {
       </div>}
 
       {/* PROJECTS LIST */}
-      {view==="projects"&&!selProject&&<div className="project-workspace project-section">
-        <div className="project-filter-shell" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, marginBottom:18, flexWrap:"wrap", padding:"15px 16px" }}>
-          <div><h2 style={{ margin:0, fontSize:22, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="projects" size={20}/>Projeler</h2><p style={{ margin:"3px 0 0", color:"var(--muted)", fontSize:13 }}>{listedProjects.length} proje</p></div>
-          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+      {view==="projects"&&!selProject&&<div className="project-workspace project-section theme-work-page projects-theme-page">
+        <div className="project-filter-shell unified-page-header projects-page-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, marginBottom:18, flexWrap:"wrap", padding:"15px 16px" }}>
+          <div className="unified-title-row">
+            <div><h2 style={{ margin:0, fontSize:22, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="projects" size={20}/>Projeler</h2><p style={{ margin:"3px 0 0", color:"var(--muted)", fontSize:13 }}>{listedProjects.length} proje</p></div>
+            {isAdmin&&<Btn className="icon-only-action" title="Yeni proje" aria-label="Yeni proje" onClick={()=>setModal({type:"addProject"})}>+</Btn>}
+          </div>
+          <div className="unified-filter-row projects-filter-row" style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <input value={projectSearch} onChange={event=>setProjectSearch(event.target.value)} placeholder="Projelerde ara..." style={{...iStyle,width:220,maxWidth:"100%"}}/>
-            <Btn variant="secondary" onClick={exportListedProjects}>XLSX İndir</Btn>
+            <Btn className="compact-tool-button" variant="secondary" title="XLSX indir" onClick={exportListedProjects}>XLSX</Btn>
             <div className="segmented-control">
               {isAdmin&&<button onClick={()=>setProjectScope("all")} className={projectScope==="all"?"is-active":""}>Tüm Projeler</button>}
               <button onClick={()=>setProjectScope("mine")} className={projectScope==="mine"||!isAdmin?"is-active":""}>Projelerim</button>
@@ -1204,7 +1207,6 @@ export default function App() {
             <div className="segmented-control">
               {[["cards","Kart"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setProjectViewMode(id)} className={projectViewMode===id?"is-active":""}>{label}</button>)}
             </div>
-            {isAdmin&&<Btn onClick={()=>setModal({type:"addProject"})}>+ Yeni Proje</Btn>}
           </div>
         </div>
         {listedProjects.length===0&&<div className="liquid-card" style={{ textAlign:"center", padding:"50px", borderRadius:16, borderStyle:"dashed" }}>
