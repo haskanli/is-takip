@@ -35,6 +35,78 @@ const applyTicketWorkflow=(data)=>{
   return data;
 };
 
+function TicketListTable({ rows, people = [], customerMode = false, showProject = true, onOpen, onStatusChange, onDelete, canDelete = () => false }) {
+  return (
+    <div className="soft-panel data-list-shell" style={{ padding: 10 }}>
+      <table className="data-list-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>{"Ba\u015fl\u0131k"}</th>
+            {showProject && <th>Proje</th>}
+            <th>Durum</th>
+            {!customerMode && <th>Sorumlu</th>}
+            <th>{"Ya\u015f"}</th>
+            <th>Jira</th>
+            <th>Son Aksiyon</th>
+            {!customerMode && <th />}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ ticket, project, projectId }) => {
+            const assignee = people.find((person) => person.id === ticket.assignedTo);
+            const age = Math.max(0, daysDiff(ticket.ts));
+            return (
+              <tr key={`${projectId || project?.id || "project"}-${ticket.id}`} onClick={() => onOpen?.({ ticket, project, projectId })}>
+                <td><span className="ui-chip ui-chip-accent">{ticketNumber(ticket)}</span></td>
+                <td>
+                  <b className="text-wrap-safe" style={{ display: "block", fontSize: 12.5, color: "var(--text, #112327)" }}>{ticket.title}</b>
+                  {ticket.description && <span className="text-wrap-safe" style={{ display: "block", marginTop: 3, color: "var(--muted, #5b6f74)" }}>{ticket.description}</span>}
+                </td>
+                {showProject && <td><span className="ui-chip ui-chip-muted">{project?.name || "Proje yok"}</span></td>}
+                <td>
+                  {customerMode ? (
+                    <span className="ui-chip ui-chip-muted">{ticket.status || "A\u00e7\u0131k"}</span>
+                  ) : (
+                    <select
+                      value={ticket.status || "A\u00e7\u0131k"}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(event) => onStatusChange?.(projectId, ticket.id, event.target.value)}
+                      style={{ fontSize: 11, borderRadius: 10, border: "1px solid var(--border, #cfe0e3)", padding: "4px 7px", fontFamily: "inherit", background: "rgb(255 255 255 / 78%)", color: "var(--text, #112327)" }}
+                    >
+                      {!TICKET_STATUSES.includes(ticket.status) && ticket.status && <option>{ticket.status}</option>}
+                      {TICKET_STATUSES.map((status) => <option key={status}>{status}</option>)}
+                    </select>
+                  )}
+                </td>
+                {!customerMode && <td>{assignee?.name || "Atanmam\u0131\u015f"}</td>}
+                <td><span style={{ color: age >= 7 ? "var(--danger, #b93f33)" : "var(--muted, #5b6f74)", fontWeight: 800 }}>{age} {"g\u00fcn"}</span></td>
+                <td>{ticket.jiraStatus || ticket.jiraKey || "-"}</td>
+                <td>{ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleDateString("tr-TR") : "Yok"}</td>
+                {!customerMode && (
+                  <td>
+                    {canDelete(ticket) && (
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDelete?.(projectId, ticket.id);
+                        }}
+                        style={{ border: 0, background: "transparent", color: "var(--danger, #b93f33)", fontSize: 11, fontWeight: 800, cursor: "pointer" }}
+                      >
+                        Sil
+                      </button>
+                    )}
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function TicketsPage({
   state,
   setState,
@@ -68,6 +140,7 @@ export function TicketsPage({
   const [mailNotice,setMailNotice]=useState("");
   const [localMineOnly,setLocalMineOnly]=useState(initialMine);
   const [modal,setModal]=useState(linkedTicketData?{type:"detail",projectId:linkedProject,data:linkedTicketData}:null);
+  const [ticketView,setTicketView]=useState("cards");
   const activeTab=controlledActiveTab??localActiveTab;
   const setActiveTab=onActiveTabChange||setLocalActiveTab;
   const projectFilters=controlledProjectFilters??localProjectFilters;
@@ -129,25 +202,30 @@ export function TicketsPage({
     if(workflowData.assignedTo&&workflowData.assignedTo!==old?.assignedTo)notifyTicketAssignment(projectId,ticket).catch(error=>console.warn("Ticket maili gönderilemedi",error));
   };
   const remove=(projectId,id)=>save(projectId,((state.projectTickets||{})[projectId]||[]).filter(t=>t.id!==id));
+  const sortedFiltered=[...filtered].sort((a,b)=>String(b.ticket.updatedAt||b.ticket.ts||"").localeCompare(String(a.ticket.updatedAt||a.ticket.ts||"")));
   return <div style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:18}}>
       <div><h2 style={{margin:0,fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#1E293B"}}><Icon name="ticket" size={20}/>{customerMode?"Destek Taleplerim":"Ticketlar"}</h2><p style={{margin:"3px 0 0",fontSize:12,color:"#64748B"}}>{customerMode?"Bu alanda yalnızca kendi projenize ait müşteri talepleri görünür.":`${filtered.length} kayıt gösteriliyor`}</p></div>
       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{isAdmin&&!customerMode&&<Btn variant="secondary" onClick={()=>generateTicketStatusReport(state,state.people)}>Durum Raporu</Btn>}<Btn disabled={customerMode&&!customerProjectList.length} onClick={()=>setModal({type:"add",projectId:customerMode?(customerProjectList[0]?.id||""):(state.projects[0]?.id||"")})}>+ Ticket Ekle</Btn></div>
     </div>
-    {!customerMode&&<div style={{display:"flex",gap:6,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
-      {[["tickets","Ticket Takibi"],["recurring","Tekrar Eden Problemler"]].map(([id,label])=><button key={id} onClick={()=>setActiveTab(id)} style={{border:0,borderBottom:`3px solid ${activeTab===id?"#4F46E5":"transparent"}`,background:"transparent",color:activeTab===id?"#4338CA":"#64748B",padding:"9px 12px",fontSize:11,fontWeight:850,cursor:"pointer"}}>{label}</button>)}
+    {!customerMode&&<div className="segmented-control" style={{display:"inline-flex",marginBottom:14}}>
+      {[["tickets","Ticket Takibi"],["recurring","Tekrar Eden Problemler"]].map(([id,label])=><button key={id} className={activeTab===id?"is-active":""} onClick={()=>setActiveTab(id)}>{label}</button>)}
     </div>}
     {(customerMode||activeTab==="tickets")&&<><div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
       <input style={{...iStyle,width:"auto",minWidth:220,flex:"1 1 220px"}} value={search} onChange={e=>setSearch(e.target.value)} placeholder={customerMode?"Talep ara...":"Ticket, proje veya sorumlu ara..."}/>
-      {!customerMode&&<button onClick={()=>setMineOnly(v=>!v)} style={{border:0,borderRadius:8,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:700,background:mineOnly?"#4A6CF7":"#F1F5FF",color:mineOnly?"#fff":"#64748B"}}>Ticketlarım</button>}
+      {!customerMode&&<button onClick={()=>setMineOnly(v=>!v)} className={mineOnly?"ui-chip ui-chip-accent":"ui-chip ui-chip-muted"} style={{borderRadius:10,padding:"8px 12px",cursor:"pointer",fontSize:11}}>{"Ticketlar\u0131m"}</button>}
       {!customerMode&&<MultiChoiceFilter label="Projeler" options={state.projects.map(project=>({value:project.id,label:project.name}))} value={projectFilters} onChange={setProjectFilters}/>}
       {!customerMode&&<MultiChoiceFilter label="Durumlar" options={TICKET_STATUSES.map(status=>({value:status,label:status}))} value={statusFilters} onChange={setStatusFilters}/>}
+      <div className="view-switch" role="group" aria-label="Ticket g\u00f6r\u00fcn\u00fcm\u00fc">
+        <button type="button" className={ticketView==="cards"?"is-active":""} onClick={()=>setTicketView("cards")}>Kart</button>
+        <button type="button" className={ticketView==="list"?"is-active":""} onClick={()=>setTicketView("list")}>Liste</button>
+      </div>
     </div>
     {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"#ECFDF5":"#FFF7ED",color:mailNotice.includes("gönderildi")?"#047857":"#C2410C",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(360px,100%),1fr))",gap:10}}>{[...filtered].sort((a,b)=>String(b.ticket.updatedAt||b.ticket.ts||"").localeCompare(String(a.ticket.updatedAt||a.ticket.ts||""))).map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${project?.color||"#4A6CF7"}`,borderRadius:13,padding:"14px 15px",cursor:"pointer",boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
+    {ticketView==="list"?<TicketListTable rows={sortedFiltered} people={state.people} customerMode={customerMode} showProject={!customerMode} onOpen={({ticket,projectId})=>setModal({type:"detail",projectId,data:ticket})} onStatusChange={(projectId,id,status)=>update(projectId,id,{status})} onDelete={(projectId,id)=>{if(confirm("Ticket silinsin mi?"))remove(projectId,id);}} canDelete={(ticket)=>isAdmin||ticket.author===currentUser.name}/>:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(360px,100%),1fr))",gap:10}}>{sortedFiltered.map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${project?.color||"#4A6CF7"}`,borderRadius:13,padding:"14px 15px",cursor:"pointer",boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
       <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontSize:10,fontWeight:850,color:"#4338CA",background:"#EEF2FF",padding:"3px 7px",borderRadius:7}}>{ticketNumber(ticket)}</span><b style={{fontSize:13}}>{ticket.title}</b>{customerMode?<span style={{fontSize:10,borderRadius:999,padding:"4px 8px",background:"#F8FAFC",color:"#475569",fontWeight:850}}>{ticket.status||"Açık"}</span>:<select value={ticket.status||"Açık"} onClick={event=>event.stopPropagation()} onChange={event=>update(projectId,ticket.id,{status:event.target.value})} style={{fontSize:10,border:"1px solid #CBD5E1",borderRadius:7,padding:"3px 6px",background:"#fff"}}>{TICKET_STATUSES.map(status=><option key={status}>{status}</option>)}</select>}{!customerMode&&<span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span>}<span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
       <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"#64748B"}}>{!customerMode&&<span>Sorumlu: <b>{assignee?.name||"Atanmamış"}</b></span>}<span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span>{!customerMode&&(isAdmin||ticket.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();if(confirm("Ticket silinsin mi?"))remove(projectId,ticket.id);}} style={{marginLeft:"auto",border:0,background:"transparent",color:"#E11D48",fontSize:11,fontWeight:700,cursor:"pointer"}}>Sil</button>}</div>
-    </div>})}</div>
+    </div>})}</div>}
     {!filtered.length&&<div style={{padding:40,textAlign:"center",background:"#fff",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Filtreye uygun ticket yok.</div>}
     </>}
     {!customerMode&&activeTab==="recurring"&&<RecurringProblemsPanel entries={all}/>}
@@ -161,6 +239,7 @@ export function TicketsPage({
 export function TicketsPanel({ project, currentUser, state, setState, isAdmin, customerMode: forcedCustomerMode=false }) {
   const [modal,setModal]=useState(null);
   const [mailNotice,setMailNotice]=useState("");
+  const [ticketView,setTicketView]=useState("cards");
   const allTickets=((state.projectTickets||{})[project.id])||[];
   const customerMode=Boolean(forcedCustomerMode||isCustomerUser(currentUser));
   const effectiveCustomerUser=customerMode?{...currentUser,userType:"customer",roleKey:"customer_viewer",customerId:currentUser?.customerId||project.id}:currentUser;
@@ -191,16 +270,23 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin, c
   const TICKET_TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
   const TICKET_PRIOS=["Düşük","Orta","Yüksek","Kritik"];
   const TYPE_COLORS={"Bug":"var(--danger, #b93f33)","Görev":"var(--accent, #0b8a94)","İyileştirme":"var(--success, #19835c)","Soru":"var(--warning, #bf7a12)","Bilgi":"var(--muted, #5b6f74)"};
+  const sortedTickets=[...tickets].sort((a,b)=>String(b.updatedAt||b.ts||"").localeCompare(String(a.updatedAt||a.ts||"")));
   return <div style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, gap:10, flexWrap:"wrap" }}>
       <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:"var(--text, #112327)" }}>Ticketlar ({tickets.length})</h3>
-      <Btn small onClick={()=>setModal({type:"add"})}>+ Ticket Ekle</Btn>
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+        <div className="view-switch" role="group" aria-label="Ticket g\u00f6r\u00fcn\u00fcm\u00fc">
+          <button type="button" className={ticketView==="cards"?"is-active":""} onClick={()=>setTicketView("cards")}>Kart</button>
+          <button type="button" className={ticketView==="list"?"is-active":""} onClick={()=>setTicketView("list")}>Liste</button>
+        </div>
+        <Btn small onClick={()=>setModal({type:"add"})}>+ Ticket Ekle</Btn>
+      </div>
     </div>
     {mailNotice&&<div className={mailNotice.includes("gönderildi")?"ui-chip ui-chip-success":"ui-chip ui-chip-warning"} style={{borderRadius:12,padding:"10px 13px",fontSize:11,marginBottom:12,display:"flex"}}>{mailNotice}</div>}
     {!customerMode&&<RecurringProblemsPanel entries={tickets.map(ticket=>({ticket,project}))}/>}
     {tickets.length===0&&<div className="soft-panel empty-panel">Henüz ticket yok.</div>}
-    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-      {[...tickets].sort((a,b)=>String(b.updatedAt||b.ts||"").localeCompare(String(a.updatedAt||a.ts||""))).map(t=><div className="compact-list-card" key={t.id} onClick={()=>setModal({type:"detail",data:t})} style={{ padding:"14px 18px", display:"flex", gap:12, alignItems:"flex-start", cursor:"pointer" }}>
+    {ticketView==="list"?<TicketListTable rows={sortedTickets.map(ticket=>({ticket,project,projectId:project.id}))} people={state.people} customerMode={customerMode} showProject={false} onOpen={({ticket})=>setModal({type:"detail",data:ticket})} onStatusChange={(_,id,status)=>updateTicket(id,{status})} onDelete={(_,id)=>deleteTicket(id)} canDelete={(ticket)=>isAdmin||ticket.author===currentUser.name}/>:<div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+      {sortedTickets.map(t=><div className="compact-list-card" key={t.id} onClick={()=>setModal({type:"detail",data:t})} style={{ padding:"14px 18px", display:"flex", gap:12, alignItems:"flex-start", cursor:"pointer" }}>
         <div style={{ width:8, height:8, borderRadius:"50%", background:TYPE_COLORS[t.type]||"var(--muted, #5b6f74)", marginTop:4, flexShrink:0, boxShadow:"0 0 0 4px rgb(255 255 255 / 72%)" }} />
         <div style={{ flex:1 }}>
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
@@ -222,7 +308,7 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin, c
         </div>
         {!customerMode&&(isAdmin||t.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();deleteTicket(t.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--muted, #5b6f74)", fontSize:16 }}>×</button>}
       </div>)}
-    </div>
+    </div>}
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>
       <TicketForm project={project} onSave={async d=>{await addTicket(d);setModal(null);}} onClose={()=>setModal(null)} types={TICKET_TYPES} prios={TICKET_PRIOS} people={state.people} customerMode={customerMode} />
     </Modal>}

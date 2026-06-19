@@ -273,8 +273,7 @@ export function ProjectListCard({
         </span>
       </div>
       <div style={{ padding: "10px 14px 13px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 9 }}>
-          <span style={{ fontSize: 10.5, color: "var(--muted)", fontWeight: 650, ...textClamp }}>{project.name}</span>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, alignItems: "center", marginBottom: 9 }}>
           <Badge label={project.status} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: alertText ? "auto 1fr auto" : "auto 1fr", gap: 8, alignItems: "center", marginBottom: 8, fontSize: 10.5, color: "var(--muted)", fontWeight: 650 }}>
