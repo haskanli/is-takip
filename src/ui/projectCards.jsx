@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { projectResponsibleIds, projectStakeholders } from "../domain/projectHelpers.js";
+import { projectResponsibleIds } from "../domain/projectHelpers.js";
 import { Field, Icon, iStyle } from "./primitives.jsx";
 import { Badge, delayLvl } from "./status.jsx";
 
@@ -48,7 +48,7 @@ function LogoTile({ customer, customerName, canEdit = false, onClick = noop, siz
       {customer.logoUrl ? (
         <img src={customer.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", background: "#fff", padding: 6 }} />
       ) : (
-        <b style={{ fontSize: size > 42 ? 18 : 15, color: "var(--accent)" }}>{customerName.slice(0, 2).toUpperCase()}</b>
+        <b style={{ fontSize: size > 42 ? 17 : 15, color: "var(--accent)" }}>{customerName.slice(0, 2).toUpperCase()}</b>
       )}
     </button>
   );
@@ -228,7 +228,6 @@ export function ProjectListCard({
   onEdit,
   onReport,
   onDelete,
-  formatDate = defaultFormatDate,
   readinessScoreForProject = defaultReadinessScore,
 }) {
   const total = project.milestones.reduce((sum, milestone) => sum + milestone.tasks.length, 0);
@@ -237,55 +236,47 @@ export function ProjectListCard({
   const overdue = project.milestones.reduce((sum, milestone) => sum + milestone.tasks.filter((task) => delayLvl(task.dueDate, task.status)).length, 0);
   const critical = project.milestones.reduce((sum, milestone) => sum + milestone.tasks.filter((task) => delayLvl(task.dueDate, task.status) === "critical").length, 0);
   const pms = projectResponsibleIds(project).map((id) => people.find((person) => person.id === id)).filter(Boolean);
-  const stakeholders = projectStakeholders(project).map((item) => ({ ...item, person: people.find((person) => person.id === item.userId) })).filter((item) => item.person);
-  const activeMs = project.milestones.find((milestone) => milestone.status !== "Tamamlandı");
   const customer = project.customerProfile || {};
   const customerName = customer.name || project.customerName || project.name;
-  const website = customer.website ? (customer.website.startsWith("http") ? customer.website : `https://${customer.website}`) : "";
   const readiness = readinessScoreForProject(project);
   const responsibleLabel = project.uatAccepted ? "CS" : "PM";
+  const responsibleNames = pms.map((pm) => pm.name).join(", ");
+  const healthOk = readiness >= Number(project.readinessThreshold || 80);
 
   return (
     <div className="project-list-card" onClick={onOpen}>
       <div className="project-list-card-header">
-        <LogoTile customer={customer} customerName={customerName} size={42} />
+        <LogoTile customer={customer} customerName={customerName} size={40} />
         <span style={{ minWidth: 0 }}>
-          <h3 style={{ margin: 0, fontSize: 19, fontWeight: 900, lineHeight: 1.12, color: "var(--text)", ...textClamp }}>{customerName}</h3>
-          <span style={{ display: "flex", gap: 8, marginTop: 5, fontSize: 10, color: "var(--muted)", overflow: "hidden" }}>
-            {pms.length > 0 && (
-              <span style={{ ...textClamp, maxWidth: 200 }}>{responsibleLabel}: <b style={{ color: "var(--text)" }}>{pms.map((pm) => pm.name).join(", ")}</b></span>
-            )}
-            {website && (
-              <a href={website} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} style={{ fontWeight: 850, textDecoration: "none", ...textClamp }}>
-                {customer.website}
-              </a>
-            )}
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, lineHeight: 1.18, color: "var(--text)", ...textClamp }}>{customerName}</h3>
+          <span style={{ display: "block", marginTop: 4, fontSize: 10.5, color: "var(--muted)", fontWeight: 750, ...textClamp }}>
+            {responsibleNames ? `${responsibleLabel}: ${responsibleNames}` : project.name}
           </span>
         </span>
-        <span style={{ fontSize: 19, fontWeight: 950, textAlign: "right", color: "var(--accent)" }}>{progress}%</span>
+        <span style={{ display: "grid", justifyItems: "end", gap: 2 }}>
+          <b style={{ fontSize: 18, fontWeight: 900, lineHeight: 1, color: "var(--accent)" }}>{progress}%</b>
+          <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 800 }}>ilerleme</span>
+        </span>
       </div>
-      <div style={{ padding: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 8 }}>
+      <div style={{ padding: "12px 15px 14px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 10 }}>
           <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 800, ...textClamp }}>{project.name}</span>
           <Badge label={project.status} />
         </div>
-        {activeMs && (
-          <div style={{ fontSize: 11, color: "var(--accent)", marginBottom: 8, fontWeight: 800, ...textClamp }}>
-            Aktif: {activeMs.name} - {formatDate(activeMs.dueDate)}
-          </div>
-        )}
-        <div style={{ display: "flex", gap: 7, marginBottom: 10, flexWrap: "wrap" }}>
-          {project.uatAccepted && <span className="project-metric-pill">UAT alındı · CS devrinde</span>}
-          <span className={`project-metric-pill ${readiness >= Number(project.readinessThreshold || 80) ? "is-good" : "is-danger"}`}>Proje Sağlığı %{readiness}</span>
-          {overdue > 0 && <span className="project-metric-pill is-warn">Gecikmiş: {overdue}</span>}
-          {critical > 0 && <span className="project-metric-pill is-danger">Kritik: {critical}</span>}
-          {stakeholders.slice(0, 2).map((item) => <span key={item.id} className="project-metric-pill">{item.role}: {item.person.name}</span>)}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center", marginBottom: 10 }}>
+          <span className={`project-metric-pill ${healthOk ? "is-good" : "is-danger"}`} style={{ justifyContent: "center", minWidth: 0 }}>
+            Sağlık %{readiness}
+          </span>
+          <span style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "flex-end", minWidth: 0 }}>
+            {project.uatAccepted && <span className="project-metric-pill">UAT</span>}
+            {critical > 0 ? <span className="project-metric-pill is-danger">{critical} kritik</span> : overdue > 0 ? <span className="project-metric-pill is-warn">{overdue} gecikme</span> : null}
+          </span>
         </div>
         <div className="project-progress-track">
           <div className="project-progress-fill" style={{ width: `${progress}%` }} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 9 }}>
-          <div style={{ fontSize: 11, color: "var(--muted)" }}>{done}/{total} görev</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10 }}>
+          <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 750 }}>{done}/{total} görev tamamlandı</div>
           {isAdmin && (
             <div style={{ display: "flex", gap: 5 }}>
               {[
