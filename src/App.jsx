@@ -79,8 +79,8 @@ const APP_VERSION = "v1.25.1";
 const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === "true" || isPublicCorjectHost;
 const USE_DATA_API = import.meta.env.VITE_DATA_API === "true" || isPublicCorjectHost;
 const uid = () => Math.random().toString(36).slice(2, 9);
-const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "â€”";
-const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "â€”";
+const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
+const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "—";
 const now = () => new Date().toISOString();
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const currentTimeStr = () => new Date().toTimeString().slice(0, 5);
@@ -130,10 +130,10 @@ const ensureAuthUserForPerson = async (person) => {
   if (!response.ok) {
     const text = await response.text();
     if (response.status === 404) {
-      console.warn("Auth sync endpoint bulunamadÄ±, profil kaydÄ± yerelde gÃ¼ncellendi.", text);
+      console.warn("Auth sync endpoint bulunamadı, profil kaydı yerelde güncellendi.", text);
       return { skipped: true, reason: "auth_endpoint_not_found" };
     }
-    throw new Error(`Auth kullanÄ±cÄ±sÄ± oluÅŸturulamadÄ± (${response.status}): ${text}`);
+    throw new Error(`Auth kullanıcısı oluşturulamadı (${response.status}): ${text}`);
   }
   return response.json();
 };
@@ -165,7 +165,7 @@ const saveToSupabase = (state, onStatus) => {
       if(USE_DATA_API){
         const response=await fetch(apiUrl("/api/state"),{method:"PUT",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({state:shared,version:apiStateVersion})});
         if(response.ok){const result=await response.json();apiStateVersion=Number(result.version);}
-        else error=new Error(response.status===409?"BaÅŸka bir kullanÄ±cÄ± veriyi gÃ¼ncelledi. Sayfa yenilenerek son veri alÄ±nmalÄ±.":await response.text());
+        else error=new Error(response.status===409?"Başka bir kullanıcı veriyi güncelledi. Sayfa yenilenerek son veri alınmalı.":await response.text());
       }else{
         const result=await supabase.from("app_state").upsert({ id: 1, data: shared, updated_at: new Date().toISOString() });
         error=result.error;
@@ -183,7 +183,7 @@ const saveToSupabase = (state, onStatus) => {
   }, 800);
 };
 
-// â”€â”€â”€ Log action types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Log action types ───────────────────────────────────────────────────────
 
 export default function App() {
   const initialRoute=useRef(typeof window!=="undefined"?routeFromLocation(window.location):routeFromLocation()).current;
@@ -489,8 +489,8 @@ export default function App() {
     const managerId=managerForUser();
     const changedFields=["startDate","dueDate","actualStart","actualEnd"].filter(key=>Object.prototype.hasOwnProperty.call(data,key)&&String(data[key]||"")!==String(oldItem?.[key]||""));
     const request={id:requestId,kind,projectId,projectName,milestoneId,milestoneName,taskId,taskTitle,oldValues:Object.fromEntries(changedFields.map(key=>[key,oldItem?.[key]||""])),data:Object.fromEntries(changedFields.map(key=>[key,data[key]||""])),requestedBy:currentUser.id,requestedByName:currentUser.name,managerId,status:"pending",createdAt:now()};
-    setState(s=>({...s,dateChangeRequests:[request,...(s.dateChangeRequests||[])],notifications:[{id:uid(),ts:now(),userId:managerId,msg:`${currentUser.name}, ${projectName} projesinde ${kind==="milestone"?"milestone":"gÃ¶rev"} tarihi deÄŸiÅŸikliÄŸi iÃ§in onay bekliyor.`,projectName,type:"date_change_request",requestId,read:false},...(s.notifications||[])]}));
-    addLog(currentUser.name,"general",`Tarih deÄŸiÅŸikliÄŸi onaya gÃ¶nderildi: ${taskTitle||milestoneName}`,projectName,milestoneName);
+    setState(s=>({...s,dateChangeRequests:[request,...(s.dateChangeRequests||[])],notifications:[{id:uid(),ts:now(),userId:managerId,msg:`${currentUser.name}, ${projectName} projesinde ${kind==="milestone"?"milestone":"görev"} tarihi değişikliği için onay bekliyor.`,projectName,type:"date_change_request",requestId,read:false},...(s.notifications||[])]}));
+    addLog(currentUser.name,"general",`Tarih değişikliği onaya gönderildi: ${taskTitle||milestoneName}`,projectName,milestoneName);
   };
   const resolveDateChangeRequest=(requestId,approved)=>{
     const request=(state.dateChangeRequests||[]).find(item=>item.id===requestId);
@@ -505,12 +505,12 @@ export default function App() {
           return {...projectItem,milestones:projectItem.milestones.map(ms=>ms.id===request.milestoneId?normalizeMilestone({...ms,tasks:ms.tasks.map(task=>task.id===request.taskId?{...task,...request.data}:task)}):ms)};
         }),
         dateChangeRequests:(s.dateChangeRequests||[]).map(item=>item.id===requestId?{...item,status:"approved",resolvedAt:now(),resolvedBy:currentUser.id}:item),
-        notifications:[{id:uid(),ts:now(),userId:request.requestedBy,msg:`Tarih deÄŸiÅŸikliÄŸi onaylandÄ±: ${request.taskTitle||request.milestoneName}`,projectName:request.projectName,type:"date_change_result",read:false},...(s.notifications||[]).map(item=>item.requestId===requestId?{...item,read:true}:item)]
+        notifications:[{id:uid(),ts:now(),userId:request.requestedBy,msg:`Tarih değişikliği onaylandı: ${request.taskTitle||request.milestoneName}`,projectName:request.projectName,type:"date_change_result",read:false},...(s.notifications||[]).map(item=>item.requestId===requestId?{...item,read:true}:item)]
       }));
-      addLog(currentUser.name,"general",`Tarih deÄŸiÅŸikliÄŸi onaylandÄ±: ${request.taskTitle||request.milestoneName}`,request.projectName,request.milestoneName);
+      addLog(currentUser.name,"general",`Tarih değişikliği onaylandı: ${request.taskTitle||request.milestoneName}`,request.projectName,request.milestoneName);
     } else {
-      setState(s=>({...s,dateChangeRequests:(s.dateChangeRequests||[]).map(item=>item.id===requestId?{...item,status:"rejected",resolvedAt:now(),resolvedBy:currentUser.id}:item),notifications:[{id:uid(),ts:now(),userId:request.requestedBy,msg:`Tarih deÄŸiÅŸikliÄŸi reddedildi: ${request.taskTitle||request.milestoneName}`,projectName:request.projectName,type:"date_change_result",read:false},...(s.notifications||[]).map(item=>item.requestId===requestId?{...item,read:true}:item)]}));
-      addLog(currentUser.name,"general",`Tarih deÄŸiÅŸikliÄŸi reddedildi: ${request.taskTitle||request.milestoneName}`,request.projectName,request.milestoneName);
+      setState(s=>({...s,dateChangeRequests:(s.dateChangeRequests||[]).map(item=>item.id===requestId?{...item,status:"rejected",resolvedAt:now(),resolvedBy:currentUser.id}:item),notifications:[{id:uid(),ts:now(),userId:request.requestedBy,msg:`Tarih değişikliği reddedildi: ${request.taskTitle||request.milestoneName}`,projectName:request.projectName,type:"date_change_result",read:false},...(s.notifications||[]).map(item=>item.requestId===requestId?{...item,read:true}:item)]}));
+      addLog(currentUser.name,"general",`Tarih değişikliği reddedildi: ${request.taskTitle||request.milestoneName}`,request.projectName,request.milestoneName);
     }
   };
   const markAllRead=()=>setState(s=>({...s,notifications:(s.notifications||[]).map(n=>isNotificationForUser(n,currentUser)?{...n,read:true}:n)}));
@@ -556,13 +556,13 @@ export default function App() {
   if(REQUIRE_AUTH&&passwordRecovery)return <PasswordRecoveryScreen onDone={()=>setPasswordRecovery(false)}/>;
   if(loadError)return <div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#F8FAFC",padding:20,fontFamily:"Inter,Segoe UI,sans-serif"}}>
     <div style={{maxWidth:520,textAlign:"center"}}>
-      <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>Veriler yÃ¼klenemedi</div>
+      <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>Veriler yüklenemedi</div>
       <div style={{fontSize:12,color:"#FCA5A5",lineHeight:1.6,marginBottom:16}}>{loadError}</div>
       <button onClick={()=>window.location.reload()} style={{border:0,borderRadius:10,padding:"10px 16px",background:"#4A6CF7",color:"#fff",fontWeight:800,cursor:"pointer"}}>Tekrar Dene</button>
     </div>
   </div>;
-  if(!dataLoaded||(REQUIRE_AUTH&&loadedAuthUserId!==authSession?.user?.id)) return <AppLoadingScreen progress={loadProgress} status={loadProgress<45?"GÃ¼venli baÄŸlantÄ± kuruluyor":loadProgress<82?"Projeler ve gÃ¶revler yÃ¼kleniyor":"ArayÃ¼z hazÄ±rlanÄ±yor"} logoSrc={corjectLogo}/>;
-  if(!currentUser)return REQUIRE_AUTH?<div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#FCA5A5",padding:20,textAlign:"center"}}>Bu e-posta iÃ§in aktif Corject profili bulunamadÄ±.</div>:<LoginScreen people={state.people} onLogin={login} appVersion={APP_VERSION} />;
+  if(!dataLoaded||(REQUIRE_AUTH&&loadedAuthUserId!==authSession?.user?.id)) return <AppLoadingScreen progress={loadProgress} status={loadProgress<45?"Güvenli bağlantı kuruluyor":loadProgress<82?"Projeler ve görevler yükleniyor":"Arayüz hazırlanıyor"} logoSrc={corjectLogo}/>;
+  if(!currentUser)return REQUIRE_AUTH?<div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#FCA5A5",padding:20,textAlign:"center"}}>Bu e-posta için aktif Corject profili bulunamadı.</div>:<LoginScreen people={state.people} onLogin={login} appVersion={APP_VERSION} />;
 
   // Project visibility filter
   const visibleProjects=customerView
@@ -573,10 +573,10 @@ export default function App() {
     .filter(item=>projectSegment==="connected"?Boolean(item.connectedSupplier):projectSegment==="standard"?!item.connectedSupplier:true)
     .filter(item=>`${item.name||""} ${item.description||""} ${(item.customerProfile?.website)||""}`.toLocaleLowerCase("tr-TR").includes(projectSearch.trim().toLocaleLowerCase("tr-TR")));
   const exportListedProjects=()=>downloadXlsx([
-    ["Proje","MÃ¼ÅŸteri","Durum","PM","BaÅŸlangÄ±Ã§","Hedef BitiÅŸ","Ä°lerleme %","GÃ¶rev","Geciken","Ticket","Makine","Devrede"],
+    ["Proje","Müşteri","Durum","PM","Başlangıç","Hedef Bitiş","İlerleme %","Görev","Geciken","Ticket","Makine","Devrede"],
     ...listedProjects.map(project=>{
       const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);
-      const done=tasks.filter(task=>task.status==="TamamlandÄ±").length;
+      const done=tasks.filter(task=>task.status==="Tamamlandı").length;
       const progress=tasks.length?Math.round(done/tasks.length*100):0;
       const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;
       const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];
@@ -586,7 +586,7 @@ export default function App() {
     })
   ],`projeler-toplu-${todayStr()}.xlsx`,"Projeler");
   const taskDeadlineWarnings=visibleProjects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>delayLvl(t.dueDate,t.status)).map(t=>({...t,projectId:proj.id,projectName:proj.name,projectColor:proj.color,level:delayLvl(t.dueDate,t.status),days:daysDiff(t.dueDate)}))));
-  const todoDeadlineWarnings=(((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(t=>!t.done&&t.dueDate&&daysDiff(t.dueDate)>0).map(t=>({id:t.id,title:t.action||t.text,projectName:t.customer||"KiÅŸisel To-Do",dueDate:t.dueDate,kind:"todo",level:daysDiff(t.dueDate)>=7?"critical":"normal",days:daysDiff(t.dueDate),status:"Bekliyor"}));
+  const todoDeadlineWarnings=(((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(t=>!t.done&&t.dueDate&&daysDiff(t.dueDate)>0).map(t=>({id:t.id,title:t.action||t.text,projectName:t.customer||"Kişisel To-Do",dueDate:t.dueDate,kind:"todo",level:daysDiff(t.dueDate)>=7?"critical":"normal",days:daysDiff(t.dueDate),status:"Bekliyor"}));
   const deadlineWarnings=[...taskDeadlineWarnings,...todoDeadlineWarnings].sort((a,b)=>b.days-a.days);
 
   const project=state.projects.find(p=>p.id===selProject);
@@ -598,8 +598,8 @@ export default function App() {
   const mutProject=(fn)=>setState(s=>({...s,projects:s.projects.map(p=>p.id===selProject?fn(p):p)}));
   const projectTabs=[
     ["setup","projects","Proje Bilgileri"],
-    ["gantt","gantt","Proje PlanÄ±"],
-    ["tasks","tasks","GÃ¶revler"],
+    ["gantt","gantt","Proje Planı"],
+    ["tasks","tasks","Görevler"],
     ["tickets","ticket","Ticketlar"],
     ["actions","activity","Aksiyon"],
     ["risks","risk","Riskler"],
@@ -607,18 +607,18 @@ export default function App() {
     ["projlogs","activity","Log"],
   ].filter(([id])=>!customerView||CUSTOMER_VISIBLE_PROJECT_TABS.has(id));
 
-  const addProject=(data)=>{ const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,members:[...new Set([...(data.members||[]),...assigned])],pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));openProject(p.id,"setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluÅŸturuldu`,p.name); };
+  const addProject=(data)=>{ const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);const p={id:uid(),milestones:[],risks:[],machines:[],commissioningTree:[],commissioningTracking:false,pmIds:[],stakeholders:[],readinessChecklist:createReadinessChecklist(),readinessThreshold:80,raciContacts:[],documents:[],reportSchedules:[],...data,members:[...new Set([...(data.members||[]),...assigned])],pm:data.pmIds?.[0]||data.pm||""}; setState(s=>({...s,projects:[...s.projects,p]}));openProject(p.id,"setup");addLog(currentUser.name,"project_create",`${p.name} projesi oluşturuldu`,p.name); };
   const addPerson=async(data)=>{
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
     const person={id:uid(),avatar,...data};
     setState(s=>({...s,people:[...s.people,person]}));
-    addLog(currentUser.name,"general",`${data.userType==="customer"?"MÃ¼ÅŸteri kullanÄ±cÄ±sÄ±":"Ekip Ã¼yesi"} eklendi: ${data.name}`);
+    addLog(currentUser.name,"general",`${data.userType==="customer"?"Müşteri kullanıcısı":"Ekip üyesi"} eklendi: ${data.name}`);
     try{
       const authResult=await ensureAuthUserForPerson(person);
       if(authResult?.avatarUrl)setState(s=>({...s,people:s.people.map(item=>item.id===person.id?{...item,avatarUrl:authResult.avatarUrl,slackUserId:authResult.slackUserId||item.slackUserId}:item)}));
     }catch(error){
-      console.warn("Auth kullanÄ±cÄ±sÄ± oluÅŸturulamadÄ±",error);
-      if (data.userType !== "customer") alert(`KiÅŸi eklendi ancak giriÅŸ hesabÄ± oluÅŸturulamadÄ±: ${error.message}`);
+      console.warn("Auth kullanıcısı oluşturulamadı",error);
+      if (data.userType !== "customer") alert(`Kişi eklendi ancak giriş hesabı oluşturulamadı: ${error.message}`);
     }
   };
   const updatePerson=async(id,data)=>{
@@ -626,12 +626,12 @@ export default function App() {
     const existing=state.people.find(person=>person.id===id)||{};
     const person={...existing,...data,avatar,id};
     setState(s=>({...s,people:s.people.map(item=>item.id===id?person:item)}));
-    addLog(currentUser.name,"general",`KiÅŸi gÃ¼ncellendi: ${data.name}`);
+    addLog(currentUser.name,"general",`Kişi güncellendi: ${data.name}`);
     try{
       const authResult=await ensureAuthUserForPerson(person);
       if(authResult?.avatarUrl)setState(s=>({...s,people:s.people.map(item=>item.id===person.id?{...item,avatarUrl:authResult.avatarUrl,slackUserId:authResult.slackUserId||item.slackUserId}:item)}));
     }catch(error){
-      console.warn("Auth kullanÄ±cÄ±sÄ± gÃ¼ncellenemedi",error);
+      console.warn("Auth kullanıcısı güncellenemedi",error);
     }
   };
   const deletePerson=(id)=>setState(s=>({...s,
@@ -639,7 +639,7 @@ export default function App() {
     projects:s.projects.map(p=>({...p,pm:p.pm===id?"":p.pm,pmIds:projectPmIds(p).filter(pmId=>pmId!==id),stakeholders:projectStakeholders(p).filter(item=>item.userId!==id),members:(p.members||[]).filter(memberId=>memberId!==id),milestones:p.milestones.map(ms=>({...ms,tasks:ms.tasks.map(t=>t.assignee===id?{...t,assignee:""}:t)}))})),
     personalTasks:(s.personalTasks||[]).map(t=>t.assignee===id?{...t,assignee:""}:t)
   }));
-  const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>{if(p.id!==id)return p;const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);return {...p,...data,members:[...new Set([...(p.members||[]),...assigned])],pm:data.pmIds?.[0]||""};})}));addLog(currentUser.name,"general","Proje gÃ¼ncellendi",data.name);};
+  const updateProjectById=(id,data)=>{setState(s=>({...s,projects:s.projects.map(p=>{if(p.id!==id)return p;const assigned=[...(data.pmIds||[]),...(data.stakeholders||[]).map(item=>item.userId)].filter(Boolean);return {...p,...data,members:[...new Set([...(p.members||[]),...assigned])],pm:data.pmIds?.[0]||""};})}));addLog(currentUser.name,"general","Proje güncellendi",data.name);};
   const deleteProject=(id)=>{ if(!isAdmin)return; const name=state.projects.find(p=>p.id===id)?.name; setState(s=>{const projectActions={...(s.projectActions||{})};delete projectActions[id];return {...s,projects:s.projects.filter(p=>p.id!==id),fieldPlans:(s.fieldPlans||[]).filter(plan=>plan.projectId!==id),projectActions};}); navigateTo("projects"); addLog(currentUser.name,"general","Proje silindi: "+name); };
   const addRisk=(data)=>{ mutProject(p=>({...p,risks:[...(p.risks||[]),{id:uid(),...data}]})); addLog(currentUser.name,"risk_add",data.title,project?.name); };
   const updateRisk=(rId,data)=>mutProject(p=>({...p,risks:(p.risks||[]).map(r=>r.id===rId?{...r,...data}:r)}));
@@ -657,11 +657,11 @@ export default function App() {
   const deleteMilestone=(msId)=>{ mutProject(p=>({...p,milestones:p.milestones.filter(m=>m.id!==msId)})); setSelMilestone(null); addLog(currentUser.name,"general","Milestone silindi",project?.name); };
   const addTask=(msId,data)=>{
     const task={id:uid(),waitSource:"",waitReason:"",waitingHistory:[],responsibilityGroup:"Proje Ekibi",...data};
-    if(["Bekliyor","Engellendi"].includes(task.status))task.waitingHistory=[{id:uid(),source:task.waitSource||"DiÄŸer",reason:task.waitReason||"AÃ§Ä±klama girilmedi",startAt:now(),endAt:"",createdBy:currentUser.name}];
+    if(["Bekliyor","Engellendi"].includes(task.status))task.waitingHistory=[{id:uid(),source:task.waitSource||"Diğer",reason:task.waitReason||"Açıklama girilmedi",startAt:now(),endAt:"",createdBy:currentUser.name}];
     mutProject(p=>({...p,milestones:p.milestones.map(m=>m.id===msId?normalizeMilestone({...m,tasks:[...m.tasks,task]}):m)}));
     addLog(currentUser.name,"task_add",task.title,project?.name,project?.milestones.find(m=>m.id===msId)?.name);
     if(task.assignee&&task.assignee!==currentUser.id){
-      addNotification(task.assignee,`"${task.title}" gÃ¶revi size atandÄ±`,project?.name);
+      addNotification(task.assignee,`"${task.title}" görevi size atandı`,project?.name);
     }
   };
   const updateTask=(msId,taskId,data)=>{
@@ -683,19 +683,19 @@ export default function App() {
           const openIndex=history.findIndex(entry=>!entry.endAt);
           if(isWaiting&&(!wasWaiting||openIndex<0||t.waitSource!==next.waitSource||t.waitReason!==next.waitReason)){
             if(openIndex>=0)history[openIndex]={...history[openIndex],endAt:now()};
-            history.push({id:uid(),source:next.waitSource||"DiÄŸer",reason:next.waitReason||"AÃ§Ä±klama girilmedi",startAt:now(),endAt:"",createdBy:currentUser.name});
+            history.push({id:uid(),source:next.waitSource||"Diğer",reason:next.waitReason||"Açıklama girilmedi",startAt:now(),endAt:"",createdBy:currentUser.name});
           } else if(!isWaiting&&openIndex>=0) history[openIndex]={...history[openIndex],endAt:now()};
           return {...next,waitingHistory:history};
         });
         const next=normalizeMilestone({...m,tasks:newTasks});
-        return {...next,...(next.status==="TamamlandÄ±"&&!m.actualEnd?{actualEnd:todayStr()}:{})};
+        return {...next,...(next.status==="Tamamlandı"&&!m.actualEnd?{actualEnd:todayStr()}:{})};
       });
       return {...p,milestones:newMs};
     });
     if(data.status&&old?.status!==data.status){
-      if(data.status==="TamamlandÄ±")addLog(currentUser.name,"task_done",`${old?.title} tamamlandÄ±`,project?.name,project?.milestones.find(m=>m.id===msId)?.name);
-      else addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} â†’ ${data.status}`,project?.name,project?.milestones.find(m=>m.id===msId)?.name);
-    } else addLog(currentUser.name,"general","GÃ¶rev gÃ¼ncellendi: "+(data.title||old?.title),project?.name);
+      if(data.status==="Tamamlandı")addLog(currentUser.name,"task_done",`${old?.title} tamamlandı`,project?.name,project?.milestones.find(m=>m.id===msId)?.name);
+      else addLog(currentUser.name,"status_change",`${old?.title}: ${old?.status} → ${data.status}`,project?.name,project?.milestones.find(m=>m.id===msId)?.name);
+    } else addLog(currentUser.name,"general","Görev güncellendi: "+(data.title||old?.title),project?.name);
   };
   const deleteTask=(msId,taskId)=>mutProject(p=>({...p,milestones:p.milestones.map(ms=>ms.id===msId?normalizeMilestone({...ms,tasks:ms.tasks.filter(task=>task.id!==taskId)}):ms)}));
 
@@ -732,15 +732,15 @@ export default function App() {
       const c=(rows[i]||[]).map(x=>typeof x==="string"?x.trim():x);
       if(!c[0])continue;
       const n=String(c[0]);
-      // Milestone tarih ve durumu gÃ¶revlerden otomatik hesaplanÄ±r.
+      // Milestone tarih ve durumu görevlerden otomatik hesaplanır.
       // cols: 0=ms_name,1=task_title,2=task_start,3=task_status,4=priority,
       //       5=assignee,6=task_due,7=task_wait,8=notes,9=tags,10=link
-      if(!mm[n])mm[n]={id:uid(),name:n,startDate:"",dueDate:"",status:"BaÅŸlamadÄ±",waitSource:"",tasks:[]};
+      if(!mm[n])mm[n]={id:uid(),name:n,startDate:"",dueDate:"",status:"Başlamadı",waitSource:"",tasks:[]};
       if(c[1])mm[n].tasks.push({
         id:uid(),
         title:String(c[1]),
         startDate:excelDateToStr(c[2]),
-        status:STATUSES.includes(String(c[3]||""))?String(c[3]):"BaÅŸlamadÄ±",
+        status:STATUSES.includes(String(c[3]||""))?String(c[3]):"Başlamadı",
         priority:PRIORITIES.includes(String(c[4]||""))?String(c[4]):"Orta",
         assignee:state.people.find(person=>person.id===String(c[5]||"")||person.name.trim().toLocaleLowerCase("tr-TR")===String(c[5]||"").trim().toLocaleLowerCase("tr-TR"))?.id||"",
         dueDate:excelDateToStr(c[6]),
@@ -767,14 +767,14 @@ export default function App() {
 
   const downloadTemplate=()=>{
     const rows=[
-      ["Milestone AdÄ±","GÃ¶rev AdÄ±","GÃ¶rev BaÅŸlangÄ±Ã§","GÃ¶rev Durumu","Ã–ncelik","Sorumlu","GÃ¶rev Termin","GÃ¶rev Bekleme","Notlar","Etiketler","BaÄŸlantÄ±"],
-      ["Kapsam ve Fizibilite","SÃ¼reÃ§ analizi","2026-07-01","BaÅŸlamadÄ±","YÃ¼ksek","Hakan","2026-07-10","","AkÄ±ÅŸ diyagramÄ±","analiz",""],
-      ["Kapsam ve Fizibilite","ROI hesaplama","2026-07-08","BaÅŸlamadÄ±","Orta","AyÅŸe K.","2026-07-15","","","analiz",""],
-      ["AltyapÄ± HazÄ±rlÄ±k","Sunucu kurulumu","2026-07-21","BaÅŸlamadÄ±","YÃ¼ksek","AyÅŸe K.","2026-07-28","","","altyapÄ±",""],
-      ["AltyapÄ± HazÄ±rlÄ±k","OPC-UA altyapÄ±","2026-07-28","BaÅŸlamadÄ±","YÃ¼ksek","AyÅŸe K.","2026-08-10","Teknik","Port 4840","altyapÄ±",""],
-      ["Makine Entegrasyonu","CNC baÄŸlantÄ±","2026-08-18","BaÅŸlamadÄ±","YÃ¼ksek","Hakan","2026-09-01","","","makine",""],
-      ["Test ve Validasyon","Fonksiyonel testler","2026-09-22","BaÅŸlamadÄ±","YÃ¼ksek","Hakan","2026-10-01","","","test",""],
-      ["CanlÄ±ya AlÄ±ÅŸ","OperatÃ¶r eÄŸitimi","2026-10-13","BaÅŸlamadÄ±","Orta","Hakan","2026-10-20","","","eÄŸitim",""]
+      ["Milestone Adı","Görev Adı","Görev Başlangıç","Görev Durumu","Öncelik","Sorumlu","Görev Termin","Görev Bekleme","Notlar","Etiketler","Bağlantı"],
+      ["Kapsam ve Fizibilite","Süreç analizi","2026-07-01","Başlamadı","Yüksek","Hakan","2026-07-10","","Akış diyagramı","analiz",""],
+      ["Kapsam ve Fizibilite","ROI hesaplama","2026-07-08","Başlamadı","Orta","Ayşe K.","2026-07-15","","","analiz",""],
+      ["Altyapı Hazırlık","Sunucu kurulumu","2026-07-21","Başlamadı","Yüksek","Ayşe K.","2026-07-28","","","altyapı",""],
+      ["Altyapı Hazırlık","OPC-UA altyapı","2026-07-28","Başlamadı","Yüksek","Ayşe K.","2026-08-10","Teknik","Port 4840","altyapı",""],
+      ["Makine Entegrasyonu","CNC bağlantı","2026-08-18","Başlamadı","Yüksek","Hakan","2026-09-01","","","makine",""],
+      ["Test ve Validasyon","Fonksiyonel testler","2026-09-22","Başlamadı","Yüksek","Hakan","2026-10-01","","","test",""],
+      ["Canlıya Alış","Operatör eğitimi","2026-10-13","Başlamadı","Orta","Hakan","2026-10-20","","","eğitim",""]
     ];
     const ws=XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"]=[{wch:22},{wch:26},{wch:16},{wch:16},{wch:12},{wch:18},{wch:16},{wch:16},{wch:28},{wch:14},{wch:22}];
@@ -795,7 +795,7 @@ export default function App() {
           const sheet=wb.Sheets[wb.SheetNames[0]];
           const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:""});
           ms=parseRows(rows);
-        }catch(err){ alert("Excel okunamadÄ±: "+err.message); return; }
+        }catch(err){ alert("Excel okunamadı: "+err.message); return; }
       } else {
         const text=ev.target.result;
         const rows=text.split("\n").filter(l=>l.trim()).map(line=>{
@@ -805,7 +805,7 @@ export default function App() {
         });
         ms=parseRows(rows);
       }
-      if(!ms||!ms.length){alert("Dosyada veri bulunamadÄ±.");return;}
+      if(!ms||!ms.length){alert("Dosyada veri bulunamadı.");return;}
       mutProject(p=>{
         const updated=p.milestones.map(existing=>{
           const match=ms.find(m=>m.name.trim().toLowerCase()===existing.name.trim().toLowerCase());
@@ -822,8 +822,8 @@ export default function App() {
         const newMs=ms.filter(m=>!p.milestones.some(e=>e.name.trim().toLowerCase()===m.name.trim().toLowerCase()));
         return {...p,milestones:[...updated,...newMs]};
       });
-      addLog(currentUser.name,"import",`${ms.length} milestone aktarÄ±ldÄ±`,project?.name);
-      alert(`${ms.length} milestone aktarÄ±ldÄ±.`);
+      addLog(currentUser.name,"import",`${ms.length} milestone aktarıldı`,project?.name);
+      alert(`${ms.length} milestone aktarıldı.`);
     };
     if(isXlsx) reader.readAsArrayBuffer(file); else reader.readAsText(file,"UTF-8");
     e.target.value="";
@@ -837,9 +837,9 @@ export default function App() {
   const projectCommissioningMachines=project?.commissioningTracking?commissioningMachines(project.commissioningTree||[]):[];
   const projectCommissioningDone=projectCommissioningMachines.filter(machine=>machine.commissioned).length;
   const projectCommissioningPercent=projectCommissioningMachines.length?Math.round(projectCommissioningDone/projectCommissioningMachines.length*100):0;
-  const myOpenTaskCount=(state.personalTasks||[]).filter(task=>task.assignee===currentUser.id&&task.status!=="TamamlandÄ±").length
-    +state.projects.flatMap(item=>item.milestones.flatMap(ms=>ms.tasks)).filter(task=>task.assignee===currentUser.id&&task.status!=="TamamlandÄ±").length;
-  const managerAssignedOpenCount=(state.personalTasks||[]).filter(task=>task.createdBy===currentUser.id&&task.status!=="TamamlandÄ±").length;
+  const myOpenTaskCount=(state.personalTasks||[]).filter(task=>task.assignee===currentUser.id&&task.status!=="Tamamlandı").length
+    +state.projects.flatMap(item=>item.milestones.flatMap(ms=>ms.tasks)).filter(task=>task.assignee===currentUser.id&&task.status!=="Tamamlandı").length;
+  const managerAssignedOpenCount=(state.personalTasks||[]).filter(task=>task.createdBy===currentUser.id&&task.status!=="Tamamlandı").length;
   const saveAdminAssignedTask=async(data)=>{
     const {assigneeIds=[],supportAssigneeIds=[],recurrence,...task}=data;
     const groupId=uid();
@@ -848,10 +848,10 @@ export default function App() {
     const supportResult=supportOnly.length?await assignTasksWithNotification({task:{...task,assignmentRole:"Destek Sorumlusu"},assigneeIds:supportOnly,recurrence:null,assignerId:currentUser.id,groupId}):{tasks:[],notifications:[]};
     const result={tasks:[...primaryResult.tasks,...supportResult.tasks],notifications:[...primaryResult.notifications,...supportResult.notifications],recurringTemplate:primaryResult.recurringTemplate};
     setState(current=>{
-      const localNotices=result.tasks.map(task=>({id:uid(),ts:now(),userId:task.assignee,msg:`"${task.title}" gÃ¶revi size atandÄ±.`,projectName:"YÃ¶netici AtamasÄ±",taskId:task.id,type:"task_assignment",read:false}));
+      const localNotices=result.tasks.map(task=>({id:uid(),ts:now(),userId:task.assignee,msg:`"${task.title}" görevi size atandı.`,projectName:"Yönetici Ataması",taskId:task.id,type:"task_assignment",read:false}));
       return {...current,personalTasks:[...(current.personalTasks||[]),...result.tasks.filter(task=>!(current.personalTasks||[]).some(existing=>existing.id===task.id))],recurringTasks:result.recurringTemplate?[...(current.recurringTasks||[]).filter(item=>item.id!==result.recurringTemplate.id),result.recurringTemplate]:(current.recurringTasks||[]),notifications:[...localNotices,...(current.notifications||[])]};
     });
-    addLog(currentUser.name,"task_add",`${task.title} (${result.tasks.length} kiÅŸi)`);
+    addLog(currentUser.name,"task_add",`${task.title} (${result.tasks.length} kişi)`);
     return result;
   };
   const saveMobileQuickTodo=(data)=>{
@@ -869,11 +869,11 @@ export default function App() {
 
   const fullNav=[
     {id:"dashboard",icon:"home",label:"Dashboard"},
-    ...(isAdmin?[{id:"admin",icon:"admin",label:"YÃ¶netim"}]:[]),
-    ...(isAdmin?[{id:"customers",icon:"people",label:"MÃ¼ÅŸteriler"}]:[]),
+    ...(isAdmin?[{id:"admin",icon:"admin",label:"Yönetim"}]:[]),
+    ...(isAdmin?[{id:"customers",icon:"people",label:"Müşteriler"}]:[]),
     {id:"todos",icon:"ticket",label:"To-Do"},
     {id:"projects",icon:"projects",label:"Projeler"},
-    {id:"mytasks",icon:"tasks",label:`GÃ¶revlerim${myOpenTaskCount?` (${myOpenTaskCount})`:""}`},
+    {id:"mytasks",icon:"tasks",label:`Görevlerim${myOpenTaskCount?` (${myOpenTaskCount})`:""}`},
     {id:"fieldops",icon:"calendar",label:"Saha Y\u00f6netimi"},
     {id:"deadlines",icon:"clock",label:`Termin Uyar\u0131lar\u0131${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},
     {id:"tickets",icon:"ticket",label:"Ticketlar"},
@@ -885,7 +885,7 @@ export default function App() {
     {id:"logs",icon:"activity",label:"Aktivite"},
   ];
   const nav=customerView
-    ? fullNav.filter(item=>["dashboard","tickets"].includes(item.id)).map(item=>item.id==="dashboard"?{...item,label:"Ã–zet"}:item)
+    ? fullNav.filter(item=>["dashboard","tickets"].includes(item.id)).map(item=>item.id==="dashboard"?{...item,label:"Özet"}:item)
     : currentUser.ticketOnly?fullNav.filter(item=>["tickets"].includes(item.id)):fullNav;
 
   return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
@@ -897,7 +897,7 @@ export default function App() {
           <Icon name="bell" size={17}/>
           {(state.notifications||[]).filter(n=>isNotificationForUser(n,currentUser)&&!n.read).length>0&&<span style={{ position:"absolute", top:5, right:5, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
         </button>
-        <button title="TÃ¼m Ã¶zellikler" onClick={()=>navigateTo("mobilemenu")} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,cursor:"pointer",padding:"7px 9px",color:"#475569",display:"grid",placeItems:"center",fontSize:18,fontWeight:900,lineHeight:1}}>â˜°</button>
+        <button title="Tüm özellikler" onClick={()=>navigateTo("mobilemenu")} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,cursor:"pointer",padding:"7px 9px",color:"#475569",display:"grid",placeItems:"center",fontSize:18,fontWeight:900,lineHeight:1}}>☰</button>
         <button title="Profilim" onClick={()=>setModal({type:"editProfile"})} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={34} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
       </div>
     </div>}
@@ -917,7 +917,7 @@ export default function App() {
           <div style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", minHeight:28 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", lineHeight:1 }}>{currentUser.name}</div>
           </div>
-          <button onClick={logout} style={{ background:"none", border:"none", cursor:"pointer", color:"#475569", fontSize:12, padding:2 }}>Ã‡Ä±kÄ±ÅŸ</button>
+          <button onClick={logout} style={{ background:"none", border:"none", cursor:"pointer", color:"#475569", fontSize:12, padding:2 }}>Çıkış</button>
         </div>
       </div>
       <nav className="sidebar-nav" style={{ padding:"12px 10px", flex:1, overflowY:"auto" }}>
@@ -931,8 +931,8 @@ export default function App() {
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:isMobile?82:0 }}>
       {customerPreviewProject&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,background:"#EEF2FF",color:"#3730A3",borderBottom:"1px solid #C7D2FE",padding:"9px 14px",fontSize:12,fontWeight:850}}>
-        <span>MÃ¼ÅŸteri gÃ¶rÃ¼nÃ¼mÃ¼: {customerPreviewProject.customerProfile?.name||customerPreviewProject.customerName||customerPreviewProject.name}</span>
-        <button onClick={()=>{setPreviewCustomerProjectId("");navigateTo("customers");}} style={{border:0,borderRadius:8,background:"#fff",color:"#4338CA",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>YÃ¶neticiye DÃ¶n</button>
+        <span>Müşteri görünümü: {customerPreviewProject.customerProfile?.name||customerPreviewProject.customerName||customerPreviewProject.name}</span>
+        <button onClick={()=>{setPreviewCustomerProjectId("");navigateTo("customers");}} style={{border:0,borderRadius:8,background:"#fff",color:"#4338CA",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>Yöneticiye Dön</button>
       </div>}
       {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(customerView?<SharedCustomerDashboardPage state={state} currentUser={currentUser} projects={visibleProjects} onNavigate={v=>navigateTo(v,{ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>:isMobile?<SharedMobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>:<SharedDashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>)}
       {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<SharedManagementWorkspace state={state} setState={setState} currentUser={currentUser} initialSection={adminSection} onNavigate={v=>navigateTo(v)} onOpenProject={id=>openProject(id,"setup")} onEditPerson={person=>setModal({type:"editPerson",data:person})} onAddPerson={()=>setModal({type:"addPerson"})} onAssignTask={saveAdminAssignedTask}/>}
@@ -944,7 +944,7 @@ export default function App() {
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <SharedProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={(project.raciContacts||[]).filter(contact=>contact.side==="MÃ¼ÅŸteri")} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>openProjectTab("setup")} formatDate={fmt} mapsUrlForLocation={mapsUrl} moduleOptions={DEFAULT_ACTIVE_MODULES}/>
+        <SharedProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={(project.raciContacts||[]).filter(contact=>contact.side==="Müşteri")} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>openProjectTab("setup")} formatDate={fmt} mapsUrlForLocation={mapsUrl} moduleOptions={DEFAULT_ACTIVE_MODULES}/>
         <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:isMobile?"8px clamp(12px,2.2vw,22px) 10px":"0 clamp(12px,2.2vw,22px) 10px"}}>
           <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:3,scrollbarWidth:"thin"}}>
             {projectTabs.map(([id,icon,label])=><button key={id} onClick={()=>openProjectTab(id)} style={{padding:"7px 11px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:600,fontSize:12,background:projectTab===id?(project.customerProfile?.accentColor||project.color):"#F1F5FF",color:projectTab===id?"#fff":"#64748B",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",flexShrink:0}}><Icon name={icon} size={14}/>{label}</button>)}
@@ -955,17 +955,17 @@ export default function App() {
             <span style={{ width:11, height:11, borderRadius:"50%", background:project.color }} />
             <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"#1E293B", background:"#fff", borderRadius:6, padding:"2px 4px" }}>{project.name}</h2>
             <Badge label={project.status} />
-            <button onClick={()=>openProjectTab("setup")} style={{border:0,background:readinessScore(project)>=Number(project.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(project)>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800,cursor:"pointer"}}>BaÅŸlangÄ±Ã§: {readinessScore(project)}/100</button>
+            <button onClick={()=>openProjectTab("setup")} style={{border:0,background:readinessScore(project)>=Number(project.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(project)>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800,cursor:"pointer"}}>Başlangıç: {readinessScore(project)}/100</button>
             {project.commissioningTracking&&<span style={{background:"#ECFDF5",color:"#047857",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800}}>Devreye Alma: %{projectCommissioningPercent}</span>}
-            {overdueC>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>GecikmiÅŸ: {overdueC}</span>}
+            {overdueC>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Gecikmiş: {overdueC}</span>}
             {criticalC>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Kritik: {criticalC}</span>}
           </div>
           <div style={{ display:"flex", gap:16, fontSize:12, color:"#64748B", flexWrap:"wrap", alignItems:"center" }}>
             {activePMs.length>0&&<span>PM: <b>{activePMs.map(p=>p.name).join(", ")}</b></span>}
             {activeStakeholders.map(item=><span key={item.id} style={{background:"#F8FAFC",borderRadius:7,padding:"2px 7px"}}>{item.role}: <b>{item.person.name}</b></span>)}
-            {(project.customerContacts||[]).map(contact=><span key={contact.id} style={{background:"#F0F9FF",color:"#0369A1",borderRadius:7,padding:"3px 7px"}}><b>{contact.name}</b>{contact.title?` Â· ${contact.title}`:""}{contact.email?` Â· ${contact.email}`:""}{contact.phone?` Â· ${contact.phone}`:""}</span>)}
+            {(project.customerContacts||[]).map(contact=><span key={contact.id} style={{background:"#F0F9FF",color:"#0369A1",borderRadius:7,padding:"3px 7px"}}><b>{contact.name}</b>{contact.title?` · ${contact.title}`:""}{contact.email?` · ${contact.email}`:""}{contact.phone?` · ${contact.phone}`:""}</span>)}
             <span>{fmt(project.startDate)} - {fmt(project.endDate)}</span>
-            <span>{doneT}/{totalT} gÃ¶rev</span>
+            <span>{doneT}/{totalT} görev</span>
             {currentMs&&<span style={{ background:"#F1F5FF", color:"#4A6CF7", borderRadius:8, padding:"2px 9px", fontWeight:600 }}>Aktif: {currentMs.name} ({fmt(currentMs.dueDate)})</span>}
           </div>
           {totalT>0&&<div style={{ display:"flex", alignItems:"center", gap:9, marginTop:7 }}>
@@ -973,17 +973,17 @@ export default function App() {
             <span style={{ fontSize:12, fontWeight:700, color:project.color }}>{progress}%</span>
           </div>}
           <div style={{ display:"flex", gap:5, marginTop:10, overflowX:"auto", paddingBottom:3, scrollbarWidth:"thin" }}>
-            {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje PlanÄ±"],["tasks","tasks","GÃ¶revler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>openProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
+            {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje Planı"],["tasks","tasks","Görevler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>openProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
         </div>}
 
         {projectTab==="setup"&&<SharedProjectSetupPanel project={project} canEdit={canManageProjectActions} customerView={customerView} onChange={data=>mutProject(item=>({...item,...data}))} state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin&&!customerView} authHeaders={authHeaders} updateApiStateVersion={value=>{apiStateVersion=value||apiStateVersion;}} AIWorkspaceComponent={SharedAIWorkspace}/>}
         {projectTab==="tasks"&&<div style={{ flex:1, overflow:"auto", padding:isMobile?"12px":"18px 22px" }}>
           <SharedResponsibilitySummary project={project} selected={responsibilityFilters} onChange={setResponsibilityFilters}/>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><h3 style={{margin:0,fontSize:15}}>Milestonelar</h3><span style={{fontSize:11,color:"#64748B"}}>GÃ¶revleri gÃ¶rmek iÃ§in milestone seÃ§in.</span></div>{isAdmin&&!customerView&&<Btn small onClick={()=>setModal({type:"addMilestone"})}>+ Milestone</Btn>}</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><h3 style={{margin:0,fontSize:15}}>Milestonelar</h3><span style={{fontSize:11,color:"#64748B"}}>Görevleri görmek için milestone seçin.</span></div>{isAdmin&&!customerView&&<Btn small onClick={()=>setModal({type:"addMilestone"})}>+ Milestone</Btn>}</div>
           {project.milestones.map(ms=>{const visibleTasks=responsibilityFilters.length?ms.tasks.filter(task=>responsibilityFilters.includes(task.responsibilityGroup||"Proje Ekibi")):ms.tasks;const filteredMilestone={...ms,tasks:visibleTasks};const open=selMilestone===ms.id;const done=visibleTasks.filter(t=>t.status==="Tamamland\u0131").length;if(responsibilityFilters.length&&!visibleTasks.length)return null;return <div key={ms.id} style={{background:"#fff",border:`1.5px solid ${open?project.color:"#E2E8F0"}`,borderRadius:12,marginBottom:9,overflow:"hidden"}}>
             <button onClick={()=>{setSelMilestone(open?null:ms.id);setShowDoneTasks(false);}} style={{width:"100%",border:"none",background:open?project.color+"0D":"#fff",padding:"13px 15px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",fontFamily:"inherit"}}>
-              <span style={{color:project.color,display:"flex"}}><Icon name="tasks" size={17}/></span><div style={{flex:1,minWidth:0}}><div style={{fontWeight:800,fontSize:13}}>{ms.name}</div><div style={{fontSize:11,color:"#64748B",marginTop:3}}>{fmt(ms.startDate)} - {fmt(ms.dueDate)} Â· {done}/{visibleTasks.length} tamamlandÄ±</div></div><Badge label={ms.status}/><span style={{fontSize:17,color:"#64748B"}}>{open?"âˆ’":"+"}</span>
+              <span style={{color:project.color,display:"flex"}}><Icon name="tasks" size={17}/></span><div style={{flex:1,minWidth:0}}><div style={{fontWeight:800,fontSize:13}}>{ms.name}</div><div style={{fontSize:11,color:"#64748B",marginTop:3}}>{fmt(ms.startDate)} - {fmt(ms.dueDate)} · {done}/{visibleTasks.length} tamamlandı</div></div><Badge label={ms.status}/><span style={{fontSize:17,color:"#64748B"}}>{open?"−":"+"}</span>
             </button>
             {open&&<div style={{padding:"13px 15px",borderTop:"1px solid #E2E8F0"}}><SharedMilestoneTaskPanel milestone={filteredMilestone} project={project} people={state.people} isAdmin={isAdmin&&!customerView} showDone={showDoneTasks} setShowDone={setShowDoneTasks} onEdit={(item)=>setModal({type:"editMilestone",data:item})} onDelete={(id)=>{if(confirm("Silinsin mi?"))deleteMilestone(id);}} onAddTask={(msId)=>setModal({type:"addTask",msId})} onEditTask={(msId,task)=>setModal({type:"editTask",msId,data:task})} onDeleteTask={(msId,taskId)=>{if(confirm("Silinsin mi?"))deleteTask(msId,taskId);}} onCheckTask={(msId,taskId,c)=>updateTask(msId,taskId,{status:c?"Tamamland\u0131":"Bekliyor"})} onTimeTask={(msId,task)=>setModal({type:"timeLog",msId,data:task})} formatDate={fmt} formatFullDate={fmtFull}/></div>}
           </div>;})}
@@ -992,10 +992,10 @@ export default function App() {
 
         {projectTab==="gantt"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-            <h3 style={{ margin:"0 0 3px", fontSize:14, fontWeight:800 }}>Proje PlanÄ± (Gantt)</h3>
+            <h3 style={{ margin:"0 0 3px", fontSize:14, fontWeight:800 }}>Proje Planı (Gantt)</h3>
             {!customerView&&<div style={{ display:"flex", gap:7, alignItems:"center" }}>
-              <Btn small variant="secondary" onClick={downloadTemplate}>Åablon Ä°ndir (Excel)</Btn>
-              <Btn small variant="primary" onClick={()=>fileRef.current?.click()}>Excel/CSV YÃ¼kle</Btn>
+              <Btn small variant="secondary" onClick={downloadTemplate}>Şablon İndir (Excel)</Btn>
+              <Btn small variant="primary" onClick={()=>fileRef.current?.click()}>Excel/CSV Yükle</Btn>
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" style={{ display:"none" }} onChange={handleImport} />
             </div>}
           </div>
@@ -1003,7 +1003,7 @@ export default function App() {
           {/* Plan listesi - expandable */}
           <SharedPlanListTable project={project} people={state.people} />
           <div style={{ display:"flex", gap:12, marginTop:16, flexWrap:"wrap" }}>
-            {[[project.color,"Devam Ediyor"],["#059669","TamamlandÄ±"],["#EA6C00","GecikmiÅŸ"],["#E11D48","Kritik"]].map(([c,l])=><div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:12, height:8, borderRadius:3, background:c }} /><span style={{ fontSize:11, color:"#64748B" }}>{l}</span></div>)}
+            {[[project.color,"Devam Ediyor"],["#059669","Tamamlandı"],["#EA6C00","Gecikmiş"],["#E11D48","Kritik"]].map(([c,l])=><div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:12, height:8, borderRadius:3, background:c }} /><span style={{ fontSize:11, color:"#64748B" }}>{l}</span></div>)}
           </div>
         </div>}
 
@@ -1027,13 +1027,13 @@ export default function App() {
           <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="projects" size={20}/>Projeler</h2><p style={{ margin:"3px 0 0", color:"#64748B", fontSize:13 }}>{listedProjects.length} proje</p></div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <input value={projectSearch} onChange={event=>setProjectSearch(event.target.value)} placeholder="Projelerde ara..." style={{...iStyle,width:220,maxWidth:"100%"}}/>
-            <Btn variant="secondary" onClick={exportListedProjects}>XLSX Ä°ndir</Btn>
+            <Btn variant="secondary" onClick={exportListedProjects}>XLSX İndir</Btn>
             <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
-              {isAdmin&&<button onClick={()=>setProjectScope("all")} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectScope==="all"?"#fff":"transparent",color:projectScope==="all"?"#4A6CF7":"#64748B"}}>TÃ¼m Projeler</button>}
+              {isAdmin&&<button onClick={()=>setProjectScope("all")} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectScope==="all"?"#fff":"transparent",color:projectScope==="all"?"#4A6CF7":"#64748B"}}>Tüm Projeler</button>}
               <button onClick={()=>setProjectScope("mine")} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectScope==="mine"||!isAdmin?"#fff":"transparent",color:projectScope==="mine"||!isAdmin?"#4A6CF7":"#64748B"}}>Projelerim</button>
             </div>
             <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
-              {[["all","TÃ¼m"],["connected","Connected Supplier"],["standard","Standart"]].map(([id,label])=><button key={id} onClick={()=>setProjectSegment(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectSegment===id?"#fff":"transparent",color:projectSegment===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
+              {[["all","Tüm"],["connected","Connected Supplier"],["standard","Standart"]].map(([id,label])=><button key={id} onClick={()=>setProjectSegment(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectSegment===id?"#fff":"transparent",color:projectSegment===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
             </div>
             <div style={{display:"flex",background:"#E2E8F0",padding:3,borderRadius:10}}>
               {[["cards","Kart"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setProjectViewMode(id)} style={{border:0,borderRadius:8,padding:"7px 11px",cursor:"pointer",fontWeight:700,fontSize:11,background:projectViewMode===id?"#fff":"transparent",color:projectViewMode===id?"#4A6CF7":"#64748B"}}>{label}</button>)}
@@ -1043,10 +1043,10 @@ export default function App() {
         </div>
         {listedProjects.length===0&&<div style={{ textAlign:"center", padding:"50px", background:"#fff", borderRadius:16, border:"1.5px dashed #E2E8F0" }}>
           <div style={{ fontSize:14, fontWeight:700, marginBottom:8 }}>Proje yok</div>
-          {isAdmin&&<Btn onClick={()=>setModal({type:"addProject"})}>+ Proje OluÅŸtur</Btn>}
+          {isAdmin&&<Btn onClick={()=>setModal({type:"addProject"})}>+ Proje Oluştur</Btn>}
         </div>}
-        {projectViewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,marginBottom:14}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:980}}><thead><tr>{["Proje","MÃ¼ÅŸteri","PM","Durum","Ä°lerleme","GÃ¶rev","Gecikme","Ticket","Makine"].map(label=><th key={label} style={{padding:"11px 10px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{listedProjects.map(project=>{const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);const done=tasks.filter(task=>task.status==="TamamlandÄ±").length;const progress=tasks.length?Math.round(done/tasks.length*100):0;const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];const pms=projectPmIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");return <tr key={project.id} onClick={()=>setExpandedProjectRows(current=>({...current,[project.id]:!current[project.id]}))} style={{borderTop:"1px solid #EEF2F7",cursor:"pointer"}}><td style={{padding:10,fontSize:12,fontWeight:850}}>{project.name}</td><td style={{padding:10,fontSize:11,color:"#64748B"}}>{project.customerProfile?.name||project.customerName||"-"}</td><td style={{padding:10,fontSize:11,color:"#475569"}}>{pms||"-"}</td><td style={{padding:10}}><Badge label={project.status}/></td><td style={{padding:10,fontSize:11,fontWeight:850,color:project.color}}>%{progress}</td><td style={{padding:10,fontSize:11}}>{done}/{tasks.length}</td><td style={{padding:10,fontSize:11,color:delayed?"#E11D48":"#64748B",fontWeight:delayed?850:600}}>{delayed}</td><td style={{padding:10,fontSize:11}}>{((state.projectTickets||{})[project.id]||[]).length}</td><td style={{padding:10,fontSize:11}}>{machines.filter(machine=>machine.commissioned).length}/{machines.length}</td></tr>;})}</tbody></table></div>}
-        {projectViewMode==="list"&&listedProjects.filter(project=>expandedProjectRows[project.id]).map(project=><div key={`ms-${project.id}`} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:14,padding:12,margin:"-4px 0 14px"}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><b style={{fontSize:12}}>{project.name} Â· Milestonelar</b><Btn small onClick={()=>openProject(project.id,"setup")}>Projeyi AÃ§</Btn></div><div style={{display:"grid",gap:7}}>{project.milestones.map(milestone=>{const tasks=milestone.tasks||[];const done=tasks.filter(task=>task.status==="TamamlandÄ±").length;return <div key={milestone.id} style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto auto",gap:8,alignItems:"center",background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"9px 10px"}}><span style={{minWidth:0,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{milestone.name}</span><span style={{fontSize:10,color:"#64748B"}}>{done}/{tasks.length}</span><Badge label={milestone.status}/></div>;})}</div></div>)}
+        {projectViewMode==="list"&&<div style={{overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,marginBottom:14}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:980}}><thead><tr>{["Proje","Müşteri","PM","Durum","İlerleme","Görev","Gecikme","Ticket","Makine"].map(label=><th key={label} style={{padding:"11px 10px",fontSize:10,color:"#64748B",background:"#F8FAFC",textAlign:"left"}}>{label}</th>)}</tr></thead><tbody>{listedProjects.map(project=>{const tasks=project.milestones.flatMap(milestone=>milestone.tasks||[]);const done=tasks.filter(task=>task.status==="Tamamlandı").length;const progress=tasks.length?Math.round(done/tasks.length*100):0;const delayed=tasks.filter(task=>delayLvl(task.dueDate,task.status)).length;const machines=project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[];const pms=projectPmIds(project).map(id=>state.people.find(person=>person.id===id)?.name).filter(Boolean).join(", ");return <tr key={project.id} onClick={()=>setExpandedProjectRows(current=>({...current,[project.id]:!current[project.id]}))} style={{borderTop:"1px solid #EEF2F7",cursor:"pointer"}}><td style={{padding:10,fontSize:12,fontWeight:850}}>{project.name}</td><td style={{padding:10,fontSize:11,color:"#64748B"}}>{project.customerProfile?.name||project.customerName||"-"}</td><td style={{padding:10,fontSize:11,color:"#475569"}}>{pms||"-"}</td><td style={{padding:10}}><Badge label={project.status}/></td><td style={{padding:10,fontSize:11,fontWeight:850,color:project.color}}>%{progress}</td><td style={{padding:10,fontSize:11}}>{done}/{tasks.length}</td><td style={{padding:10,fontSize:11,color:delayed?"#E11D48":"#64748B",fontWeight:delayed?850:600}}>{delayed}</td><td style={{padding:10,fontSize:11}}>{((state.projectTickets||{})[project.id]||[]).length}</td><td style={{padding:10,fontSize:11}}>{machines.filter(machine=>machine.commissioned).length}/{machines.length}</td></tr>;})}</tbody></table></div>}
+        {projectViewMode==="list"&&listedProjects.filter(project=>expandedProjectRows[project.id]).map(project=><div key={`ms-${project.id}`} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:14,padding:12,margin:"-4px 0 14px"}}><div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><b style={{fontSize:12}}>{project.name} · Milestonelar</b><Btn small onClick={()=>openProject(project.id,"setup")}>Projeyi Aç</Btn></div><div style={{display:"grid",gap:7}}>{project.milestones.map(milestone=>{const tasks=milestone.tasks||[];const done=tasks.filter(task=>task.status==="Tamamlandı").length;return <div key={milestone.id} style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto auto",gap:8,alignItems:"center",background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"9px 10px"}}><span style={{minWidth:0,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{milestone.name}</span><span style={{fontSize:10,color:"#64748B"}}>{done}/{tasks.length}</span><Badge label={milestone.status}/></div>;})}</div></div>)}
         <div style={{ display:projectViewMode==="cards"?"grid":"none", gridTemplateColumns:"repeat(auto-fill,minmax(265px,1fr))", gap:13 }}>
           {listedProjects.map(p=><SharedProjectListCard key={p.id} project={p} people={state.people} isAdmin={isAdmin} onOpen={()=>openProject(p.id,"setup")} onEdit={()=>setModal({type:"editProject",data:p})} onReport={()=>generateHTMLReport(p,state.people,state.logs)} onDelete={()=>confirm("Projeyi sil?")&&deleteProject(p.id)} formatDate={fmt} readinessScoreForProject={readinessScore}/>)}
           {false&&listedProjects.map(p=>{
@@ -1068,17 +1068,17 @@ export default function App() {
               {p.description&&<p style={{ margin:"0 0 7px", fontSize:12, color:"#64748B", lineHeight:1.45, wordBreak:"break-word", overflowWrap:"anywhere" }}>{p.description}</p>}
               {pms.length>0&&<div style={{ fontSize:11, color:"#64748B", marginBottom:3 }}>PM: <b>{pms.map(pm=>pm.name).join(", ")}</b></div>}
               {stakeholders.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:5}}>{stakeholders.slice(0,3).map(item=><span key={item.id} style={{fontSize:9,background:"#F1F5F9",color:"#64748B",borderRadius:6,padding:"2px 6px"}}>{item.role}: {item.person.name}</span>)}</div>}
-              {aMs&&<div style={{ fontSize:11, color:"#4A6CF7", marginBottom:5, fontWeight:600 }}>Aktif: {aMs.name} â€” {fmt(aMs.dueDate)}</div>}
+              {aMs&&<div style={{ fontSize:11, color:"#4A6CF7", marginBottom:5, fontWeight:600 }}>Aktif: {aMs.name} — {fmt(aMs.dueDate)}</div>}
               <div style={{ display:"flex", gap:6, marginBottom:7, flexWrap:"wrap" }}>
-                <span style={{background:readinessScore(p)>=Number(p.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(p)>=Number(p.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:10,padding:"2px 7px",fontSize:10,fontWeight:800}}>BaÅŸlangÄ±Ã§ {readinessScore(p)}/100</span>
-                {overdue>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>GecikmiÅŸ: {overdue}</span>}
+                <span style={{background:readinessScore(p)>=Number(p.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(p)>=Number(p.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:10,padding:"2px 7px",fontSize:10,fontWeight:800}}>Başlangıç {readinessScore(p)}/100</span>
+                {overdue>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Gecikmiş: {overdue}</span>}
                 {crit>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Kritik: {crit}</span>}
               </div>
               <div style={{ height:4, background:"#F1F5FF", borderRadius:10 }}><div style={{ width:`${prog}%`, height:"100%", background:p.color, borderRadius:10 }} /></div>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginTop:7}}>
-                <div style={{ fontSize:11, color:"#64748B" }}>{done}/{total} gÃ¶rev Â· {prog}%</div>
+                <div style={{ fontSize:11, color:"#64748B" }}>{done}/{total} görev · {prog}%</div>
                 {isAdmin&&<div style={{display:"flex",gap:4}}>
-                  {[["edit","#EEF2FF","#4A6CF7",()=>setModal({type:"editProject",data:p}),"DÃ¼zenle"],["download","#ECFDF5","#059669",()=>generateHTMLReport(p,state.people,state.logs),"HTML rapor"],["trash","#FFF1F2","#E11D48",()=>confirm("Projeyi sil?")&&deleteProject(p.id),"Sil"]].map(([icon,bg,color,action,title])=><button key={icon} title={title} aria-label={title} onClick={e=>{e.stopPropagation();action();}} style={{width:28,height:28,border:0,borderRadius:7,background:bg,color,display:"grid",placeItems:"center",cursor:"pointer"}}><Icon name={icon} size={13}/></button>)}
+                  {[["edit","#EEF2FF","#4A6CF7",()=>setModal({type:"editProject",data:p}),"Düzenle"],["download","#ECFDF5","#059669",()=>generateHTMLReport(p,state.people,state.logs),"HTML rapor"],["trash","#FFF1F2","#E11D48",()=>confirm("Projeyi sil?")&&deleteProject(p.id),"Sil"]].map(([icon,bg,color,action,title])=><button key={icon} title={title} aria-label={title} onClick={e=>{e.stopPropagation();action();}} style={{width:28,height:28,border:0,borderRadius:7,background:bg,color,display:"grid",placeItems:"center",cursor:"pointer"}}><Icon name={icon} size={13}/></button>)}
                 </div>}
               </div>
             </div>;
@@ -1098,10 +1098,10 @@ export default function App() {
       {view==="people"&&<div style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
           <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="people" size={20}/>Ekip</h2></div>
-          {isAdmin&&<Btn onClick={()=>setModal({type:"addPerson"})}>+ KiÅŸi Ekle</Btn>}
+          {isAdmin&&<Btn onClick={()=>setModal({type:"addPerson"})}>+ Kişi Ekle</Btn>}
         </div>
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:14,marginBottom:16}}>
-          <div style={{fontSize:13,fontWeight:850,marginBottom:10}}>Organizasyonel YapÄ±</div>
+          <div style={{fontSize:13,fontWeight:850,marginBottom:10}}>Organizasyonel Yapı</div>
           <SharedOrganizationPanel people={internalPeople} roles={organizationRoles(state)} onEdit={isAdmin?person=>setModal({type:"editPerson",data:person}):null}/>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -1111,7 +1111,7 @@ export default function App() {
             const waiting=allT.filter(t=>t.status==="Bekliyor").length;
             const delayed=allT.filter(t=>delayLvl(t.dueDate,t.status)==="normal").length;
             const crit=allT.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length;
-            const comp=allT.filter(t=>t.status==="TamamlandÄ±").length;
+            const comp=allT.filter(t=>t.status==="Tamamlandı").length;
             const projC=[...new Set(state.projects.filter(proj=>proj.milestones.some(ms=>ms.tasks.some(t=>t.assignee===p.id))).map(pr=>pr.id))].length;
             const stats=[["Aktif",active,"#4A6CF7"],["Bekl.",waiting,"#94A3B8"],["Gec.",delayed,"#EA6C00"],["Krit.",crit,"#E11D48"],["Bitti",comp,"#059669"]].filter(([,c])=>c>0);
             return (
@@ -1120,9 +1120,9 @@ export default function App() {
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
                     <span style={{ fontWeight:700, fontSize:13 }}>{p.name}</span>
-                    {p.isAdmin&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:6, padding:"1px 6px", fontSize:9, fontWeight:700 }}>YÃ–N</span>}
+                    {p.isAdmin&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:6, padding:"1px 6px", fontSize:9, fontWeight:700 }}>YÖN</span>}
                   </div>
-                  <div style={{ color:"#94A3B8", fontSize:11, marginTop:1 }}>{orgLevelLabel(p.orgLevel)}{p.email?` Â· ${p.email}`:""}{projC>0?` Â· ${projC} proje`:""}</div>
+                  <div style={{ color:"#94A3B8", fontSize:11, marginTop:1 }}>{orgLevelLabel(p.orgLevel)}{p.email?` · ${p.email}`:""}{projC>0?` · ${projC} proje`:""}</div>
                   {stats.length>0&&<div style={{ display:"flex", gap:8, marginTop:4, flexWrap:"wrap" }}>
                     {stats.map(([l,c,col])=><span key={l} style={{ fontSize:11, fontWeight:700, color:col }}>{l} {c}</span>)}
                   </div>}
@@ -1130,7 +1130,7 @@ export default function App() {
                 <div style={{ display:"flex", gap:5, flexShrink:0 }}>
                   <Btn small variant="secondary" onClick={()=>setModal({type:"personDetail",data:p})}>Detay</Btn>
                   {isAdmin&&<Btn small variant="ghost" onClick={()=>setModal({type:"editPerson",data:p})} style={{display:"inline-flex",alignItems:"center",padding:"5px 8px"}}><Icon name="edit" size={15}/></Btn>}
-                  {isAdmin&&p.id!==currentUser.id&&<Btn small variant="danger" onClick={()=>{if(confirm("KaldÄ±rÄ±lsÄ±n mÄ±?"))deletePerson(p.id);}}>Ã—</Btn>}
+                  {isAdmin&&p.id!==currentUser.id&&<Btn small variant="danger" onClick={()=>{if(confirm("Kaldırılsın mı?"))deletePerson(p.id);}}>×</Btn>}
                 </div>
               </div>
             );
@@ -1146,16 +1146,16 @@ export default function App() {
 
     {/* MODALS */}
     {modal?.type==="addProject"&&<SharedAddProjectModal onClose={()=>setModal(null)} onSave={addProject} people={state.people} roles={organizationRoles(state)} templates={MES_TEMPLATES} buildFromTemplate={buildFromTemplate} colors={COLORS} createId={uid} todayString={todayStr} />}
-    {modal?.type==="editProject"&&<SharedProjectModal title="Projeyi DÃ¼zenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(data)=>updateProjectById(modal.data.id,data)} people={state.people} roles={organizationRoles(state)} colors={COLORS} createId={uid} />}
+    {modal?.type==="editProject"&&<SharedProjectModal title="Projeyi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(data)=>updateProjectById(modal.data.id,data)} people={state.people} roles={organizationRoles(state)} colors={COLORS} createId={uid} />}
     {modal?.type==="addMilestone"&&<SharedMilestoneModal title="Yeni Milestone" onClose={()=>setModal(null)} onSave={addMilestone} waitOptions={WAIT} />}
     {modal?.type==="editMilestone"&&<SharedMilestoneModal title="Milestone Duzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateMilestone(modal.data.id,d)} waitOptions={WAIT} />}
     {modal?.type==="addTask"&&<SharedTaskModal title="Yeni Görev" onClose={()=>setModal(null)} onSave={(d)=>addTask(modal.msId,d)} people={state.people} waitOptions={WAIT} responsibilityGroups={RESPONSIBILITY_GROUPS} milestone={project?.milestones.find(item=>item.id===modal.msId)} />}
     {modal?.type==="editTask"&&<SharedTaskModal title="Görevi Düzenle" initial={modal.data} onClose={()=>setModal(null)} onSave={(d)=>updateTask(modal.msId,modal.data.id,d)} people={state.people} waitOptions={WAIT} responsibilityGroups={RESPONSIBILITY_GROUPS} milestone={project?.milestones.find(item=>item.id===modal.msId)} />}
     {modal?.type==="addPerson"&&<SharedPersonModal people={state.people} roles={organizationRoles(state)} onClose={()=>setModal(null)} onSave={addPerson} />}
-    {modal?.type==="editPerson"&&<SharedUserEditModal title="KullanÄ±cÄ±yÄ± DÃ¼zenle" person={modal.data} people={state.people} roles={organizationRoles(state)} allowAdmin onClose={()=>setModal(null)} onSave={(d)=>updatePerson(modal.data.id,d)} />}
+    {modal?.type==="editPerson"&&<SharedUserEditModal title="Kullanıcıyı Düzenle" person={modal.data} people={state.people} roles={organizationRoles(state)} allowAdmin onClose={()=>setModal(null)} onSave={(d)=>updatePerson(modal.data.id,d)} />}
     {modal?.type==="personDetail"&&<SharedPersonDetailModal person={modal.data} projects={state.projects} personalTasks={state.personalTasks} onClose={()=>setModal(null)} />}
     {modal?.type==="addRisk"&&<SharedRiskModal onClose={()=>setModal(null)} onSave={addRisk} milestones={project?.milestones||[]} />}
-    {modal?.type==="editProfile"&&<SharedUserEditModal title="Profilimi DÃ¼zenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
+    {modal?.type==="editProfile"&&<SharedUserEditModal title="Profilimi Düzenle" person={currentUser} onClose={()=>setModal(null)} onSave={(d)=>updatePerson(currentUser.id,d)} />}
     {modal?.type==="timeLog"&&<SharedTimeLogModal task={(project?.milestones.find(m=>m.id===modal.msId)?.tasks.find(t=>t.id===modal.data.id))||modal.data} currentUser={currentUser} createId={uid} getTimestamp={now} formatDate={fmt} onClose={()=>setModal(null)} onSave={(entries)=>updateTask(modal.msId,modal.data.id,{timeEntries:entries})} />}
     {modal?.type==="addPersonal"&&<SharedPersonalTaskModal title="Görev Ata" people={state.people} projects={state.projects} isAdmin currentUser={currentUser} waitOptions={WAIT} todayString={todayStr} currentTimeString={currentTimeStr} lockStartAt onClose={()=>setModal(null)} onSave={saveAdminAssignedTask} />}
     {mobileQuickSheet&&<MobileQuickSheet isAdminMode={useAdminHome} onClose={()=>setMobileQuickSheet(false)} onSelect={target=>{setMobileQuickSheet(false);if(target==="assign"){setModal({type:"addPersonal"});return;}if(target==="todo"||target==="action")setMobileQuick(target);else navigateTo(target==="ticket"?"tickets":target,{ticketMineOnly:target==="ticket"});}}/>}
@@ -1166,5 +1166,5 @@ export default function App() {
 
 
 
-// â”€â”€â”€ Plan List Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Plan List Table ─────────────────────────────────────────────────────────
 
