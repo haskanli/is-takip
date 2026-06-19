@@ -203,15 +203,15 @@ export function TicketsPage({
   };
   const remove=(projectId,id)=>save(projectId,((state.projectTickets||{})[projectId]||[]).filter(t=>t.id!==id));
   const sortedFiltered=[...filtered].sort((a,b)=>String(b.ticket.updatedAt||b.ticket.ts||"").localeCompare(String(a.ticket.updatedAt||a.ticket.ts||"")));
-  return <div style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
-    <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:18}}>
+  return <div className="theme-work-page tickets-theme-page" style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
+    <div className="theme-page-heading" style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:18}}>
       <div><h2 style={{margin:0,fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#1E293B"}}><Icon name="ticket" size={20}/>{customerMode?"Destek Taleplerim":"Ticketlar"}</h2><p style={{margin:"3px 0 0",fontSize:12,color:"#64748B"}}>{customerMode?"Bu alanda yalnızca kendi projenize ait müşteri talepleri görünür.":`${filtered.length} kayıt gösteriliyor`}</p></div>
       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{isAdmin&&!customerMode&&<Btn variant="secondary" onClick={()=>generateTicketStatusReport(state,state.people)}>Durum Raporu</Btn>}<Btn disabled={customerMode&&!customerProjectList.length} onClick={()=>setModal({type:"add",projectId:customerMode?(customerProjectList[0]?.id||""):(state.projects[0]?.id||"")})}>+ Ticket Ekle</Btn></div>
     </div>
     {!customerMode&&<div className="segmented-control" style={{display:"inline-flex",marginBottom:14}}>
       {[["tickets","Ticket Takibi"],["recurring","Tekrar Eden Problemler"]].map(([id,label])=><button key={id} className={activeTab===id?"is-active":""} onClick={()=>setActiveTab(id)}>{label}</button>)}
     </div>}
-    {(customerMode||activeTab==="tickets")&&<><div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
+    {(customerMode||activeTab==="tickets")&&<><div className="theme-ticket-toolbar" style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
       <input style={{...iStyle,width:"auto",minWidth:220,flex:"1 1 220px"}} value={search} onChange={e=>setSearch(e.target.value)} placeholder={customerMode?"Talep ara...":"Ticket, proje veya sorumlu ara..."}/>
       {!customerMode&&<button onClick={()=>setMineOnly(v=>!v)} className={mineOnly?"ui-chip ui-chip-accent":"ui-chip ui-chip-muted"} style={{borderRadius:10,padding:"8px 12px",cursor:"pointer",fontSize:11}}>{"Ticketlar\u0131m"}</button>}
       {!customerMode&&<MultiChoiceFilter label="Projeler" options={state.projects.map(project=>({value:project.id,label:project.name}))} value={projectFilters} onChange={setProjectFilters}/>}
@@ -271,8 +271,8 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin, c
   const TICKET_PRIOS=["Düşük","Orta","Yüksek","Kritik"];
   const TYPE_COLORS={"Bug":"var(--danger, #b93f33)","Görev":"var(--accent, #0b8a94)","İyileştirme":"var(--success, #19835c)","Soru":"var(--warning, #bf7a12)","Bilgi":"var(--muted, #5b6f74)"};
   const sortedTickets=[...tickets].sort((a,b)=>String(b.updatedAt||b.ts||"").localeCompare(String(a.updatedAt||a.ts||"")));
-  return <div style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, gap:10, flexWrap:"wrap" }}>
+  return <div className="theme-work-page tickets-theme-page" style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
+    <div className="theme-page-heading" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, gap:10, flexWrap:"wrap" }}>
       <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:"var(--text, #112327)" }}>Ticketlar ({tickets.length})</h3>
       <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
         <div className="view-switch" role="group" aria-label="Ticket g\u00f6r\u00fcn\u00fcm\u00fc">

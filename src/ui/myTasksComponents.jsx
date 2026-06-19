@@ -137,9 +137,9 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
   };
   const deletePersonal=(id)=>{const t=(state.personalTasks||[]).find(x=>x.id===id);setState(s=>({...s,personalTasks:(s.personalTasks||[]).filter(x=>x.id!==id)}));addLog(currentUser.name,"task_delete",t?.title||"");};
 
-  return <div style={{ padding:"0 0 24px", flex:1, overflow:"auto", display:"flex", flexDirection:"column" }}>
-    <div style={{ padding:"20px clamp(14px, 4vw, 28px) 0" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+  return <div className="theme-work-page tasks-theme-page" style={{ padding:"0 0 24px", flex:1, overflow:"auto", display:"flex", flexDirection:"column" }}>
+    <div className="theme-page-topbar" style={{ padding:"20px clamp(14px, 4vw, 28px) 0" }}>
+      <div className="theme-page-heading" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
         <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="tasks" size={20}/>Görevlerim</h2><p style={{ margin:"3px 0 0", color:"#64748B", fontSize:13 }}>{active.length} aktif · {completed.length} tamamlandı</p></div>
         <Btn onClick={()=>setModal({type:"addPersonal"})}>+ Görev Ekle</Btn>
       </div>
@@ -148,7 +148,7 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
         <span style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}><span style={{width:24,height:24,borderRadius:9,background:onlyOverdue?"#E11D48":"#F59E0B",color:"#fff",display:"grid",placeItems:"center",fontSize:12,fontWeight:950,flexShrink:0}}>!</span><span style={{minWidth:0}}><b style={{display:"block",fontSize:12,color:onlyOverdue?"#BE123C":"#92400E"}}>{overdue.length} geciken görev</b><span style={{display:"block",fontSize:10,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overdue[0]?.title}{overdue.length>1?` +${overdue.length-1} diğer`:""}</span></span></span>
         <span style={{fontSize:10,fontWeight:850,color:onlyOverdue?"#BE123C":"#92400E",background:"#fff",borderRadius:999,padding:"4px 8px",flexShrink:0}}>{onlyOverdue?"Tümünü göster":"Filtrele"}</span>
       </button>}
-      <div style={{display:"flex",gap:6,overflowX:"auto",margin:"14px 0 4px"}}>
+      <div className="theme-filter-strip" style={{display:"flex",gap:6,overflowX:"auto",margin:"14px 0 4px"}}>
         {[["all","tasks","Tümü"],["assigned","tasks","Yöneticinin Atadıkları"],["project","projects","Projeden Gelenler"],["todos","ticket","Kendi To-Do'larım"],["notes","notes","Notlarım"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 13px",background:section===id?"#4A6CF7":"#F1F5FF",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
       </div>
     </div>
