@@ -5,6 +5,26 @@ const customerName = (project) =>
   project?.customerProfile?.name || project?.customerName || project?.name || "Müşteri";
 
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+const readImageAsDataUrl = (file, callback) => {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxSize = 360;
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL("image/webp", 0.82));
+    };
+    img.onerror = () => callback(String(reader.result || ""));
+    img.src = String(reader.result || "");
+  };
+  reader.readAsDataURL(file);
+};
 
 export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer }) {
   const projects = state.projects || [];
@@ -42,10 +62,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
   };
 
   const uploadLogo = (file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => updateProjectCustomer({ logoUrl: String(reader.result || "") });
-    reader.readAsDataURL(file);
+    readImageAsDataUrl(file, (logoUrl) => updateProjectCustomer({ logoUrl }));
   };
 
   const enableAccess = (contact) => {

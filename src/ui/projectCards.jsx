@@ -7,6 +7,26 @@ const noop = () => {};
 const defaultFormatDate = (value) => value || "-";
 const defaultMapsUrl = () => "";
 const defaultReadinessScore = () => 0;
+const readImageAsDataUrl = (file, callback) => {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxSize = 360;
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL("image/webp", 0.82));
+    };
+    img.onerror = () => callback(String(reader.result || ""));
+    img.src = String(reader.result || "");
+  };
+  reader.readAsDataURL(file);
+};
 
 export function ProjectBusinessCard({
   project,
@@ -44,10 +64,7 @@ export function ProjectBusinessCard({
   const toggleModule = (module) =>
     onChange({ activeModules: modules.includes(module) ? modules.filter((item) => item !== module) : [...modules, module] });
   const uploadLogo = (file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => updateCustomer({ logoUrl: String(reader.result || "") });
-    reader.readAsDataURL(file);
+    readImageAsDataUrl(file, (logoUrl) => updateCustomer({ logoUrl }));
   };
 
   return (

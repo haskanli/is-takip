@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiUrl } from "../api";
 import { COLORS } from "../appData.js";
@@ -12,6 +12,26 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const now = () => new Date().toISOString();
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "?";
+const readImageAsDataUrl = (file, callback) => {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxSize = 360;
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL("image/webp", 0.82));
+    };
+    img.onerror = () => callback(String(reader.result || ""));
+    img.src = String(reader.result || "");
+  };
+  reader.readAsDataURL(file);
+};
 const TRAINING_SCOPES = ["Operatör Eğitimi","Yönetici Eğitimi","Hatırlatma Eğitimi","Proje Devri Eğitimi","Süper Kullanıcı Eğitimi","Teknik Eğitim","Diğer"];
 const COST_CATEGORIES = ["Saha Yakıt","Yetkili Servis İşçilik","Donanım","Lisans","Konaklama","Ulaşım","Diğer"];
 const DEFAULT_ACTIVE_MODULES = ["Üretim Takip","Bakım","Kalite","İzlenebilirlik","Satın Alma","Connected Supplier"];
@@ -251,6 +271,7 @@ function ReportScheduleCard({item,canEdit,onToggle,onDelete}) {
 
 function ProjectOverviewPanel({project,onChange,canEdit}) {
   const [editing,setEditing]=useState(false);
+  const fileInput=useRef(null);
   const location=project.location||{city:"",district:"",address:""};
   const customer=project.customerProfile||{};
   const customerName=customer.name||project.customerName||project.name;
@@ -264,6 +285,7 @@ function ProjectOverviewPanel({project,onChange,canEdit}) {
   const url=mapsUrl(location);
   const updateLocation=(key,value)=>onChange({location:{...location,[key]:value}});
   const updateCustomer=(key,value)=>onChange({customerProfile:{...customer,[key]:value}});
+  const uploadLogo=(file)=>readImageAsDataUrl(file,logoUrl=>updateCustomer("logoUrl",logoUrl));
   const toggleModule=(module)=>onChange({activeModules:modules.includes(module)?modules.filter(item=>item!==module):[...modules,module]});
   const statCards=[["Tamamlama",`%${progress}`,"#4F46E5",`${doneTasks}/${totalTasks} görev`],["Başlangıç",`${readinessScore(project)}/100`,readinessScore(project)>=Number(project.readinessThreshold||80)?"#059669":"#E11D48","proje sağlığı"],["Geciken",lateTasks,"#EA6C00","açık termin"],["Risk",openRisks,"#E11D48","açık risk"]];
   return <div style={{display:"grid",gap:14}}>
@@ -279,7 +301,7 @@ function ProjectOverviewPanel({project,onChange,canEdit}) {
     <div className="admin-main-grid" style={{display:"none",gridTemplateColumns:"1.15fr .85fr",gap:14}}>
       <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:18,padding:18}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:13}}><div><h3 style={{margin:0,fontSize:15}}>Müşteri Bilgileri</h3><p style={{margin:"4px 0 0",fontSize:11,color:"#64748B"}}>Logo, web sitesi, konum ve aktif modüller.</p></div><div style={{display:"flex",gap:7}}>{customer.website&&<a href={customer.website.startsWith("http")?customer.website:`https://${customer.website}`} target="_blank" rel="noreferrer" style={{fontSize:10,fontWeight:850,color:"#2563EB",background:"#DBEAFE",borderRadius:9,padding:"7px 9px",textDecoration:"none"}}>Web Sitesi</a>}{canEdit&&<button onClick={()=>setEditing(value=>!value)} style={{border:0,borderRadius:9,padding:"7px 9px",background:editing?"#111827":"#EEF2FF",color:editing?"#fff":"#4338CA",fontSize:10,fontWeight:900,cursor:"pointer"}}>{editing?"Kapat":"Düzenle"}</button>}</div></div>
-        {editing&&canEdit&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:9,marginBottom:14}}><Field label="Müşteri Adı"><input style={iStyle} value={customer.name||""} onChange={event=>updateCustomer("name",event.target.value)} placeholder="Firma adı"/></Field><Field label="Müşteri Web Sitesi"><input style={iStyle} value={customer.website||""} onChange={event=>updateCustomer("website",event.target.value)} placeholder="https://firma.com"/></Field><Field label="Müşteri Logo URL"><input style={iStyle} value={customer.logoUrl||""} onChange={event=>updateCustomer("logoUrl",event.target.value)} placeholder="https://.../logo.png"/></Field><Field label="İl"><input style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)}/></Field><Field label="İlçe"><input style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)}/></Field><Field label="Adres"><input style={iStyle} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Açık adres"/></Field></div>}
+        {editing&&canEdit&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:9,marginBottom:14}}><Field label="Müşteri Adı"><input style={iStyle} value={customer.name||""} onChange={event=>updateCustomer("name",event.target.value)} placeholder="Firma adı"/></Field><Field label="Müşteri Web Sitesi"><input style={iStyle} value={customer.website||""} onChange={event=>updateCustomer("website",event.target.value)} placeholder="https://firma.com"/></Field><Field label="Müşteri Logo"><div style={{display:"grid",gap:6}}><input style={iStyle} value={(customer.logoUrl||"").startsWith("data:")?"":customer.logoUrl||""} onChange={event=>updateCustomer("logoUrl",event.target.value)} placeholder="https://.../logo.png"/><button type="button" onClick={()=>fileInput.current?.click()} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:9,padding:"7px 9px",fontSize:10,fontWeight:900,cursor:"pointer",textAlign:"left"}}>veya dosya yükle</button><input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={event=>uploadLogo(event.target.files?.[0])}/></div></Field><Field label="İl"><input style={iStyle} value={location.city||""} onChange={event=>updateLocation("city",event.target.value)}/></Field><Field label="İlçe"><input style={iStyle} value={location.district||""} onChange={event=>updateLocation("district",event.target.value)}/></Field><Field label="Adres"><input style={iStyle} value={location.address||""} onChange={event=>updateLocation("address",event.target.value)} placeholder="Açık adres"/></Field></div>}
         <div style={{display:"grid",gap:8,marginBottom:13,fontSize:12,color:"#475569"}}><div><b>Web:</b> {customer.website||"-"}</div><div><b>Konum:</b> {[location.address,location.district,location.city].filter(Boolean).join(", ")||"-"}</div></div>
         <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{DEFAULT_ACTIVE_MODULES.map(module=><button key={module} disabled={!editing||!canEdit} onClick={()=>toggleModule(module)} style={{border:"1px solid "+(modules.includes(module)?"#4F46E5":"#E2E8F0"),background:modules.includes(module)?"#EEF2FF":"#F8FAFC",color:modules.includes(module)?"#4338CA":"#64748B",borderRadius:999,padding:"7px 10px",fontSize:10,fontWeight:850,cursor:editing&&canEdit?"pointer":"default"}}>{module}</button>)}</div>
       </div>
