@@ -163,6 +163,98 @@ code,
   box-shadow: var(--shadow-soft);
 }
 
+.project-workspace {
+  background:
+    radial-gradient(circle at 12% -10%, rgb(11 138 148 / 12%), transparent 34%),
+    radial-gradient(circle at 96% -8%, rgb(191 122 18 / 9%), transparent 28%),
+    var(--bg);
+}
+
+.project-tab-shell {
+  background: rgb(255 255 255 / 72%);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 0 18px 42px -40px rgb(17 35 39 / 44%);
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+}
+
+.project-tab-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 3px;
+  scrollbar-width: thin;
+}
+
+.project-tab {
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgb(255 255 255 / 72%);
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+
+.project-tab:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+  color: var(--accent);
+}
+
+.project-tab.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 18px 34px -28px rgb(11 138 148 / 84%);
+}
+
+.project-section {
+  flex: 1;
+  overflow: auto;
+  padding: clamp(16px, 3vw, 26px);
+}
+
+.milestone-card {
+  background: rgb(255 255 255 / 82%);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px -32px rgb(17 35 39 / 40%);
+}
+
+.milestone-card.is-open {
+  border-color: var(--accent);
+  box-shadow: 0 22px 52px -38px rgb(11 138 148 / 52%);
+}
+
+.milestone-trigger {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  font-family: inherit;
+}
+
+.milestone-trigger:hover {
+  background: var(--surface-soft);
+}
+
 .btn-base {
   border-radius: var(--radius);
   transition: transform .15s ease, filter .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
