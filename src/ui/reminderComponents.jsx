@@ -149,8 +149,8 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
     }));
 
   return (
-    <div style={{ padding: "22px clamp(14px,4vw,30px)", flex: 1, overflow: "auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 14, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 18 }}>
+    <div className="theme-work-page reminders-page">
+      <div className="theme-page-heading reminders-hero">
         <div>
           <h2 style={{ margin: 0, fontSize: 22, display: "flex", alignItems: "center", gap: 8 }}>
             <Icon name="bell" size={22} /> Hatırlatıcılar
@@ -159,19 +159,19 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
             Kişisel not, görev veya ekip işi için zamanlı Slack bildirimi planlayın.
           </p>
         </div>
-        <span style={{ background: "#EEF2FF", color: "#4338CA", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 900 }}>
+        <span className="ui-chip ui-chip-accent" style={{ borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 900 }}>
           {visibleReminders.filter((item) => !["sent", "cancelled"].includes(item.status)).length} aktif
         </span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(300px,420px) minmax(0,1fr)", gap: 16, alignItems: "start" }} className="reminders-layout">
-        <section style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 18, padding: 16, boxShadow: "0 10px 28px rgba(15,23,42,.06)" }}>
+      <div className="reminders-layout">
+        <section className="reminders-form">
           <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 12 }}>Yeni Hatırlatıcı</div>
           <Field label="Başlık">
             <input style={iStyle} value={form.title} onChange={(event) => update("title", event.target.value)} placeholder="Örn. Test sonucunu kontrol et" />
           </Field>
           <Field label="Planlanan zaman">
-            <input type="datetime-local" style={iStyle} value={form.scheduledAt} onChange={(event) => update("scheduledAt", event.target.value)} />
+            <input type="datetime-local" className="reminder-datetime-input" style={iStyle} value={form.scheduledAt} onChange={(event) => update("scheduledAt", event.target.value)} />
           </Field>
           <Field label="Alıcılar">
             <PeopleMultiSelect people={visiblePeople} value={suggestedRecipients} onChange={(value) => update("recipientIds", value)} />
@@ -182,11 +182,11 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
             )}
           </Field>
           <Field label="Bağlı görevler (opsiyonel)">
-            <div style={{ maxHeight: 220, overflow: "auto", border: "1.5px solid #E2E8F0", borderRadius: 10, padding: 8, background: "#FAFBFC", display: "grid", gap: 6 }}>
+            <div className="reminder-task-list">
               {taskOptions.map((task) => {
                 const key = taskKey(task);
                 return (
-                  <label key={key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, color: "#334155", cursor: "pointer" }}>
+                  <label key={key} className="reminder-task-option">
                     <input
                       type="checkbox"
                       checked={form.taskKeys.includes(key)}
@@ -221,7 +221,7 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
               .filter(Boolean);
             const canModify = isAdmin || reminder.createdBy === currentUser.id;
             return (
-              <article key={reminder.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderLeft: `4px solid ${color}`, borderRadius: 16, padding: 14, boxShadow: "0 8px 22px rgba(15,23,42,.045)" }}>
+              <article key={reminder.id} className="reminder-card" style={{ borderLeft: `4px solid ${color}` }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <div style={{ width: 42, height: 42, borderRadius: 14, background: bg, color, display: "grid", placeItems: "center", flexShrink: 0 }}>
                     <Icon name="bell" size={18} />
@@ -265,7 +265,7 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
                     )}
                   </div>
                   {canModify && (
-                    <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                    <div className="reminder-actions">
                       {!["sent", "cancelled"].includes(reminder.status) && <Btn small variant="warning" onClick={() => updateReminder(reminder.id, { status: "cancelled" })}>İptal</Btn>}
                       <Btn small variant="danger" onClick={() => removeReminder(reminder.id)}>Sil</Btn>
                     </div>
@@ -275,7 +275,7 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
             );
           })}
           {!visibleReminders.length && (
-            <div style={{ background: "#fff", border: "1.5px dashed #CBD5E1", borderRadius: 16, padding: 36, color: "#94A3B8", textAlign: "center" }}>
+            <div className="reminders-empty" style={{ padding: 36, color: "var(--muted)", textAlign: "center" }}>
               Henüz hatırlatıcı yok.
             </div>
           )}

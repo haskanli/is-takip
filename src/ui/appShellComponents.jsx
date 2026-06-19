@@ -208,6 +208,26 @@ function LegacyAppLoadingScreen({progress=10,status="Oturum hazirlanıyor",logoS
 
 export function AppLoadingScreen({progress=10,status="Oturum haz\u0131rlan\u0131yor",logoSrc=""}) {
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
+  return (
+    <div className="app-loading-shell" role="status" aria-live="polite" aria-label="Corject yukleniyor">
+      <div className="app-loading-panel">
+        <div className="app-loading-mark" aria-hidden="true">
+          {logoSrc
+            ? <img className="app-loading-logo" src={logoSrc} alt="" />
+            : <span className="app-loading-letter">C</span>}
+        </div>
+        <div className="app-loading-title">Corject</div>
+        <div className="app-loading-status">{status}</div>
+        <div className="app-loading-progress" aria-hidden="true">
+          <span style={{ width: `${safeProgress}%` }} />
+        </div>
+        <div className="app-loading-meta">
+          <span>Calisma alani hazirlaniyor</span>
+          <b>%{safeProgress}</b>
+        </div>
+      </div>
+    </div>
+  );
   const animationCss=`
     @keyframes corjectFloatField {
       0%,100% { transform: translateY(0) rotate(0deg) scale(1); }
