@@ -187,8 +187,8 @@ export function Modal({ title, onClose, wide, children }) {
     >
       <div
         style={{
-          background: "var(--surface, #fff)",
-          border: "1px solid var(--border, #cfe0e3)",
+          background: "var(--glass-strong, rgb(255 255 255 / 82%))",
+          border: "1px solid var(--glass-border, rgb(207 224 227 / 68%))",
           borderRadius: 22,
           padding: "26px 30px",
           width: "100%",
@@ -196,6 +196,7 @@ export function Modal({ title, onClose, wide, children }) {
           maxHeight: "90vh",
           overflowY: "auto",
           boxShadow: "0 28px 80px -36px rgb(17 35 39 / 62%)",
+          backdropFilter: "var(--glass-blur, blur(22px) saturate(1.18))",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
@@ -255,6 +256,8 @@ export const Btn = ({ children, onClick, variant = "primary", small, style: s, d
         padding: small ? "6px 12px" : "10px 17px",
         fontFamily: "inherit",
         opacity: disabled ? 0.5 : 1,
+        minHeight: small ? 34 : 42,
+        transition: "transform .18s ease, box-shadow .18s ease, background .18s ease",
         ...variants[variant],
         ...s,
       }}
@@ -266,5 +269,5 @@ export const Btn = ({ children, onClick, variant = "primary", small, style: s, d
 };
 
 export const Card = ({ children, style }) => (
-  <div style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #cfe0e3)", borderRadius: 18, padding: 16, boxShadow: "var(--shadow-soft, 0 18px 40px -26px rgb(17 35 39 / 34%))", ...style }}>{children}</div>
+  <div className="liquid-card" style={{ borderRadius: 18, padding: 16, ...style }}>{children}</div>
 );
