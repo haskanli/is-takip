@@ -114,7 +114,7 @@ export const GlobalStyle = () => (
   `}</style>
 );
 
-export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logoSrc=""}) {
+function LegacyAppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logoSrc=""}) {
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
   const localAnimationCss = `
     @keyframes corjectRingSweep { 0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 12px rgba(37,99,235,.28)); } 55% { transform: rotate(174deg) scale(1.02); filter: drop-shadow(0 0 20px rgba(34,211,238,.38)); } 100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 14px rgba(124,58,237,.32)); } }
@@ -151,6 +151,40 @@ export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",log
       </div>
       <div style={{height:8,borderRadius:20,background:"rgba(148,163,184,.16)",overflow:"hidden",border:"1px solid rgba(148,163,184,.16)"}}><div style={{height:"100%",width:`${safeProgress}%`,borderRadius:20,background:"linear-gradient(90deg,#2563EB,#7C3AED,#22D3EE)",transition:"width .35s ease",boxShadow:"0 0 24px rgba(34,211,238,.42)"}}/></div>
       <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#94A3B8",marginTop:9}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"#C4B5FD"}}>%{safeProgress}</b></div>
+    </div>
+  </div></>;
+}
+
+export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logoSrc=""}) {
+  const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
+  const animationCss=`
+    @keyframes corjectSoftOrbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes corjectLogoBreath { 0%,100% { transform: scale(1); box-shadow:0 18px 38px rgba(74,108,247,.18); } 50% { transform: scale(1.035); box-shadow:0 22px 48px rgba(124,58,237,.22); } }
+    @keyframes corjectProgressShine { 0% { transform: translateX(-78%); opacity:.12; } 45% { opacity:.72; } 100% { transform: translateX(176%); opacity:.08; } }
+    @keyframes corjectPulseDot { 0%,100% { transform: scale(.82); opacity:.48; } 50% { transform: scale(1); opacity:1; } }
+  `;
+  return <><style>{animationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:22,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 20% 12%,rgba(74,108,247,.14),transparent 34%),radial-gradient(circle at 86% 22%,rgba(34,211,238,.12),transparent 30%),linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)",color:"#172033",zIndex:9999,overflow:"hidden"}}>
+    <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,rgba(255,255,255,.52) 1px,transparent 1px),linear-gradient(180deg,rgba(255,255,255,.52) 1px,transparent 1px)",backgroundSize:"44px 44px",maskImage:"linear-gradient(180deg,rgba(0,0,0,.48),transparent 72%)",opacity:.34}} />
+    <div style={{width:"min(420px,100%)",textAlign:"center",border:"1px solid rgba(148,163,184,.26)",borderRadius:30,padding:"34px 30px 28px",background:"rgba(255,255,255,.9)",boxShadow:"0 26px 80px rgba(30,41,59,.14)",backdropFilter:"blur(18px)",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",left:"10%",right:"10%",top:0,height:4,background:"linear-gradient(90deg,#4A6CF7,#7C3AED,#22D3EE)",borderRadius:"0 0 999px 999px"}} />
+      <div style={{width:116,height:116,margin:"0 auto 18px",position:"relative",display:"grid",placeItems:"center"}}>
+        <div style={{position:"absolute",inset:0,borderRadius:"50%",background:"conic-gradient(from 90deg,#4A6CF7 0 95deg,transparent 95deg 185deg,#7C3AED 185deg 282deg,transparent 282deg 360deg)",opacity:.72,animation:"corjectSoftOrbit 4.8s linear infinite"}} />
+        <div style={{position:"absolute",inset:8,borderRadius:"50%",background:"#fff",boxShadow:"inset 0 0 0 1px #E2E8F0"}} />
+        <div style={{position:"relative",width:78,height:78,borderRadius:24,background:"linear-gradient(145deg,#FFFFFF,#F8FAFC)",display:"grid",placeItems:"center",animation:"corjectLogoBreath 2.6s ease-in-out infinite",border:"1px solid #E2E8F0"}}>
+          {logoSrc?<img src={logoSrc} alt="Corject" style={{width:56,height:56,objectFit:"contain"}}/>:<span style={{fontSize:32,fontWeight:950,color:"#4A6CF7"}}>C</span>}
+        </div>
+      </div>
+      <div style={{fontSize:31,fontWeight:950,letterSpacing:"-.045em",color:"#0F172A",lineHeight:1}}>Corject</div>
+      <div style={{fontSize:13,color:"#64748B",marginTop:10,minHeight:18}}>{status}</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,margin:"15px 0 22px"}}>
+        {[0,1,2].map(index=><span key={index} style={{width:8,height:8,borderRadius:"50%",background:["#4A6CF7","#7C3AED","#22D3EE"][index],animation:`corjectPulseDot 1.25s ease-in-out ${index*.15}s infinite`}} />)}
+      </div>
+      <div style={{height:10,borderRadius:999,background:"#E2E8F0",overflow:"hidden",border:"1px solid #CBD5E1",position:"relative"}}>
+        <div style={{height:"100%",width:`${safeProgress}%`,borderRadius:999,background:"linear-gradient(90deg,#4A6CF7,#7C3AED,#22D3EE)",transition:"width .35s ease",position:"relative",overflow:"hidden"}}>
+          <span style={{position:"absolute",inset:0,width:"42%",background:"linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent)",animation:"corjectProgressShine 1.7s ease-in-out infinite"}} />
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#64748B",marginTop:10}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"#4A6CF7"}}>%{safeProgress}</b></div>
     </div>
   </div></>;
 }
