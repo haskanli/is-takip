@@ -4,7 +4,7 @@ export function Avatar({ initials, imageUrl = "", size = 28, color = "#4A6CF7" }
       style={{
         width: size,
         height: size,
-        borderRadius: "50%",
+        borderRadius: "38%",
         background: color + "22",
         border: `2px solid ${color}44`,
         display: "flex",
@@ -14,7 +14,7 @@ export function Avatar({ initials, imageUrl = "", size = 28, color = "#4A6CF7" }
         fontWeight: 700,
         color,
         flexShrink: 0,
-        fontFamily: "monospace",
+        fontFamily: "var(--font-ui, Manrope, system-ui, sans-serif)",
         overflow: "hidden",
         position: "relative",
       }}
@@ -175,7 +175,8 @@ export function Modal({ title, onClose, wide, children }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.45)",
+        background: "rgba(17,35,39,0.46)",
+        backdropFilter: "blur(10px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -186,19 +187,20 @@ export function Modal({ title, onClose, wide, children }) {
     >
       <div
         style={{
-          background: "#fff",
-          borderRadius: 16,
+          background: "var(--surface, #fff)",
+          border: "1px solid var(--border, #cfe0e3)",
+          borderRadius: 22,
           padding: "26px 30px",
           width: "100%",
           maxWidth: wide ? 720 : 500,
           maxHeight: "90vh",
           overflowY: "auto",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+          boxShadow: "0 28px 80px -36px rgb(17 35 39 / 62%)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#94A3B8" }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "var(--text, #112327)" }}>{title}</h3>
+          <button onClick={onClose} style={{ background: "var(--surface-soft, #f6fafb)", border: "1px solid var(--border, #cfe0e3)", borderRadius: 11, cursor: "pointer", fontSize: 18, color: "var(--muted, #5b6f74)", width: 34, height: 34 }}>
             x
           </button>
         </div>
@@ -210,18 +212,19 @@ export function Modal({ title, onClose, wide, children }) {
 
 export const iStyle = {
   width: "100%",
-  padding: "8px 11px",
-  borderRadius: 8,
-  border: "1.5px solid #E2E8F0",
+  padding: "10px 12px",
+  borderRadius: 12,
+  border: "1.5px solid var(--border, #cfe0e3)",
   fontSize: 13,
-  color: "#1E293B",
+  color: "var(--text, #112327)",
   outline: "none",
   boxSizing: "border-box",
   fontFamily: "inherit",
-  background: "#FAFBFC",
+  background: "var(--surface-soft, #f6fafb)",
+  boxShadow: "inset 0 1px 0 rgb(255 255 255 / 70%)",
 };
 
-export const lStyle = { fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 4 };
+export const lStyle = { fontSize: 11, fontWeight: 800, color: "var(--muted, #5b6f74)", display: "block", marginBottom: 5, letterSpacing: ".025em" };
 
 export const Field = ({ label, children }) => (
   <div style={{ marginBottom: 13 }}>
@@ -232,24 +235,24 @@ export const Field = ({ label, children }) => (
 
 export const Btn = ({ children, onClick, variant = "primary", small, style: s, disabled }) => {
   const variants = {
-    primary: { background: "#4A6CF7", color: "#fff" },
-    secondary: { background: "#F1F5FF", color: "#4A6CF7" },
-    danger: { background: "#FFF1F2", color: "#E11D48" },
-    ghost: { background: "transparent", color: "#64748B" },
-    warning: { background: "#FFF7ED", color: "#EA6C00" },
-    success: { background: "#ECFDF5", color: "#059669" },
+    primary: { background: "linear-gradient(135deg, var(--accent, #0b8a94), #08727a)", color: "#fff", boxShadow: "0 16px 32px -24px rgb(11 138 148 / 80%)" },
+    secondary: { background: "var(--accent-ink, #def5f8)", color: "var(--accent, #0b8a94)" },
+    danger: { background: "#fff3f0", color: "var(--danger, #b93f33)" },
+    ghost: { background: "transparent", color: "var(--muted, #5b6f74)" },
+    warning: { background: "#fff7e8", color: "var(--warning, #bf7a12)" },
+    success: { background: "#eaf7f1", color: "var(--success, #19835c)" },
   };
 
   return (
     <button
       disabled={disabled}
       style={{
-        borderRadius: 8,
-        border: "none",
+        borderRadius: 12,
+        border: variant === "ghost" ? "1px solid transparent" : "1px solid rgb(255 255 255 / 24%)",
         cursor: disabled ? "default" : "pointer",
         fontWeight: 600,
         fontSize: small ? 12 : 13,
-        padding: small ? "5px 11px" : "8px 16px",
+        padding: small ? "6px 12px" : "10px 17px",
         fontFamily: "inherit",
         opacity: disabled ? 0.5 : 1,
         ...variants[variant],
@@ -263,5 +266,5 @@ export const Btn = ({ children, onClick, variant = "primary", small, style: s, d
 };
 
 export const Card = ({ children, style }) => (
-  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: 16, ...style }}>{children}</div>
+  <div style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #cfe0e3)", borderRadius: 18, padding: 16, boxShadow: "var(--shadow-soft, 0 18px 40px -26px rgb(17 35 39 / 34%))", ...style }}>{children}</div>
 );

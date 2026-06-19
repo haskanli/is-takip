@@ -892,32 +892,32 @@ export default function App() {
     ? fullNav.filter(item=>["dashboard","tickets"].includes(item.id)).map(item=>item.id==="dashboard"?{...item,label:"Özet"}:item)
     : currentUser.ticketOnly?fullNav.filter(item=>["tickets"].includes(item.id)):fullNav;
 
-  return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"Inter,Segoe UI,sans-serif", background:"#F8FAFC", color:"#1E293B", overflow:"hidden", position:"relative" }}>
+  return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)", background:"var(--bg, #f1f5f6)", color:"var(--text, #112327)", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
-    {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:58, background:"rgba(255,255,255,.94)", backdropFilter:"blur(18px)", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
-      <button onClick={()=>navigateTo("dashboard")} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:34,height:34,objectFit:"contain"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:950,color:"#111827",letterSpacing:.2,maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
+    {isMobile&&<div style={{ position:"fixed", top:0, left:0, right:0, height:58, background:"rgba(255,255,255,.88)", backdropFilter:"blur(18px)", borderBottom:"1px solid var(--border, #cfe0e3)", display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10, boxShadow:"0 16px 34px -34px rgb(17 35 39 / 48%)" }}>
+      <button onClick={()=>navigateTo("dashboard")} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:34,height:34,objectFit:"contain"}}/><span style={{fontFamily:"var(--font-display, Fraunces, Georgia, serif)",fontSize:20,fontWeight:800,color:"var(--text, #112327)",letterSpacing:"-.035em",maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={()=>navigateTo("notifications")} style={{ background:"#F8FAFC", border:"1px solid #E2E8F0", borderRadius:12, cursor:"pointer", position:"relative", padding:8, color:"#475569", display:"grid", placeItems:"center" }}>
+        <button onClick={()=>navigateTo("notifications")} style={{ background:"var(--surface-soft, #f6fafb)", border:"1px solid var(--border, #cfe0e3)", borderRadius:12, cursor:"pointer", position:"relative", padding:8, color:"var(--muted, #5b6f74)", display:"grid", placeItems:"center" }}>
           <Icon name="bell" size={17}/>
           {(state.notifications||[]).filter(n=>isNotificationForUser(n,currentUser)&&!n.read).length>0&&<span style={{ position:"absolute", top:5, right:5, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
         </button>
-        <button title="Tüm özellikler" onClick={()=>navigateTo("mobilemenu")} style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,cursor:"pointer",padding:"7px 9px",color:"#475569",display:"grid",placeItems:"center",fontSize:18,fontWeight:900,lineHeight:1}}>☰</button>
-        <button title="Profilim" onClick={()=>setModal({type:"editProfile"})} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={34} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
+        <button title="Tüm özellikler" onClick={()=>navigateTo("mobilemenu")} style={{background:"var(--surface-soft, #f6fafb)",border:"1px solid var(--border, #cfe0e3)",borderRadius:12,cursor:"pointer",padding:"7px 9px",color:"var(--muted, #5b6f74)",display:"grid",placeItems:"center",fontSize:18,fontWeight:900,lineHeight:1}}>☰</button>
+        <button title="Profilim" onClick={()=>setModal({type:"editProfile"})} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={34} color={isAdmin?"var(--danger, #b93f33)":"var(--accent, #0b8a94)"} /></button>
       </div>
     </div>}
     {/* Sidebar */}
-    {!isMobile&&<div style={{ width:isMobile?220:254, background:"linear-gradient(180deg,#111827 0%,#172033 48%,#0F172A 100%)", display:"flex", flexDirection:"column", flexShrink:0,
+    {!isMobile&&<div style={{ width:isMobile?220:254, background:"linear-gradient(180deg,#0d2f34 0%,#112327 52%,#0b1e22 100%)", display:"flex", flexDirection:"column", flexShrink:0,
       ...(isMobile?{ position:"fixed", top:0, left:mobileMenuOpen?0:-240, bottom:0, zIndex:960, transition:"left .25s ease", boxShadow:mobileMenuOpen?"4px 0 20px rgba(0,0,0,0.3)":"none" }:{}) }}>
-      <div style={{ padding:"20px 16px 15px", borderBottom:"1px solid rgba(148,163,184,.18)", background:"radial-gradient(circle at top left,rgba(99,102,241,.28),transparent 42%)" }}>
+      <div style={{ padding:"20px 16px 15px", borderBottom:"1px solid rgba(222,245,248,.15)", background:"radial-gradient(circle at top left,rgb(11 138 148 / 30%),transparent 42%),radial-gradient(circle at 90% 12%,rgb(191 122 18 / 18%),transparent 34%)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <button onClick={()=>navigateTo("dashboard")} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",minWidth:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgba(99,102,241,.3))"}}/><span style={{fontFamily:"Aptos Display,Inter,Segoe UI,sans-serif",fontSize:18,fontWeight:850,color:"#fff",letterSpacing:.3,lineHeight:1,maxWidth:135,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
+            <button onClick={()=>navigateTo("dashboard")} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",minWidth:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgb(11 138 148 / 34%))"}}/><span style={{fontFamily:"var(--font-display, Fraunces, Georgia, serif)",fontSize:20,fontWeight:800,color:"#fff",letterSpacing:"-.025em",lineHeight:1,maxWidth:135,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
             <button onClick={()=>navigateTo("notifications")} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
               <span style={{ color:"#94A3B8", display:"flex" }}><Icon name="bell" size={17} /></span>
               {(state.notifications||[]).filter(n=>isNotificationForUser(n,currentUser)&&!n.read).length>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
             </button>
           </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
-          <button title="Profilim" onClick={()=>{setModal({type:"editProfile"});setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"#E11D48":"#4A6CF7"} /></button>
+          <button title="Profilim" onClick={()=>{setModal({type:"editProfile"});setMobileMenuOpen(false);}} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={28} color={isAdmin?"var(--danger, #b93f33)":"var(--accent, #0b8a94)"} /></button>
           <div style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", minHeight:28 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", lineHeight:1 }}>{currentUser.name}</div>
           </div>
@@ -926,7 +926,7 @@ export default function App() {
       </div>
       <nav className="sidebar-nav" style={{ padding:"12px 10px", flex:1, overflowY:"auto" }}>
         {nav.map(n=><button key={n.id} onClick={()=>navigateTo(n.id,{ticketMineOnly:false})}
-          style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"10px 11px", borderRadius:11, border:"1px solid "+(view===n.id&&!selProject?"rgba(255,255,255,.22)":"transparent"), cursor:"pointer", background:view===n.id&&!selProject?"linear-gradient(135deg,#4A6CF7,#7C3AED)":"transparent", color:view===n.id&&!selProject?"#fff":"#CBD5E1", fontSize:13, fontWeight:700, textAlign:"left", marginBottom:4, boxShadow:view===n.id&&!selProject?"0 10px 24px rgba(79,70,229,.28)":"none" }}>
+          style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"10px 11px", borderRadius:12, border:"1px solid "+(view===n.id&&!selProject?"rgba(222,245,248,.28)":"transparent"), cursor:"pointer", background:view===n.id&&!selProject?"linear-gradient(135deg,var(--accent, #0b8a94),#08727a)":"transparent", color:view===n.id&&!selProject?"#fff":"#def5f8", fontSize:13, fontWeight:800, textAlign:"left", marginBottom:4, boxShadow:view===n.id&&!selProject?"0 16px 34px -26px rgb(11 138 148 / 88%)":"none" }}>
           <span style={{ display:"flex", flexShrink:0, opacity:view===n.id&&!selProject?1:.82 }}><Icon name={n.icon} size={16} /></span> {n.label}
         </button>)}
       </nav>

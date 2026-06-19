@@ -2,12 +2,23 @@ export const GlobalStyle = () => (
   <style>{`
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body, #root { height: 100%; width: 100%; overflow: hidden; margin: 0; padding: 0; }
-    body { font-family: Inter, Segoe UI, sans-serif; background: #0F172A; }
-    h1, h2, h3 { color: #1E293B; }
+    body {
+      font-family: var(--font-ui, Manrope, Segoe UI, sans-serif);
+      color: var(--text, #112327);
+      background:
+        radial-gradient(circle at 14% -12%, rgb(11 138 148 / 14%), transparent 34%),
+        radial-gradient(circle at 96% -6%, rgb(191 122 18 / 10%), transparent 30%),
+        var(--bg, #f1f5f6);
+    }
+    h1, h2, h3 { color: var(--text, #112327); }
     input, select, textarea, button { font-family: inherit; }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent, #0b8a94) !important;
+      box-shadow: 0 0 0 4px var(--ring, rgb(11 138 148 / 24%)) !important;
+    }
     .sidebar-nav { scrollbar-width: none; }
     .sidebar-nav::-webkit-scrollbar { display: none; }
-    .login-users { scrollbar-width: thin; scrollbar-color: #475569 transparent; }
+    .login-users { scrollbar-width: thin; scrollbar-color: var(--muted, #5b6f74) transparent; }
     @keyframes corjectLoadingFloat {
       0%, 100% { transform: translateY(0) rotate(0deg) scale(1); filter: drop-shadow(0 12px 30px rgba(99,102,241,.45)); }
       50% { transform: translateY(-7px) rotate(5deg) scale(1.05); filter: drop-shadow(0 18px 38px rgba(34,211,238,.55)); }
@@ -40,9 +51,9 @@ export const GlobalStyle = () => (
       40% { opacity:1; transform: translateY(-3px); }
     }
     .admin-summary-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; margin-bottom:12px; }
-    .admin-summary-card { min-width:0; min-height:126px; border:1px solid #E2E8F0; border-top:3px solid #4A6CF7; border-radius:16px; background:#fff; padding:15px; text-align:left; cursor:pointer; box-shadow:0 8px 22px rgba(15,23,42,.05); overflow:hidden; transition:transform .16s ease, box-shadow .16s ease; }
-    .admin-summary-card:hover { transform:translateY(-2px); box-shadow:0 12px 28px rgba(15,23,42,.08); }
-    .admin-ai-summary { background:#fff; border:1px solid #E2E8F0; border-radius:18px; padding:16px; box-shadow:0 8px 24px rgba(15,23,42,.05); overflow:hidden; }
+    .admin-summary-card { min-width:0; min-height:126px; border:1px solid var(--border, #cfe0e3); border-top:3px solid var(--accent, #0b8a94); border-radius:18px; background:var(--surface, #fff); padding:15px; text-align:left; cursor:pointer; box-shadow:var(--shadow-soft, 0 18px 40px -26px rgb(17 35 39 / 34%)); overflow:hidden; transition:transform .16s ease, box-shadow .16s ease; }
+    .admin-summary-card:hover { transform:translateY(-2px); box-shadow:0 22px 48px -34px rgb(17 35 39 / 48%); }
+    .admin-ai-summary { background:linear-gradient(135deg, var(--surface, #fff), var(--surface-soft, #f6fafb)); border:1px solid var(--border, #cfe0e3); border-radius:20px; padding:16px; box-shadow:var(--shadow-soft, 0 18px 40px -26px rgb(17 35 39 / 34%)); overflow:hidden; }
     .admin-board-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-auto-flow:dense; gap:12px; align-items:start; }
     .admin-board-card { min-width:0; overflow:hidden; }
     .admin-board-card * { min-width:0; }
@@ -160,32 +171,32 @@ export function AppLoadingScreen({progress=10,status="Oturum hazırlanıyor",log
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
   const animationCss=`
     @keyframes corjectSoftOrbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes corjectLogoBreath { 0%,100% { transform: scale(1); box-shadow:0 18px 38px rgba(74,108,247,.18); } 50% { transform: scale(1.035); box-shadow:0 22px 48px rgba(124,58,237,.22); } }
+    @keyframes corjectLogoBreath { 0%,100% { transform: scale(1); box-shadow:0 18px 38px rgb(11 138 148 / 16%); } 50% { transform: scale(1.035); box-shadow:0 22px 48px rgb(191 122 18 / 18%); } }
     @keyframes corjectProgressShine { 0% { transform: translateX(-78%); opacity:.12; } 45% { opacity:.72; } 100% { transform: translateX(176%); opacity:.08; } }
     @keyframes corjectPulseDot { 0%,100% { transform: scale(.82); opacity:.48; } 50% { transform: scale(1); opacity:1; } }
   `;
-  return <><style>{animationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:22,fontFamily:"Inter,Segoe UI,sans-serif",background:"radial-gradient(circle at 20% 12%,rgba(74,108,247,.14),transparent 34%),radial-gradient(circle at 86% 22%,rgba(34,211,238,.12),transparent 30%),linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)",color:"#172033",zIndex:9999,overflow:"hidden"}}>
+  return <><style>{animationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:22,fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)",background:"radial-gradient(circle at 20% 12%,rgb(11 138 148 / 14%),transparent 34%),radial-gradient(circle at 86% 22%,rgb(191 122 18 / 12%),transparent 30%),linear-gradient(180deg,#F7FBFC 0%,#EDF4F5 100%)",color:"var(--text, #112327)",zIndex:9999,overflow:"hidden"}}>
     <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,rgba(255,255,255,.52) 1px,transparent 1px),linear-gradient(180deg,rgba(255,255,255,.52) 1px,transparent 1px)",backgroundSize:"44px 44px",maskImage:"linear-gradient(180deg,rgba(0,0,0,.48),transparent 72%)",opacity:.34}} />
-    <div style={{width:"min(420px,100%)",textAlign:"center",border:"1px solid rgba(148,163,184,.26)",borderRadius:30,padding:"34px 30px 28px",background:"rgba(255,255,255,.9)",boxShadow:"0 26px 80px rgba(30,41,59,.14)",backdropFilter:"blur(18px)",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",left:"10%",right:"10%",top:0,height:4,background:"linear-gradient(90deg,#4A6CF7,#7C3AED,#22D3EE)",borderRadius:"0 0 999px 999px"}} />
+    <div style={{width:"min(420px,100%)",textAlign:"center",border:"1px solid var(--border, #cfe0e3)",borderRadius:30,padding:"34px 30px 28px",background:"rgb(255 255 255 / 88%)",boxShadow:"0 30px 90px -52px rgb(17 35 39 / 58%)",backdropFilter:"blur(18px)",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",left:"10%",right:"10%",top:0,height:4,background:"linear-gradient(90deg,var(--accent, #0b8a94),var(--warning, #bf7a12),var(--success, #19835c))",borderRadius:"0 0 999px 999px"}} />
       <div style={{width:116,height:116,margin:"0 auto 18px",position:"relative",display:"grid",placeItems:"center"}}>
-        <div style={{position:"absolute",inset:0,borderRadius:"50%",background:"conic-gradient(from 90deg,#4A6CF7 0 95deg,transparent 95deg 185deg,#7C3AED 185deg 282deg,transparent 282deg 360deg)",opacity:.72,animation:"corjectSoftOrbit 4.8s linear infinite"}} />
-        <div style={{position:"absolute",inset:8,borderRadius:"50%",background:"#fff",boxShadow:"inset 0 0 0 1px #E2E8F0"}} />
-        <div style={{position:"relative",width:78,height:78,borderRadius:24,background:"linear-gradient(145deg,#FFFFFF,#F8FAFC)",display:"grid",placeItems:"center",animation:"corjectLogoBreath 2.6s ease-in-out infinite",border:"1px solid #E2E8F0"}}>
-          {logoSrc?<img src={logoSrc} alt="Corject" style={{width:56,height:56,objectFit:"contain"}}/>:<span style={{fontSize:32,fontWeight:950,color:"#4A6CF7"}}>C</span>}
+        <div style={{position:"absolute",inset:0,borderRadius:"50%",background:"conic-gradient(from 90deg,var(--accent, #0b8a94) 0 110deg,transparent 110deg 185deg,var(--warning, #bf7a12) 185deg 278deg,transparent 278deg 360deg)",opacity:.78,animation:"corjectSoftOrbit 5.2s linear infinite"}} />
+        <div style={{position:"absolute",inset:8,borderRadius:"50%",background:"#fff",boxShadow:"inset 0 0 0 1px var(--border, #cfe0e3)"}} />
+        <div style={{position:"relative",width:78,height:78,borderRadius:24,background:"linear-gradient(145deg,#FFFFFF,var(--surface-soft, #f6fafb))",display:"grid",placeItems:"center",animation:"corjectLogoBreath 2.6s ease-in-out infinite",border:"1px solid var(--border, #cfe0e3)"}}>
+          {logoSrc?<img src={logoSrc} alt="Corject" style={{width:56,height:56,objectFit:"contain"}}/>:<span style={{fontSize:32,fontWeight:950,color:"var(--accent, #0b8a94)"}}>C</span>}
         </div>
       </div>
-      <div style={{fontSize:31,fontWeight:950,letterSpacing:"-.045em",color:"#0F172A",lineHeight:1}}>Corject</div>
-      <div style={{fontSize:13,color:"#64748B",marginTop:10,minHeight:18}}>{status}</div>
+      <div style={{fontFamily:"var(--font-display, Fraunces, Georgia, serif)",fontSize:31,fontWeight:800,letterSpacing:"-.045em",color:"var(--text, #112327)",lineHeight:1}}>Corject</div>
+      <div style={{fontSize:13,color:"var(--muted, #5b6f74)",marginTop:10,minHeight:18}}>{status}</div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,margin:"15px 0 22px"}}>
-        {[0,1,2].map(index=><span key={index} style={{width:8,height:8,borderRadius:"50%",background:["#4A6CF7","#7C3AED","#22D3EE"][index],animation:`corjectPulseDot 1.25s ease-in-out ${index*.15}s infinite`}} />)}
+        {[0,1,2].map(index=><span key={index} style={{width:8,height:8,borderRadius:"50%",background:["var(--accent, #0b8a94)","var(--warning, #bf7a12)","var(--success, #19835c)"][index],animation:`corjectPulseDot 1.25s ease-in-out ${index*.15}s infinite`}} />)}
       </div>
-      <div style={{height:10,borderRadius:999,background:"#E2E8F0",overflow:"hidden",border:"1px solid #CBD5E1",position:"relative"}}>
-        <div style={{height:"100%",width:`${safeProgress}%`,borderRadius:999,background:"linear-gradient(90deg,#4A6CF7,#7C3AED,#22D3EE)",transition:"width .35s ease",position:"relative",overflow:"hidden"}}>
+      <div style={{height:10,borderRadius:999,background:"var(--surface-soft, #f6fafb)",overflow:"hidden",border:"1px solid var(--border, #cfe0e3)",position:"relative"}}>
+        <div style={{height:"100%",width:`${safeProgress}%`,borderRadius:999,background:"linear-gradient(90deg,var(--accent, #0b8a94),var(--warning, #bf7a12),var(--success, #19835c))",transition:"width .35s ease",position:"relative",overflow:"hidden"}}>
           <span style={{position:"absolute",inset:0,width:"42%",background:"linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent)",animation:"corjectProgressShine 1.7s ease-in-out infinite"}} />
         </div>
       </div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#64748B",marginTop:10}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"#4A6CF7"}}>%{safeProgress}</b></div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted, #5b6f74)",marginTop:10}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"var(--accent, #0b8a94)"}}>%{safeProgress}</b></div>
     </div>
   </div></>;
 }
