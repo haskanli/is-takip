@@ -190,37 +190,37 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin, c
   const deleteTicket=(id)=>saveTickets(allTickets.filter(t=>t.id!==id));
   const TICKET_TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
   const TICKET_PRIOS=["Düşük","Orta","Yüksek","Kritik"];
-  const TYPE_COLORS={"Bug":"#E11D48","Görev":"#4A6CF7","İyileştirme":"#059669","Soru":"#EA6C00","Bilgi":"#94A3B8"};
+  const TYPE_COLORS={"Bug":"var(--danger, #b93f33)","Görev":"var(--accent, #0b8a94)","İyileştirme":"var(--success, #19835c)","Soru":"var(--warning, #bf7a12)","Bilgi":"var(--muted, #5b6f74)"};
   return <div style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-      <h3 style={{ margin:0, fontSize:15, fontWeight:800 }}>Ticketlar ({tickets.length})</h3>
+      <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:"var(--text, #112327)" }}>Ticketlar ({tickets.length})</h3>
       <Btn small onClick={()=>setModal({type:"add"})}>+ Ticket Ekle</Btn>
     </div>
-    {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"#ECFDF5":"#FFF7ED",color:mailNotice.includes("gönderildi")?"#047857":"#C2410C",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
+    {mailNotice&&<div className={mailNotice.includes("gönderildi")?"ui-chip ui-chip-success":"ui-chip ui-chip-warning"} style={{borderRadius:12,padding:"10px 13px",fontSize:11,marginBottom:12,display:"flex"}}>{mailNotice}</div>}
     {!customerMode&&<RecurringProblemsPanel entries={tickets.map(ticket=>({ticket,project}))}/>}
-    {tickets.length===0&&<div style={{ textAlign:"center", padding:"40px", background:"#fff", borderRadius:12, border:"1.5px dashed #E2E8F0", color:"#94A3B8" }}>Henüz ticket yok.</div>}
+    {tickets.length===0&&<div className="soft-panel empty-panel">Henüz ticket yok.</div>}
     <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-      {[...tickets].sort((a,b)=>String(b.updatedAt||b.ts||"").localeCompare(String(a.updatedAt||a.ts||""))).map(t=><div key={t.id} onClick={()=>setModal({type:"detail",data:t})} style={{ background:"#fff", borderRadius:12, padding:"14px 18px", border:"1.5px solid #E2E8F0", display:"flex", gap:12, alignItems:"flex-start", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", cursor:"pointer" }}>
-        <div style={{ width:8, height:8, borderRadius:"50%", background:TYPE_COLORS[t.type]||"#94A3B8", marginTop:4, flexShrink:0 }} />
+      {[...tickets].sort((a,b)=>String(b.updatedAt||b.ts||"").localeCompare(String(a.updatedAt||a.ts||""))).map(t=><div className="compact-list-card" key={t.id} onClick={()=>setModal({type:"detail",data:t})} style={{ padding:"14px 18px", display:"flex", gap:12, alignItems:"flex-start", cursor:"pointer" }}>
+        <div style={{ width:8, height:8, borderRadius:"50%", background:TYPE_COLORS[t.type]||"var(--muted, #5b6f74)", marginTop:4, flexShrink:0, boxShadow:"0 0 0 4px rgb(255 255 255 / 72%)" }} />
         <div style={{ flex:1 }}>
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
-            <span style={{background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"2px 7px",fontSize:10,fontWeight:850}}>{ticketNumber(t)}</span>
-            <span style={{ fontWeight:700, fontSize:13 }}>{t.title}</span>
-            <span style={{ background:(TYPE_COLORS[t.type]||"#94A3B8")+"22", color:TYPE_COLORS[t.type]||"#94A3B8", borderRadius:8, padding:"1px 8px", fontSize:11, fontWeight:600 }}>{t.type}</span>
-            <span style={{ background:"#F1F5FF", color:"#4A6CF7", borderRadius:8, padding:"1px 8px", fontSize:11 }}>{t.priority}</span>
-            {(t.jiraKey||t.jiraId)&&<a href={t.jiraLink||"#"} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ background:"#DEEBFF", color:"#0052CC", borderRadius:6, padding:"1px 7px", fontSize:11, fontWeight:700, textDecoration:"none" }}>{t.jiraKey||t.jiraId}</a>}
-            {t.jiraStatus&&<span style={{ background:"#E8F5E9", color:"#16794A", borderRadius:6, padding:"1px 7px", fontSize:11, fontWeight:700 }}>Jira: {t.jiraStatus}</span>}
-            {!customerMode&&<select value={t.status||"Açık"} onClick={e=>e.stopPropagation()} onChange={e=>updateTicket(t.id,{status:e.target.value})} style={{ fontSize:11, borderRadius:6, border:"1px solid #E2E8F0", padding:"2px 6px", fontFamily:"inherit" }}>
+            <span className="ui-chip ui-chip-accent">{ticketNumber(t)}</span>
+            <span className="text-wrap-safe" style={{ fontWeight:800, fontSize:13, color:"var(--text, #112327)" }}>{t.title}</span>
+            <span className="ui-chip ui-chip-muted" style={{color:TYPE_COLORS[t.type]||"var(--muted, #5b6f74)"}}>{t.type}</span>
+            <span className={t.priority==="Kritik"?"ui-chip ui-chip-danger":t.priority==="Yüksek"?"ui-chip ui-chip-warning":"ui-chip ui-chip-muted"}>{t.priority}</span>
+            {(t.jiraKey||t.jiraId)&&<a className="ui-chip ui-chip-accent" href={t.jiraLink||"#"} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{textDecoration:"none"}}>{t.jiraKey||t.jiraId}</a>}
+            {t.jiraStatus&&<span className="ui-chip ui-chip-success">Jira: {t.jiraStatus}</span>}
+            {!customerMode&&<select value={t.status||"Açık"} onClick={e=>e.stopPropagation()} onChange={e=>updateTicket(t.id,{status:e.target.value})} style={{ fontSize:11, borderRadius:10, border:"1px solid var(--border, #cfe0e3)", padding:"4px 7px", fontFamily:"inherit", background:"rgb(255 255 255 / 78%)", color:"var(--text, #112327)" }}>
               {!TICKET_STATUSES.includes(t.status)&&t.status&&<option>{t.status}</option>}
               {TICKET_STATUSES.map(s=><option key={s}>{s}</option>)}
             </select>}
-            {customerMode&&<span style={{fontSize:11,borderRadius:8,padding:"2px 8px",background:"#F8FAFC",color:"#475569",fontWeight:750}}>{t.status||"Açık"}</span>}
+            {customerMode&&<span className="ui-chip ui-chip-muted">{t.status||"Açık"}</span>}
           </div>
-          {t.description&&<div style={{ fontSize:12, color:"#64748B", marginBottom:4 }}>{t.description}</div>}
-          <div style={{ fontSize:11, color:"#94A3B8" }}>{t.author} · {new Date(t.ts).toLocaleDateString("tr-TR")}</div>
-          {t.assignedTo&&<div style={{fontSize:11,color:"#4A6CF7",marginTop:3}}>Sorumlu: {state.people.find(p=>p.id===t.assignedTo)?.name||"Atanmamış"}</div>}
+          {t.description&&<div className="text-wrap-safe" style={{ fontSize:12, color:"var(--muted, #5b6f74)", marginBottom:4 }}>{t.description}</div>}
+          <div style={{ fontSize:11, color:"var(--muted, #5b6f74)" }}>{t.author} · {new Date(t.ts).toLocaleDateString("tr-TR")}</div>
+          {t.assignedTo&&<div style={{fontSize:11,color:"var(--accent, #0b8a94)",marginTop:3}}>Sorumlu: {state.people.find(p=>p.id===t.assignedTo)?.name||"Atanmamış"}</div>}
         </div>
-        {!customerMode&&(isAdmin||t.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();deleteTicket(t.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#CBD5E1", fontSize:16 }}>×</button>}
+        {!customerMode&&(isAdmin||t.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();deleteTicket(t.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--muted, #5b6f74)", fontSize:16 }}>×</button>}
       </div>)}
     </div>
     {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>
@@ -243,10 +243,10 @@ function RecurringProblemsPanel({entries=[]}) {
     groups.set(key,current);
   });
   const repeated=[...groups.values()].filter(group=>group.items.length>1).sort((a,b)=>b.effort-a.effort||b.items.length-a.items.length);
-  if(!repeated.length)return <div style={{padding:42,textAlign:"center",background:"#fff",border:"1px dashed #CBD5E1",borderRadius:14,color:"#64748B"}}><b>Tekrar eden problem bulunmuyor.</b><div style={{fontSize:10,marginTop:5}}>Problem kodu veya benzer başlıkla eşleşen en az iki ticket burada görünür.</div></div>;
-  return <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:16,marginBottom:13}}>
-    <div style={{fontSize:14,fontWeight:900,color:"#172033",marginBottom:3}}>Tekrar Eden Problemler</div><div style={{fontSize:10,color:"#64748B",marginBottom:12}}>Yeniden efor harcanan konuları kök neden ve çözüm standardı için izleyin.</div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:9}}>{repeated.map(group=><div key={`${group.label}-${group.items.length}`} style={{background:"linear-gradient(145deg,#FFF7ED,#fff)",border:"1px solid #FED7AA",borderRadius:11,padding:"12px 13px",fontSize:10,color:"#475569"}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:12,color:"#7C2D12"}}>{group.label}</b><span style={{background:"#FFEDD5",color:"#C2410C",borderRadius:12,padding:"2px 7px",fontWeight:900}}>{group.items.length} kez</span></div><div style={{marginTop:8}}>{group.effort.toFixed(1)} saat efor · {[...group.projects].length} proje</div><span style={{display:"block",color:"#94A3B8",marginTop:4}}>{group.explicit?"Ortak problem koduyla eşleşti":"Başlık benzerliğine göre aday"}</span></div>)}</div>
+  if(!repeated.length)return <div className="soft-panel empty-panel"><b>Tekrar eden problem bulunmuyor.</b><div style={{fontSize:10,marginTop:5}}>Problem kodu veya benzer başlıkla eşleşen en az iki ticket burada görünür.</div></div>;
+  return <div className="soft-panel" style={{padding:16,marginBottom:13}}>
+    <div style={{fontSize:14,fontWeight:900,color:"var(--text, #112327)",marginBottom:3}}>Tekrar Eden Problemler</div><div style={{fontSize:10,color:"var(--muted, #5b6f74)",marginBottom:12}}>Yeniden efor harcanan konuları kök neden ve çözüm standardı için izleyin.</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:9}}>{repeated.map(group=><div className="compact-list-card" key={`${group.label}-${group.items.length}`} style={{padding:"12px 13px",fontSize:10,color:"var(--muted, #5b6f74)"}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b className="text-wrap-safe" style={{fontSize:12,color:"var(--text, #112327)"}}>{group.label}</b><span className="ui-chip ui-chip-warning">{group.items.length} kez</span></div><div style={{marginTop:8}}>{group.effort.toFixed(1)} saat efor · {[...group.projects].length} proje</div><span style={{display:"block",color:"var(--muted, #5b6f74)",marginTop:4}}>{group.explicit?"Ortak problem koduyla eşleşti":"Başlık benzerliğine göre aday"}</span></div>)}</div>
   </div>;
 }
 function TicketForm({ project, onSave, onClose, types, prios, people, customerMode=false }) {
@@ -268,8 +268,8 @@ function TicketForm({ project, onSave, onClose, types, prios, people, customerMo
   };
   return <div>
     <Field label="Başlık *"><input style={iStyle} value={f.title} onChange={e=>upd("title",e.target.value)} /></Field>
-    <div style={{background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:12,padding:12,marginBottom:12}}>
-      <div style={{fontSize:11,fontWeight:900,color:"#475569",marginBottom:9}}>Standart Talep Bilgileri</div>
+    <div className="soft-panel" style={{padding:12,marginBottom:12}}>
+      <div style={{fontSize:11,fontWeight:900,color:"var(--muted, #5b6f74)",marginBottom:9}}>Standart Talep Bilgileri</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
         {!customerMode&&<Field label="Müşteri"><input style={iStyle} value={f.customer} onChange={e=>upd("customer",e.target.value)} /></Field>}
         <Field label="İlgili Modül"><select style={iStyle} value={f.module} onChange={e=>upd("module",e.target.value)}><option value="">Modül seçin</option>{DEFAULT_ACTIVE_MODULES.map(module=><option key={module}>{module}</option>)}</select></Field>
@@ -296,8 +296,8 @@ function TicketForm({ project, onSave, onClose, types, prios, people, customerMo
       <Field label="Harcanan Efor (saat)"><input type="number" min="0" step="0.25" style={iStyle} value={f.effortHours} onChange={e=>upd("effortHours",e.target.value)}/></Field>
     </div>}
     {!customerMode&&<Field label="Jira Task Key"><input style={iStyle} value={f.jiraKey} onChange={e=>upd("jiraKey",e.target.value)} placeholder="PROJ-123" /></Field>}
-    {!customerMode&&<div style={{ fontSize:11, color:"#64748B", marginBottom:11 }}>Mevcut bir Jira taskıyla ilişkilendirmek için issue key girin.</div>}
-    {error&&<div style={{background:"#FFF1F2",color:"#BE123C",borderRadius:8,padding:"8px 10px",fontSize:11,fontWeight:700,marginBottom:10}}>{error}</div>}
+    {!customerMode&&<div style={{ fontSize:11, color:"var(--muted, #5b6f74)", marginBottom:11 }}>Mevcut bir Jira taskıyla ilişkilendirmek için issue key girin.</div>}
+    {error&&<div className="ui-chip ui-chip-danger" style={{borderRadius:10,padding:"8px 10px",fontSize:11,marginBottom:10,display:"flex"}}>{error}</div>}
     <div style={{ display:"flex", justifyContent:"flex-end", gap:7 }}><Btn variant="ghost" disabled={saving} onClick={onClose}>İptal</Btn><Btn disabled={saving} onClick={submit}>{saving?"Kaydediliyor...":"Kaydet"}</Btn></div>
   </div>;
 }
@@ -305,14 +305,14 @@ function TicketForm({ project, onSave, onClose, types, prios, people, customerMo
 function StepListEditor({title,items=[],onAdd,onRemove,onChange}) {
   return <div style={{marginBottom:12}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:7}}>
-      <label style={{fontSize:12,fontWeight:750,color:"#334155"}}>{title}</label>
-      <button type="button" onClick={onAdd} style={{border:0,borderRadius:8,background:"#EEF2FF",color:"#4338CA",fontSize:10,fontWeight:900,padding:"5px 8px",cursor:"pointer"}}>+ Adım</button>
+      <label style={{fontSize:12,fontWeight:750,color:"var(--text, #112327)"}}>{title}</label>
+      <button type="button" onClick={onAdd} className="ui-chip ui-chip-accent" style={{borderRadius:9,fontSize:10,cursor:"pointer"}}>+ Adım</button>
     </div>
     <div style={{display:"grid",gap:7}}>
       {(items.length?items:[""]).map((item,index)=><div key={index} style={{display:"grid",gridTemplateColumns:"auto minmax(0,1fr) auto",gap:7,alignItems:"center"}}>
-        <span style={{width:22,height:22,borderRadius:8,display:"grid",placeItems:"center",background:"#F1F5F9",color:"#64748B",fontSize:10,fontWeight:900}}>{index+1}</span>
+        <span style={{width:22,height:22,borderRadius:8,display:"grid",placeItems:"center",background:"var(--surface-soft, #f6fafb)",color:"var(--muted, #5b6f74)",fontSize:10,fontWeight:900}}>{index+1}</span>
         <input style={{...iStyle,minWidth:0}} value={item} onChange={event=>onChange(index,event.target.value)} placeholder={`${title} adımı`}/>
-        <button type="button" onClick={()=>onRemove(index)} style={{border:0,background:"transparent",color:"#E11D48",fontSize:16,cursor:"pointer"}}>×</button>
+        <button type="button" onClick={()=>onRemove(index)} style={{border:0,background:"transparent",color:"var(--danger, #b93f33)",fontSize:16,cursor:"pointer"}}>×</button>
       </div>)}
     </div>
   </div>;

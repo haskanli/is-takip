@@ -41,18 +41,19 @@ export function TaskCard({
 
   return (
     <div
+      className="compact-list-card"
       style={{
-        background: "#fff",
-        borderRadius: 10,
-        padding: "11px 15px",
-        border: `1.5px solid ${
-          delayLevel === "critical" ? "#FCA5A5" : delayLevel === "normal" ? "#FED7AA" : "#E2E8F0"
-        }`,
+        padding: "12px 15px",
+        borderColor:
+          delayLevel === "critical"
+            ? "color-mix(in srgb, var(--danger) 34%, var(--border))"
+            : delayLevel === "normal"
+              ? "color-mix(in srgb, var(--warning) 34%, var(--border))"
+              : "var(--glass-border, #cfe0e3)",
         display: "flex",
         alignItems: "flex-start",
         gap: 11,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        opacity: isDone ? 0.75 : 1,
+        opacity: isDone ? 0.72 : 1,
       }}
     >
       {canEdit ? (
@@ -60,7 +61,7 @@ export function TaskCard({
           type="checkbox"
           checked={isDone}
           onChange={(event) => onCheck && onCheck(event.target.checked)}
-          style={{ marginTop: 3, width: 15, height: 15, cursor: "pointer", accentColor: "#4A6CF7" }}
+          style={{ marginTop: 3, width: 15, height: 15, cursor: "pointer", accentColor: "var(--accent, #0b8a94)" }}
         />
       ) : (
         <span
@@ -92,7 +93,7 @@ export function TaskCard({
               textAlign: "left",
               cursor: onOpen ? "pointer" : "default",
               textDecoration: isDone ? "line-through" : "none",
-              color: isDone ? "#94A3B8" : "#1E293B",
+              color: isDone ? "var(--muted, #5b6f74)" : "var(--text, #112327)",
             }}
           >
             {task.title}
@@ -111,19 +112,19 @@ export function TaskCard({
                 initials={assignee.avatar}
                 imageUrl={assignee.avatarUrl}
                 size={17}
-                color={projectColor || "#4A6CF7"}
+                color={projectColor || "var(--accent, #0b8a94)"}
               />
-              <span style={{ fontSize: 11, color: "#64748B" }}>{assignee.name}</span>
+              <span style={{ fontSize: 11, color: "var(--muted, #5b6f74)" }}>{assignee.name}</span>
             </div>
           )}
           {task.startDate && (
-            <span style={{ fontSize: 11, color: "#94A3B8" }}>
+            <span style={{ fontSize: 11, color: "var(--muted, #5b6f74)" }}>
               Başl: {formatDate(task.startDate)}
               {task.startTime ? ` ${task.startTime}` : ""}
             </span>
           )}
           {task.dueDate && (
-            <span style={{ fontSize: 11, color: delayLevel ? "#E11D48" : "#94A3B8" }}>
+            <span style={{ fontSize: 11, color: delayLevel ? "var(--danger, #b93f33)" : "var(--muted, #5b6f74)" }}>
               {task.startDate ? "Bit:" : "Termin:"} {formatDate(task.dueDate)}
               {task.dueTime ? ` ${task.dueTime}` : ""}
             </span>
@@ -132,9 +133,9 @@ export function TaskCard({
             <span
               style={{
                 fontSize: 11,
-                color: "#7C3AED",
+                color: "var(--accent, #0b8a94)",
                 fontWeight: 600,
-                background: "#F5F3FF",
+                background: "var(--accent-ink, #def5f8)",
                 borderRadius: 6,
                 padding: "1px 6px",
               }}
@@ -146,9 +147,9 @@ export function TaskCard({
             <span
               style={{
                 fontSize: 11,
-                color: "#0369A1",
+                color: "var(--success, #19835c)",
                 fontWeight: 600,
-                background: "#F0F9FF",
+                background: "rgb(25 131 92 / 10%)",
                 borderRadius: 6,
                 padding: "1px 6px",
               }}
@@ -160,9 +161,9 @@ export function TaskCard({
             <span
               style={{
                 fontSize: 11,
-                color: "#4338CA",
+                color: "var(--accent, #0b8a94)",
                 fontWeight: 700,
-                background: "#EEF2FF",
+                background: "var(--accent-ink, #def5f8)",
                 borderRadius: 6,
                 padding: "1px 6px",
               }}
@@ -171,14 +172,14 @@ export function TaskCard({
             </span>
           )}
           {task.waitSource && (
-            <span style={{ fontSize: 11, color: "#EA6C00", fontWeight: 600 }}>Bekliyor: {task.waitSource}</span>
+            <span style={{ fontSize: 11, color: "var(--warning, #bf7a12)", fontWeight: 600 }}>Bekliyor: {task.waitSource}</span>
           )}
           {task.waitReason && ["Bekliyor", "Engellendi"].includes(task.status) && (
             <span
               style={{
                 fontSize: 11,
-                color: "#9A3412",
-                background: "#FFF7ED",
+                color: "var(--warning, #bf7a12)",
+                background: "rgb(191 122 18 / 11%)",
                 borderRadius: 6,
                 padding: "1px 6px",
               }}
@@ -197,8 +198,8 @@ export function TaskCard({
                   onClick={(event) => event.stopPropagation()}
                   style={{
                     fontSize: 11,
-                    color: "#0052CC",
-                    background: "#DEEBFF",
+                    color: "var(--accent, #0b8a94)",
+                    background: "var(--accent-ink, #def5f8)",
                     borderRadius: 6,
                     padding: "1px 7px",
                     fontWeight: 700,
@@ -210,16 +211,16 @@ export function TaskCard({
               );
             })()}
           {showProject && projectName && (
-            <span style={{ fontSize: 11, color: "#4A6CF7", background: "#F1F5FF", borderRadius: 6, padding: "1px 6px" }}>
+            <span style={{ fontSize: 11, color: "var(--accent, #0b8a94)", background: "var(--accent-ink, #def5f8)", borderRadius: 6, padding: "1px 6px" }}>
               {projectName}
             </span>
           )}
-          {task.notes && <span style={{ fontSize: 11, color: "#94A3B8", fontStyle: "italic" }}>"{task.notes}"</span>}
+          {task.notes && <span className="text-wrap-safe" style={{ fontSize: 11, color: "var(--muted, #5b6f74)", fontStyle: "italic" }}>"{task.notes}"</span>}
         </div>
 
         {(task.waitingHistory || []).length > 0 && (
           <details style={{ marginTop: 7 }}>
-            <summary style={{ fontSize: 10, color: "#64748B", cursor: "pointer", fontWeight: 700 }}>
+            <summary style={{ fontSize: 10, color: "var(--muted, #5b6f74)", cursor: "pointer", fontWeight: 700 }}>
               Bekleme geçmişi ({task.waitingHistory.length})
             </summary>
             <div style={{ display: "grid", gap: 4, marginTop: 6 }}>
@@ -231,8 +232,8 @@ export function TaskCard({
                     key={entry.id}
                     style={{
                       fontSize: 10,
-                      color: "#475569",
-                      background: "#F8FAFC",
+                      color: "var(--muted, #5b6f74)",
+                      background: "rgb(246 250 251 / 76%)",
                       borderRadius: 7,
                       padding: "6px 8px",
                     }}
@@ -252,7 +253,7 @@ export function TaskCard({
             onClick={(event) => event.stopPropagation()}
             value={task.status || "Bekliyor"}
             onChange={(event) => onStatusChange(event.target.value)}
-            style={{ ...iStyle, width: 145, fontSize: 11, background: "#F8FAFC", padding: "5px 8px" }}
+            style={{ ...iStyle, width: 145, fontSize: 11, background: "rgb(246 250 251 / 76%)", padding: "5px 8px" }}
           >
             {STATUSES.map((status) => (
               <option key={status}>{status}</option>
@@ -260,7 +261,7 @@ export function TaskCard({
           </select>
         )}
         {onTime && (
-          <Btn small variant="ghost" onClick={onTime} style={{ color: "#7C3AED" }}>
+          <Btn small variant="ghost" onClick={onTime} style={{ color: "var(--accent, #0b8a94)" }}>
             Efor
           </Btn>
         )}
@@ -904,4 +905,3 @@ export function TimeLogModal({
     </Modal>
   );
 }
-
