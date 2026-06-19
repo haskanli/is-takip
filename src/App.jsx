@@ -129,6 +129,10 @@ const ensureAuthUserForPerson = async (person) => {
   });
   if (!response.ok) {
     const text = await response.text();
+    if (response.status === 404) {
+      console.warn("Auth sync endpoint bulunamadı, profil kaydı yerelde güncellendi.", text);
+      return { skipped: true, reason: "auth_endpoint_not_found" };
+    }
     throw new Error(`Auth kullanıcısı oluşturulamadı (${response.status}): ${text}`);
   }
   return response.json();
@@ -352,6 +356,7 @@ export default function App() {
   },[dataLoaded]);
 
   const currentUser=state.people.find(p=>p.id===state.currentUserId);
+  const internalPeople=state.people.filter(person=>person.userType!=="customer");
   const isAdmin=currentUser?.isAdmin||false;
   const customerPreviewProject=previewCustomerProjectId?state.projects.find(project=>project.id===previewCustomerProjectId):null;
   const customerView=Boolean(currentUser&&(isCustomerUser(currentUser)||customerPreviewProject));
@@ -573,13 +578,13 @@ export default function App() {
     const avatar=data.name.trim().split(/\s+/).map(part=>part[0]).join("").slice(0,2).toUpperCase();
     const person={id:uid(),avatar,...data};
     setState(s=>({...s,people:[...s.people,person]}));
-    addLog(currentUser.name,"general",`Ekip ?yesi eklendi: ${data.name}`);
+    addLog(currentUser.name,"general",`${data.userType==="customer"?"Müşteri kullanıcısı":"Ekip üyesi"} eklendi: ${data.name}`);
     try{
       const authResult=await ensureAuthUserForPerson(person);
       if(authResult?.avatarUrl)setState(s=>({...s,people:s.people.map(item=>item.id===person.id?{...item,avatarUrl:authResult.avatarUrl,slackUserId:authResult.slackUserId||item.slackUserId}:item)}));
     }catch(error){
-      console.warn("Auth kullan?c?s? olu?turulamad?",error);
-      alert(`Ki?i eklendi ancak giri? hesab? olu?turulamad?: ${error.message}`);
+      console.warn("Auth kullanıcısı oluşturulamadı",error);
+      if (data.userType !== "customer") alert(`Kişi eklendi ancak giriş hesabı oluşturulamadı: ${error.message}`);
     }
   };
   const updatePerson=async(id,data)=>{
@@ -587,13 +592,12 @@ export default function App() {
     const existing=state.people.find(person=>person.id===id)||{};
     const person={...existing,...data,avatar,id};
     setState(s=>({...s,people:s.people.map(item=>item.id===id?person:item)}));
-    addLog(currentUser.name,"general",`Ekip ?yesi g?ncellendi: ${data.name}`);
+    addLog(currentUser.name,"general",`Kişi güncellendi: ${data.name}`);
     try{
       const authResult=await ensureAuthUserForPerson(person);
       if(authResult?.avatarUrl)setState(s=>({...s,people:s.people.map(item=>item.id===person.id?{...item,avatarUrl:authResult.avatarUrl,slackUserId:authResult.slackUserId||item.slackUserId}:item)}));
     }catch(error){
-      console.warn("Auth kullan?c?s? g?ncellenemedi",error);
-      alert(`Ki?i g?ncellendi ancak giri? hesab? senkronlanamad?: ${error.message}`);
+      console.warn("Auth kullanıcısı güncellenemedi",error);
     }
   };
   const deletePerson=(id)=>setState(s=>({...s,
@@ -893,7 +897,7 @@ export default function App() {
 
       {/* PROJECT DETAIL */}
       {selProject&&project&&<div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <SharedProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={project.customerContacts||[]} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>openProjectTab("setup")} formatDate={fmt} mapsUrlForLocation={mapsUrl} moduleOptions={DEFAULT_ACTIVE_MODULES}/>
+        <SharedProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={(project.raciContacts||[]).filter(contact=>contact.side==="Müşteri")} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>openProjectTab("setup")} formatDate={fmt} mapsUrlForLocation={mapsUrl} moduleOptions={DEFAULT_ACTIVE_MODULES}/>
         <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:isMobile?"8px clamp(12px,2.2vw,22px) 10px":"0 clamp(12px,2.2vw,22px) 10px"}}>
           <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:3,scrollbarWidth:"thin"}}>
             {projectTabs.map(([id,icon,label])=><button key={id} onClick={()=>openProjectTab(id)} style={{padding:"7px 11px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:600,fontSize:12,background:projectTab===id?(project.customerProfile?.accentColor||project.color):"#F1F5FF",color:projectTab===id?"#fff":"#64748B",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",flexShrink:0}}><Icon name={icon} size={14}/>{label}</button>)}
@@ -1051,10 +1055,10 @@ export default function App() {
         </div>
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:14,marginBottom:16}}>
           <div style={{fontSize:13,fontWeight:850,marginBottom:10}}>Organizasyonel Yapı</div>
-          <SharedOrganizationPanel people={state.people} roles={organizationRoles(state)} onEdit={isAdmin?person=>setModal({type:"editPerson",data:person}):null}/>
+          <SharedOrganizationPanel people={internalPeople} roles={organizationRoles(state)} onEdit={isAdmin?person=>setModal({type:"editPerson",data:person}):null}/>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {state.people.map(p=>{
+          {internalPeople.map(p=>{
             const allT=[...state.projects.flatMap(proj=>proj.milestones.flatMap(ms=>ms.tasks.filter(t=>t.assignee===p.id))),...(state.personalTasks||[]).filter(t=>t.assignee===p.id)];
             const active=allT.filter(t=>t.status==="Devam Ediyor").length;
             const waiting=allT.filter(t=>t.status==="Bekliyor").length;

@@ -149,7 +149,12 @@ export function ProjectBusinessCard({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 9 }}>
             <Field label="Müşteri Adı"><input style={iStyle} value={customer.name || ""} onChange={(event) => updateCustomer({ name: event.target.value })} placeholder="Firma adı" /></Field>
             <Field label="Web Adresi"><input style={iStyle} value={customer.website || ""} onChange={(event) => updateCustomer({ website: event.target.value })} placeholder="https://firma.com" /></Field>
-            <Field label="Logo URL"><input style={iStyle} value={(customer.logoUrl || "").startsWith("data:") ? "" : customer.logoUrl || ""} onChange={(event) => updateCustomer({ logoUrl: event.target.value })} placeholder="https://.../logo.png" /></Field>
+            <Field label="Logo URL">
+              <div style={{ display: "grid", gap: 6 }}>
+                <input style={iStyle} value={(customer.logoUrl || "").startsWith("data:") ? "" : customer.logoUrl || ""} onChange={(event) => updateCustomer({ logoUrl: event.target.value })} placeholder="https://.../logo.png" />
+                <button type="button" onClick={() => fileInput.current?.click()} style={{ border: 0, background: "#EEF2FF", color: "#4338CA", borderRadius: 9, padding: "7px 9px", fontSize: 10, fontWeight: 900, cursor: "pointer", textAlign: "left" }}>veya dosya yükle</button>
+              </div>
+            </Field>
             <Field label="Kart Rengi"><input type="color" style={{ ...iStyle, padding: 4, height: 42 }} value={accent} onChange={(event) => updateCustomer({ accentColor: event.target.value })} /></Field>
             <Field label="İl"><input style={iStyle} value={location.city || ""} onChange={(event) => updateLocation("city", event.target.value)} /></Field>
             <Field label="İlçe"><input style={iStyle} value={location.district || ""} onChange={(event) => updateLocation("district", event.target.value)} /></Field>
