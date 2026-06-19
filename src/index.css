@@ -1047,7 +1047,6 @@ code,
   background-position: center;
   background-attachment: fixed;
   background-repeat: no-repeat;
-    var(--bg);
 }
 
 .project-tab-shell {
