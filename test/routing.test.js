@@ -155,6 +155,15 @@ test("routeFromLocation reads project list filters", () => {
   assert.equal(route.projectViewMode, "list");
 });
 
+test("routeFromLocation opens reminders page", () => {
+  const route = routeFromLocation({
+    pathname: "/reminders",
+    search: "",
+  });
+  assert.equal(route.view, "reminders");
+  assert.equal(pathForRouteState({ view: "reminders" }), "/reminders");
+});
+
 test("pathForRouteState builds stable app URLs", () => {
   assert.equal(pathForRouteState({ view: "dashboard" }), "/");
   assert.equal(pathForRouteState({ view: "tickets" }), "/ticketlar");

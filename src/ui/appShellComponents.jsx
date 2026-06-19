@@ -71,6 +71,7 @@ export const GlobalStyle = () => (
     }
     @media (max-width: 760px) {
       .todo-columns { grid-template-columns: 1fr !important; }
+      .reminders-layout { grid-template-columns: 1fr !important; }
       .admin-main-grid, .admin-triple-grid { grid-template-columns: 1fr !important; }
       .visit-time-grid { grid-template-columns: 1fr !important; }
       .org-level-row { grid-template-columns:1fr !important; }

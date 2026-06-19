@@ -109,6 +109,7 @@ export const filterStateForProfile = (state, profile) => {
       notifications: clone(
         (safeState.notifications || []).filter((item) => item.userId === legacyId),
       ),
+      reminders: [],
       recurringTasks: [],
       projectTickets: Object.fromEntries(
         Object.entries(filterRecordByProjectIds(safeState.projectTickets, projectIds)).map(
@@ -145,6 +146,7 @@ export const filterStateForProfile = (state, profile) => {
           (item) => item.userId === legacyId,
         ),
       ),
+      reminders: [],
       recurringTasks: [],
       projectTickets: clone(safeState.projectTickets || {}),
       projectActions: {},
@@ -162,6 +164,8 @@ export const filterStateForProfile = (state, profile) => {
   );
   const ownTask = (task) =>
     task.assignee === legacyId || task.createdBy === legacyId;
+  const ownReminder = (reminder) =>
+    reminder.createdBy === legacyId || (reminder.recipientIds || []).includes(legacyId);
 
   return {
     ...safeState,
@@ -179,6 +183,7 @@ export const filterStateForProfile = (state, profile) => {
     notifications: clone(
       (state.notifications || []).filter((item) => item.userId === legacyId),
     ),
+    reminders: clone((state.reminders || []).filter(ownReminder)),
     recurringTasks: clone(
       (state.recurringTasks || []).filter(
         (item) =>
@@ -343,6 +348,7 @@ export const mergeStateForProfile = (current, incoming, profile) => {
         safeIncoming.notifications,
         (item) => item.userId === legacyId,
       ),
+      reminders: [],
     };
   }
   const ticketOnly = Boolean(
@@ -377,6 +383,8 @@ export const mergeStateForProfile = (current, incoming, profile) => {
     task.assignee === legacyId || task.createdBy === legacyId;
   const ownsPlan = (plan) => plan.userId === legacyId;
   const ownsNotification = (item) => item.userId === legacyId;
+  const ownsReminder = (item) =>
+    item.createdBy === legacyId || (item.recipientIds || []).includes(legacyId);
   const ownsRecurring = (item) =>
     item.createdBy === legacyId || (item.assigneeIds || []).includes(legacyId);
   const incomingPerson = (incoming.people || []).find(
@@ -406,6 +414,11 @@ export const mergeStateForProfile = (current, incoming, profile) => {
       current.notifications,
       safeIncoming.notifications,
       ownsNotification,
+    ),
+    reminders: replaceOwnedItems(
+      current.reminders,
+      safeIncoming.reminders,
+      ownsReminder,
     ),
     recurringTasks: replaceOwnedItems(
       current.recurringTasks,

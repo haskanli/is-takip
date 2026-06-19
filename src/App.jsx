@@ -22,6 +22,7 @@ import { AuthLoginScreen, LoginScreen, PasswordRecoveryScreen } from "./ui/authC
 import { TicketsPage as SharedTicketsPage, TicketsPanel as SharedTicketsPanel } from "./ui/ticketComponents.jsx";
 import { ProjectNotesPanel as SharedProjectNotesPanel, ProjectSetupPanel as SharedProjectSetupPanel, ResponsibilitySummary as SharedResponsibilitySummary } from "./ui/projectSetupComponents.jsx";
 import { DeadlinePage as SharedDeadlinePage, LogPage as SharedLogPage, NotificationsPage as SharedNotificationsPage, PersonDetailModal as SharedPersonDetailModal, TodoPage as SharedTodoPage } from "./ui/miscPagesComponents.jsx";
+import { RemindersPage as SharedRemindersPage } from "./ui/reminderComponents.jsx";
 import { ImportCenter as SharedImportCenter } from "./ui/importComponents.jsx";
 import { AIWorkspace as SharedAIWorkspace } from "./ui/aiComponents.jsx";
 import { MyTasksPage as SharedMyTasksPage } from "./ui/myTasksComponents.jsx";
@@ -876,6 +877,7 @@ export default function App() {
     {id:"mytasks",icon:"tasks",label:`Görevlerim${myOpenTaskCount?` (${myOpenTaskCount})`:""}`},
     {id:"fieldops",icon:"calendar",label:"Saha Y\u00f6netimi"},
     {id:"deadlines",icon:"clock",label:`Termin Uyar\u0131lar\u0131${deadlineWarnings.length?` (${deadlineWarnings.length})`:""}`},
+    {id:"reminders",icon:"bell",label:"Hatırlatıcılar"},
     {id:"tickets",icon:"ticket",label:"Ticketlar"},
     {id:"ai",icon:"activity",label:"AI Asistan"},
     ...(isAdmin?[{id:"import",icon:"reports",label:"Import Merkezi"}]:[]),
@@ -1091,6 +1093,7 @@ export default function App() {
       {view==="fieldplan"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} section="plan" onSectionChange={setFieldSection} scope={fieldScope} onScopeChange={setFieldScope} projectFilter={fieldProject} onProjectFilterChange={setFieldProject} personFilter={fieldPerson} onPersonFilterChange={setFieldPerson} typeFilter={fieldType} onTypeFilterChange={setFieldType} weekOffset={fieldWeek} onWeekOffsetChange={setFieldWeek} onOpenProject={id=>openProject(id,"actions")}/>}
       {view==="fieldvisits"&&<SharedFieldOperationsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} section="visits" onSectionChange={setFieldSection} scope={fieldScope} onScopeChange={setFieldScope} projectFilter={fieldProject} onProjectFilterChange={setFieldProject} personFilter={fieldPerson} onPersonFilterChange={setFieldPerson} typeFilter={fieldType} onTypeFilterChange={setFieldType} weekOffset={fieldWeek} onWeekOffsetChange={setFieldWeek} onOpenProject={id=>openProject(id,"actions")}/>}
       {view==="deadlines"&&<SharedDeadlinePage warnings={deadlineWarnings} people={state.people} onOpenTask={id=>navigateTo("mytasks",{taskId:id})} onOpenTodos={()=>navigateTo("todos")}/>}
+      {view==="reminders"&&!customerView&&<SharedRemindersPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin}/>}
       {view==="tickets"&&<SharedTicketsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin&&!customerView} customerMode={customerView} customerProjects={customerView?visibleProjects:undefined} initialMine={ticketMineOnly} initialProjectId={ticketToOpen.projectId} initialTicketId={ticketToOpen.ticketId} activeTab={ticketTab} onActiveTabChange={setTicketTab} projectFilters={ticketProjectFilters} onProjectFiltersChange={setTicketProjectFilters} statusFilters={ticketStatusFilters} onStatusFiltersChange={setTicketStatusFilters} search={ticketSearch} onSearchChange={setTicketSearch} mineOnly={ticketMineOnly} onMineOnlyChange={setTicketMineOnly} onTicketOpened={()=>setTicketToOpen({projectId:"",ticketId:""})} generateTicketStatusReport={generateTicketStatusReport}/>}
       {view==="reports"&&<SharedReportsPage state={state} people={state.people} isAdmin={isAdmin} projectId={reportProject} onProjectIdChange={setReportProject} group={reportGroup} onGroupChange={setReportGroup} />}
       {view==="customers"&&isAdmin&&!selProject&&<SharedCustomersPage state={state} setState={setState} onInviteUser={addPerson} onPreviewCustomer={projectId=>{setPreviewCustomerProjectId(projectId);navigateTo("dashboard");}}/>}
@@ -1167,4 +1170,3 @@ export default function App() {
 
 
 // ─── Plan List Table ─────────────────────────────────────────────────────────
-

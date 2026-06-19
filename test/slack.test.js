@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   formatSlackDueDate,
+  sendReminderSlack,
   sendTaskAssignedSlack,
 } from "../server/services/slack.js";
 
@@ -72,4 +73,50 @@ test("sendTaskAssignedSlack skips users without email", async () => {
     task: { id: "task-1", title: "Test" },
   });
   assert.equal(result.skipped, true);
+});
+
+test("sendReminderSlack sends reminder with linked tasks", async () => {
+  const requests = [];
+  const result = await sendReminderSlack(
+    {
+      recipient: { id: "person-1", email: "user@example.com" },
+      creator: { name: "Hakan" },
+      reminder: {
+        id: "rem-1",
+        title: "Test ortamını kontrol et",
+        note: "Müşteri görüşmesi öncesi son durum kontrolü",
+        scheduledAt: "2026-06-19T09:00:00.000Z",
+      },
+      tasks: [
+        {
+          id: "task-1",
+          title: "OPC-UA bağlantısını doğrula",
+          projectName: "Gen İlaç",
+          dueDate: "2026-06-20",
+        },
+      ],
+    },
+    {
+      fetchImpl: async (url, options) => {
+        requests.push({ url, options });
+        const body = String(url).includes("users.lookupByEmail")
+          ? { ok: true, user: { id: "U123" } }
+          : { ok: true, ts: "171235.000" };
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+    },
+  );
+
+  const message = JSON.parse(requests[1].options.body);
+  assert.equal(message.channel, "U123");
+  assert.equal(message.blocks[0].text.text, "Corject hatırlatıcı");
+  assert.match(message.blocks[1].text.text, /Müşteri görüşmesi/);
+  assert.match(message.blocks[2].text.text, /OPC-UA bağlantısını doğrula/);
+  assert.equal(message.blocks[3].elements[0].text.text, "Görevi Aç");
+  assert.match(message.blocks[3].elements[0].url, /task=task-1/);
+  assert.doesNotMatch(requests[1].options.body, /�|Ã|Å/);
+  assert.equal(result.id, "171235.000");
 });

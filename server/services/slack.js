@@ -1,4 +1,4 @@
-import { getSlackConfig } from "../config.js";
+import { getEmailConfig, getSlackConfig } from "../config.js";
 import { logger } from "../logger.js";
 import { withRetry } from "../retry.js";
 import { userTaskUrl, userTicketUrl } from "./email.js";
@@ -254,6 +254,104 @@ export const sendCustomerTicketSlack = async (
   logger.info("slack.customer-ticket.sent", {
     userId: recipient.id,
     ticketId: ticket.id,
+    slackUserId: user.id,
+    messageId: message.ts,
+  });
+  return { id: message.ts, slackUserId: user.id };
+};
+
+const appUrl = (path = "/my-tasks") => {
+  const { appBaseUrl } = getEmailConfig();
+  if (!appBaseUrl) return "";
+  const url = new URL(appBaseUrl);
+  url.pathname = path;
+  return url.toString();
+};
+
+export const sendReminderSlack = async (
+  { recipient, reminder, tasks = [], creator },
+  { fetchImpl = fetch } = {},
+) => {
+  const { botToken } = getSlackConfig();
+  if (!botToken || !recipient?.email) {
+    logger.warn("slack.reminder.skipped.not-configured", { userId: recipient?.id });
+    return { skipped: true };
+  }
+
+  const user = await lookupSlackUserByEmail(
+    recipient.email.trim().toLowerCase(),
+    botToken,
+    fetchImpl,
+  );
+  const taskLines = tasks.length
+    ? tasks
+      .slice(0, 8)
+      .map((task) => `• *${task.title || "Görev"}*${task.projectName ? ` · ${task.projectName}` : ""}${task.dueDate ? ` · ${formatSlackDueDate(task.dueDate)}` : ""}`)
+      .join("\n")
+    : "_Bağlı görev yok. Kişisel hatırlatma._";
+  const singleTask = tasks.length === 1 ? tasks[0] : null;
+  const link = singleTask?.id
+    ? userTaskUrl(recipient.id, singleTask.id)
+    : appUrl("/my-tasks");
+  const scheduledText = reminder.scheduledAt
+    ? new Intl.DateTimeFormat("tr-TR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/Istanbul",
+    }).format(new Date(reminder.scheduledAt))
+    : "Planlı zaman";
+
+  const blocks = [
+    {
+      type: "header",
+      text: { type: "plain_text", text: "Corject hatırlatıcı", emoji: true },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*${reminder.title || "Hatırlatma"}*\n${reminder.note || "Not girilmedi."}`,
+      },
+      fields: [
+        { type: "mrkdwn", text: `*Planlanan zaman:*\n${scheduledText}` },
+        { type: "mrkdwn", text: `*Oluşturan:*\n${creator?.name || reminder.createdByName || "Corject"}` },
+      ],
+    },
+    {
+      type: "section",
+      text: { type: "mrkdwn", text: `*Bağlı işler:*\n${taskLines}` },
+    },
+  ];
+  if (link) {
+    blocks.push({
+      type: "actions",
+      elements: [{
+        type: "button",
+        text: { type: "plain_text", text: tasks.length === 1 ? "Görevi Aç" : "İşlerimi Aç", emoji: true },
+        url: link,
+        style: "primary",
+      }],
+    });
+  }
+
+  const message = await slackRequest(
+    "chat.postMessage",
+    {
+      channel: user.id,
+      text: `Corject hatırlatıcı: ${reminder.title || "Hatırlatma"}`,
+      blocks,
+      unfurl_links: false,
+      unfurl_media: false,
+    },
+    botToken,
+    fetchImpl,
+  );
+  logger.info("slack.reminder.sent", {
+    userId: recipient.id,
+    reminderId: reminder.id,
     slackUserId: user.id,
     messageId: message.ts,
   });

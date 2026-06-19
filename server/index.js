@@ -36,7 +36,7 @@ import {
   resolveTenantProfile,
 } from "./services/emailTemplate.js";
 import { sendTaskAssignedWhatsApp } from "./services/whatsapp.js";
-import { sendCustomerTicketSlack, sendTaskAssignedSlack } from "./services/slack.js";
+import { sendCustomerTicketSlack, sendReminderSlack, sendTaskAssignedSlack } from "./services/slack.js";
 import { createJiraIssue, getJiraIssue } from "./services/jira.js";
 import { askPortfolioAI, askProjectAI } from "./services/projectAI.js";
 import { parseJiraWebhook, verifyWebhookSignature } from "./webhook.js";
@@ -743,6 +743,140 @@ const handleOverdueReminders = async (request, response) => {
   json(response, 200, { sent, skipped, usersWithOverdueTasks: grouped.size });
 };
 
+const taskKey = (ref = {}) =>
+  [ref.source || "", ref.projectId || "", ref.milestoneId || "", ref.taskId || ref.id || ""].join(":");
+
+const reminderTaskRefs = (reminder) =>
+  Array.isArray(reminder.taskRefs)
+    ? reminder.taskRefs
+    : Array.isArray(reminder.tasks)
+      ? reminder.tasks
+      : [];
+
+const findReminderTask = (state, ref = {}) => {
+  const id = ref.taskId || ref.id;
+  if (!id) return null;
+  if (ref.source === "personal" || !ref.projectId) {
+    const personal = (state.personalTasks || []).find((task) => task.id === id);
+    if (personal) return { ...personal, source: "personal", projectName: personal.projectName || "Genel Görev" };
+  }
+  const project = (state.projects || []).find((item) => item.id === ref.projectId);
+  if (!project) return null;
+  for (const milestone of project.milestones || []) {
+    if (ref.milestoneId && milestone.id !== ref.milestoneId) continue;
+    const task = (milestone.tasks || []).find((item) => item.id === id);
+    if (task) {
+      return {
+        ...task,
+        source: "project",
+        projectId: project.id,
+        projectName: project.name,
+        milestoneId: milestone.id,
+        milestoneName: milestone.name,
+      };
+    }
+  }
+  return null;
+};
+
+const resolveReminderRecipients = (state, reminder, tasks) => {
+  const ids = new Set((reminder.recipientIds || []).filter(Boolean));
+  for (const task of tasks) {
+    if (task.assignee) ids.add(task.assignee);
+  }
+  if (!ids.size && reminder.createdBy) ids.add(reminder.createdBy);
+  return [...ids]
+    .map((id) => (state.people || []).find((person) => person.id === id))
+    .filter(Boolean);
+};
+
+export const runReminderCycle = async (current = new Date()) => {
+  const record = await loadStateRecord();
+  const state = record.state || {};
+  const nowIso = current.toISOString();
+  const due = (state.reminders || []).filter((reminder) => {
+    if (!reminder?.scheduledAt) return false;
+    if (["sent", "cancelled"].includes(reminder.status)) return false;
+    if (reminder.sentAt) return false;
+    return new Date(reminder.scheduledAt) <= current;
+  });
+  if (!due.length) return { checked: state.reminders?.length || 0, due: 0, sent: 0, skipped: 0, failed: 0 };
+
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+  const notifications = [];
+  for (const reminder of due) {
+    const refs = reminderTaskRefs(reminder);
+    const tasks = refs
+      .map((ref) => findReminderTask(state, ref))
+      .filter(Boolean)
+      .filter((task, index, list) => list.findIndex((item) => item.id === task.id) === index);
+    const recipients = resolveReminderRecipients(state, reminder, tasks);
+    const creator = (state.people || []).find((person) => person.id === reminder.createdBy);
+    const delivery = [];
+    for (const recipient of recipients) {
+      try {
+        const result = await sendReminderSlack({ recipient, reminder, tasks, creator });
+        if (result.skipped) {
+          skipped += 1;
+          delivery.push({ userId: recipient.id, sent: false, skipped: true, reason: "Slack yapılandırılmamış veya e-posta yok" });
+        } else {
+          sent += 1;
+          delivery.push({ userId: recipient.id, sent: true, channel: "slack", messageId: result.id || null });
+          notifications.push({
+            id: `reminder-${reminder.id}-${recipient.id}-${Date.now()}`,
+            ts: nowIso,
+            userId: recipient.id,
+            msg: `Hatırlatma: ${reminder.title || "Hatırlatma"}`,
+            type: "reminder",
+            reminderId: reminder.id,
+            read: false,
+          });
+        }
+      } catch (error) {
+        failed += 1;
+        delivery.push({ userId: recipient.id, sent: false, error: error.message });
+        logger.error("reminders.slack.failed", error, {
+          reminderId: reminder.id,
+          userId: recipient.id,
+        });
+      }
+    }
+    reminder.lastAttemptAt = nowIso;
+    reminder.deliveryLog = [
+      {
+        id: `${reminder.id}:${nowIso}`,
+        at: nowIso,
+        delivery,
+      },
+      ...(reminder.deliveryLog || []),
+    ].slice(0, 20);
+    reminder.status = delivery.some((item) => item.sent)
+      ? "sent"
+      : delivery.some((item) => item.error)
+        ? "failed"
+        : "skipped";
+    if (delivery.some((item) => item.sent)) reminder.sentAt = nowIso;
+  }
+  if (notifications.length) {
+    state.notifications = [...notifications, ...(state.notifications || [])];
+  }
+  await saveStateRecord({ state, expectedVersion: record.version });
+  logger.info("reminders.cycle.completed", { due: due.length, sent, skipped, failed });
+  return { checked: state.reminders?.length || 0, due: due.length, sent, skipped, failed };
+};
+
+const handleScheduledReminders = async (request, response) => {
+  const config = getEmailConfig();
+  const token = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!config.reminderSecret || token !== config.reminderSecret) {
+    json(response, 401, { error: "Invalid reminder secret" });
+    return;
+  }
+  json(response, 200, { reminders: await runReminderCycle() });
+};
+
 const sendFile = async (response, path) => {
   const file = await readFile(path);
   response.writeHead(200, {
@@ -876,6 +1010,8 @@ const server = createServer(async (request, response) => {
       await handleRecurringTasks(request, response);
     } else if (request.method === "POST" && url.pathname === "/reports/scheduled/run") {
       await handleScheduledReports(request, response);
+    } else if (request.method === "POST" && url.pathname === "/reminders/run") {
+      await handleScheduledReminders(request, response);
     } else if (request.method === "POST" && url.pathname === "/email/reminders") {
       await handleOverdueReminders(request, response);
     } else if (request.method === "GET") {
@@ -908,6 +1044,7 @@ server.listen(port, () => {
   logger.info("server.started", { port });
   runRecurringTaskCycle().catch((error) => logger.error("tasks.recurring.failed", error));
   runScheduledReportCycle().catch((error) => logger.error("reports.scheduled.failed", error));
+  runReminderCycle().catch((error) => logger.error("reminders.cycle.failed", error));
 });
 
 const recurringTimer = setInterval(
@@ -921,3 +1058,9 @@ const reportTimer = setInterval(
   60 * 1000,
 );
 reportTimer.unref();
+
+const reminderTimer = setInterval(
+  () => runReminderCycle().catch((error) => logger.error("reminders.cycle.failed", error)),
+  60 * 1000,
+);
+reminderTimer.unref();

@@ -8,6 +8,7 @@ const VIEW_TO_PATH = {
   fieldplan: "/field-operations",
   fieldvisits: "/field-operations",
   deadlines: "/deadlines",
+  reminders: "/reminders",
   tickets: "/ticketlar",
   ai: "/ai",
   import: "/import",

@@ -182,6 +182,7 @@ export function MobileFeatureMenuPage({ isAdmin, onNavigate }) {
     ["ai", "activity", "AI Tool", "Proje veya portföy yorumu", "#7C3AED"],
     ["fieldops", "calendar", "Saha Yönetimi", "Planlar ve ziyaretler", "#0F766E"],
     ["deadlines", "clock", "Termin Uyarıları", "Gecikmeler ve yaklaşan işler", "#E11D48"],
+    ["reminders", "bell", "Hatırlatıcılar", "Slack bildirimleri için zamanlayıcı kur", "#7C3AED"],
     ["todos", "tasks", "To-Do", "Kişisel aksiyonlar", "#DB2777"],
     ["people", "people", "Ekip", "Organizasyon ve kişiler", "#0369A1"],
     ...(isAdmin ? [["customers", "people", "Müşteri Görünümü", "Müşteri portalını ve proje erişimini kontrol et", "#0F766E"]] : []),

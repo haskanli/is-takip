@@ -5,7 +5,7 @@ if (!baseUrl || !secret) {
   throw new Error("APP_BASE_URL and REMINDER_CRON_SECRET are required");
 }
 
-for (const path of ["/tasks/recurring/run", "/email/reminders", "/reports/scheduled/run"]) {
+for (const path of ["/tasks/recurring/run", "/email/reminders", "/reports/scheduled/run", "/reminders/run"]) {
   const response = await fetch(`${baseUrl}${path}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${secret}` },
