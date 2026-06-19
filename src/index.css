@@ -2,7 +2,7 @@
 
 :root {
   --bg: #f1f5f6;
-  --scene-image: linear-gradient(180deg, rgb(7 9 14 / 38%), rgb(9 12 20 / 34%)), url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=2200&q=80");
+  --scene-image: linear-gradient(180deg, rgb(255 255 255 / 8%), rgb(255 255 255 / 22%)), url("/bg-sunrise-mountain.png");
   --surface: #ffffff;
   --surface-soft: #f6fafb;
   --text: #112327;
@@ -59,18 +59,37 @@ body {
   min-height: 100svh;
   color: var(--text);
   background:
-    radial-gradient(circle at 12% -12%, rgb(11 138 148 / 12%), transparent 32%),
-    radial-gradient(circle at 96% -4%, rgb(191 122 18 / 8%), transparent 30%),
+    radial-gradient(circle at 12% -12%, rgb(255 255 255 / 12%), transparent 30%),
+    radial-gradient(circle at 96% -4%, rgb(255 255 255 / 8%), transparent 28%),
     var(--scene-image);
+  position: relative;
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   background-repeat: no-repeat;
+  background-color: transparent;
   overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -6%;
+  background: var(--scene-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(70px);
+  transform: scale(1.08);
+  opacity: 0.82;
+  z-index: -1;
+  pointer-events: none;
 }
 
 #root {
   min-height: 100svh;
+  position: relative;
+  isolation: isolate;
 }
 
 button,
