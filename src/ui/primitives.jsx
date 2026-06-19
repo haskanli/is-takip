@@ -172,11 +172,10 @@ export function Icon({ name, size = 16 }) {
 export function Modal({ title, onClose, wide, children }) {
   return (
     <div
+      className="modal-scrim"
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(17,35,39,0.46)",
-        backdropFilter: "blur(10px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -186,26 +185,23 @@ export function Modal({ title, onClose, wide, children }) {
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
       <div
+        className="modal-panel"
         style={{
-          background: "var(--glass-strong, rgb(255 255 255 / 82%))",
-          border: "1px solid var(--glass-border, rgb(207 224 227 / 68%))",
           borderRadius: 22,
           padding: "26px 30px",
           width: "100%",
           maxWidth: wide ? 720 : 500,
           maxHeight: "90vh",
           overflowY: "auto",
-          boxShadow: "0 28px 80px -36px rgb(17 35 39 / 62%)",
-          backdropFilter: "var(--glass-blur, blur(22px) saturate(1.18))",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "var(--text, #112327)" }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "var(--surface-soft, #f6fafb)", border: "1px solid var(--border, #cfe0e3)", borderRadius: 11, cursor: "pointer", fontSize: 18, color: "var(--muted, #5b6f74)", width: 34, height: 34 }}>
+          <button aria-label="Kapat" onClick={onClose} style={{ background: "rgb(255 255 255 / 58%)", border: "1px solid rgb(207 224 227 / 72%)", borderRadius: 12, cursor: "pointer", fontSize: 18, color: "var(--muted, #5b6f74)", width: 38, height: 38, display: "grid", placeItems: "center", boxShadow: "inset 0 1px 0 rgb(255 255 255 / 70%)" }}>
             x
           </button>
         </div>
-        {children}
+        <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
       </div>
     </div>
   );
