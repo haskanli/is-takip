@@ -40,6 +40,8 @@ export function TicketsPage({
   setState,
   currentUser,
   isAdmin,
+  customerMode: forcedCustomerMode=false,
+  customerProjects,
   initialMine=false,
   initialProjectId="",
   initialTicketId="",
@@ -76,15 +78,22 @@ export function TicketsPage({
   const setSearch=onSearchChange||setLocalSearch;
   const mineOnly=controlledMineOnly??localMineOnly;
   const setMineOnly=onMineOnlyChange||setLocalMineOnly;
-  const customerMode=isCustomerUser(currentUser);
+  const customerMode=Boolean(forcedCustomerMode||isCustomerUser(currentUser));
+  const baseProjects=state.projects||[];
+  const customerProjectList=customerMode
+    ? (customerProjects?.length?customerProjects:baseProjects.filter(project=>project.id===currentUser?.customerId||project.customerId===currentUser?.customerId))
+    : baseProjects;
+  const effectiveCustomerId=customerProjectList[0]?.id||currentUser?.customerId||"";
+  const effectiveCustomerUser=customerMode?{...currentUser,userType:"customer",roleKey:"customer_viewer",customerId:currentUser?.customerId||effectiveCustomerId}:currentUser;
   const TYPES=["Bug","Görev","İyileştirme","Soru","Bilgi"];
   const PRIOS=["Düşük","Orta","Yüksek","Kritik"];
-  const all=Object.entries(state.projectTickets||{}).flatMap(([projectId,list])=>{
-    const project=state.projects.find(p=>p.id===projectId);
-    return visibleTicketsForUser(list||[],currentUser).map(ticket=>({ticket,projectId,project}));
+  const all=customerProjectList.flatMap(project=>{
+    const projectId=project.id;
+    return visibleTicketsForUser((state.projectTickets||{})[projectId]||[],effectiveCustomerUser).map(ticket=>({ticket,projectId,project}));
   });
   const filtered=all.filter(({ticket,projectId,project})=>{
     const haystack=`${ticket.ticketNo||""} ${ticket.title||""} ${ticket.description||""} ${project?.name||""} ${state.people.find(p=>p.id===ticket.assignedTo)?.name||""}`.toLocaleLowerCase("tr-TR");
+    if(customerMode)return !search.trim()||haystack.includes(search.trim().toLocaleLowerCase("tr-TR"));
     return (!projectFilters.length||projectFilters.includes(projectId))&&(!statusFilters.length||statusFilters.includes(ticket.status))&&(!mineOnly||ticket.assignedTo===currentUser.id||ticket.author===currentUser.name)&&(!search.trim()||haystack.includes(search.trim().toLocaleLowerCase("tr-TR")));
   });
   useEffect(()=>{
@@ -98,12 +107,12 @@ export function TicketsPage({
   const save=(projectId,tickets)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[projectId]:tickets}}));
   const add=async(projectId,data)=>{
     const createdAt=now();
-    const project=state.projects.find(item=>item.id===projectId);
-    const customerTicket=isCustomerUser(currentUser);
-    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?projectId:data.customerId||project?.customerId||projectId||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
+    const project=customerProjectList.find(item=>item.id===projectId)||state.projects.find(item=>item.id===projectId);
+    const customerTicket=customerMode;
+    const pmIds=[...(project?.pmIds||[]),project?.pm].filter(Boolean);
+    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?projectId:data.customerId||project?.customerId||projectId||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data,assignedTo:customerTicket?(pmIds[0]||""):data.assignedTo||""};
     save(projectId,[...((state.projectTickets||{})[projectId]||[]),ticket]);
     if(customerTicket){
-      const pmIds=[...(project?.pmIds||[]),project?.pm].filter(Boolean);
       setState(s=>({...s,notifications:[...pmIds.map(userId=>({id:uid(),ts:now(),userId,msg:`${currentUser.name} müşteri portalından ${ticket.ticketNo} ticketını açtı.`,projectName:project?.name||"",type:"customer_ticket",ticketId:ticket.id,projectId,read:false})),...(s.notifications||[])]}));
     }
     const result=await createTicketWithNotification(projectId,ticket);
@@ -122,47 +131,48 @@ export function TicketsPage({
   const remove=(projectId,id)=>save(projectId,((state.projectTickets||{})[projectId]||[]).filter(t=>t.id!==id));
   return <div style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:18}}>
-      <div><h2 style={{margin:0,fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#1E293B"}}><Icon name="ticket" size={20}/>Ticketlar</h2><p style={{margin:"3px 0 0",fontSize:12,color:"#64748B"}}>{filtered.length} kayıt gösteriliyor</p></div>
-      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{isAdmin&&<Btn variant="secondary" onClick={()=>generateTicketStatusReport(state,state.people)}>Durum Raporu</Btn>}<Btn onClick={()=>setModal({type:"add",projectId:state.projects[0]?.id||""})}>+ Ticket Ekle</Btn></div>
+      <div><h2 style={{margin:0,fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#1E293B"}}><Icon name="ticket" size={20}/>{customerMode?"Destek Taleplerim":"Ticketlar"}</h2><p style={{margin:"3px 0 0",fontSize:12,color:"#64748B"}}>{customerMode?"Bu alanda yalnızca kendi projenize ait müşteri talepleri görünür.":`${filtered.length} kayıt gösteriliyor`}</p></div>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{isAdmin&&!customerMode&&<Btn variant="secondary" onClick={()=>generateTicketStatusReport(state,state.people)}>Durum Raporu</Btn>}<Btn disabled={customerMode&&!customerProjectList.length} onClick={()=>setModal({type:"add",projectId:customerMode?(customerProjectList[0]?.id||""):(state.projects[0]?.id||"")})}>+ Ticket Ekle</Btn></div>
     </div>
     {!customerMode&&<div style={{display:"flex",gap:6,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
       {[["tickets","Ticket Takibi"],["recurring","Tekrar Eden Problemler"]].map(([id,label])=><button key={id} onClick={()=>setActiveTab(id)} style={{border:0,borderBottom:`3px solid ${activeTab===id?"#4F46E5":"transparent"}`,background:"transparent",color:activeTab===id?"#4338CA":"#64748B",padding:"9px 12px",fontSize:11,fontWeight:850,cursor:"pointer"}}>{label}</button>)}
     </div>}
     {(customerMode||activeTab==="tickets")&&<><div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
-      <input style={{...iStyle,width:"auto",minWidth:220,flex:"1 1 220px"}} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Ticket, proje veya sorumlu ara..."/>
+      <input style={{...iStyle,width:"auto",minWidth:220,flex:"1 1 220px"}} value={search} onChange={e=>setSearch(e.target.value)} placeholder={customerMode?"Talep ara...":"Ticket, proje veya sorumlu ara..."}/>
       {!customerMode&&<button onClick={()=>setMineOnly(v=>!v)} style={{border:0,borderRadius:8,padding:"8px 12px",cursor:"pointer",fontSize:11,fontWeight:700,background:mineOnly?"#4A6CF7":"#F1F5FF",color:mineOnly?"#fff":"#64748B"}}>Ticketlarım</button>}
       {!customerMode&&<MultiChoiceFilter label="Projeler" options={state.projects.map(project=>({value:project.id,label:project.name}))} value={projectFilters} onChange={setProjectFilters}/>}
-      <MultiChoiceFilter label="Durumlar" options={TICKET_STATUSES.map(status=>({value:status,label:status}))} value={statusFilters} onChange={setStatusFilters}/>
+      {!customerMode&&<MultiChoiceFilter label="Durumlar" options={TICKET_STATUSES.map(status=>({value:status,label:status}))} value={statusFilters} onChange={setStatusFilters}/>}
     </div>
     {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"#ECFDF5":"#FFF7ED",color:mailNotice.includes("gönderildi")?"#047857":"#C2410C",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(360px,100%),1fr))",gap:10}}>{[...filtered].sort((a,b)=>String(b.ticket.updatedAt||b.ticket.ts||"").localeCompare(String(a.ticket.updatedAt||a.ticket.ts||""))).map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:`3px solid ${project?.color||"#4A6CF7"}`,borderRadius:13,padding:"14px 15px",cursor:"pointer",boxShadow:"0 5px 16px rgba(15,23,42,.04)"}}>
-      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontSize:10,fontWeight:850,color:"#4338CA",background:"#EEF2FF",padding:"3px 7px",borderRadius:7}}>{ticketNumber(ticket)}</span><b style={{fontSize:13}}>{ticket.title}</b>{customerMode?<span style={{fontSize:10,borderRadius:999,padding:"4px 8px",background:"#F8FAFC",color:"#475569",fontWeight:850}}>{ticket.status||"Açık"}</span>:<select value={ticket.status||"Açık"} onClick={event=>event.stopPropagation()} onChange={event=>update(projectId,ticket.id,{status:event.target.value})} style={{fontSize:10,border:"1px solid #CBD5E1",borderRadius:7,padding:"3px 6px",background:"#fff"}}>{TICKET_STATUSES.map(status=><option key={status}>{status}</option>)}</select>}<span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span><span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
-      <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"#64748B"}}><span>Sorumlu: <b>{assignee?.name||"Atanmamış"}</b></span><span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span>{!customerMode&&(isAdmin||ticket.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();if(confirm("Ticket silinsin mi?"))remove(projectId,ticket.id);}} style={{marginLeft:"auto",border:0,background:"transparent",color:"#E11D48",fontSize:11,fontWeight:700,cursor:"pointer"}}>Sil</button>}</div>
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontSize:10,fontWeight:850,color:"#4338CA",background:"#EEF2FF",padding:"3px 7px",borderRadius:7}}>{ticketNumber(ticket)}</span><b style={{fontSize:13}}>{ticket.title}</b>{customerMode?<span style={{fontSize:10,borderRadius:999,padding:"4px 8px",background:"#F8FAFC",color:"#475569",fontWeight:850}}>{ticket.status||"Açık"}</span>:<select value={ticket.status||"Açık"} onClick={event=>event.stopPropagation()} onChange={event=>update(projectId,ticket.id,{status:event.target.value})} style={{fontSize:10,border:"1px solid #CBD5E1",borderRadius:7,padding:"3px 6px",background:"#fff"}}>{TICKET_STATUSES.map(status=><option key={status}>{status}</option>)}</select>}{!customerMode&&<span style={{fontSize:10,color:"#4A6CF7",background:"#EEF2FF",padding:"2px 7px",borderRadius:7}}>{project?.name||"Proje yok"}</span>}<span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:age>=7?"#E11D48":"#64748B"}}>{age} gündür açık</span></div>
+      <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"#64748B"}}>{!customerMode&&<span>Sorumlu: <b>{assignee?.name||"Atanmamış"}</b></span>}<span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span>{!customerMode&&(isAdmin||ticket.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();if(confirm("Ticket silinsin mi?"))remove(projectId,ticket.id);}} style={{marginLeft:"auto",border:0,background:"transparent",color:"#E11D48",fontSize:11,fontWeight:700,cursor:"pointer"}}>Sil</button>}</div>
     </div>})}</div>
     {!filtered.length&&<div style={{padding:40,textAlign:"center",background:"#fff",border:"1.5px dashed #CBD5E1",borderRadius:12,color:"#94A3B8"}}>Filtreye uygun ticket yok.</div>}
     </>}
     {!customerMode&&activeTab==="recurring"&&<RecurringProblemsPanel entries={all}/>}
-    {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}><Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><TicketForm project={state.projects.find(p=>p.id===modal.projectId)} types={TYPES} prios={PRIOS} people={state.people} customerMode={customerMode} onClose={()=>setModal(null)} onSave={async data=>{if(!modal.projectId)return;await add(modal.projectId,data);setModal(null);}}/></Modal>}
+    {modal?.type==="add"&&<Modal title="Ticket Ekle" onClose={()=>setModal(null)}>{customerMode?<div style={{marginBottom:12,padding:"10px 12px",borderRadius:12,background:"#EEF2FF",color:"#3730A3",fontSize:12,fontWeight:850}}>Proje: {customerProjectList.find(p=>p.id===modal.projectId)?.name||customerProjectList[0]?.name||"Müşteri projesi"}</div>:<Field label="Proje"><select style={iStyle} value={modal.projectId} onChange={e=>setModal(m=>({...m,projectId:e.target.value}))}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>}<TicketForm project={(customerMode?customerProjectList:state.projects).find(p=>p.id===modal.projectId)||customerProjectList[0]} types={TYPES} prios={PRIOS} people={state.people} customerMode={customerMode} onClose={()=>setModal(null)} onSave={async data=>{if(!modal.projectId)return;await add(modal.projectId,data);setModal(null);}}/></Modal>}
     {modal?.type==="detail"&&<TicketDetail ticket={((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data} people={state.people} customerMode={customerMode} canEdit={!customerMode&&(isAdmin||modal.data.author===currentUser.name)} types={TYPES} prios={PRIOS} onClose={()=>setModal(null)} onUpdate={data=>update(modal.projectId,modal.data.id,data)} onResend={!customerMode?()=>notifyTicketAssignment(modal.projectId,((state.projectTickets||{})[modal.projectId]||[]).find(t=>t.id===modal.data.id)||modal.data):undefined}/>}
   </div>;
 }
 
 
 
-export function TicketsPanel({ project, currentUser, state, setState, isAdmin }) {
+export function TicketsPanel({ project, currentUser, state, setState, isAdmin, customerMode: forcedCustomerMode=false }) {
   const [modal,setModal]=useState(null);
   const [mailNotice,setMailNotice]=useState("");
   const allTickets=((state.projectTickets||{})[project.id])||[];
-  const tickets=visibleTicketsForUser(allTickets,currentUser);
-  const customerMode=isCustomerUser(currentUser);
+  const customerMode=Boolean(forcedCustomerMode||isCustomerUser(currentUser));
+  const effectiveCustomerUser=customerMode?{...currentUser,userType:"customer",roleKey:"customer_viewer",customerId:currentUser?.customerId||project.id}:currentUser;
+  const tickets=visibleTicketsForUser(allTickets,effectiveCustomerUser);
   const saveTickets=(t)=>setState(s=>({...s,projectTickets:{...(s.projectTickets||{}),[project.id]:t}}));
   const addTicket=async(data)=>{
     const createdAt=now();
-    const customerTicket=isCustomerUser(currentUser);
-    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?project.id:data.customerId||project.customerId||project.id||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data};
+    const customerTicket=customerMode;
+    const pmIds=[...(project.pmIds||[]),project.pm].filter(Boolean);
+    const ticket={id:uid(),ticketNo:nextTicketNumber(state),ts:createdAt,updatedAt:createdAt,author:currentUser.name,createdBy:currentUser.id,source:customerTicket?"customer":"internal",customerVisible:customerTicket?true:Boolean(data.customerVisible),customerId:customerTicket?project.id:data.customerId||project.customerId||project.id||"",history:[{id:uid(),ts:createdAt,userId:currentUser.id,userName:currentUser.name,label:"Ticket",from:"-",to:"Oluşturuldu"}],...data,assignedTo:customerTicket?(pmIds[0]||""):data.assignedTo||""};
     saveTickets([...allTickets,ticket]);
     if(customerTicket){
-      const pmIds=[...(project.pmIds||[]),project.pm].filter(Boolean);
       setState(s=>({...s,notifications:[...pmIds.map(userId=>({id:uid(),ts:now(),userId,msg:`${currentUser.name} müşteri portalından ${ticket.ticketNo} ticketını açtı.`,projectName:project.name,type:"customer_ticket",ticketId:ticket.id,projectId:project.id,read:false})),...(s.notifications||[])]}));
     }
     const result=await createTicketWithNotification(project.id,ticket);
@@ -261,7 +271,7 @@ function TicketForm({ project, onSave, onClose, types, prios, people, customerMo
     <div style={{background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:12,padding:12,marginBottom:12}}>
       <div style={{fontSize:11,fontWeight:900,color:"#475569",marginBottom:9}}>Standart Talep Bilgileri</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
-        <Field label="Müşteri"><input style={iStyle} value={f.customer} onChange={e=>upd("customer",e.target.value)} /></Field>
+        {!customerMode&&<Field label="Müşteri"><input style={iStyle} value={f.customer} onChange={e=>upd("customer",e.target.value)} /></Field>}
         <Field label="İlgili Modül"><select style={iStyle} value={f.module} onChange={e=>upd("module",e.target.value)}><option value="">Modül seçin</option>{DEFAULT_ACTIVE_MODULES.map(module=><option key={module}>{module}</option>)}</select></Field>
         <Field label="İlgili Alt Modül"><input style={iStyle} value={f.subModule} onChange={e=>upd("subModule",e.target.value)} /></Field>
         <Field label="Fonksiyon / Buton"><input style={iStyle} value={f.functionButton} onChange={e=>upd("functionButton",e.target.value)} /></Field>
