@@ -2,6 +2,7 @@
 
 :root {
   --bg: #f1f5f6;
+  --scene-image: linear-gradient(180deg, rgb(7 9 14 / 38%), rgb(9 12 20 / 34%)), url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=2200&q=80");
   --surface: #ffffff;
   --surface-soft: #f6fafb;
   --text: #112327;
@@ -58,9 +59,13 @@ body {
   min-height: 100svh;
   color: var(--text);
   background:
-    radial-gradient(circle at 14% -12%, rgb(11 138 148 / 14%), transparent 34%),
-    radial-gradient(circle at 96% -6%, rgb(191 122 18 / 10%), transparent 30%),
-    var(--bg);
+    radial-gradient(circle at 12% -12%, rgb(11 138 148 / 12%), transparent 32%),
+    radial-gradient(circle at 96% -4%, rgb(191 122 18 / 8%), transparent 30%),
+    var(--scene-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   overflow: hidden;
 }
 
@@ -1036,6 +1041,12 @@ code,
   background:
     radial-gradient(circle at 12% -10%, rgb(11 138 148 / 12%), transparent 34%),
     radial-gradient(circle at 96% -8%, rgb(191 122 18 / 9%), transparent 28%),
+    linear-gradient(180deg, rgb(11 138 148 / 10%), transparent 55%),
+    var(--scene-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
     var(--bg);
 }
 

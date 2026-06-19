@@ -6,9 +6,14 @@ export const GlobalStyle = () => (
       font-family: var(--font-ui, Manrope, Segoe UI, sans-serif);
       color: var(--text, #112327);
       background:
-        radial-gradient(circle at 14% -12%, rgb(11 138 148 / 14%), transparent 34%),
-        radial-gradient(circle at 96% -6%, rgb(191 122 18 / 10%), transparent 30%),
+        radial-gradient(circle at 14% -12%, rgb(11 138 148 / 12%), transparent 34%),
+        radial-gradient(circle at 96% -6%, rgb(191 122 18 / 8%), transparent 30%),
+        var(--scene-image, linear-gradient(180deg, rgb(7 9 14 / 38%), rgb(9 12 20 / 34%))),
         var(--bg, #f1f5f6);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
     }
     h1, h2, h3 { color: var(--text, #112327); }
     input, select, textarea, button { font-family: inherit; }
@@ -170,25 +175,57 @@ function LegacyAppLoadingScreen({progress=10,status="Oturum hazırlanıyor",logo
 export function AppLoadingScreen({progress=10,status="Oturum haz\u0131rlan\u0131yor",logoSrc=""}) {
   const safeProgress=Math.max(4,Math.min(100,Math.round(progress)));
   const animationCss=`
-    @keyframes corjectCalmIn { from { opacity:0; transform:translateY(10px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
-    @keyframes corjectLogoBreath { 0%,100% { transform:translateY(0) scale(1); } 50% { transform:translateY(-2px) scale(1.018); } }
-    @keyframes corjectProgressShine { 0% { transform: translateX(-70%); opacity:0; } 28% { opacity:.42; } 100% { transform: translateX(190%); opacity:0; } }
-    @keyframes corjectAmbient { 0%,100% { opacity:.46; transform:scale(.96); } 50% { opacity:.72; transform:scale(1.04); } }
+    @keyframes corjectFloatField {
+      0%,100% { transform: translateY(0) rotate(0deg) scale(1); }
+      50% { transform: translateY(-8px) rotate(.8deg) scale(1.015); }
+    }
+    @keyframes corjectFieldPulse {
+      0%,100% { opacity: .2; transform: scale(.98); }
+      50% { opacity: .38; transform: scale(1.02); }
+    }
+    @keyframes corjectOrbitSpin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+    @keyframes corjectOrbitSpinReverse { from { transform: translate(-50%, -50%) rotate(360deg); } to { transform: translate(-50%, -50%) rotate(0deg); } }
+    @keyframes corjectNodeFloat {
+      0%,100% { transform: translateY(0); opacity:.35; }
+      50% { transform: translateY(-7px); opacity:1; }
+    }
+    @keyframes corjectCorePulse { 0%,100% { transform: scale(.96); box-shadow: 0 18px 40px -24px rgb(11 138 148 / 20%); } 50% { transform: scale(1.02); box-shadow: 0 26px 56px -28px rgb(11 138 148 / 36%); } }
+    @keyframes corjectGlowSweep { 0% { transform: translateX(-130%); opacity:0; } 45% { opacity:.45; } 100% { transform: translateX(130%); opacity:0; } }
+    @keyframes corjectBarFlow { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+    @keyframes corjectStatusGlow { 0%,100% { opacity:.75; } 50% { opacity:1; } }
   `;
-  return <><style>{animationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:22,fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)",background:"radial-gradient(circle at 18% 18%,rgb(11 138 148 / 13%),transparent 34%),radial-gradient(circle at 84% 20%,rgb(191 122 18 / 10%),transparent 30%),linear-gradient(180deg,#F7FBFC 0%,#EDF4F5 100%)",color:"var(--text, #112327)",zIndex:9999,overflow:"hidden"}}>
-    <div style={{position:"absolute",width:330,height:330,left:"50%",top:"50%",transform:"translate(-50%,-50%)",borderRadius:"50%",background:"radial-gradient(circle,rgb(11 138 148 / 10%),transparent 66%)",animation:"corjectAmbient 3.8s ease-in-out infinite"}} />
-    <div style={{width:"min(360px,100%)",textAlign:"center",border:"1px solid var(--glass-border, #cfe0e3)",borderRadius:28,padding:"30px 28px 26px",background:"linear-gradient(145deg,rgb(255 255 255 / 86%),rgb(246 250 251 / 70%))",boxShadow:"0 30px 78px -54px rgb(17 35 39 / 62%)",backdropFilter:"blur(22px) saturate(1.14)",WebkitBackdropFilter:"blur(22px) saturate(1.14)",position:"relative",overflow:"hidden",animation:"corjectCalmIn 360ms cubic-bezier(.2,.8,.2,1) both"}}>
-      <div style={{width:88,height:88,margin:"0 auto 18px",borderRadius:26,display:"grid",placeItems:"center",background:"rgb(255 255 255 / 72%)",border:"1px solid var(--glass-border, #cfe0e3)",boxShadow:"inset 0 1px 0 rgb(255 255 255 / 74%),0 22px 38px -30px rgb(11 138 148 / 58%)",animation:"corjectLogoBreath 2.8s ease-in-out infinite"}}>
-        {logoSrc?<img src={logoSrc} alt="Corject" style={{width:62,height:62,objectFit:"contain"}}/>:<span style={{fontSize:34,fontWeight:950,color:"var(--accent, #0b8a94)"}}>C</span>}
-      </div>
-      <div style={{fontFamily:"var(--font-display, Plus Jakarta Sans, Manrope, sans-serif)",fontSize:28,fontWeight:800,letterSpacing:"-.045em",color:"var(--text, #112327)",lineHeight:1}}>Corject</div>
-      <div style={{fontSize:13,color:"var(--muted, #5b6f74)",marginTop:9,minHeight:20,lineHeight:1.45}}>{status}</div>
-      <div style={{height:8,borderRadius:999,background:"rgb(255 255 255 / 58%)",overflow:"hidden",border:"1px solid var(--glass-border, #cfe0e3)",position:"relative",marginTop:24}}>
-        <div style={{height:"100%",width:`${safeProgress}%`,borderRadius:999,background:"linear-gradient(90deg,var(--accent, #0b8a94),color-mix(in srgb,var(--accent, #0b8a94) 64%,var(--warning, #bf7a12)))",transition:"width .38s cubic-bezier(.2,.8,.2,1)",position:"relative",overflow:"hidden"}}>
-          <span style={{position:"absolute",inset:0,width:"44%",background:"linear-gradient(90deg,transparent,rgb(255 255 255 / 62%),transparent)",animation:"corjectProgressShine 1.9s ease-in-out infinite"}} />
+  return <><style>{animationCss}</style><div style={{position:"fixed",inset:0,width:"100vw",height:"100dvh",display:"grid",placeItems:"center",boxSizing:"border-box",padding:22,fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)",background:"linear-gradient(180deg, rgb(7 9 14 / 46%), rgb(17 35 39 / 28%), var(--scene-image, linear-gradient(180deg, rgb(7 9 14 / 38%), rgb(9 12 20 / 34%)))",backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",backgroundAttachment:"fixed",color:"var(--text, #112327)",zIndex:9999,overflow:"hidden"}}>
+    <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 8% 10%, rgb(11 138 148 / 16%), transparent 38%),radial-gradient(circle at 92% 6%, rgb(191 122 18 / 14%), transparent 34%),radial-gradient(circle at 50% 100%, rgb(17 35 39 / 14%), transparent 38%)",animation:"corjectFieldPulse 4.4s ease-in-out infinite",pointerEvents:"none"}} />
+    <span style={{position:"absolute",left:"-20vw",top:"-12vh",width:"40vw",height:"40vh",borderRadius:"50%",background:"radial-gradient(circle, rgb(11 138 148 / 30%), transparent 70%)",filter:"blur(18px)",animation:"corjectFieldPulse 5.2s ease-in-out infinite"}} />
+    <span style={{position:"absolute",right:"-22vw",bottom:"-10vh",width:"38vw",height:"38vh",borderRadius:"50%",background:"radial-gradient(circle, rgb(191 122 18 / 28%), transparent 70%)",filter:"blur(20px)",animation:"corjectFieldPulse 5.8s ease-in-out 900ms infinite"}} />
+    <div style={{position:"absolute",left:"50%",top:"50%",width:"420px",height:"420px",maxWidth:"82vw",maxHeight:"82vw",borderRadius:"50%",transform:"translate(-50%, -50%)",border:"1px solid color-mix(in srgb, var(--glass-border) 76%, transparent)",animation:"corjectOrbitSpinReverse 24s linear infinite",pointerEvents:"none"}} />
+    <div style={{position:"absolute",left:"50%",top:"50%",width:"540px",height:"540px",maxWidth:"95vw",maxHeight:"95vw",borderRadius:"50%",overflow:"hidden",transform:"translate(-50%, -50%)",pointerEvents:"none",opacity:.42}}>
+      <span style={{position:"absolute",inset:0,borderRadius:"50%",border:"1px dashed color-mix(in srgb, var(--accent) 55%, transparent)",animation:"corjectOrbitSpin 20s linear infinite"}} />
+      <span style={{position:"absolute",inset:"16% 20% auto",width:"12px",height:"12px",borderRadius:"50%",background:"var(--success)",boxShadow:"0 0 20px color-mix(in srgb, var(--success) 60%, transparent)",animation:"corjectOrbitSpin 8s linear infinite"}} />
+      <span style={{position:"absolute",left:"18%",top:"55%",width:"8px",height:"8px",borderRadius:"50%",background:"var(--warning)",animation:"corjectOrbitSpin 10s linear infinite reverse"}} />
+      <span style={{position:"absolute",right:"16%",top:"33%",width:"10px",height:"10px",borderRadius:"50%",background:"#7c3aed",animation:"corjectOrbitSpin 12s linear infinite"}} />
+    </div>
+    <div style={{width:"min(360px,100%)",textAlign:"center",padding:"8px 2px",position:"relative",zIndex:1}}>
+      <div style={{position:"relative",borderRadius:28,padding:"30px 28px 24px",background:"linear-gradient(145deg, rgb(255 255 255 / 84%), rgb(244 250 251 / 78%))",backdropFilter:"blur(24px) saturate(1.08)",WebkitBackdropFilter:"blur(24px) saturate(1.08)",boxShadow:"0 28px 82px -46px rgb(17 35 39 / 48%)",overflow:"hidden",animation:"corjectFloatField 340ms cubic-bezier(.2,.9,.2,1) both",border:"1px solid color-mix(in srgb, var(--glass-border) 84%, transparent)"}}>
+        <span style={{position:"absolute",left:"-36%",top:"-20%",width:"72%",height:"72%",borderRadius:"50%",background:"radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent), transparent 65%)",filter:"blur(3px)"}} />
+        <span style={{position:"absolute",right:"-34%",bottom:"-20%",width:"58%",height:"58%",borderRadius:"50%",background:"radial-gradient(circle, color-mix(in srgb, var(--warning) 30%, transparent), transparent 65%)",filter:"blur(3px)"}} />
+        <div style={{position:"absolute",inset:"0 14% auto",top:"13px",height:"3px",borderRadius:999,overflow:"hidden",background:"rgba(15,23,42,.08)"}}>
+          <span style={{display:"block",height:"100%",width:"42%",background:"linear-gradient(90deg,transparent,color-mix(in srgb, var(--accent) 52%, #fff),transparent)",filter:"blur(.6px)",animation:"corjectGlowSweep 3.5s ease-in-out infinite"}} />
         </div>
+        <div style={{width:86,height:86,borderRadius:24,margin:"2px auto 18px",display:"grid",placeItems:"center",position:"relative",zIndex:1,background:"rgb(255 255 255 / 78%)",border:"1px solid color-mix(in srgb, var(--glass-border) 72%, transparent)",animation:"corjectCorePulse 2.1s ease-in-out infinite"}}>
+          <span style={{position:"absolute",inset:5,borderRadius:20,border:"1px dashed color-mix(in srgb, var(--accent) 33%, transparent)",animation:"corjectOrbitSpin 16s linear infinite"}} />
+          {logoSrc?<img src={logoSrc} alt="Corject" style={{width:48,height:48,objectFit:"contain",animation:"corjectNodeFloat 1.9s ease-in-out infinite"}}/>:<span style={{fontSize:32,fontWeight:950,color:"var(--accent)",letterSpacing:"-.02em"}}>C</span>}
+        </div>
+        <div style={{fontFamily:"var(--font-display, Plus Jakarta Sans, Manrope, sans-serif)",fontSize:30,fontWeight:800,letterSpacing:"-.045em",color:"var(--text)",lineHeight:1,animation:"corjectStatusGlow 2.3s ease-in-out infinite"}}>Corject</div>
+        <div style={{fontSize:13,color:"var(--muted)",marginTop:8,minHeight:20,lineHeight:1.45}}>{status}</div>
+        <div style={{display:"flex",justifyContent:"center",gap:7,margin:"13px 0 22px"}}>{[0,1,2].map(index=><span key={index} style={{width:7,height:7,borderRadius:"50%",background:index===1?"var(--accent)":"var(--warning)",animation:`corjectNodeFloat .9s ease-in-out ${index*.14}s infinite alternate`}} />)}</div>
+        <div style={{height:10,borderRadius:999,background:"rgb(255 255 255 / 60%)",overflow:"hidden",border:"1px solid var(--glass-border)",position:"relative",marginTop:10}}>
+          <div style={{height:"100%",width:`${safeProgress}%`,borderRadius:999,background:"linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 64%, var(--warning))",transition:"width .38s cubic-bezier(.2,.8,.2,1)",position:"relative",overflow:"hidden",boxShadow:"0 0 24px color-mix(in srgb,var(--accent) 45%, transparent)"}}>
+            <span style={{position:"absolute",inset:0,width:"44%",background:"linear-gradient(90deg,transparent,rgb(255 255 255 / 72%),transparent)",animation:"corjectBarFlow 1.8s ease-in-out infinite"}} />
+          </div>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted)",marginTop:10,gap:12}}><span>{"Güvenli çalışma alanı yükleniyor..."}</span><b style={{color:"var(--accent)"}}>%{safeProgress}</b></div>
       </div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted, #5b6f74)",marginTop:10,gap:12}}><span>{"G\u00fcvenli \u00e7al\u0131\u015fma alan\u0131 y\u00fckleniyor"}</span><b style={{color:"var(--accent, #0b8a94)"}}>%{safeProgress}</b></div>
     </div>
   </div></>;
 }
