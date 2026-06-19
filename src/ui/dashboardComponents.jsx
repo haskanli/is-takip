@@ -203,18 +203,18 @@ export function DashboardPage({state,setState,currentUser,isAdmin,myProjects,dea
     setQuick(null);
     if(project)onOpenProject(project.id);
   };
-  return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}>
+  return <div style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto",background:"radial-gradient(circle at 16% 4%,rgb(11 138 148 / 10%),transparent 28%),radial-gradient(circle at 88% 0%,rgb(191 122 18 / 9%),transparent 24%)"}}>
     <div style={{marginBottom:22}}><h2 style={{margin:0,fontSize:22}}>Merhaba, {currentUser.name}</h2><p style={{margin:"5px 0 0",color:"#64748B",fontSize:13}}>Bugün neye odaklanmak istersiniz?</p></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:12,marginBottom:18}}>
-      <button onClick={()=>setQuick("todo")} style={{border:0,borderRadius:16,padding:16,textAlign:"left",cursor:"pointer",background:"linear-gradient(135deg,#DB2777,#7C3AED)",color:"#fff",boxShadow:"0 12px 28px rgba(124,58,237,.18)"}}><b style={{display:"block",fontSize:16}}>+ Hızlı To-Do</b><span style={{fontSize:11,color:"#FCE7F3"}}>Müşteri, termin ve aksiyonu hemen kaydet</span></button>
-      <button onClick={()=>setQuick("action")} style={{border:0,borderRadius:16,padding:16,textAlign:"left",cursor:"pointer",background:"linear-gradient(135deg,#2563EB,#0891B2)",color:"#fff",boxShadow:"0 12px 28px rgba(37,99,235,.18)"}}><b style={{display:"block",fontSize:16}}>+ Hızlı Aksiyon</b><span style={{fontSize:11,color:"#DBEAFE"}}>Proje görüşmesi, yazışma veya saha notu gir</span></button>
+      <button className="liquid-card" onClick={()=>setQuick("todo")} style={{border:0,borderRadius:18,padding:16,textAlign:"left",cursor:"pointer",color:"var(--text, #112327)"}}><b style={{display:"block",fontSize:16,color:"var(--accent, #0b8a94)"}}>+ Hızlı To-Do</b><span style={{fontSize:11,color:"var(--muted, #5b6f74)"}}>Müşteri, termin ve aksiyonu hemen kaydet</span></button>
+      <button className="liquid-card" onClick={()=>setQuick("action")} style={{border:0,borderRadius:18,padding:16,textAlign:"left",cursor:"pointer",color:"var(--text, #112327)"}}><b style={{display:"block",fontSize:16,color:"var(--warning, #bf7a12)"}}>+ Hızlı Aksiyon</b><span style={{fontSize:11,color:"var(--muted, #5b6f74)"}}>Proje görüşmesi, yazışma veya saha notu gir</span></button>
     </div>
-    <div style={{background:"linear-gradient(135deg,#EEF2FF,#F8FAFC)",border:"1.5px solid #C7D2FE",borderRadius:18,padding:18,marginBottom:18,boxShadow:"0 12px 28px rgba(79,70,229,.08)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><span style={{width:28,height:28,borderRadius:10,background:"#4A6CF7",color:"#fff",display:"grid",placeItems:"center",fontSize:12,fontWeight:950}}>AI</span><b style={{fontSize:14,color:"#1E293B"}}>Bugünün Akışı</b></div>
+    <div className="liquid-card" style={{borderRadius:20,padding:18,marginBottom:18}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><span style={{width:28,height:28,borderRadius:10,background:"var(--accent, #0b8a94)",color:"#fff",display:"grid",placeItems:"center",fontSize:12,fontWeight:950}}>AI</span><b style={{fontSize:14,color:"var(--text, #112327)"}}>Bugünün Akışı</b></div>
       <div style={{display:"grid",gap:5}}>{todayFlowLines.map(line=><div key={line} style={{fontSize:12,color:"#475569",lineHeight:1.45,wordBreak:"break-word"}}>{line}</div>)}</div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:13,marginBottom:24}}>
-      {cards.map(card=><button key={card.view} onClick={()=>onNavigate(card.view)} style={{aspectRatio:"1.15/1",minHeight:145,border:"1.5px solid #E2E8F0",borderRadius:17,background:"#fff",padding:17,textAlign:"left",cursor:"pointer",boxShadow:"0 5px 18px rgba(15,23,42,.05)",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
+      {cards.map(card=><button className="liquid-card" key={card.view} onClick={()=>onNavigate(card.view)} style={{aspectRatio:"1.15/1",minHeight:145,borderRadius:19,padding:17,textAlign:"left",cursor:"pointer",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
         <span style={{width:38,height:38,borderRadius:12,display:"grid",placeItems:"center",background:card.color+"15",color:card.color}}><Icon name={card.icon} size={20}/></span>
         <span><span style={{display:"block",fontSize:card.value===""?15:25,fontWeight:850,color:card.color}}>{card.value===""?card.label:card.value}</span><span style={{display:"block",fontSize:12,fontWeight:800,color:"#1E293B",marginTop:2}}>{card.value===""?"":card.label}</span><span style={{display:"block",fontSize:10,color:"#94A3B8",marginTop:3}}>{card.desc}</span></span>
       </button>)}

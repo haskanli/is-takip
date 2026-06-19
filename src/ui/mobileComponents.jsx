@@ -122,8 +122,8 @@ export function MobileQuickSheet({ onClose, onSelect, isAdminMode = false }) {
       ];
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 980, background: "rgba(15,23,42,.38)", display: "flex", alignItems: "flex-end", padding: 12 }}>
-      <div onClick={(event) => event.stopPropagation()} style={{ width: "100%", background: "#fff", borderRadius: 26, padding: 16, boxShadow: "0 -18px 55px rgba(15,23,42,.22)" }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 980, background: "rgb(17 35 39 / 42%)", backdropFilter: "blur(8px)", display: "flex", alignItems: "flex-end", padding: 12 }}>
+      <div className="glass-surface" onClick={(event) => event.stopPropagation()} style={{ width: "100%", borderRadius: 28, padding: 16, boxShadow: "0 -22px 62px -36px rgb(17 35 39 / 64%)" }}>
         <div style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", margin: "0 auto 14px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div>
@@ -134,7 +134,7 @@ export function MobileQuickSheet({ onClose, onSelect, isAdminMode = false }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
           {options.map(([id, icon, title, desc, color]) => (
-            <button key={id} onClick={() => onSelect(id)} style={{ border: "1px solid #E2E8F0", background: "linear-gradient(180deg,#fff,#F8FAFC)", borderRadius: 18, padding: 14, textAlign: "left", cursor: "pointer", minHeight: 122 }}>
+            <button className="liquid-card" key={id} onClick={() => onSelect(id)} style={{ borderRadius: 18, padding: 14, textAlign: "left", cursor: "pointer", minHeight: 122 }}>
               <span style={{ width: 42, height: 42, borderRadius: 15, background: color + "16", color, display: "grid", placeItems: "center", marginBottom: 10 }}>
                 <Icon name={icon} size={20} />
               </span>
@@ -158,12 +158,12 @@ export function MobileBottomNav({ view, onNavigate, onQuick, onProfile, deadline
   ];
 
   return (
-    <div style={{ position: "fixed", left: 10, right: 10, bottom: 10, zIndex: 920, background: "rgba(255,255,255,.92)", backdropFilter: "blur(18px)", border: "1px solid rgba(226,232,240,.9)", borderRadius: 24, padding: "8px 9px", display: "grid", gridTemplateColumns: "repeat(5,1fr)", boxShadow: "0 18px 45px rgba(15,23,42,.18)" }}>
+    <div className="glass-surface" style={{ position: "fixed", left: 10, right: 10, bottom: 10, zIndex: 920, borderRadius: 24, padding: "8px 9px", display: "grid", gridTemplateColumns: "repeat(5,1fr)", boxShadow: "0 22px 56px -34px rgb(17 35 39 / 54%)" }}>
       {items.map(([id, icon, label, badge]) => {
         const active = view === id;
         return (
-          <button key={id} onClick={() => (id === "quick" ? onQuick() : onNavigate(id))} style={{ border: 0, background: "transparent", display: "grid", placeItems: "center", gap: 3, color: active ? "#4338CA" : "#64748B", fontSize: 9, fontWeight: 900, cursor: "pointer", position: "relative", padding: 0 }}>
-            <span style={{ width: id === "quick" ? 58 : 34, height: id === "quick" ? 58 : 34, borderRadius: id === "quick" ? 20 : 14, display: "grid", placeItems: "center", background: id === "quick" ? "linear-gradient(135deg,#4A6CF7,#7C3AED)" : active ? "#EEF2FF" : "transparent", color: id === "quick" ? "#fff" : active ? "#4338CA" : "#64748B", transform: id === "quick" ? "translateY(-16px)" : "none", boxShadow: id === "quick" ? "0 14px 28px rgba(79,70,229,.32)" : "none", fontSize: id === "quick" ? 28 : undefined, fontWeight: 900 }}>
+          <button key={id} onClick={() => (id === "quick" ? onQuick() : onNavigate(id))} style={{ border: 0, background: "transparent", display: "grid", placeItems: "center", gap: 3, color: active ? "var(--accent, #0b8a94)" : "var(--muted, #5b6f74)", fontSize: 9, fontWeight: 900, cursor: "pointer", position: "relative", padding: 0 }}>
+            <span style={{ width: id === "quick" ? 58 : 34, height: id === "quick" ? 58 : 34, borderRadius: id === "quick" ? 20 : 14, display: "grid", placeItems: "center", background: id === "quick" ? "linear-gradient(135deg,var(--accent, #0b8a94),#08727a)" : active ? "var(--accent-ink, #def5f8)" : "transparent", color: id === "quick" ? "#fff" : active ? "var(--accent, #0b8a94)" : "var(--muted, #5b6f74)", transform: id === "quick" ? "translateY(-16px)" : "none", boxShadow: id === "quick" ? "0 16px 34px -23px rgb(11 138 148 / 84%)" : "none", fontSize: id === "quick" ? 28 : undefined, fontWeight: 900 }}>
               {id === "quick" ? "+" : <Icon name={icon} size={17} />}
             </span>
             <span style={{ marginTop: id === "quick" ? -8 : 0 }}>{label}</span>
