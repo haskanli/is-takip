@@ -48,7 +48,7 @@ function LogoTile({ customer, customerName, canEdit = false, onClick = noop, siz
       {customer.logoUrl ? (
         <img src={customer.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", background: "#fff", padding: 6 }} />
       ) : (
-        <b style={{ fontSize: size > 42 ? 17 : 15, color: "var(--accent)" }}>{customerName.slice(0, 2).toUpperCase()}</b>
+        <b style={{ fontSize: size > 42 ? 18 : 15, color: "var(--accent)" }}>{customerName.slice(0, 2).toUpperCase()}</b>
       )}
     </button>
   );
@@ -242,13 +242,29 @@ export function ProjectListCard({
   const responsibleLabel = project.uatAccepted ? "CS" : "PM";
   const responsibleNames = pms.map((pm) => pm.name).join(", ");
   const healthOk = readiness >= Number(project.readinessThreshold || 80);
-  const alertText = critical > 0 ? `${critical} kritik` : overdue > 0 ? `${overdue} gecikme` : "Sorun yok";
+  const alertText = critical > 0 ? `${critical} kritik` : overdue > 0 ? `${overdue} gecikme` : "";
   const alertColor = critical > 0 ? "var(--danger)" : overdue > 0 ? "var(--warning)" : "var(--muted)";
 
   return (
     <div className="project-list-card" onClick={onOpen}>
+      {isAdmin && (
+        <div className="project-card-menu" onClick={(event) => event.stopPropagation()}>
+          <button type="button" className="project-card-menu-trigger" title="Proje aksiyonları" aria-label="Proje aksiyonları">...</button>
+          <div className="project-card-menu-popover">
+            {[
+              ["edit", onEdit, "Düzenle"],
+              ["download", onReport, "HTML rapor"],
+              ["trash", onDelete, "Sil"],
+            ].map(([icon, action, title]) => (
+              <button key={icon} type="button" onClick={action}>
+                <Icon name={icon} size={13} /> {title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="project-list-card-header">
-        <LogoTile customer={customer} customerName={customerName} size={38} />
+        <LogoTile customer={customer} customerName={customerName} size={48} />
         <span style={{ minWidth: 0 }}>
           <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, lineHeight: 1.22, color: "var(--text)", letterSpacing: "-.015em", ...textClamp }}>{customerName}</h3>
           <span style={{ display: "block", marginTop: 3, fontSize: 10.5, color: "var(--muted)", fontWeight: 600, ...textClamp }}>
@@ -261,10 +277,10 @@ export function ProjectListCard({
           <span style={{ fontSize: 10.5, color: "var(--muted)", fontWeight: 650, ...textClamp }}>{project.name}</span>
           <Badge label={project.status} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 8, alignItems: "center", marginBottom: 8, fontSize: 10.5, color: "var(--muted)", fontWeight: 650 }}>
+        <div style={{ display: "grid", gridTemplateColumns: alertText ? "auto 1fr auto" : "auto 1fr", gap: 8, alignItems: "center", marginBottom: 8, fontSize: 10.5, color: "var(--muted)", fontWeight: 650 }}>
           <span>Sağlık <b style={{ color: healthOk ? "var(--success)" : "var(--danger)", fontWeight: 750 }}>%{readiness}</b></span>
           <span style={{ minWidth: 0, height: 1, background: "var(--border)", opacity: .75 }} />
-          <span style={{ color: alertColor, fontWeight: critical || overdue ? 750 : 650 }}>{project.uatAccepted ? "UAT · " : ""}{alertText}</span>
+          {alertText && <span style={{ color: alertColor, fontWeight: 750 }}>{project.uatAccepted ? "UAT · " : ""}{alertText}</span>}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 9, alignItems: "center" }}>
           <div className="project-progress-track">
@@ -274,19 +290,6 @@ export function ProjectListCard({
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 9 }}>
           <div style={{ fontSize: 10.5, color: "var(--muted)", fontWeight: 620 }}>{done}/{total} görev</div>
-          {isAdmin && (
-            <div style={{ display: "flex", gap: 5 }}>
-              {[
-                ["edit", onEdit, "Düzenle"],
-                ["download", onReport, "HTML rapor"],
-                ["trash", onDelete, "Sil"],
-              ].map(([icon, action, title]) => (
-                <button key={icon} title={title} aria-label={title} onClick={(event) => { event.stopPropagation(); action(); }} className="project-icon-action">
-                  <Icon name={icon} size={13} />
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>
