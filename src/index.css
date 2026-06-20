@@ -1884,6 +1884,76 @@ code,
   margin-left: auto !important;
 }
 
+.fieldops-plan-filter-row,
+.fieldops-visits-filter-row {
+  align-items: center !important;
+}
+
+.fieldops-scope-switch {
+  flex: 0 0 auto !important;
+}
+
+.fieldops-combined-selects {
+  align-items: center;
+  display: grid;
+  flex: 1 1 340px;
+  gap: 7px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  min-width: min(100%, 260px);
+}
+
+.fieldops-compact-select {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  border-radius: 999px;
+  box-shadow: 0 12px 30px -28px rgb(17 35 39 / 34%);
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+  min-height: 38px;
+  min-width: 0;
+  padding: 0 10px 0 11px;
+}
+
+.fieldops-compact-select svg {
+  flex: 0 0 auto;
+  stroke-width: 1.9;
+}
+
+.fieldops-compact-select select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+  cursor: pointer;
+  flex: 1 1 auto;
+  font-size: 12px !important;
+  font-weight: 800;
+  min-height: 36px !important;
+  min-width: 0 !important;
+  outline: 0;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.fieldops-week-switch {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 5px;
+  min-width: 0;
+}
+
+.fieldops-week-label {
+  max-width: 178px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .project-tab-scroll {
   display: flex;
   gap: 8px;
@@ -4837,6 +4907,80 @@ body::before,
   .field-plan-page,
   .field-visits-page {
     padding: var(--page-gutter-mobile) !important;
+  }
+
+  .fieldops-plan-filter-row,
+  .fieldops-visits-filter-row {
+    display: grid !important;
+    gap: 7px !important;
+    overflow: visible !important;
+    padding: 6px !important;
+  }
+
+  .fieldops-plan-filter-row {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+
+  .fieldops-visits-filter-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .fieldops-scope-switch {
+    align-self: center !important;
+    max-width: max-content !important;
+    padding: 3px !important;
+  }
+
+  .fieldops-scope-switch button {
+    min-height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 9px !important;
+  }
+
+  .fieldops-scope-switch button span {
+    display: none !important;
+  }
+
+  .fieldops-combined-selects {
+    flex: none !important;
+    gap: 5px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .fieldops-visits-filter-row .fieldops-combined-selects {
+    grid-template-columns: .72fr 1fr 1fr !important;
+  }
+
+  .fieldops-compact-select {
+    border-radius: 15px !important;
+    gap: 5px !important;
+    min-height: 36px !important;
+    padding: 0 8px !important;
+  }
+
+  .fieldops-compact-select select {
+    font-size: 11px !important;
+    min-height: 34px !important;
+  }
+
+  .fieldops-week-switch {
+    justify-self: end !important;
+    gap: 4px !important;
+  }
+
+  .fieldops-week-switch .project-icon-action {
+    height: 32px !important;
+    min-height: 32px !important;
+    min-width: 32px !important;
+    width: 32px !important;
+  }
+
+  .fieldops-week-label {
+    max-width: 92px !important;
+    min-height: 32px !important;
+    padding-inline: 8px !important;
   }
 
   .theme-work-page > .unified-page-header,
