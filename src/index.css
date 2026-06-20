@@ -6153,3 +6153,323 @@ body::before,
     justify-content: flex-start !important;
   }
 }
+
+/* Final UI normalization layer. Keep this at EOF so legacy overrides cannot
+   pull the wrong pages back into older layouts. */
+.management-theme-page,
+.customers-theme-page,
+.deadlines-theme-page,
+.ai-theme-page,
+.import-theme-page,
+.reports-theme-page,
+.people-theme-page,
+.fieldops-shell {
+  background: transparent !important;
+  box-sizing: border-box !important;
+  color: var(--text) !important;
+  font-family: var(--font-ui) !important;
+}
+
+.customers-theme-page,
+.deadlines-theme-page,
+.ai-theme-page,
+.import-theme-page,
+.reports-theme-page,
+.people-theme-page,
+.fieldops-shell {
+  padding: var(--page-gutter, clamp(18px, 4vw, 28px)) !important;
+}
+
+.customers-theme-page > *,
+.deadlines-theme-page > *,
+.ai-page-inner,
+.import-theme-page > *,
+.reports-theme-page > *,
+.people-theme-page > *,
+.fieldops-shell > .fieldops-tab-shell,
+.fieldops-shell > .fieldops-theme-page {
+  box-sizing: border-box !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: var(--project-detail-max, min(1180px, 100%)) !important;
+  width: 100% !important;
+}
+
+.customers-page-header,
+.deadlines-page-header,
+.ai-page-header,
+.import-page-header,
+.reports-page-header,
+.people-page-header,
+.fieldops-page-header,
+.management-hero {
+  align-items: center !important;
+  background: var(--surface-raised-strong) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: var(--page-header-radius, 20px) !important;
+  box-shadow: var(--shadow-raised) !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin: 0 0 14px !important;
+  min-height: 74px !important;
+  padding: 14px 16px !important;
+}
+
+.customers-page-header h2,
+.deadlines-page-header h2,
+.ai-page-header h2,
+.import-page-header h2,
+.reports-page-header h2,
+.people-page-header h2,
+.fieldops-page-header h2,
+.management-heading h2 {
+  color: var(--text) !important;
+  font-family: var(--font-display, var(--font-ui)) !important;
+  font-size: clamp(19px, 1.8vw, 22px) !important;
+  font-weight: 820 !important;
+  letter-spacing: -.03em !important;
+  line-height: 1.14 !important;
+}
+
+.customers-page-header p,
+.deadlines-page-header p,
+.ai-page-header p,
+.import-page-header p,
+.reports-page-header p,
+.people-page-header p,
+.fieldops-page-header p,
+.management-heading p {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+.customers-filter-row,
+.deadlines-filter-row,
+.ai-filter-row,
+.reports-filter-row,
+.fieldops-filter-row,
+.people-filter-row,
+.management-command-bar {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin: 0 auto 14px !important;
+  padding: 0 !important;
+}
+
+.fieldops-shell {
+  overflow: auto !important;
+}
+
+.fieldops-tab-shell {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin: 0 auto 14px !important;
+  padding: 0 !important;
+  position: static !important;
+  top: auto !important;
+  width: 100% !important;
+}
+
+.fieldops-tab-shell .project-tab,
+.management-tabs button {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-card) !important;
+  color: var(--muted) !important;
+  min-height: 40px !important;
+}
+
+.fieldops-tab-shell .project-tab.is-active,
+.fieldops-scope-switch button.is-active,
+.fieldops-filter-row .is-active,
+.deadlines-filter-row .is-active,
+.reports-filter-row .is-active,
+.management-tabs button.is-active,
+.management-tabs button[aria-selected="true"] {
+  background: var(--accent-ink) !important;
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border)) !important;
+  color: var(--accent) !important;
+}
+
+.fieldops-theme-page.field-plan-page,
+.fieldops-theme-page.field-visits-page {
+  max-width: var(--project-detail-max, min(1180px, 100%)) !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.fieldops-plan-filter-row,
+.fieldops-visits-filter-row {
+  align-items: center !important;
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.fieldops-combined-selects {
+  display: flex !important;
+  flex: 1 1 320px !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.fieldops-compact-select {
+  align-items: center !important;
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-card) !important;
+  color: var(--muted) !important;
+  display: inline-flex !important;
+  flex: 1 1 150px !important;
+  gap: 6px !important;
+  min-height: 40px !important;
+  min-width: 130px !important;
+  padding: 0 10px !important;
+}
+
+.fieldops-compact-select.is-all-filter {
+  flex: 0 0 42px !important;
+  min-width: 42px !important;
+  overflow: hidden !important;
+}
+
+.fieldops-compact-select.is-all-filter select {
+  opacity: 0 !important;
+  width: 1px !important;
+}
+
+.fieldops-week-switch {
+  align-items: center !important;
+  display: inline-flex !important;
+  gap: 6px !important;
+  margin-left: auto !important;
+}
+
+.fieldops-week-label {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.customers-theme-page .soft-panel,
+.deadlines-theme-page .ui-section-card,
+.ai-main-card,
+.import-theme-page .soft-panel,
+.reports-theme-page .soft-panel,
+.people-theme-page .ui-section-card,
+.fieldops-theme-page .soft-panel,
+.fieldops-theme-page .compact-list-card,
+.management-theme-page .admin-summary-card,
+.management-theme-page .admin-kpi-card,
+.management-theme-page .management-dashboard-card,
+.management-theme-page .manager-assigned-row,
+.management-theme-page .org-person-card,
+.management-theme-page .org-level-badge,
+.management-theme-page .org-level-people {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.management-hero {
+  align-items: stretch !important;
+  flex-direction: column !important;
+}
+
+.management-eyebrow {
+  display: none !important;
+}
+
+.management-tabs {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  justify-content: center !important;
+  margin-top: 4px !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .customers-theme-page,
+  .deadlines-theme-page,
+  .ai-theme-page,
+  .import-theme-page,
+  .reports-theme-page,
+  .people-theme-page,
+  .fieldops-shell {
+    padding: var(--page-gutter-mobile, 12px) var(--page-gutter-mobile, 12px) var(--mobile-nav-clearance, 118px) !important;
+  }
+
+  .fieldops-shell > .fieldops-theme-page {
+    padding: 0 !important;
+  }
+
+  .customers-page-header,
+  .deadlines-page-header,
+  .ai-page-header,
+  .import-page-header,
+  .reports-page-header,
+  .people-page-header,
+  .fieldops-page-header,
+  .management-hero {
+    border-radius: 18px !important;
+    min-height: 64px !important;
+    padding: 12px 13px !important;
+  }
+
+  .fieldops-tab-shell,
+  .management-tabs {
+    overflow-x: auto !important;
+  }
+
+  .fieldops-plan-filter-row,
+  .fieldops-visits-filter-row {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+
+  .fieldops-visits-filter-row {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .fieldops-combined-selects {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    width: 100% !important;
+  }
+
+  .fieldops-compact-select {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+
+  .fieldops-week-switch {
+    margin-left: 0 !important;
+  }
+
+  .fieldops-week-label {
+    max-width: 92px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .fieldops-add-button.icon-only-action {
+    min-height: 38px !important;
+    min-width: 38px !important;
+    width: 38px !important;
+  }
+}

@@ -1204,9 +1204,9 @@ export default function App() {
       {view==="projects"&&!selProject&&<div className="project-workspace project-section theme-work-page projects-theme-page">
         <div className="theme-page-heading unified-page-header projects-page-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, marginBottom:14, flexWrap:"wrap" }}>
           <div><h2 style={{ margin:0, fontSize:22, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="projects" size={20}/>Projeler</h2><p style={{ margin:"3px 0 0", color:"var(--muted)", fontSize:13 }}>{listedProjects.length} proje</p></div>
+          {isAdmin&&<Btn className="icon-only-action" title="Yeni proje" aria-label="Yeni proje" onClick={()=>setModal({type:"addProject"})}>+</Btn>}
         </div>
         <div className="unified-filter-row projects-filter-row" style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
-          {isAdmin&&<Btn className="icon-only-action" title="Yeni proje" aria-label="Yeni proje" onClick={()=>setModal({type:"addProject"})}>+</Btn>}
           <input value={projectSearch} onChange={event=>setProjectSearch(event.target.value)} placeholder="Projelerde ara..." style={{...iStyle,width:220,maxWidth:"100%"}}/>
           <div className="segmented-control compact-filter-segment project-segment-switch" role="group" aria-label="Proje tipi">
             {[["all","Tüm",""],["mine","Benim projelerim","user"],["connected","CS",""],["uat","UAT",""]].map(([id,label,icon])=><button key={id} title={id==="connected"?"Connected Supplier":id==="uat"?"UAT alınanlar":label} aria-label={label} onClick={()=>setProjectSegment(id)} className={projectSegment===id?"is-active":""}>{icon?<><Icon name={icon} size={15}/><span className="sr-only">{label}</span></>:label}</button>)}
@@ -1269,9 +1269,9 @@ export default function App() {
       {view==="reports"&&<SharedReportsPage state={state} people={state.people} isAdmin={isAdmin} projectId={reportProject} onProjectIdChange={setReportProject} group={reportGroup} onGroupChange={setReportGroup} />}
       {view==="customers"&&isAdmin&&!selProject&&<SharedCustomersPage state={state} setState={setState} onInviteUser={addPerson} onPreviewCustomer={projectId=>{setPreviewCustomerProjectId(projectId);navigateTo("dashboard");}}/>}
 
-      {view==="people"&&<div style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
-          <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="people" size={20}/>Ekip</h2></div>
+      {view==="people"&&<div className="theme-work-page people-theme-page" style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>
+        <div className="unified-page-header people-page-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18, gap:12 }}>
+          <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="people" size={20}/>Ekip</h2><p style={{margin:"4px 0 0",fontSize:12,color:"var(--muted)"}}>Organizasyon yapısı, roller ve ekip üyeleri.</p></div>
           {isAdmin&&<Btn className="icon-only-action" title="Kişi ekle" aria-label="Kişi ekle" onClick={()=>setModal({type:"addPerson"})}>+</Btn>}
         </div>
         <div style={{background:"#fff",border:"1px solid var(--border)",borderRadius:15,padding:14,marginBottom:16}}>

@@ -398,7 +398,7 @@ export function ImportCenter({state,setState,currentUser,importType: controlledI
   };
 
   const counts = preview && Object.entries(sheetDefinitions).map(([key,[label]])=>[label,preview[key].length]).filter(([,value])=>value > 0);
-  return <div className="project-workspace" style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}>
+  return <div className="project-workspace theme-work-page import-theme-page" style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto"}}>
     <div style={{maxWidth:980,margin:"0 auto"}}>
       <div style={{marginBottom:18}}>
         <h2 style={{margin:0,fontSize:22}}>Import Merkezi</h2>
