@@ -81,6 +81,12 @@ export function Icon({ name, size = 16 }) {
         <path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
       </>
     ),
+    search: (
+      <>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </>
+    ),
     activity: (
       <>
         <path d="M3 12h4l2-6 4 12 2-6h6" />

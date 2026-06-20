@@ -160,7 +160,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
         </div>
         <div className="unified-filter-row customers-filter-row" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <input
-            style={{ ...iStyle, width: 240, background: "#fff" }}
+            style={{ ...iStyle, width: 240 }}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Müşteri, proje, şehir ara"
@@ -184,7 +184,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
           const raciOpen = Boolean(openCards[`${project.id}:raci`]);
 
           return (
-            <section key={project.id} style={{ background: "#fff", border: "1px solid var(--border)", borderTop: `4px solid ${accent}`, borderRadius: 18, padding: 15, boxShadow: "0 10px 26px rgba(15,23,42,.055)", display: "grid", gap: 12 }}>
+            <section key={project.id} className="soft-panel customer-management-card" style={{ "--customer-accent": accent, display: "grid", gap: 12 }}>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <span style={{ width: 52, height: 52, borderRadius: 16, background: "var(--surface-soft)", display: "grid", placeItems: "center", overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
                   {logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 5 }} /> : <b style={{ color: accent, fontSize: 17 }}>{name.slice(0, 2).toLocaleUpperCase("tr-TR")}</b>}
@@ -200,7 +200,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
 
               <ToggleHeader projectId={project.id} section="info" icon="projects" title="Müşteri alanı bilgileri" desc="Logo, web sitesi, vurgu rengi ve lokasyon" />
               {infoOpen && (
-                <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 13, display: "grid", gap: 10 }}>
+                <div className="customer-card-section" style={{ display: "grid", gap: 10 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10 }}>
                     <Field label="Müşteri / Firma Adı">
                       <input style={iStyle} value={name} onChange={(event) => updateProjectCustomer(project.id, { name: event.target.value })} />
@@ -247,7 +247,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
 
               <ToggleHeader projectId={project.id} section="raci" icon="people" title="RACI kontakları ve portal erişimi" desc="Müşteri kontaklarını görüntüle, erişim aç/kapat" />
               {raciOpen && (
-                <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 13, display: "grid", gap: 8 }}>
+                <div className="customer-card-section" style={{ display: "grid", gap: 8 }}>
                   {contacts.map((contact) => {
                     const user = users.find((person) => normalizeEmail(person.email) === normalizeEmail(contact.email));
                     return (
@@ -290,7 +290,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
       </div>
 
       {!listedProjects.length && (
-        <div style={{ marginTop: 18, padding: 34, textAlign: "center", color: "var(--muted)", border: "1px dashed var(--muted)", borderRadius: 16, background: "#fff" }}>
+        <div className="soft-panel" style={{ marginTop: 18, padding: 34, textAlign: "center", color: "var(--muted)", borderStyle: "dashed" }}>
           Aramaya uygun müşteri bulunamadı.
         </div>
       )}

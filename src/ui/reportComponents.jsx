@@ -791,8 +791,8 @@ export function MailCenterPage({state,setState}) {
       setSendStatus({loading:false,message:`Mail gönderildi${result.emailId?` · ${result.emailId}`:""}`,error:false});
     }catch(error){setSendStatus({loading:false,message:error.message,error:true});}
   };
-  return <div className="project-workspace" style={{padding:"22px 26px",flex:1,overflow:"auto"}}>
-    <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",flexWrap:"wrap",marginBottom:18}}>
+  return <div className="project-workspace theme-work-page mail-center-theme-page" style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
+    <div className="unified-page-header mail-center-page-header" style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:18}}>
       <div><h1 style={{margin:0,fontSize:22}}>Mail Merkezi</h1><p style={{margin:"5px 0 0",fontSize:12,color:"var(--muted)"}}>Firma markası, dinamik şablonlar, önizleme ve manuel gönderim.</p></div>
       <Btn onClick={addTemplate}>+ Yeni Şablon</Btn>
     </div>

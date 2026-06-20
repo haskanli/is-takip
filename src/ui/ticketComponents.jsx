@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getJiraIssue } from "../jira";
 import { createTicketWithNotification, notifyTicketAssignment } from "../email";
 import { DEFAULT_ACTIVE_MODULES } from "../appData.js";
@@ -56,24 +56,81 @@ const applyTicketWorkflow=(data)=>{
 };
 
 function TicketListTable({ rows, people = [], customerMode = false, showProject = true, onOpen, onStatusChange, onDelete, canDelete = () => false }) {
+  const [sortConfig, setSortConfig] = useState({ key: "updatedAt", direction: "desc" });
+  const [columnFilters, setColumnFilters] = useState({});
+  const normalize = (value) => String(value ?? "").toLocaleLowerCase("tr-TR");
+  const getAssignee = (ticket) => people.find((person) => person.id === ticket.assignedTo)?.name || "Atanmamış";
+  const columns = [
+    { key: "no", label: "No", value: ({ ticket }) => ticketNumber(ticket) },
+    { key: "title", label: "Başlık", value: ({ ticket }) => `${ticket.title || ""} ${ticket.description || ""}` },
+    ...(showProject ? [{ key: "project", label: "Proje", value: ({ project }) => project?.name || "Proje yok" }] : []),
+    { key: "status", label: "Durum", value: ({ ticket }) => ticket.status || "Açık" },
+    ...(!customerMode ? [{ key: "assignee", label: "Sorumlu", value: ({ ticket }) => getAssignee(ticket) }] : []),
+    { key: "age", label: "Yaş", value: ({ ticket }) => Math.max(0, daysDiff(ticket.ts)), numeric: true },
+    { key: "jira", label: "Jira", value: ({ ticket }) => ticket.jiraStatus || ticket.jiraKey || "-" },
+    { key: "updatedAt", label: "Son Aksiyon", value: ({ ticket }) => ticket.updatedAt || ticket.ts || "" },
+  ];
+  const toggleSort = (key) => {
+    setSortConfig((current) => ({
+      key,
+      direction: current.key === key && current.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+  const filteredRows = useMemo(() => {
+    const activeColumns = columns;
+    const filtered = rows.filter((row) =>
+      activeColumns.every((column) => {
+        const filter = normalize(columnFilters[column.key] || "").trim();
+        if (!filter) return true;
+        return normalize(column.value(row)).includes(filter);
+      }),
+    );
+    const sorted = [...filtered].sort((left, right) => {
+      const column = activeColumns.find((item) => item.key === sortConfig.key);
+      if (!column) return 0;
+      const leftValue = column.value(left);
+      const rightValue = column.value(right);
+      const result = column.numeric
+        ? Number(leftValue || 0) - Number(rightValue || 0)
+        : String(leftValue || "").localeCompare(String(rightValue || ""), "tr", { numeric: true, sensitivity: "base" });
+      return sortConfig.direction === "asc" ? result : -result;
+    });
+    return sorted;
+  }, [rows, columnFilters, sortConfig, showProject, customerMode, people]);
+
   return (
     <div className="soft-panel data-list-shell" style={{ padding: 10 }}>
       <table className="data-list-table">
         <thead>
           <tr>
-            <th>No</th>
-            <th>{"Ba\u015fl\u0131k"}</th>
-            {showProject && <th>Proje</th>}
-            <th>Durum</th>
-            {!customerMode && <th>Sorumlu</th>}
-            <th>{"Ya\u015f"}</th>
-            <th>Jira</th>
-            <th>Son Aksiyon</th>
+            {columns.map((column) => (
+              <th key={column.key}>
+                <button
+                  type="button"
+                  className={`table-sort-button ${sortConfig.key === column.key ? "is-active" : ""}`}
+                  onClick={() => toggleSort(column.key)}
+                  aria-label={`${column.label} kolonunu sırala`}
+                >
+                  <span>{column.label}</span>
+                  <span className="table-sort-indicator">{sortConfig.key === column.key ? (sortConfig.direction === "asc" ? "↑" : "↓") : "↕"}</span>
+                </button>
+                <label className="table-filter-control">
+                  <Icon name="search" size={12} />
+                  <input
+                    value={columnFilters[column.key] || ""}
+                    onChange={(event) => setColumnFilters((current) => ({ ...current, [column.key]: event.target.value }))}
+                    onClick={(event) => event.stopPropagation()}
+                    placeholder="Filtre"
+                    aria-label={`${column.label} filtresi`}
+                  />
+                </label>
+              </th>
+            ))}
             {!customerMode && <th />}
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ ticket, project, projectId }) => {
+          {filteredRows.map(({ ticket, project, projectId }) => {
             const assignee = people.find((person) => person.id === ticket.assignedTo);
             const age = Math.max(0, daysDiff(ticket.ts));
             return (
@@ -100,7 +157,7 @@ function TicketListTable({ rows, people = [], customerMode = false, showProject 
                   )}
                 </td>
                 {!customerMode && <td>{assignee?.name || "Atanmam\u0131\u015f"}</td>}
-                <td><span style={{ color: age >= 7 ? "var(--danger, #b93f33)" : "var(--muted, #5b6f74)", fontWeight: 800 }}>{age} {"g\u00fcn"}</span></td>
+                <td><span className={`ui-chip ${age >= 7 ? "ui-chip-danger" : "ui-chip-muted"}`}>{age}g</span></td>
                 <td>{ticket.jiraStatus || ticket.jiraKey || "-"}</td>
                 <td>{ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleDateString("tr-TR") : "Yok"}</td>
                 {!customerMode && (
@@ -123,6 +180,7 @@ function TicketListTable({ rows, people = [], customerMode = false, showProject 
           })}
         </tbody>
       </table>
+      {!filteredRows.length && <div className="table-empty-state">Bu kolon filtreleriyle eşleşen kayıt yok.</div>}
     </div>
   );
 }
