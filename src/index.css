@@ -5405,3 +5405,493 @@ body::before,
     width: 100% !important;
   }
 }
+
+/* Page detail pass: normalize every module surface, filter, form, table and modal. */
+:root {
+  --page-gutter: clamp(16px, 3.2vw, 30px);
+  --page-gutter-mobile: 12px;
+  --surface-frost: color-mix(in srgb, var(--surface) 91%, var(--surface-soft) 9%);
+  --surface-frost-strong: color-mix(in srgb, var(--surface) 96%, var(--accent-ink) 4%);
+  --line-soft: color-mix(in srgb, var(--border) 74%, white 26%);
+  --control-height: 40px;
+  --radius-card: 20px;
+  --radius-control: 13px;
+  --motion-fast: 160ms ease;
+  --motion-base: 240ms ease;
+}
+
+.theme-work-page,
+.project-workspace,
+.logs-theme-page,
+.mobile-feature-menu-page {
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--accent-ink) 34%, transparent), transparent 32%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 72%, white 28%) 0%, var(--bg) 100%) !important;
+}
+
+.theme-work-page:not(.mobile-dashboard-theme-page),
+.project-workspace:not(.mobile-dashboard-theme-page) {
+  padding: var(--page-gutter) !important;
+}
+
+.tasks-theme-page {
+  padding: var(--page-gutter) !important;
+}
+
+.theme-work-page > .unified-page-header,
+.theme-work-page > .theme-page-heading,
+.project-workspace > .unified-page-header,
+.project-workspace > .theme-page-heading,
+.tasks-minimal-header,
+.management-hero,
+.logs-page-header,
+.mobile-feature-header {
+  max-width: none !important;
+  width: 100% !important;
+  min-height: 54px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  margin: 0 0 16px !important;
+  padding: 0 !important;
+}
+
+.tasks-minimal-header {
+  display: block !important;
+}
+
+.unified-title-row {
+  min-height: 54px !important;
+}
+
+.theme-work-page h2,
+.project-workspace h2,
+.theme-work-page .unified-page-header h2,
+.theme-work-page .theme-page-heading h2,
+.project-workspace .unified-page-header h2,
+.logs-page-header h2 {
+  font-size: clamp(22px, 2.25vw, 26px) !important;
+  font-weight: 830 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.theme-work-page h2 svg,
+.project-workspace h2 svg,
+.unified-page-header h2 svg,
+.theme-page-heading h2 svg {
+  width: 21px !important;
+  height: 21px !important;
+  color: var(--accent) !important;
+}
+
+.theme-work-page p,
+.project-workspace p {
+  color: var(--muted) !important;
+}
+
+.theme-work-page input,
+.theme-work-page select,
+.theme-work-page textarea,
+.project-workspace input,
+.project-workspace select,
+.project-workspace textarea,
+.modal-panel input,
+.modal-panel select,
+.modal-panel textarea {
+  min-height: var(--control-height) !important;
+  border: 1px solid var(--line-soft) !important;
+  border-radius: var(--radius-control) !important;
+  background: color-mix(in srgb, var(--surface) 94%, var(--surface-soft) 6%) !important;
+  color: var(--text) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 76%) !important;
+}
+
+.theme-work-page input:focus,
+.theme-work-page select:focus,
+.theme-work-page textarea:focus,
+.project-workspace input:focus,
+.project-workspace select:focus,
+.project-workspace textarea:focus,
+.modal-panel input:focus,
+.modal-panel select:focus,
+.modal-panel textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent), inset 0 1px 0 rgb(255 255 255 / 76%) !important;
+}
+
+.theme-work-page label,
+.project-workspace label,
+.modal-panel label {
+  color: var(--muted) !important;
+  font-size: 11px !important;
+  font-weight: 830 !important;
+  letter-spacing: .02em !important;
+}
+
+.btn-base,
+.theme-work-page button,
+.project-workspace button {
+  transition: transform var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast), background var(--motion-fast), color var(--motion-fast) !important;
+}
+
+.theme-work-page button:active,
+.project-workspace button:active,
+.btn-base:active {
+  transform: scale(.985);
+}
+
+.theme-work-page .btn-base:not(.icon-only-action),
+.project-workspace .btn-base:not(.icon-only-action),
+.modal-panel .btn-base:not(.icon-only-action) {
+  min-height: 40px !important;
+  border-radius: 13px !important;
+  font-weight: 760 !important;
+}
+
+.icon-only-action,
+.btn-base.icon-only-action {
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  min-height: 46px !important;
+  border-radius: 16px !important;
+}
+
+.theme-work-page .compact-tool-button,
+.project-workspace .compact-tool-button,
+.theme-work-page .page-header-actions .btn-base,
+.project-workspace .page-header-actions .btn-base {
+  min-width: 40px !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+  border-radius: 13px !important;
+}
+
+.unified-filter-row,
+.theme-ticket-toolbar,
+.theme-filter-strip,
+.projects-filter-row,
+.fieldops-filter-row,
+.customers-filter-row,
+.tasks-minimal-tabs,
+.project-tab-scroll,
+.segmented-control,
+.view-switch,
+.management-command-bar,
+.reports-theme-page > div:nth-child(3),
+.deadlines-theme-page .unified-filter-row {
+  gap: 7px !important;
+  padding: 6px !important;
+  border-radius: 17px !important;
+  border: 1px solid var(--line-soft) !important;
+  background: color-mix(in srgb, var(--surface) 90%, var(--surface-soft) 10%) !important;
+  box-shadow: 0 16px 42px -36px rgb(17 35 39 / 52%) !important;
+}
+
+.unified-filter-row button,
+.theme-ticket-toolbar button,
+.theme-filter-strip button,
+.projects-filter-row button,
+.fieldops-filter-row button,
+.customers-filter-row button,
+.tasks-minimal-tabs button,
+.project-tab-scroll button,
+.segmented-control button,
+.view-switch button,
+.reports-theme-page > div:nth-child(3) button,
+.deadlines-theme-page .unified-filter-row button {
+  min-height: 36px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  font-weight: 780 !important;
+}
+
+.soft-panel,
+.compact-list-card,
+.liquid-card,
+.ticket-card,
+.ticket-mobile-card,
+.mobile-ticket-card-inner,
+.task-mobile-card,
+.task-minimal-row,
+.reminders-form,
+.reminder-card,
+.data-list-shell,
+.milestone-card,
+.project-list-card,
+.project-business-card,
+.glass-form-panel,
+.todos-theme-page .todo-columns > div,
+.todos-theme-page .todo-columns > div > div[style*="background"],
+.deadlines-theme-page > div:last-child > button,
+.deadlines-theme-page > div:last-child > div,
+.reports-theme-page .soft-panel,
+.fieldops-theme-page .soft-panel,
+.fieldops-theme-page .compact-list-card,
+.import-theme-page .soft-panel,
+.customers-theme-page .soft-panel,
+.logs-theme-page .soft-panel,
+.logs-theme-page [style*="background"],
+.mobile-feature-menu-page .liquid-card {
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: var(--radius-card) !important;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--surface-frost) 96%, white 4%), color-mix(in srgb, var(--surface-soft) 82%, white 18%)) !important;
+  box-shadow: var(--shadow-raised) !important;
+}
+
+.theme-work-page table,
+.project-workspace table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.theme-work-page th,
+.project-workspace th {
+  background: color-mix(in srgb, var(--accent-ink) 34%, var(--surface-soft) 66%) !important;
+  color: var(--muted) !important;
+  font-size: 11px !important;
+  font-weight: 860 !important;
+  letter-spacing: .035em !important;
+  text-transform: uppercase !important;
+}
+
+.theme-work-page td,
+.project-workspace td {
+  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+  border-top: 1px solid var(--line-soft) !important;
+}
+
+.ticket-card {
+  border-top: 0 !important;
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.ticket-card::before {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+}
+
+.ticket-card > div:first-child {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.ticket-card > div:first-child > b {
+  flex: 1 1 100% !important;
+  order: 2 !important;
+  min-width: 0 !important;
+  color: var(--text) !important;
+}
+
+.ticket-card > div:nth-child(2) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px 12px !important;
+}
+
+.ui-chip,
+.task-mobile-chip-soft,
+.task-minimal-titleline span,
+.theme-work-page [class*="chip"] {
+  border-color: var(--line-soft) !important;
+}
+
+.ui-chip-accent {
+  background: color-mix(in srgb, var(--accent-ink) 74%, white 26%) !important;
+}
+
+.ui-chip-warning {
+  background: color-mix(in srgb, var(--warning) 11%, white 89%) !important;
+}
+
+.ui-chip-danger {
+  background: color-mix(in srgb, var(--danger) 10%, white 90%) !important;
+}
+
+.ui-chip-success {
+  background: color-mix(in srgb, var(--success) 10%, white 90%) !important;
+}
+
+.reports-theme-page > div:nth-child(2),
+.fieldops-theme-page > div:nth-child(2),
+.todos-theme-page .todo-columns,
+.reminders-layout,
+.admin-summary-grid,
+.manager-assigned-stats {
+  gap: 12px !important;
+}
+
+.reports-theme-page .soft-panel,
+.fieldops-theme-page .soft-panel {
+  overflow: hidden;
+}
+
+.reports-theme-page .soft-panel[style*="border-left"],
+.reports-theme-page .soft-panel[style*="borderLeft"],
+.fieldops-theme-page .compact-list-card[style*="border-top"],
+.fieldops-theme-page .soft-panel[style*="border-left"] {
+  position: relative;
+}
+
+.reports-theme-page .soft-panel[style*="border-left"]::before,
+.reports-theme-page .soft-panel[style*="borderLeft"]::before,
+.fieldops-theme-page .compact-list-card[style*="border-top"]::before,
+.fieldops-theme-page .soft-panel[style*="border-left"]::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 0;
+  width: 42px;
+  height: 4px;
+  border-radius: 0 0 999px 999px;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+}
+
+.modal-scrim {
+  background: rgb(17 35 39 / 42%) !important;
+  backdrop-filter: blur(14px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.08) !important;
+}
+
+.modal-panel {
+  border: 1px solid color-mix(in srgb, var(--border) 70%, white 30%) !important;
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent-ink) 56%, transparent), transparent 30%),
+    color-mix(in srgb, var(--surface) 92%, var(--surface-soft) 8%) !important;
+  box-shadow: 0 34px 90px -44px rgb(17 35 39 / 72%) !important;
+}
+
+.modal-panel h3 {
+  font-size: 18px !important;
+  font-weight: 830 !important;
+}
+
+.empty-panel,
+[style*="dashed"] {
+  background: color-mix(in srgb, var(--surface) 78%, var(--surface-soft) 22%) !important;
+  border-color: color-mix(in srgb, var(--border) 78%, var(--accent) 22%) !important;
+  color: var(--muted) !important;
+}
+
+.task-minimal-row {
+  grid-template-columns: 26px minmax(0, 1fr) auto !important;
+  min-height: 66px !important;
+}
+
+.task-minimal-titleline b {
+  font-size: 14px !important;
+  font-weight: 760 !important;
+}
+
+.task-minimal-actions select {
+  min-width: 150px !important;
+}
+
+.reminders-page {
+  padding: var(--page-gutter) !important;
+  flex: 1;
+  overflow: auto;
+}
+
+.reminders-layout {
+  grid-template-columns: minmax(280px, 390px) minmax(0, 1fr) !important;
+}
+
+.reminder-card {
+  padding: 14px !important;
+}
+
+.project-tab-scroll {
+  margin-top: 8px !important;
+}
+
+.project-tab {
+  min-height: 38px !important;
+}
+
+@media (max-width: 900px) {
+  .reminders-layout,
+  .todos-theme-page .todo-columns {
+    grid-template-columns: 1fr !important;
+  }
+
+  .task-minimal-row {
+    grid-template-columns: 26px minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .theme-work-page:not(.mobile-dashboard-theme-page),
+  .project-workspace:not(.mobile-dashboard-theme-page),
+  .tasks-theme-page,
+  .reminders-page {
+    padding: var(--page-gutter-mobile) var(--page-gutter-mobile) 92px !important;
+  }
+
+  .theme-work-page > .unified-page-header,
+  .theme-work-page > .theme-page-heading,
+  .project-workspace > .unified-page-header,
+  .project-workspace > .theme-page-heading,
+  .tasks-minimal-header,
+  .management-hero,
+  .logs-page-header {
+    min-height: 48px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .theme-work-page h2,
+  .project-workspace h2,
+  .theme-work-page .unified-page-header h2,
+  .theme-work-page .theme-page-heading h2,
+  .project-workspace .unified-page-header h2,
+  .logs-page-header h2 {
+    font-size: 20px !important;
+  }
+
+  .unified-filter-row,
+  .theme-ticket-toolbar,
+  .theme-filter-strip,
+  .projects-filter-row,
+  .fieldops-filter-row,
+  .customers-filter-row,
+  .tasks-minimal-tabs,
+  .project-tab-scroll,
+  .segmented-control,
+  .view-switch {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+  }
+
+  .ticket-card-grid {
+    gap: 9px !important;
+  }
+
+  .ticket-card,
+  .task-minimal-row,
+  .compact-list-card,
+  .soft-panel,
+  .liquid-card {
+    border-radius: 18px !important;
+  }
+
+  .modal-scrim {
+    align-items: flex-end !important;
+    padding: 10px !important;
+  }
+
+  .modal-panel {
+    max-height: 86dvh !important;
+    border-radius: 24px 24px 18px 18px !important;
+    padding: 20px !important;
+  }
+}

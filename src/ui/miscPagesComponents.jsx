@@ -112,8 +112,8 @@ export function LogPage({ logs, projects }) {
   });
   const days=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
 
-  return <div style={{ padding:"24px 28px", flex:1, overflow:"auto" }}>
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+  return <div className="theme-work-page logs-theme-page" style={{ padding:"24px 28px", flex:1, overflow:"auto" }}>
+    <div className="unified-page-header logs-page-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
       <div><h2 style={{ margin:0, fontSize:20, fontWeight:800 }}>Aktivite Günlüğü</h2><p style={{ margin:"3px 0 0", color:"#64748B", fontSize:13 }}>{filtered.length} kayıt</p></div>
       <select value={filter} onChange={e=>setFilter(e.target.value)} style={{ ...iStyle, width:"auto", minWidth:160 }}>
         <option value="all">Tum Projeler</option>
