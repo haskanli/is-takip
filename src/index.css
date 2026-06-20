@@ -3276,18 +3276,33 @@ body::before,
 }
 
 .icon-view-switch {
-  border-radius: 15px !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   gap: 4px !important;
-  padding: 4px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  width: max-content !important;
 }
 
 .icon-view-switch button {
   aspect-ratio: 1 / 1 !important;
+  background: color-mix(in srgb, var(--surface) 82%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent) !important;
+  border-radius: 13px !important;
+  box-shadow: 0 12px 28px -24px rgb(17 35 39 / 36%) !important;
   justify-content: center !important;
-  min-height: 36px !important;
-  min-width: 36px !important;
+  min-height: 38px !important;
+  min-width: 38px !important;
   padding: 0 !important;
-  width: 36px !important;
+  width: 38px !important;
+}
+
+.icon-view-switch button.is-active {
+  background: color-mix(in srgb, var(--accent) 14%, white 86%) !important;
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border)) !important;
+  color: var(--accent) !important;
 }
 
 .compact-filter-segment button {
@@ -4984,8 +4999,8 @@ body::before,
   }
 
   .tickets-theme-page .theme-ticket-toolbar > .view-switch {
-    justify-self: stretch !important;
-    width: 100% !important;
+    justify-self: end !important;
+    width: max-content !important;
   }
 
   .tickets-theme-page .theme-ticket-toolbar > .ticket-filter-segment {
@@ -5054,17 +5069,18 @@ body::before,
     align-content: center !important;
     display: flex !important;
     justify-content: center !important;
-    min-height: 38px !important;
-    width: 100% !important;
+    justify-self: end !important;
+    min-height: 0 !important;
+    width: max-content !important;
   }
 
   .projects-theme-page .projects-filter-row > .icon-view-switch button,
   .tickets-theme-page .theme-ticket-toolbar > .icon-view-switch button {
-    flex: 0 0 34px !important;
-    min-height: 34px !important;
-    min-width: 34px !important;
+    flex: 0 0 38px !important;
+    min-height: 38px !important;
+    min-width: 38px !important;
     padding: 0 !important;
-    width: 34px !important;
+    width: 38px !important;
   }
 
   .projects-theme-page .projects-filter-row > .compact-filter-segment button {
