@@ -4928,6 +4928,41 @@ body::before,
   z-index: 30 !important;
 }
 
+.ticket-filter-row {
+  align-items: center !important;
+  background: color-mix(in srgb, var(--surface) 78%, white 22%) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 22%) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 18px 46px -36px rgb(17 35 39 / 50%) !important;
+  padding: 10px !important;
+}
+
+.project-chip {
+  --project-chip-color: var(--accent);
+  --chip-tone: var(--project-chip-color) !important;
+  --chip-bg: color-mix(in srgb, var(--project-chip-color) 14%, white 86%) !important;
+  --chip-border: color-mix(in srgb, var(--project-chip-color) 42%, var(--border)) !important;
+  background: var(--chip-bg) !important;
+  border-color: var(--chip-border) !important;
+  color: color-mix(in srgb, var(--project-chip-color) 72%, #112327 28%) !important;
+  max-width: 100%;
+}
+
+.ticket-number-chip {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+
+.ticket-status-select {
+  color: color-mix(in srgb, var(--text) 88%, var(--accent) 12%) !important;
+}
+
+.ticket-age-chip.ui-chip-muted {
+  --chip-tone: var(--muted) !important;
+  --chip-bg: color-mix(in srgb, var(--muted) 9%, white 91%) !important;
+  --chip-border: color-mix(in srgb, var(--muted) 25%, var(--border)) !important;
+}
+
 .multi-choice-filter {
   flex: 0 0 auto;
   position: relative;
@@ -5146,12 +5181,12 @@ body::before,
   }
 
   .tickets-theme-page .theme-ticket-toolbar {
-    display: flex !important;
-    flex-wrap: nowrap !important;
+    display: grid !important;
     gap: 8px !important;
-    overflow-x: auto !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    overflow-x: visible !important;
     overflow-y: visible !important;
-    padding: 9px !important;
+    padding: 10px !important;
     scrollbar-width: none;
   }
 
@@ -5160,15 +5195,19 @@ body::before,
   }
 
   .tickets-theme-page .theme-ticket-toolbar > input {
-    flex: 0 0 245px !important;
-    width: 245px !important;
-    min-width: 245px !important;
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
   }
 
   .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter,
   .tickets-theme-page .theme-ticket-toolbar > .view-switch {
-    flex: 0 0 auto !important;
+    flex: none !important;
     min-width: 0 !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter {
+    width: 100% !important;
   }
 
   .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter {
@@ -5177,6 +5216,11 @@ body::before,
 
   .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter > button {
     min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .view-switch {
+    justify-self: end !important;
     width: auto !important;
   }
 
@@ -5237,24 +5281,43 @@ body::before,
 
   .tickets-theme-page .ticket-card-title {
     grid-column: 1 / -1 !important;
-    order: 5 !important;
+    grid-row: 2 !important;
     width: 100% !important;
   }
 
   .tickets-theme-page .ticket-status-select {
+    grid-column: 1 / span 2 !important;
+    grid-row: 3 !important;
     max-width: 168px !important;
     min-height: 30px !important;
     width: auto !important;
   }
 
-  .tickets-theme-page .ticket-project-chip {
+  .tickets-theme-page .ticket-status-chip {
+    grid-column: 1 / span 2 !important;
+    grid-row: 3 !important;
     justify-self: start !important;
-    max-width: 150px !important;
+  }
+
+  .tickets-theme-page .ticket-number-chip {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    justify-self: start !important;
+  }
+
+  .tickets-theme-page .ticket-project-chip {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: start !important;
+    max-width: 100% !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 
   .tickets-theme-page .ticket-age-chip {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
     justify-self: end !important;
     margin-left: 0 !important;
     white-space: nowrap !important;
