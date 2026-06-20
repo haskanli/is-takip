@@ -710,6 +710,8 @@ code,
 
 .mobile-bottom-nav {
   --nav-bottom-gap: max(8px, env(safe-area-inset-bottom));
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 68%), rgb(246 250 251 / 46%)) !important;
   bottom: var(--nav-bottom-gap);
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -720,7 +722,20 @@ code,
   right: max(10px, env(safe-area-inset-right));
   z-index: 920;
   border-radius: 22px !important;
+  border-color: rgb(207 224 227 / 42%) !important;
   box-shadow: 0 18px 44px -34px rgb(17 35 39 / 48%) !important;
+}
+
+.mobile-bottom-nav::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: calc(100% - 2px);
+  height: calc(var(--nav-bottom-gap) + 14px);
+  border-radius: 0 0 22px 22px;
+  background: linear-gradient(180deg, rgb(246 247 247 / 58%), rgb(246 247 247 / 0));
+  pointer-events: none;
 }
 
 .mobile-bottom-nav-button {
