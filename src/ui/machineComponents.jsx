@@ -742,7 +742,7 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
   );
 
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: "clamp(14px, 3vw, 24px)" }}>
+    <div className="project-panel-page machine-panel-page" style={{ flex: 1, overflow: "auto", padding: "clamp(14px, 3vw, 24px)" }}>
       {header}
       {progressBar}
       {filterBar}

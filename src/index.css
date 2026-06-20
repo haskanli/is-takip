@@ -5054,6 +5054,310 @@ body::before,
   min-height: 23px !important;
 }
 
+/* Project detail design-system pass: all tabs and nested tabs share one rhythm. */
+.project-detail-workspace {
+  --project-detail-max: 1180px;
+  background:
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 32%),
+    var(--app-bg) !important;
+}
+
+.project-detail-workspace > .project-section,
+.project-detail-workspace > .project-plan-scroll-panel,
+.project-detail-workspace > .project-actions-panel,
+.project-detail-workspace > .project-detail-scroll-panel,
+.project-detail-workspace > .tickets-theme-page,
+.project-detail-workspace .project-panel-page,
+.project-detail-workspace .commissioning-panel {
+  box-sizing: border-box !important;
+  flex: 1 1 auto !important;
+  margin: 0 auto !important;
+  max-width: var(--project-detail-max) !important;
+  overflow: auto !important;
+  padding: clamp(16px, 3vw, 24px) !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace > .project-setup-shell {
+  padding: 0 !important;
+}
+
+.project-detail-workspace > .tickets-theme-page {
+  max-width: min(1320px, 100%) !important;
+}
+
+.project-detail-workspace .project-panel-header,
+.project-detail-workspace .project-actions-header,
+.project-detail-workspace .commissioning-header,
+.project-detail-workspace .project-plan-scroll-panel > div:first-child,
+.project-detail-workspace .machine-panel-page > div:first-child,
+.project-detail-workspace .project-section > .liquid-card:first-of-type {
+  align-items: center !important;
+  background: var(--surface-raised-strong) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: var(--page-header-radius) !important;
+  box-shadow: var(--shadow-raised) !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin: 0 0 14px !important;
+  min-height: 74px !important;
+  padding: 14px 16px !important;
+}
+
+.project-detail-workspace .project-panel-header > div,
+.project-detail-workspace .project-actions-header > div,
+.project-detail-workspace .commissioning-header > div,
+.project-detail-workspace .project-plan-scroll-panel > div:first-child > div,
+.project-detail-workspace .machine-panel-page > div:first-child > div,
+.project-detail-workspace .project-section > .liquid-card:first-of-type > div {
+  min-width: 0 !important;
+}
+
+.project-detail-workspace h3,
+.project-detail-workspace .project-panel-header h3,
+.project-detail-workspace .project-actions-header h3,
+.project-detail-workspace .commissioning-header h3,
+.project-detail-workspace .machine-panel-page h3 {
+  align-items: center !important;
+  color: var(--text) !important;
+  display: flex !important;
+  font-family: var(--font-display, var(--font-ui)) !important;
+  font-size: clamp(19px, 1.8vw, 22px) !important;
+  font-weight: 820 !important;
+  gap: 8px !important;
+  letter-spacing: -.03em !important;
+  line-height: 1.14 !important;
+  margin: 0 !important;
+}
+
+.project-detail-workspace .project-panel-header p,
+.project-detail-workspace .project-actions-header p,
+.project-detail-workspace .commissioning-header p,
+.project-detail-workspace .machine-panel-page h3 + div,
+.project-detail-workspace .project-section > .liquid-card:first-of-type span {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  margin: 4px 0 0 !important;
+}
+
+.project-detail-workspace .project-tab-shell {
+  background: transparent !important;
+  border: 0 !important;
+  flex: 0 0 auto !important;
+}
+
+.project-detail-workspace .project-tab-scroll {
+  background: color-mix(in srgb, var(--surface) 76%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 14px 38px -34px rgb(17 35 39 / 34%) !important;
+  gap: 6px !important;
+  padding: 6px !important;
+}
+
+.project-detail-workspace .project-tab {
+  border-radius: 13px !important;
+  font-size: 12px !important;
+  font-weight: 780 !important;
+  min-height: 38px !important;
+  padding: 8px 12px !important;
+}
+
+.project-detail-workspace .project-subtab-shell {
+  margin: 0 auto 14px !important;
+  max-width: var(--project-detail-max) !important;
+  padding: clamp(16px, 3vw, 24px) clamp(16px, 3vw, 24px) 0 !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .project-subtab-shell .project-tab-scroll {
+  margin: 0 !important;
+}
+
+.project-detail-workspace .ui-section-card,
+.project-detail-workspace .soft-panel,
+.project-detail-workspace .liquid-card,
+.project-detail-workspace .milestone-card,
+.project-detail-workspace .compact-list-card,
+.project-detail-workspace .data-list-shell,
+.project-detail-workspace .commissioning-table-shell,
+.project-detail-workspace [style*="background:#fff"],
+.project-detail-workspace [style*="background: #fff"],
+.project-detail-workspace [style*="background:\"#fff\""],
+.project-detail-workspace [style*="background:\"#F8FAFC\""],
+.project-detail-workspace [style*="background:#F8FAFC"],
+.project-detail-workspace [style*="background: \"#fff\""] {
+  background: var(--surface-raised) !important;
+  border-color: var(--card-border-strong) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.project-detail-workspace .project-panel-stats,
+.project-detail-workspace .commissioning-stats {
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)) !important;
+  margin-bottom: 14px !important;
+}
+
+.project-detail-workspace .project-stat-card,
+.project-detail-workspace .commissioning-stat,
+.project-detail-workspace .ui-mini-stat {
+  min-height: 82px !important;
+  padding: 13px 14px !important;
+}
+
+.project-detail-workspace .project-stat-card > span,
+.project-detail-workspace .commissioning-stat > span {
+  color: var(--muted) !important;
+  font-size: 10.5px !important;
+  font-weight: 820 !important;
+  letter-spacing: .02em !important;
+}
+
+.project-detail-workspace .project-stat-card > b,
+.project-detail-workspace .commissioning-stat > b {
+  color: var(--text) !important;
+  font-size: clamp(20px, 2.4vw, 26px) !important;
+  letter-spacing: -.025em !important;
+}
+
+.project-detail-workspace .project-inline-form,
+.project-detail-workspace .training-form-card,
+.project-detail-workspace .commissioning-form,
+.project-detail-workspace .machine-panel-page .liquid-card,
+.project-detail-workspace .project-panel-page form {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 56%),
+    var(--surface-raised) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border)) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--shadow-card) !important;
+  padding: 16px !important;
+}
+
+.project-detail-workspace .project-panel-page input,
+.project-detail-workspace .project-panel-page select,
+.project-detail-workspace .project-panel-page textarea,
+.project-detail-workspace .project-actions-panel input,
+.project-detail-workspace .project-actions-panel select,
+.project-detail-workspace .project-actions-panel textarea,
+.project-detail-workspace .commissioning-panel input,
+.project-detail-workspace .commissioning-panel select,
+.project-detail-workspace .commissioning-panel textarea,
+.project-detail-workspace .machine-panel-page input,
+.project-detail-workspace .machine-panel-page select,
+.project-detail-workspace .machine-panel-page textarea {
+  border-radius: 13px !important;
+  min-height: 42px !important;
+}
+
+.project-detail-workspace table {
+  border-collapse: separate !important;
+  border-spacing: 0 7px !important;
+}
+
+.project-detail-workspace th {
+  background: transparent !important;
+  color: var(--muted) !important;
+  font-size: 10px !important;
+  font-weight: 860 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+}
+
+.project-detail-workspace td {
+  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, transparent) !important;
+  border-top: 1px solid color-mix(in srgb, var(--border) 74%, transparent) !important;
+  font-size: 11.5px !important;
+}
+
+.project-detail-workspace td:first-child {
+  border-bottom-left-radius: 13px !important;
+  border-left: 1px solid color-mix(in srgb, var(--border) 74%, transparent) !important;
+  border-top-left-radius: 13px !important;
+}
+
+.project-detail-workspace td:last-child {
+  border-bottom-right-radius: 13px !important;
+  border-right: 1px solid color-mix(in srgb, var(--border) 74%, transparent) !important;
+  border-top-right-radius: 13px !important;
+}
+
+.project-detail-workspace .training-grid,
+.project-detail-workspace .commissioning-form-grid {
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)) !important;
+}
+
+.project-detail-workspace .project-actions-toolbar,
+.project-detail-workspace .commissioning-filter,
+.project-detail-workspace .machine-panel-page > div:nth-child(3) {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: flex-end !important;
+  padding: 0 !important;
+}
+
+.project-detail-workspace .action-list {
+  gap: 10px !important;
+}
+
+.project-detail-workspace .action-card,
+.project-detail-workspace .training-card,
+.project-detail-workspace .commissioning-table-shell,
+.project-detail-workspace .machine-panel-page .soft-panel {
+  overflow: hidden !important;
+}
+
+.project-detail-workspace .project-empty-state,
+.project-detail-workspace .empty-panel,
+.project-detail-workspace .commissioning-empty,
+.project-detail-workspace .ui-muted-note {
+  background: color-mix(in srgb, var(--surface-soft) 74%, white 26%) !important;
+  border: 1px dashed color-mix(in srgb, var(--border) 78%, var(--accent) 22%) !important;
+  border-radius: 16px !important;
+  color: var(--muted) !important;
+}
+
+.project-detail-workspace .project-plan-scroll-panel .ui-muted-note {
+  min-height: 92px !important;
+}
+
+.project-detail-workspace .project-icon-action,
+.project-detail-workspace .toolbar-search-toggle {
+  border-radius: 12px !important;
+}
+
+.project-detail-workspace .btn-base,
+.project-detail-workspace button {
+  touch-action: manipulation;
+}
+
+.project-detail-workspace .btn-base:not(.icon-only-action),
+.project-detail-workspace .project-actions-toolbar .compact-tool-button,
+.project-detail-workspace .commissioning-header .btn-base,
+.project-detail-workspace .machine-panel-page .btn-base {
+  border-radius: 12px !important;
+  min-height: 38px !important;
+}
+
+.project-detail-workspace .ui-chip,
+.project-detail-workspace [class*="chip"] {
+  font-size: 10.5px !important;
+  min-height: 24px !important;
+}
+
 @media (max-width: 760px) {
   .app-main-scroll {
     padding-bottom: 0 !important;
@@ -5614,5 +5918,64 @@ body::before,
 
   .deadline-card {
     align-items: flex-start !important;
+  }
+
+  .project-detail-workspace > .project-section,
+  .project-detail-workspace > .project-plan-scroll-panel,
+  .project-detail-workspace > .project-actions-panel,
+  .project-detail-workspace > .tickets-theme-page,
+  .project-detail-workspace > .project-detail-scroll-panel,
+  .project-detail-workspace .project-panel-page,
+  .project-detail-workspace .commissioning-panel {
+    max-width: none !important;
+    padding: var(--page-gutter-mobile) var(--page-gutter-mobile) var(--mobile-nav-clearance) !important;
+  }
+
+  .project-detail-workspace > .project-setup-shell {
+    padding: 0 0 var(--mobile-nav-clearance) !important;
+  }
+
+  .project-detail-workspace .project-subtab-shell {
+    padding: var(--page-gutter-mobile) var(--page-gutter-mobile) 0 !important;
+  }
+
+  .project-detail-workspace > .project-tab-shell .project-tab-scroll,
+  .project-detail-workspace .project-subtab-shell .project-tab-scroll {
+    background: color-mix(in srgb, var(--surface) 78%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--border) 74%, transparent) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 14px 38px -34px rgb(17 35 39 / 34%) !important;
+    padding: 5px !important;
+  }
+
+  .project-detail-workspace .project-tab {
+    min-height: 36px !important;
+    padding: 7px 10px !important;
+  }
+
+  .project-detail-workspace .project-panel-header,
+  .project-detail-workspace .project-actions-header,
+  .project-detail-workspace .commissioning-header,
+  .project-detail-workspace .project-plan-scroll-panel > div:first-child,
+  .project-detail-workspace .machine-panel-page > div:first-child,
+  .project-detail-workspace .project-section > .liquid-card:first-of-type {
+    align-items: flex-start !important;
+    border-radius: 18px !important;
+    min-height: 0 !important;
+    padding: 13px !important;
+  }
+
+  .project-detail-workspace h3,
+  .project-detail-workspace .project-panel-header h3,
+  .project-detail-workspace .project-actions-header h3,
+  .project-detail-workspace .commissioning-header h3,
+  .project-detail-workspace .machine-panel-page h3 {
+    font-size: 19px !important;
+  }
+
+  .project-detail-workspace .project-actions-toolbar,
+  .project-detail-workspace .commissioning-filter,
+  .project-detail-workspace .machine-panel-page > div:nth-child(3) {
+    justify-content: flex-start !important;
   }
 }
