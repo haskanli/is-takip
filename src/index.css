@@ -3,15 +3,14 @@
 :root {
   --bg: #f1f5f6;
   --scene-image:
-    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.74) 0 16%, transparent 36%),
-    radial-gradient(circle at 78% 8%, rgba(255, 255, 255, 0.52) 0 14%, transparent 34%),
-    radial-gradient(circle at 32% 84%, rgba(11, 138, 148, 0.055) 0 16%, transparent 42%),
-    radial-gradient(circle at 88% 78%, rgba(191, 122, 18, 0.045) 0 14%, transparent 38%),
-    linear-gradient(156deg, #f8fafb 0%, #eef4f5 42%, #f7f4ee 100%);
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.86) 0 16%, transparent 36%),
+    radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.66) 0 14%, transparent 34%),
+    radial-gradient(circle at 42% 82%, rgba(235, 238, 240, 0.72) 0 18%, transparent 44%),
+    linear-gradient(156deg, #fbfbfa 0%, #f3f4f4 46%, #eeeeec 100%);
   --scene-overlay:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.5), rgba(246, 250, 251, 0.14)),
-    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.38), transparent 36%);
-  --scene-blur: 78px;
+    linear-gradient(150deg, rgba(255, 255, 255, 0.62), rgba(245, 245, 244, 0.2)),
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.48), transparent 36%);
+  --scene-blur: 68px;
   --surface: #ffffff;
   --surface-soft: #f6fafb;
   --text: #112327;
@@ -229,9 +228,8 @@ code,
   place-items: center;
   overflow: auto;
   background:
-    radial-gradient(circle at 12% 12%, rgb(11 138 148 / 18%), transparent 34%),
-    radial-gradient(circle at 86% 16%, rgb(191 122 18 / 12%), transparent 30%),
-    linear-gradient(145deg, #edf5f6 0%, #f7faf9 46%, #eef4f1 100%);
+    var(--scene-overlay),
+    var(--scene-image);
   color: var(--text);
 }
 
@@ -249,7 +247,7 @@ code,
   height: 320px;
   left: -110px;
   bottom: -120px;
-  background: rgb(11 138 148 / 12%);
+  background: rgb(255 255 255 / 34%);
 }
 
 .auth-screen::after {
@@ -257,7 +255,7 @@ code,
   height: 230px;
   right: -80px;
   top: 14%;
-  background: rgb(191 122 18 / 10%);
+  background: rgb(235 238 240 / 42%);
 }
 
 .auth-shell {
@@ -300,8 +298,8 @@ code,
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 28% 18%, rgb(11 138 148 / 18%), transparent 32%),
-    radial-gradient(circle at 88% 86%, rgb(191 122 18 / 16%), transparent 28%);
+    radial-gradient(circle at 28% 18%, rgb(255 255 255 / 42%), transparent 34%),
+    radial-gradient(circle at 88% 86%, rgb(229 231 235 / 32%), transparent 30%);
   pointer-events: none;
 }
 
@@ -621,7 +619,7 @@ code,
   justify-content: space-between;
   gap: 8px;
   background:
-    radial-gradient(circle at 18% 0%, rgb(11 138 148 / 12%), transparent 34%),
+    radial-gradient(circle at 18% 0%, rgb(255 255 255 / 40%), transparent 34%),
     linear-gradient(145deg, rgb(255 255 255 / 80%), rgb(246 250 251 / 66%));
   box-shadow: var(--shadow-soft);
 }
@@ -827,8 +825,7 @@ code,
   overflow: hidden;
   color: var(--text);
   background:
-    radial-gradient(circle at 18% 16%, rgb(11 138 148 / 18%), transparent 34%),
-    radial-gradient(circle at 82% 14%, rgb(191 122 18 / 12%), transparent 32%),
+    var(--scene-overlay),
     var(--scene-image);
   z-index: 9999;
 }
@@ -838,9 +835,9 @@ code,
   position: absolute;
   inset: -18%;
   background: var(--scene-image);
-  filter: blur(88px) saturate(1.16);
+  filter: blur(78px) saturate(1.02);
   transform: scale(1.05);
-  opacity: .74;
+  opacity: .78;
   animation: loadingAtmosphere 8s ease-in-out infinite alternate;
 }
 
@@ -2003,8 +2000,7 @@ body::before {
 
 .project-business-shell {
   background:
-    radial-gradient(circle at 12% -20%, rgb(11 138 148 / 10%), transparent 34%),
-    rgb(255 255 255 / 58%);
+    linear-gradient(180deg, rgb(255 255 255 / 58%), rgb(255 255 255 / 28%) 74%, transparent);
   border-bottom: 1px solid var(--glass-border);
   padding: 8px clamp(10px, 2vw, 18px) 8px;
   backdrop-filter: blur(16px) saturate(1.1);
@@ -2035,8 +2031,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 8% 0%, rgb(11 138 148 / 13%), transparent 34%),
-    radial-gradient(circle at 96% 6%, rgb(191 122 18 / 10%), transparent 30%);
+    radial-gradient(circle at 8% 0%, rgb(255 255 255 / 44%), transparent 34%),
+    radial-gradient(circle at 96% 6%, rgb(229 231 235 / 30%), transparent 30%);
 }
 
 .project-logo-tile {
@@ -2238,9 +2234,7 @@ body::before {
 
 .project-workspace {
   background:
-    radial-gradient(circle at 12% -10%, rgb(11 138 148 / 12%), transparent 34%),
-    radial-gradient(circle at 96% -8%, rgb(191 122 18 / 9%), transparent 28%),
-    linear-gradient(180deg, rgb(11 138 148 / 10%), transparent 55%),
+    var(--scene-overlay),
     var(--scene-image);
   background-size: cover;
   background-position: center;
