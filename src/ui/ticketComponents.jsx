@@ -14,6 +14,15 @@ const now = () => new Date().toISOString();
 export const TICKET_STATUSES = ["A\u00e7\u0131k","Operasyon \u0130ncelemesinde","\u00dcr\u00fcn De\u011ferlendirmesinde","Jira'da \u00c7al\u0131\u015f\u0131l\u0131yor","Operasyon Testinde","Test Ba\u015far\u0131s\u0131z","Yay\u0131na Haz\u0131r","M\u00fc\u015fteri Onay\u0131nda","M\u00fc\u015fteri Reddetti","Tamamland\u0131","Beklemede","\u0130ptal Edildi"];
 export const TICKET_CATEGORIES = ["Operasyonel","Bug","Geli\u015ftirme","Entegrasyon","\u0130yile\u015ftirme","Veri","E\u011fitim","Di\u011fer"];
 
+const ticketToneClass=(value="")=>{
+  const text=String(value||"").toLocaleLowerCase("tr-TR");
+  if(["tamam","done","resolved","yayına hazır","yayina hazir","başarılı","basarili"].some(item=>text.includes(item))&&!["başarısız","basarisiz"].some(item=>text.includes(item)))return "ui-chip-success";
+  if(["kritik","yüksek","yuksek","başarısız","basarisiz","redd","iptal","cancel","fail"].some(item=>text.includes(item)))return "ui-chip-danger";
+  if(["bekle","devam","jira","test","inceleme","değerlendirme","degerlendirme","operasyon","ürün","urun"].some(item=>text.includes(item)))return "ui-chip-warning";
+  if(["açık","acik","bug","geliştirme","gelistirme","entegrasyon","iyileştirme","iyilestirme"].some(item=>text.includes(item)))return "ui-chip-accent";
+  return "ui-chip-muted";
+};
+
 const ticketChangeLog=(ticket,data,user)=>{
   const labels={status:"Durum",assignedTo:"Sorumlu",jiraKey:"Jira",jiraStatus:"Jira durumu",testResult:"Test sonucu",category:"Kategori",ownerTeam:"Sahip ekip"};
   return Object.entries(labels).flatMap(([key,label])=>{
@@ -66,7 +75,7 @@ function TicketListTable({ rows, people = [], customerMode = false, showProject 
                 {showProject && <td><span className="ui-chip ui-chip-muted">{project?.name || "Proje yok"}</span></td>}
                 <td>
                   {customerMode ? (
-                    <span className="ui-chip ui-chip-muted">{ticket.status || "A\u00e7\u0131k"}</span>
+                    <span className={`ui-chip ${ticketToneClass(ticket.status || "A\u00e7\u0131k")}`}>{ticket.status || "A\u00e7\u0131k"}</span>
                   ) : (
                     <select
                       value={ticket.status || "A\u00e7\u0131k"}
@@ -223,7 +232,7 @@ export function TicketsPage({
     </div>
     {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"color-mix(in srgb, var(--success) 10%, white 90%)":"color-mix(in srgb, var(--warning) 10%, white 90%)",color:mailNotice.includes("gönderildi")?"var(--success)":"var(--warning)",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
     {ticketView==="list"?<TicketListTable rows={sortedFiltered} people={state.people} customerMode={customerMode} showProject={!customerMode} onOpen={({ticket,projectId})=>setModal({type:"detail",projectId,data:ticket})} onStatusChange={(projectId,id,status)=>update(projectId,id,{status})} onDelete={(projectId,id)=>{if(confirm("Ticket silinsin mi?"))remove(projectId,id);}} canDelete={(ticket)=>isAdmin||ticket.author===currentUser.name}/>:<div className="mobile-ticket-list-grid ticket-card-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(360px,100%),1fr))",gap:10}}>{sortedFiltered.map(({ticket,project,projectId})=>{const age=Math.max(0,daysDiff(ticket.ts));const assignee=state.people.find(p=>p.id===ticket.assignedTo);return <div className="compact-list-card ticket-mobile-card ticket-card" key={`${projectId}-${ticket.id}`} onClick={()=>setModal({type:"detail",projectId,data:ticket})} style={{borderTop:`3px solid ${project?.color||"var(--accent, #0b8a94)"}`,padding:"14px 15px",cursor:"pointer"}}>
-      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span className="ui-chip ui-chip-accent">{ticketNumber(ticket)}</span><b className="text-wrap-safe" style={{fontSize:13,color:"var(--text, #112327)"}}>{ticket.title}</b>{customerMode?<span className="ui-chip ui-chip-muted">{ticket.status||"A\u00e7\u0131k"}</span>:<select value={ticket.status||"A\u00e7\u0131k"} onClick={event=>event.stopPropagation()} onChange={event=>update(projectId,ticket.id,{status:event.target.value})} style={{fontSize:10,border:"1px solid var(--border, #cfe0e3)",borderRadius:9,padding:"4px 7px",background:"rgb(255 255 255 / 78%)",color:"var(--text, #112327)"}}>{TICKET_STATUSES.map(status=><option key={status}>{status}</option>)}</select>}{!customerMode&&<span className="ui-chip ui-chip-muted">{project?.name||"Proje yok"}</span>}<span style={{marginLeft:"auto",fontSize:11,fontWeight:800,color:age>=7?"var(--danger, #b93f33)":"var(--muted, #5b6f74)"}}>{age} {"g\u00fcnd\u00fcr a\u00e7\u0131k"}</span></div>
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span className="ui-chip ui-chip-accent">{ticketNumber(ticket)}</span><b className="text-wrap-safe" style={{fontSize:13,color:"var(--text, #112327)"}}>{ticket.title}</b>{customerMode?<span className={`ui-chip ${ticketToneClass(ticket.status||"A\u00e7\u0131k")}`}>{ticket.status||"A\u00e7\u0131k"}</span>:<select value={ticket.status||"A\u00e7\u0131k"} onClick={event=>event.stopPropagation()} onChange={event=>update(projectId,ticket.id,{status:event.target.value})} style={{fontSize:10,border:"1px solid var(--border, #cfe0e3)",borderRadius:9,padding:"4px 7px",background:"rgb(255 255 255 / 78%)",color:"var(--text, #112327)"}}>{TICKET_STATUSES.map(status=><option key={status}>{status}</option>)}</select>}{!customerMode&&<span className="ui-chip ui-chip-muted">{project?.name||"Proje yok"}</span>}<span className={`ui-chip ${age>=7?"ui-chip-danger":"ui-chip-muted"}`} style={{marginLeft:"auto",fontSize:11,fontWeight:800}}>{age} {"g\u00fcnd\u00fcr a\u00e7\u0131k"}</span></div>
       <div style={{display:"flex",gap:12,marginTop:7,flexWrap:"wrap",fontSize:11,color:"var(--muted, #5b6f74)"}}>{!customerMode&&<span>Sorumlu: <b style={{color:"var(--text, #112327)"}}>{assignee?.name||"Atanmam\u0131\u015f"}</b></span>}<span>Son aksiyon: {ticket.updatedAt?new Date(ticket.updatedAt).toLocaleDateString("tr-TR"):"Yok"}</span><span>Jira: {ticket.jiraStatus||ticket.jiraKey||"-"}</span>{!customerMode&&(isAdmin||ticket.author===currentUser.name)&&<button onClick={e=>{e.stopPropagation();if(confirm("Ticket silinsin mi?"))remove(projectId,ticket.id);}} style={{marginLeft:"auto",border:0,background:"transparent",color:"var(--danger, #b93f33)",fontSize:11,fontWeight:800,cursor:"pointer"}}>Sil</button>}</div>
     </div>})}</div>}
     {!filtered.length&&<div style={{padding:40,textAlign:"center",background:"#fff",border:"1.5px dashed var(--muted)",borderRadius:12,color:"var(--muted)"}}>Filtreye uygun ticket yok.</div>}
@@ -292,15 +301,15 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin, c
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
             <span className="ui-chip ui-chip-accent">{ticketNumber(t)}</span>
             <span className="text-wrap-safe" style={{ fontWeight:800, fontSize:13, color:"var(--text, #112327)" }}>{t.title}</span>
-            <span className="ui-chip ui-chip-muted" style={{color:TYPE_COLORS[t.type]||"var(--muted, #5b6f74)"}}>{t.type}</span>
-            <span className={t.priority==="Kritik"?"ui-chip ui-chip-danger":t.priority==="Yüksek"?"ui-chip ui-chip-warning":"ui-chip ui-chip-muted"}>{t.priority}</span>
+            <span className={`ui-chip ${ticketToneClass(t.type)}`} style={{color:TYPE_COLORS[t.type]||undefined}}>{t.type}</span>
+            <span className={`ui-chip ${ticketToneClass(t.priority)}`}>{t.priority}</span>
             {(t.jiraKey||t.jiraId)&&<a className="ui-chip ui-chip-accent" href={t.jiraLink||"#"} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{textDecoration:"none"}}>{t.jiraKey||t.jiraId}</a>}
             {t.jiraStatus&&<span className="ui-chip ui-chip-success">Jira: {t.jiraStatus}</span>}
             {!customerMode&&<select value={t.status||"Açık"} onClick={e=>e.stopPropagation()} onChange={e=>updateTicket(t.id,{status:e.target.value})} style={{ fontSize:11, borderRadius:10, border:"1px solid var(--border, #cfe0e3)", padding:"4px 7px", fontFamily:"inherit", background:"rgb(255 255 255 / 78%)", color:"var(--text, #112327)" }}>
               {!TICKET_STATUSES.includes(t.status)&&t.status&&<option>{t.status}</option>}
               {TICKET_STATUSES.map(s=><option key={s}>{s}</option>)}
             </select>}
-            {customerMode&&<span className="ui-chip ui-chip-muted">{t.status||"Açık"}</span>}
+            {customerMode&&<span className={`ui-chip ${ticketToneClass(t.status||"Açık")}`}>{t.status||"Açık"}</span>}
           </div>
           {t.description&&<div className="text-wrap-safe" style={{ fontSize:12, color:"var(--muted, #5b6f74)", marginBottom:4 }}>{t.description}</div>}
           <div style={{ fontSize:11, color:"var(--muted, #5b6f74)" }}>{t.author} · {new Date(t.ts).toLocaleDateString("tr-TR")}</div>
@@ -515,7 +524,7 @@ function TicketDetail({ ticket, customerMode=false, canEdit, onClose, onUpdate, 
       <div style={{display:"flex",justifyContent:"flex-end",gap:7}}><Btn variant="ghost" onClick={()=>setEditing(false)}>İptal</Btn><Btn onClick={save}>Kaydet</Btn></div>
     </div>:<div>
       {ticket.description&&<div style={{fontSize:13,color:"var(--muted)",lineHeight:1.6,marginBottom:16}}>{ticket.description}</div>}
-      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}><span style={{background:"var(--accent-ink)",color:"var(--accent)",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.type}</span><span style={{background:"color-mix(in srgb, var(--warning) 10%, white 90%)",color:"var(--warning)",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.priority}</span><span style={{background:"var(--surface-soft)",color:"var(--muted)",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.status}</span><span style={{background:"var(--surface-soft)",color:"var(--accent)",borderRadius:8,padding:"3px 9px",fontSize:11}}>{ticket.category||"Operasyonel"} · {ticket.ownerTeam||"Operasyon"}</span>{ticket.testResult&&<span style={{background:ticket.testResult==="Başarısız"?"color-mix(in srgb, var(--danger) 9%, white 91%)":"color-mix(in srgb, var(--success) 10%, white 90%)",color:ticket.testResult==="Başarısız"?"var(--danger)":"var(--success)",borderRadius:8,padding:"3px 9px",fontSize:11}}>Test: {ticket.testResult}</span>}</div>
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}><span className={`ui-chip ${ticketToneClass(ticket.type)}`}>{ticket.type}</span><span className={`ui-chip ${ticketToneClass(ticket.priority)}`}>{ticket.priority}</span><span className={`ui-chip ${ticketToneClass(ticket.status)}`}>{ticket.status}</span><span className="ui-chip ui-chip-accent">{ticket.category||"Operasyonel"} · {ticket.ownerTeam||"Operasyon"}</span>{ticket.testResult&&<span className={`ui-chip ${ticketToneClass(ticket.testResult)}`}>Test: {ticket.testResult}</span>}</div>
       {(ticket.customer||ticket.module||ticket.subModule||ticket.functionButton||ticket.pageUrl||(ticket.requestRequirements||[]).length||(ticket.completionCriteria||[]).length)&&<div style={{border:"1px solid var(--border)",borderRadius:12,padding:13,background:"#fff",marginBottom:16}}>
         <div style={{fontWeight:900,fontSize:12,marginBottom:10}}>Standart Talep Bilgileri</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8,fontSize:11,color:"var(--muted)",marginBottom:10}}>

@@ -34,6 +34,13 @@ export function Badge({ label }) {
   const color = STATUS_COLORS[label] || { bg: "var(--accent-ink)", text: "var(--accent)", dot: "var(--accent)" };
   return (
     <span
+      className={`ui-chip status-badge ${
+        label === "Tamamlandı" ? "ui-chip-success" :
+        label === "Devam Ediyor" ? "ui-chip-warning" :
+        label === "Engellendi" ? "ui-chip-danger" :
+        label === "Bekliyor" ? "ui-chip-accent" :
+        "ui-chip-muted"
+      }`}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -58,6 +65,7 @@ export function DelayBadge({ dateStr, status }) {
 
   return (
     <span
+      className={`ui-chip delay-badge ${level === "critical" ? "ui-chip-danger" : "ui-chip-warning"}`}
       style={{
         background: level === "critical" ? "color-mix(in srgb, var(--danger) 9%, white 91%)" : "color-mix(in srgb, var(--warning) 10%, white 90%)",
         color: level === "critical" ? "var(--danger)" : "var(--warning)",

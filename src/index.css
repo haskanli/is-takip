@@ -6237,3 +6237,39 @@ body::before,
   outline: 2px solid color-mix(in srgb, var(--accent) 42%, transparent);
   outline-offset: 2px;
 }
+
+.theme-work-page .btn-base.icon-only-action,
+.theme-work-page .page-header-actions .btn-base.icon-only-action,
+.theme-work-page .unified-page-header .btn-base.icon-only-action,
+.theme-work-page .theme-page-heading .btn-base.icon-only-action,
+.project-workspace .btn-base.icon-only-action,
+.project-workspace .page-header-actions .btn-base.icon-only-action,
+.project-workspace .unified-page-header .btn-base.icon-only-action,
+.tasks-minimal-header .btn-base.icon-only-action,
+.project-filter-shell .btn-base.icon-only-action {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  color: var(--accent) !important;
+  flex: 0 0 48px !important;
+  font-size: 30px !important;
+  height: 48px !important;
+  line-height: 1 !important;
+  min-height: 48px !important;
+  min-width: 48px !important;
+  padding: 0 !important;
+  width: 48px !important;
+}
+
+.theme-work-page .btn-base.icon-only-action:hover,
+.project-workspace .btn-base.icon-only-action:hover,
+.tasks-minimal-header .btn-base.icon-only-action:hover,
+.project-filter-shell .btn-base.icon-only-action:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+}
+
+.status-badge,
+.delay-badge {
+  font-weight: 760 !important;
+}
