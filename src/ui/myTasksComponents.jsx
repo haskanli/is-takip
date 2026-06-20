@@ -144,14 +144,14 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
         <Btn className="icon-only-action" title="Gorev ekle" aria-label="Gorev ekle" onClick={()=>setModal({type:"addPersonal"})}>+</Btn>
       </div>
       {assignmentNotice&&<div style={{margin:"10px 0",padding:"10px 13px",borderRadius:9,background:"#ECFDF5",color:"#047857",fontSize:12,fontWeight:700}}>{assignmentNotice}</div>}
-      {overdue.length>0&&<button className="compact-alert compact-alert-warning" onClick={()=>setOnlyOverdue(value=>!value)} style={{width:"100%",display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",background:onlyOverdue?"#FFF1F2":"#FFFBEB",border:`1.5px solid ${onlyOverdue?"#FCA5A5":"#FDE68A"}`,borderRadius:12,padding:"8px 11px",margin:"10px 0 4px",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+    </div>
+    {overdue.length>0&&<button className="compact-alert compact-alert-warning tasks-overdue-inline" onClick={()=>setOnlyOverdue(value=>!value)} style={{width:"100%",display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",background:onlyOverdue?"#FFF1F2":"#FFFBEB",border:`1.5px solid ${onlyOverdue?"#FCA5A5":"#FDE68A"}`,borderRadius:12,padding:"8px 11px",margin:"10px 0 4px",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
         <span style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}><span style={{width:24,height:24,borderRadius:9,background:onlyOverdue?"#E11D48":"#F59E0B",color:"#fff",display:"grid",placeItems:"center",fontSize:12,fontWeight:950,flexShrink:0}}>!</span><span style={{minWidth:0}}><b style={{display:"block",fontSize:12,color:onlyOverdue?"#BE123C":"#92400E"}}>{overdue.length} geciken görev</b><span style={{display:"block",fontSize:10,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overdue[0]?.title}{overdue.length>1?` +${overdue.length-1} diğer`:""}</span></span></span>
         <span style={{fontSize:10,fontWeight:850,color:onlyOverdue?"#BE123C":"#92400E",background:"#fff",borderRadius:999,padding:"4px 8px",flexShrink:0}}>{onlyOverdue?"Tümünü göster":"Filtrele"}</span>
       </button>}
-      <div className="theme-filter-strip unified-filter-row" style={{display:"flex",gap:6,overflowX:"auto",margin:"14px 0 4px"}}>
+      <div className="theme-filter-strip unified-filter-row tasks-filter-row" style={{display:"flex",gap:6,overflowX:"auto",margin:"14px 0 4px"}}>
         {[["all","tasks","Tümü"],["assigned","tasks","Yöneticinin Atadıkları"],["project","projects","Projeden Gelenler"],["todos","ticket","Kendi To-Do'larım"],["notes","notes","Notlarım"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 13px",background:section===id?"#4A6CF7":"#F1F5FF",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
       </div>
-    </div>
 
     <div className="tasks-content-area">
       {/* Tasks column */}

@@ -3699,3 +3699,319 @@ body::before,
     font-size: 17px !important;
   }
 }
+
+/* Product finish layer: calm, consistent operational UI across every page. */
+.theme-work-page,
+.project-workspace {
+  color: var(--text) !important;
+}
+
+.unified-page-header,
+.theme-work-page .unified-page-header,
+.theme-work-page .theme-page-heading,
+.customers-page-header,
+.fieldops-page-header,
+.reports-theme-page > div:first-child,
+.todos-theme-page .todos-page-header,
+.deadlines-theme-page .deadlines-page-header,
+.reminders-page > div:first-child {
+  min-height: 0 !important;
+  padding: 12px 14px !important;
+  border-radius: 18px !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 18px 40px -34px rgb(17 35 39 / 32%) !important;
+}
+
+.tasks-page-header {
+  margin-bottom: 8px !important;
+}
+
+.unified-title-row h2,
+.unified-page-header h2,
+.theme-page-heading h2,
+.customers-page-header h2,
+.fieldops-page-header h2,
+.reports-theme-page > div:first-child h2,
+.todos-page-header h2,
+.deadlines-page-header h2 {
+  font-size: 20px !important;
+  font-weight: 850 !important;
+  line-height: 1.18 !important;
+  color: var(--text) !important;
+}
+
+.unified-title-row h2 svg,
+.unified-page-header h2 svg,
+.theme-page-heading h2 svg {
+  color: var(--muted) !important;
+}
+
+.tasks-overdue-inline {
+  width: auto !important;
+  max-width: 760px !important;
+  margin: 0 0 8px !important;
+  padding: 8px 10px !important;
+  background: var(--surface) !important;
+  border: 1px solid color-mix(in srgb, var(--warning) 34%, var(--border)) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+.tasks-overdue-inline > span:first-child > span:first-child {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 8px !important;
+  background: var(--warning) !important;
+  color: #fff !important;
+}
+
+.tasks-overdue-inline b {
+  color: var(--text) !important;
+  font-size: 12px !important;
+}
+
+.tasks-overdue-inline span {
+  color: var(--muted) !important;
+}
+
+.tasks-overdue-inline > span:last-child {
+  color: var(--accent) !important;
+  background: var(--accent-ink) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
+}
+
+.tasks-filter-row,
+.theme-filter-strip,
+.unified-filter-row,
+.theme-ticket-toolbar,
+.projects-filter-row,
+.fieldops-filter-row,
+.customers-filter-row {
+  margin: 0 0 14px !important;
+  padding: 5px !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+
+.tasks-filter-row button,
+.theme-filter-strip button,
+.segmented-control button,
+.view-switch button,
+.unified-tab-row button {
+  min-height: 36px !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+}
+
+.tasks-filter-row button[style*="#4A6CF7"],
+.theme-filter-strip button[style*="#4A6CF7"],
+.tasks-filter-row button[style*="rgb(74, 108, 247)"],
+.theme-filter-strip button[style*="rgb(74, 108, 247)"],
+.segmented-control button.is-active,
+.view-switch button.is-active {
+  background: var(--accent-ink) !important;
+  color: var(--accent) !important;
+}
+
+.icon-only-action,
+.btn-base.icon-only-action {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  border-radius: 16px !important;
+  background: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 14px 28px -22px rgb(11 138 148 / 72%) !important;
+}
+
+.soft-panel,
+.compact-list-card,
+.liquid-card,
+.ticket-card,
+.task-mobile-card,
+.mobile-ticket-card-inner {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-left-color: var(--border) !important;
+  border-top-color: var(--border) !important;
+  box-shadow: 0 16px 34px -30px rgb(17 35 39 / 36%) !important;
+}
+
+.task-mobile-card,
+.ticket-card,
+.compact-list-card {
+  border-left-width: 1px !important;
+}
+
+.compact-list-card [style*="#E11D48"],
+.compact-list-card [style*="#F59E0B"],
+.compact-list-card [style*="#4A6CF7"],
+.ticket-card [style*="#E11D48"],
+.ticket-card [style*="#F59E0B"],
+.ticket-card [style*="#4A6CF7"],
+.task-mobile-card [style*="#E11D48"],
+.task-mobile-card [style*="#F59E0B"],
+.task-mobile-card [style*="#4A6CF7"] {
+  color: var(--muted) !important;
+}
+
+.compact-list-card select,
+.ticket-card select,
+.task-mobile-card select {
+  background: var(--surface-soft) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+}
+
+.ui-chip,
+.task-mobile-chip-soft {
+  min-height: 26px !important;
+  padding: 5px 9px !important;
+  background: var(--surface-soft) !important;
+  color: var(--muted) !important;
+  border: 1px solid var(--border) !important;
+  font-weight: 760 !important;
+}
+
+.ui-chip-accent,
+.task-mobile-chip-soft[style*="--accent"] {
+  background: var(--accent-ink) !important;
+  color: var(--accent) !important;
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
+}
+
+.dashboard-theme-page > div:nth-child(2) .liquid-card:first-child {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-ink) 62%, white 38%), var(--surface)) !important;
+}
+
+.dashboard-theme-page > div:nth-child(2) .liquid-card:nth-child(2) {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--warning) 10%, white 90%), var(--surface)) !important;
+}
+
+@media (max-width: 760px) {
+  .unified-page-header,
+  .theme-work-page .unified-page-header,
+  .theme-work-page .theme-page-heading,
+  .customers-page-header,
+  .fieldops-page-header,
+  .reports-theme-page > div:first-child,
+  .todos-theme-page .todos-page-header,
+  .deadlines-theme-page .deadlines-page-header,
+  .reminders-page > div:first-child {
+    padding: 10px 11px !important;
+  }
+
+  .unified-title-row h2,
+  .unified-page-header h2,
+  .theme-page-heading h2 {
+    font-size: 18px !important;
+  }
+
+  .tasks-overdue-inline {
+    max-width: none !important;
+  }
+}
+
+/* Reduce legacy rainbow inline colors into the Teal Copper token set. */
+.theme-work-page [style*="#4A6CF7"],
+.project-workspace [style*="#4A6CF7"],
+.theme-work-page [style*="#4338CA"],
+.project-workspace [style*="#4338CA"],
+.theme-work-page [style*="#3730A3"],
+.project-workspace [style*="#3730A3"],
+.theme-work-page [style*="#2563EB"],
+.project-workspace [style*="#2563EB"],
+.theme-work-page [style*="#0052CC"],
+.project-workspace [style*="#0052CC"],
+.theme-work-page [style*="#7C3AED"],
+.project-workspace [style*="#7C3AED"],
+.theme-work-page [style*="#6D28D9"],
+.project-workspace [style*="#6D28D9"] {
+  color: var(--accent) !important;
+}
+
+.theme-work-page [style*="background:#4A6CF7"],
+.project-workspace [style*="background:#4A6CF7"],
+.theme-work-page [style*="background: #4A6CF7"],
+.project-workspace [style*="background: #4A6CF7"],
+.theme-work-page [style*="background:#4338CA"],
+.project-workspace [style*="background:#4338CA"],
+.theme-work-page [style*="background:#7C3AED"],
+.project-workspace [style*="background:#7C3AED"] {
+  background: var(--accent) !important;
+  color: #fff !important;
+}
+
+.theme-work-page [style*="#EEF2FF"],
+.project-workspace [style*="#EEF2FF"],
+.theme-work-page [style*="#F1F5FF"],
+.project-workspace [style*="#F1F5FF"],
+.theme-work-page [style*="#F5F3FF"],
+.project-workspace [style*="#F5F3FF"],
+.theme-work-page [style*="#F0F9FF"],
+.project-workspace [style*="#F0F9FF"] {
+  background: var(--surface-soft) !important;
+  border-color: var(--border) !important;
+}
+
+.theme-work-page [style*="#E11D48"],
+.project-workspace [style*="#E11D48"],
+.theme-work-page [style*="#BE123C"],
+.project-workspace [style*="#BE123C"],
+.theme-work-page [style*="#EF4444"],
+.project-workspace [style*="#EF4444"] {
+  color: var(--danger) !important;
+}
+
+.theme-work-page [style*="background:#FFF1F2"],
+.project-workspace [style*="background:#FFF1F2"],
+.theme-work-page [style*="background: #FFF1F2"],
+.project-workspace [style*="background: #FFF1F2"] {
+  background: color-mix(in srgb, var(--danger) 8%, white 92%) !important;
+  border-color: color-mix(in srgb, var(--danger) 22%, var(--border)) !important;
+}
+
+.theme-work-page [style*="#F59E0B"],
+.project-workspace [style*="#F59E0B"],
+.theme-work-page [style*="#EA6C00"],
+.project-workspace [style*="#EA6C00"],
+.theme-work-page [style*="#C2410C"],
+.project-workspace [style*="#C2410C"],
+.theme-work-page [style*="#92400E"],
+.project-workspace [style*="#92400E"] {
+  color: var(--warning) !important;
+}
+
+.theme-work-page [style*="background:#FFFBEB"],
+.project-workspace [style*="background:#FFFBEB"],
+.theme-work-page [style*="background: #FFFBEB"],
+.project-workspace [style*="background: #FFFBEB"],
+.theme-work-page [style*="background:#FFF7ED"],
+.project-workspace [style*="background:#FFF7ED"] {
+  background: color-mix(in srgb, var(--warning) 8%, white 92%) !important;
+  border-color: color-mix(in srgb, var(--warning) 22%, var(--border)) !important;
+}
+
+.theme-work-page table,
+.project-workspace table {
+  background: var(--surface) !important;
+}
+
+.theme-work-page th,
+.project-workspace th {
+  background: var(--surface-soft) !important;
+  color: var(--muted) !important;
+}
