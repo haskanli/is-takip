@@ -2436,705 +2436,6 @@ textarea:focus {
   }
 }
 
-/* Corject operational shell v2: compact, glass, consistent. */
-.project-section,
-.tickets-theme-page,
-.tasks-theme-page {
-  background: transparent !important;
-}
-
-.projects-theme-page {
-  padding: clamp(12px, 3vw, 24px) !important;
-}
-
-.projects-theme-page .projects-page-header,
-.tickets-theme-page .tickets-page-header,
-.tasks-theme-page .tasks-page-header {
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-  align-items: stretch !important;
-  gap: 9px !important;
-  margin: 0 0 12px !important;
-  padding: 11px !important;
-  border-radius: 22px !important;
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 38%), rgb(246 250 251 / 20%)) !important;
-  border: 1px solid rgb(255 255 255 / 48%) !important;
-  box-shadow:
-    0 24px 60px -48px rgb(17 35 39 / 58%),
-    inset 0 1px 0 rgb(255 255 255 / 64%) !important;
-  backdrop-filter: blur(28px) saturate(1.2) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(1.2) !important;
-}
-
-.projects-theme-page .unified-title-row,
-.tickets-theme-page .unified-title-row,
-.tasks-theme-page .unified-title-row {
-  width: 100%;
-  min-width: 0;
-}
-
-.tickets-theme-page .tickets-page-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  flex-wrap: nowrap !important;
-}
-
-.tickets-theme-page .tickets-page-header > div:first-child,
-.projects-theme-page .unified-title-row > div:first-child,
-.tasks-theme-page .unified-title-row > div:first-child {
-  min-width: 0;
-}
-
-.page-header-actions {
-  margin-left: auto;
-  align-items: center;
-}
-
-.btn-base.icon-only-action,
-.icon-only-action {
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
-  min-height: 40px !important;
-  padding: 0 !important;
-  display: inline-grid !important;
-  place-items: center !important;
-  border-radius: 14px !important;
-  font-size: 22px !important;
-  line-height: 1 !important;
-  font-weight: 760 !important;
-  background: color-mix(in srgb, var(--accent) 92%, white 8%) !important;
-  color: #fff !important;
-  border-color: color-mix(in srgb, var(--accent) 58%, white 42%) !important;
-  box-shadow: 0 16px 34px -24px rgb(11 138 148 / 72%) !important;
-}
-
-.btn-base.compact-tool-button,
-.compact-tool-button {
-  min-height: 38px !important;
-  padding: 8px 12px !important;
-  border-radius: 13px !important;
-  font-size: 11px !important;
-  font-weight: 820 !important;
-}
-
-.projects-theme-page .projects-filter-row,
-.tickets-theme-page .theme-ticket-toolbar,
-.tasks-theme-page .theme-filter-strip {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  gap: 7px !important;
-  margin: 0 !important;
-  padding: 7px !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  scrollbar-width: none;
-  border-radius: 17px !important;
-  background: rgb(255 255 255 / 28%) !important;
-  border: 1px solid rgb(255 255 255 / 42%) !important;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 58%) !important;
-}
-
-.projects-theme-page .projects-filter-row::-webkit-scrollbar,
-.tickets-theme-page .theme-ticket-toolbar::-webkit-scrollbar,
-.tasks-theme-page .theme-filter-strip::-webkit-scrollbar {
-  display: none;
-}
-
-.projects-theme-page .projects-filter-row > *,
-.tickets-theme-page .theme-ticket-toolbar > *,
-.tasks-theme-page .theme-filter-strip > * {
-  flex: 0 0 auto !important;
-}
-
-.projects-theme-page .projects-filter-row input,
-.tickets-theme-page .theme-ticket-toolbar input {
-  flex: 0 0 clamp(180px, 26vw, 260px) !important;
-  width: clamp(180px, 26vw, 260px) !important;
-  height: 37px !important;
-  min-height: 37px !important;
-  border-radius: 13px !important;
-  font-size: 12px !important;
-}
-
-.projects-theme-page .segmented-control,
-.tickets-theme-page .segmented-control,
-.tasks-theme-page .theme-filter-strip,
-.tickets-theme-page .view-switch {
-  padding: 3px !important;
-  border-radius: 14px !important;
-  background: rgb(255 255 255 / 34%) !important;
-  border: 1px solid rgb(255 255 255 / 46%) !important;
-  box-shadow: none !important;
-  backdrop-filter: blur(18px) saturate(1.12);
-  -webkit-backdrop-filter: blur(18px) saturate(1.12);
-}
-
-.projects-theme-page .segmented-control button,
-.tickets-theme-page .segmented-control button,
-.tasks-theme-page .theme-filter-strip button,
-.tickets-theme-page .view-switch button {
-  min-height: 31px !important;
-  padding: 6px 10px !important;
-  border-radius: 11px !important;
-  font-size: 10.5px !important;
-  font-weight: 780 !important;
-  letter-spacing: -.01em !important;
-  color: var(--muted) !important;
-  background: transparent !important;
-  border: 0 !important;
-  white-space: nowrap !important;
-}
-
-.projects-theme-page .segmented-control button.is-active,
-.tickets-theme-page .segmented-control button.is-active,
-.tasks-theme-page .theme-filter-strip button[style*="#4A6CF7"],
-.tasks-theme-page .theme-filter-strip button[style*="rgb(74, 108, 247)"],
-.tickets-theme-page .view-switch button.is-active {
-  color: var(--text) !important;
-  background: rgb(255 255 255 / 74%) !important;
-  box-shadow: 0 12px 24px -20px rgb(17 35 39 / 54%) !important;
-}
-
-.tickets-theme-page .view-switch {
-  gap: 2px !important;
-}
-
-.tickets-theme-page .view-switch button {
-  min-width: 46px !important;
-}
-
-.projects-theme-page .liquid-card,
-.projects-theme-page .compact-list-card {
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 46%), rgb(246 250 251 / 28%)) !important;
-  border-color: rgb(255 255 255 / 48%) !important;
-  backdrop-filter: blur(24px) saturate(1.14) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.14) !important;
-}
-
-.tickets-theme-page .ticket-card {
-  min-height: 0 !important;
-  padding: 10px 12px !important;
-  border-radius: 16px !important;
-}
-
-.tickets-theme-page .ticket-card > div:first-child {
-  grid-template-columns: auto minmax(0, 1fr) auto auto !important;
-  align-items: center !important;
-  gap: 6px !important;
-}
-
-.tickets-theme-page .ticket-card > div:first-child > b {
-  grid-column: 2 !important;
-  order: initial !important;
-  -webkit-line-clamp: 1 !important;
-  font-size: 12.5px !important;
-  line-height: 1.25 !important;
-}
-
-.tickets-theme-page .ticket-card > div:first-child > select {
-  max-width: 136px !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  padding: 4px 6px !important;
-}
-
-.tickets-theme-page .ticket-card > div:first-child > span:last-child {
-  font-size: 9.5px !important;
-}
-
-.tickets-theme-page .ticket-card > div:nth-child(2) {
-  grid-template-columns: repeat(3, minmax(0, auto)) 1fr !important;
-  gap: 8px !important;
-  margin-top: 7px !important;
-  font-size: 10px !important;
-}
-
-.tickets-theme-page .ticket-card > div:nth-child(2) > * {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tickets-theme-page .ticket-card > div:nth-child(2) button {
-  margin-left: auto !important;
-}
-
-@media (max-width: 760px) {
-  .projects-theme-page,
-  .tickets-theme-page {
-    padding: 10px !important;
-  }
-
-  .projects-theme-page .projects-page-header,
-  .tickets-theme-page .tickets-page-header,
-  .tasks-theme-page .tasks-page-header {
-    margin: 0 0 10px !important;
-    padding: 10px !important;
-  }
-
-  .tickets-theme-page .tickets-page-header {
-    display: grid !important;
-    grid-template-columns: 1fr auto !important;
-  }
-
-  .projects-theme-page .projects-filter-row input,
-  .tickets-theme-page .theme-ticket-toolbar input {
-    flex-basis: 190px !important;
-    width: 190px !important;
-  }
-
-  .tickets-theme-page .ticket-card > div:first-child {
-    grid-template-columns: auto minmax(0, 1fr) auto !important;
-  }
-
-  .tickets-theme-page .ticket-card > div:first-child > b {
-    grid-column: 2 / -1 !important;
-    order: 2 !important;
-  }
-
-  .tickets-theme-page .ticket-card > div:first-child > select {
-    grid-column: 1 / -1 !important;
-    justify-self: stretch !important;
-    max-width: none !important;
-    width: 100% !important;
-  }
-
-  .tickets-theme-page .ticket-card > div:nth-child(2) {
-    grid-template-columns: 1fr 1fr !important;
-  }
-}
-
-/* Final UI normalization layer for dense operational pages. */
-.theme-work-page .unified-page-header {
-  margin: 16px clamp(12px, 4vw, 28px) 12px !important;
-  padding: 12px !important;
-  border-radius: 20px !important;
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 58%), rgb(246 250 251 / 36%)) !important;
-  border: 1px solid var(--glass-border) !important;
-  box-shadow: 0 18px 44px -36px rgb(17 35 39 / 46%) !important;
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-}
-
-.tickets-theme-page > .unified-page-header {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-.theme-work-page .unified-title-row {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-}
-
-.theme-work-page .unified-filter-row {
-  width: 100% !important;
-  margin: 10px 0 0 !important;
-  padding: 7px !important;
-  gap: 7px !important;
-  border-radius: 16px !important;
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 44%), rgb(246 250 251 / 30%)) !important;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 62%) !important;
-}
-
-.theme-work-page .unified-tab-row {
-  margin: 10px 0 0 !important;
-}
-
-.theme-work-page .unified-filter-row input,
-.theme-work-page .unified-filter-row select {
-  height: 38px !important;
-  min-height: 38px !important;
-  border-radius: 12px !important;
-  font-size: 12px !important;
-}
-
-.theme-work-page .unified-filter-row button,
-.theme-work-page .unified-filter-row .ui-chip,
-.theme-work-page .unified-filter-row .view-switch button,
-.theme-work-page .unified-tab-row button {
-  min-height: 36px !important;
-  border-radius: 12px !important;
-  font-size: 11px !important;
-  line-height: 1.1 !important;
-}
-
-.tasks-theme-page {
-  display: block !important;
-}
-
-.tasks-theme-page .tasks-page-header {
-  position: static !important;
-}
-
-.tasks-theme-page .tasks-content-area {
-  overflow: visible !important;
-  width: 100% !important;
-}
-
-.tasks-theme-page .compact-alert {
-  margin: 9px 0 0 !important;
-}
-
-.tickets-theme-page .ticket-card-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)) !important;
-  gap: 12px !important;
-}
-
-.tickets-theme-page .ticket-card {
-  padding: 13px 14px !important;
-  border-radius: 18px !important;
-  border: 1px solid var(--glass-border) !important;
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 66%), rgb(246 250 251 / 42%)) !important;
-  box-shadow: 0 20px 48px -38px rgb(17 35 39 / 48%) !important;
-}
-
-.tickets-theme-page .ticket-card > div:first-child {
-  display: grid !important;
-  grid-template-columns: auto minmax(0, 1fr) auto !important;
-  align-items: start !important;
-  gap: 8px !important;
-}
-
-.tickets-theme-page .ticket-card > div:first-child > b {
-  grid-column: 1 / -1 !important;
-  order: 3 !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden !important;
-  font-size: 13px !important;
-  line-height: 1.35 !important;
-  font-weight: 850 !important;
-  letter-spacing: -.01em !important;
-  color: var(--text) !important;
-}
-
-.tickets-theme-page .ticket-card > div:first-child > select {
-  justify-self: end !important;
-  max-width: 158px !important;
-  min-height: 32px !important;
-  height: 32px !important;
-  font-size: 10px !important;
-}
-
-.tickets-theme-page .ticket-card > div:first-child > span:last-child {
-  justify-self: end !important;
-  margin-left: 0 !important;
-  white-space: nowrap !important;
-  font-size: 10px !important;
-}
-
-.tickets-theme-page .ticket-card > div:first-child .ui-chip {
-  min-height: 26px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 10px !important;
-}
-
-.tickets-theme-page .ticket-card > div:nth-child(2) {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 6px 10px !important;
-  margin-top: 10px !important;
-  color: var(--muted) !important;
-  font-size: 10.5px !important;
-  line-height: 1.35 !important;
-}
-
-.tickets-theme-page .ticket-card > div:nth-child(2) b {
-  color: var(--text) !important;
-  font-weight: 780 !important;
-}
-
-.tickets-theme-page .ticket-card > div:nth-child(2) button {
-  justify-self: end !important;
-  border: 0 !important;
-  background: transparent !important;
-  color: var(--danger) !important;
-  font-size: 10.5px !important;
-  font-weight: 850 !important;
-  cursor: pointer !important;
-}
-
-@media (max-width: 760px) {
-  .theme-work-page .unified-page-header {
-    margin: 10px 10px 10px !important;
-    padding: 10px !important;
-    border-radius: 18px !important;
-  }
-
-  .theme-work-page .unified-title-row {
-    align-items: flex-start !important;
-  }
-
-  .theme-work-page .unified-title-row h2,
-  .theme-work-page .unified-page-header h2 {
-    font-size: 17px !important;
-  }
-
-  .theme-work-page .unified-title-row .btn-base,
-  .theme-work-page .unified-title-row button {
-    min-height: 38px !important;
-    padding: 8px 10px !important;
-    font-size: 11px !important;
-    white-space: nowrap !important;
-  }
-
-  .theme-work-page .unified-filter-row {
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    scrollbar-width: none;
-    padding: 6px !important;
-  }
-
-  .theme-work-page .unified-filter-row::-webkit-scrollbar {
-    display: none;
-  }
-
-  .theme-work-page .unified-filter-row input {
-    flex: 0 0 220px !important;
-  }
-
-  .theme-work-page .unified-filter-row button,
-  .theme-work-page .unified-filter-row .ui-chip,
-  .theme-work-page .unified-filter-row .view-switch {
-    flex: 0 0 auto !important;
-    white-space: nowrap !important;
-  }
-
-  .tasks-theme-page .tasks-content-area > div {
-    padding: 10px 10px !important;
-  }
-
-  .tasks-theme-page .compact-alert {
-    max-height: 48px !important;
-    padding: 7px 9px !important;
-  }
-
-  .tickets-theme-page {
-    padding: 10px !important;
-  }
-
-  .tickets-theme-page > .unified-page-header {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-
-  .tickets-theme-page .ticket-card-grid {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
-  }
-
-  .tickets-theme-page .ticket-card > div:first-child {
-    grid-template-columns: auto 1fr !important;
-  }
-
-  .tickets-theme-page .ticket-card > div:first-child > select,
-  .tickets-theme-page .ticket-card > div:first-child > span:last-child {
-    grid-column: 2 !important;
-    justify-self: end !important;
-  }
-
-  .tickets-theme-page .ticket-card > div:nth-child(2) {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* Final glass-system override. Keep this at EOF so older screen-specific CSS cannot reintroduce hard white blocks. */
-.mobile-glass-topbar {
-  border-bottom: 0 !important;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 58%) 0%, rgb(255 255 255 / 34%) 72%, rgb(255 255 255 / 0%) 100%) !important;
-  box-shadow: 0 24px 54px -46px rgb(17 35 39 / 62%) !important;
-  backdrop-filter: blur(22px) saturate(1.18) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(1.18) !important;
-}
-
-.mobile-glass-topbar::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -18px;
-  height: 18px;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgb(255 255 255 / 20%), rgb(255 255 255 / 0%));
-}
-
-.project-business-shell {
-  border-bottom: 0 !important;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 42%), rgb(255 255 255 / 18%) 76%, transparent 100%) !important;
-  box-shadow: 0 22px 54px -48px rgb(17 35 39 / 55%) !important;
-}
-
-.project-business-shell > .btn-base {
-  display: none !important;
-}
-
-.project-business-card,
-.project-list-card,
-.project-list-card-header,
-.projects-theme-page .liquid-card,
-.dashboard-theme-page .liquid-card,
-.mobile-dashboard-theme-page .liquid-card,
-.customer-dashboard-theme-page .liquid-card,
-.todos-theme-page .glass-form-panel,
-.todos-theme-page .todo-columns > div,
-.deadlines-theme-page > div:last-child > button,
-.deadlines-theme-page > div:last-child > div,
-.reports-theme-page .soft-panel {
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 72%), rgb(246 250 251 / 52%)) !important;
-  border-color: var(--glass-border) !important;
-  box-shadow: 0 22px 54px -44px rgb(17 35 39 / 54%) !important;
-  backdrop-filter: blur(20px) saturate(1.16) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.16) !important;
-}
-
-.dashboard-theme-page,
-.mobile-dashboard-theme-page,
-.customer-dashboard-theme-page,
-.reports-theme-page,
-.todos-theme-page,
-.deadlines-theme-page,
-.projects-theme-page {
-  background: transparent !important;
-}
-
-.reports-theme-page > div:first-child,
-.todos-theme-page .todos-page-header,
-.deadlines-theme-page .deadlines-page-header,
-.customer-dashboard-theme-page > div > section,
-.customer-dashboard-theme-page > div > div {
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 76%), rgb(246 250 251 / 54%)) !important;
-  border: 1px solid var(--glass-border) !important;
-  box-shadow: 0 20px 50px -44px rgb(17 35 39 / 56%) !important;
-  backdrop-filter: blur(20px) saturate(1.18) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.18) !important;
-}
-
-.reports-theme-page > div:first-child,
-.todos-theme-page .todos-page-header,
-.deadlines-theme-page .deadlines-page-header {
-  margin: 0 0 14px !important;
-  padding: 12px !important;
-  border-radius: 20px !important;
-}
-
-.reports-theme-page > div:nth-child(3),
-.deadlines-theme-page .unified-filter-row {
-  padding: 7px !important;
-  border-radius: 16px !important;
-  background: rgb(255 255 255 / 50%) !important;
-  border: 1px solid rgb(255 255 255 / 28%) !important;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 56%) !important;
-}
-
-.reports-theme-page > div:nth-child(3) button,
-.deadlines-theme-page .unified-filter-row button {
-  border: 1px solid var(--glass-border) !important;
-  min-height: 34px !important;
-  border-radius: 12px !important;
-}
-
-.reports-theme-page .soft-panel {
-  border-left-width: 3px !important;
-  min-height: 168px !important;
-}
-
-.todos-theme-page {
-  padding-top: 14px !important;
-}
-
-.todos-theme-page .todo-columns {
-  gap: 12px !important;
-}
-
-.todos-theme-page .todo-columns > div {
-  border-radius: 18px !important;
-  padding: 13px !important;
-}
-
-.todos-theme-page .todo-columns > div > div[style*="background"],
-.mobile-dashboard-theme-page button[style*="background:#F8FAFC"],
-.customer-dashboard-theme-page section > div:last-child > div > div {
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 70%), rgb(246 250 251 / 48%)) !important;
-  border-color: var(--glass-border) !important;
-  box-shadow: none !important;
-}
-
-.todos-theme-page input,
-.todos-theme-page select,
-.todos-theme-page textarea,
-.reports-theme-page select,
-.deadlines-theme-page select {
-  background: rgb(255 255 255 / 72%) !important;
-  border-color: var(--glass-border) !important;
-}
-
-@media (max-width: 760px) {
-  .reports-theme-page,
-  .todos-theme-page,
-  .deadlines-theme-page {
-    padding: 10px !important;
-  }
-
-  .reports-theme-page > div:first-child,
-  .todos-theme-page .todos-page-header,
-  .deadlines-theme-page .deadlines-page-header {
-    margin-bottom: 10px !important;
-    padding: 10px !important;
-  }
-
-  .reports-theme-page > div:nth-child(2) {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-  }
-
-  .reports-theme-page .soft-panel {
-    min-height: 146px !important;
-    padding: 14px !important;
-  }
-
-  .todos-theme-page .todo-columns {
-    grid-template-columns: 1fr !important;
-  }
-
-  .deadlines-theme-page .deadlines-page-header {
-    align-items: flex-start !important;
-  }
-
-  .deadlines-theme-page .unified-filter-row {
-    width: 100% !important;
-    overflow-x: auto !important;
-    flex-wrap: nowrap !important;
-    scrollbar-width: none;
-  }
-
-  .deadlines-theme-page .unified-filter-row::-webkit-scrollbar {
-    display: none;
-  }
-}
-
 /* Flat shell lock: remove the blue/purple ambient scene everywhere. */
 html,
 body,
@@ -4112,296 +3413,6 @@ body::before,
   }
 }
 
-/* Corrections after visual pass: keep the previous modern sans heading style and compact headers. */
-:root {
-  --font-display: "Plus Jakarta Sans", var(--font-ui);
-}
-
-.theme-work-page h1,
-.theme-work-page h2,
-.theme-work-page h3,
-.project-workspace h1,
-.project-workspace h2,
-.project-workspace h3,
-.mobile-brand-button span {
-  font-family: var(--font-display) !important;
-  letter-spacing: -0.025em !important;
-}
-
-.unified-page-header,
-.theme-work-page .unified-page-header,
-.theme-work-page .theme-page-heading,
-.customers-page-header,
-.fieldops-page-header,
-.reports-theme-page > div:first-child,
-.todos-theme-page .todos-page-header,
-.deadlines-theme-page .deadlines-page-header,
-.reminders-page > div:first-child {
-  min-height: 68px !important;
-  padding: 11px 12px !important;
-  border-radius: 18px !important;
-}
-
-.tasks-theme-page .tasks-page-header {
-  min-height: 66px !important;
-  padding: 10px 12px !important;
-}
-
-.unified-page-header h2,
-.theme-page-heading h2,
-.customers-page-header h2,
-.fieldops-page-header h2,
-.reports-theme-page > div:first-child h2,
-.todos-page-header h2,
-.deadlines-page-header h2 {
-  font-size: 19px !important;
-  font-weight: 850 !important;
-  line-height: 1.12 !important;
-}
-
-.unified-page-header p,
-.theme-page-heading p,
-.customers-page-header p,
-.fieldops-page-header p,
-.reports-theme-page > div:first-child p,
-.todos-page-header p,
-.deadlines-page-header p {
-  font-size: 11.5px !important;
-  line-height: 1.35 !important;
-}
-
-.dashboard-theme-page > div:nth-child(2) .liquid-card:first-child,
-.mobile-dashboard-theme-page .liquid-card:first-of-type {
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--accent-ink) 58%, white 42%), rgb(255 255 255 / 86%)) !important;
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
-}
-
-.dashboard-theme-page > div:nth-child(2) .liquid-card:nth-child(2),
-.mobile-dashboard-theme-page .liquid-card:nth-of-type(2) {
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--warning) 11%, white 89%), rgb(255 255 255 / 86%)) !important;
-  border-color: color-mix(in srgb, var(--warning) 24%, var(--border)) !important;
-}
-
-.dashboard-theme-page > div:nth-child(2) .liquid-card:hover {
-  filter: brightness(.99);
-}
-
-@media (max-width: 760px) {
-  .unified-page-header,
-  .theme-work-page .unified-page-header,
-  .theme-work-page .theme-page-heading,
-  .customers-page-header,
-  .fieldops-page-header,
-  .reports-theme-page > div:first-child,
-  .todos-theme-page .todos-page-header,
-  .deadlines-theme-page .deadlines-page-header,
-  .reminders-page > div:first-child {
-    padding: 9px 10px !important;
-    border-radius: 16px !important;
-  }
-
-  .tasks-theme-page .tasks-page-header {
-    padding: 9px 10px !important;
-  }
-
-  .unified-page-header h2,
-  .theme-page-heading h2,
-  .customers-page-header h2,
-  .fieldops-page-header h2 {
-    font-size: 17px !important;
-  }
-}
-
-/* Product finish layer: calm, consistent operational UI across every page. */
-.theme-work-page,
-.project-workspace {
-  color: var(--text) !important;
-}
-
-.unified-page-header,
-.theme-work-page .unified-page-header,
-.theme-work-page .theme-page-heading,
-.customers-page-header,
-.fieldops-page-header,
-.reports-theme-page > div:first-child,
-.todos-theme-page .todos-page-header,
-.deadlines-theme-page .deadlines-page-header,
-.reminders-page > div:first-child {
-  min-height: 0 !important;
-  padding: 12px 14px !important;
-  border-radius: 18px !important;
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: 0 18px 40px -34px rgb(17 35 39 / 32%) !important;
-}
-
-.tasks-page-header {
-  margin-bottom: 8px !important;
-}
-
-.unified-title-row h2,
-.unified-page-header h2,
-.theme-page-heading h2,
-.customers-page-header h2,
-.fieldops-page-header h2,
-.reports-theme-page > div:first-child h2,
-.todos-page-header h2,
-.deadlines-page-header h2 {
-  font-size: 20px !important;
-  font-weight: 850 !important;
-  line-height: 1.18 !important;
-  color: var(--text) !important;
-}
-
-.unified-title-row h2 svg,
-.unified-page-header h2 svg,
-.theme-page-heading h2 svg {
-  color: var(--muted) !important;
-}
-
-.tasks-filter-row,
-.theme-filter-strip,
-.unified-filter-row,
-.theme-ticket-toolbar,
-.projects-filter-row,
-.fieldops-filter-row,
-.customers-filter-row {
-  margin: 0 0 14px !important;
-  padding: 5px !important;
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 16px !important;
-  box-shadow: none !important;
-}
-
-.tasks-filter-row button,
-.theme-filter-strip button,
-.segmented-control button,
-.view-switch button,
-.unified-tab-row button {
-  min-height: 36px !important;
-  padding: 8px 12px !important;
-  border-radius: 12px !important;
-  background: transparent !important;
-  color: var(--muted) !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  font-size: 12px !important;
-  font-weight: 750 !important;
-}
-
-.tasks-filter-row button[style*="#4A6CF7"],
-.theme-filter-strip button[style*="#4A6CF7"],
-.tasks-filter-row button[style*="rgb(74, 108, 247)"],
-.theme-filter-strip button[style*="rgb(74, 108, 247)"],
-.segmented-control button.is-active,
-.view-switch button.is-active {
-  background: var(--accent-ink) !important;
-  color: var(--accent) !important;
-}
-
-.icon-only-action,
-.btn-base.icon-only-action {
-  width: 44px !important;
-  height: 44px !important;
-  min-width: 44px !important;
-  min-height: 44px !important;
-  border-radius: 16px !important;
-  background: var(--accent) !important;
-  color: #fff !important;
-  box-shadow: 0 14px 28px -22px rgb(11 138 148 / 72%) !important;
-}
-
-.soft-panel,
-.compact-list-card,
-.liquid-card,
-.ticket-card,
-.task-mobile-card,
-.mobile-ticket-card-inner {
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  border-left-color: var(--border) !important;
-  border-top-color: var(--border) !important;
-  box-shadow: 0 16px 34px -30px rgb(17 35 39 / 36%) !important;
-}
-
-.task-mobile-card,
-.ticket-card,
-.compact-list-card {
-  border-left-width: 1px !important;
-}
-
-.compact-list-card [style*="#E11D48"],
-.compact-list-card [style*="#F59E0B"],
-.compact-list-card [style*="#4A6CF7"],
-.ticket-card [style*="#E11D48"],
-.ticket-card [style*="#F59E0B"],
-.ticket-card [style*="#4A6CF7"],
-.task-mobile-card [style*="#E11D48"],
-.task-mobile-card [style*="#F59E0B"],
-.task-mobile-card [style*="#4A6CF7"] {
-  color: var(--muted) !important;
-}
-
-.compact-list-card select,
-.ticket-card select,
-.task-mobile-card select {
-  background: var(--surface-soft) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
-}
-
-.ui-chip,
-.task-mobile-chip-soft {
-  min-height: 26px !important;
-  padding: 5px 9px !important;
-  background: var(--surface-soft) !important;
-  color: var(--muted) !important;
-  border: 1px solid var(--border) !important;
-  font-weight: 760 !important;
-}
-
-.ui-chip-accent,
-.task-mobile-chip-soft[style*="--accent"] {
-  background: var(--accent-ink) !important;
-  color: var(--accent) !important;
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
-}
-
-.dashboard-theme-page > div:nth-child(2) .liquid-card:first-child {
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--accent-ink) 62%, white 38%), var(--surface)) !important;
-}
-
-.dashboard-theme-page > div:nth-child(2) .liquid-card:nth-child(2) {
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--warning) 10%, white 90%), var(--surface)) !important;
-}
-
-@media (max-width: 760px) {
-  .unified-page-header,
-  .theme-work-page .unified-page-header,
-  .theme-work-page .theme-page-heading,
-  .customers-page-header,
-  .fieldops-page-header,
-  .reports-theme-page > div:first-child,
-  .todos-theme-page .todos-page-header,
-  .deadlines-theme-page .deadlines-page-header,
-  .reminders-page > div:first-child {
-    padding: 10px 11px !important;
-  }
-
-  .unified-title-row h2,
-  .unified-page-header h2,
-  .theme-page-heading h2 {
-    font-size: 18px !important;
-  }
-
-}
-
 /* Reduce legacy rainbow inline colors into the Teal Copper token set. */
 .theme-work-page [style*="#4A6CF7"],
 .project-workspace [style*="#4A6CF7"],
@@ -4741,668 +3752,6 @@ body::before,
     min-width: 0;
     width: 100%;
     white-space: normal;
-  }
-}
-
-/* Minimal product standard: one calm page language across modules. */
-.theme-work-page,
-.project-workspace {
-  background: transparent !important;
-  color: var(--text) !important;
-}
-
-.theme-work-page .unified-page-header,
-.theme-work-page .theme-page-heading,
-.unified-page-header,
-.theme-page-heading,
-.projects-page-header,
-.tickets-page-header,
-.customers-page-header,
-.fieldops-page-header,
-.todos-page-header,
-.deadlines-page-header,
-.reminders-hero,
-.tasks-minimal-header,
-.reports-theme-page > div:first-child {
-  min-height: 0 !important;
-  margin: 0 0 12px !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-.theme-work-page .unified-title-row,
-.unified-title-row,
-.tasks-minimal-header .unified-title-row,
-.projects-theme-page .unified-title-row,
-.tickets-theme-page .unified-title-row {
-  min-height: 44px !important;
-  width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-.theme-work-page h1,
-.theme-work-page h2,
-.theme-work-page h3,
-.project-workspace h1,
-.project-workspace h2,
-.project-workspace h3,
-.unified-page-header h2,
-.theme-page-heading h2,
-.tasks-minimal-header h2 {
-  font-family: var(--font-display) !important;
-  font-size: clamp(18px, 1.8vw, 21px) !important;
-  font-weight: 820 !important;
-  line-height: 1.15 !important;
-  letter-spacing: -0.025em !important;
-  color: var(--text) !important;
-}
-
-.unified-page-header p,
-.theme-page-heading p,
-.tasks-minimal-header p,
-.projects-page-header p,
-.tickets-page-header p,
-.customers-page-header p,
-.fieldops-page-header p,
-.todos-page-header p,
-.deadlines-page-header p,
-.reminders-hero p,
-.reports-theme-page > div:first-child p {
-  margin-top: 3px !important;
-  font-size: 12px !important;
-  line-height: 1.35 !important;
-  color: var(--muted) !important;
-}
-
-.unified-filter-row,
-.theme-ticket-toolbar,
-.theme-filter-strip,
-.projects-filter-row,
-.fieldops-filter-row,
-.customers-filter-row,
-.tasks-minimal-tabs,
-.segmented-control,
-.view-switch,
-.project-tab-scroll {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 0 0 14px !important;
-  padding: 5px !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 16px !important;
-  background: color-mix(in srgb, var(--surface) 82%, var(--surface-soft) 18%) !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-.segmented-control,
-.view-switch {
-  width: auto !important;
-  margin-bottom: 12px !important;
-}
-
-.unified-filter-row input,
-.unified-filter-row select,
-.theme-ticket-toolbar input,
-.theme-ticket-toolbar select,
-.theme-filter-strip input,
-.theme-filter-strip select,
-.projects-filter-row input,
-.projects-filter-row select,
-.fieldops-filter-row input,
-.fieldops-filter-row select,
-.customers-filter-row input,
-.customers-filter-row select,
-.reminders-page input,
-.reminders-page select,
-.reminders-page textarea {
-  min-height: 38px !important;
-  height: auto !important;
-  border-radius: 12px !important;
-  border: 1px solid var(--border) !important;
-  background: var(--surface) !important;
-  color: var(--text) !important;
-  box-shadow: none !important;
-}
-
-.unified-filter-row button,
-.theme-ticket-toolbar button,
-.theme-filter-strip button,
-.projects-filter-row button,
-.fieldops-filter-row button,
-.customers-filter-row button,
-.tasks-minimal-tabs button,
-.segmented-control button,
-.view-switch button,
-.project-tab {
-  min-height: 36px !important;
-  padding: 8px 12px !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-  background: transparent !important;
-  color: var(--muted) !important;
-  box-shadow: none !important;
-  font-size: 12px !important;
-  font-weight: 760 !important;
-  white-space: nowrap !important;
-}
-
-.unified-filter-row button.is-active,
-.theme-ticket-toolbar button.is-active,
-.theme-filter-strip button.is-active,
-.projects-filter-row button.is-active,
-.fieldops-filter-row button.is-active,
-.customers-filter-row button.is-active,
-.tasks-minimal-tabs button[style*="#4A6CF7"],
-.tasks-minimal-tabs button[style*="rgb(74, 108, 247)"],
-.segmented-control button.is-active,
-.view-switch button.is-active,
-.project-tab.is-active,
-.theme-work-page button.is-active,
-.project-workspace button.is-active {
-  background: var(--accent-ink) !important;
-  color: var(--accent) !important;
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
-  box-shadow: none !important;
-}
-
-.theme-work-page button[style*="background: rgb(74, 108, 247)"]:not(.icon-only-action),
-.project-workspace button[style*="background: rgb(74, 108, 247)"]:not(.icon-only-action),
-.theme-work-page button[style*="background:#4A6CF7"]:not(.icon-only-action),
-.project-workspace button[style*="background:#4A6CF7"]:not(.icon-only-action),
-.theme-work-page button[style*="background: #4A6CF7"]:not(.icon-only-action),
-.project-workspace button[style*="background: #4A6CF7"]:not(.icon-only-action) {
-  background: var(--accent-ink) !important;
-  color: var(--accent) !important;
-}
-
-.icon-only-action,
-.btn-base.icon-only-action {
-  width: 44px !important;
-  height: 44px !important;
-  min-width: 44px !important;
-  min-height: 44px !important;
-  padding: 0 !important;
-  border-radius: 16px !important;
-  background: var(--accent) !important;
-  color: #ffffff !important;
-  border: 1px solid color-mix(in srgb, var(--accent) 68%, white 32%) !important;
-  box-shadow: 0 14px 30px -22px rgb(11 138 148 / 72%) !important;
-}
-
-.soft-panel,
-.compact-list-card,
-.liquid-card,
-.ticket-card,
-.mobile-ticket-card-inner,
-.task-mobile-card,
-.reminders-form,
-.reminder-card,
-.data-list-shell,
-.milestone-card {
-  border: 1px solid var(--border) !important;
-  border-left-color: var(--border) !important;
-  border-top-color: var(--border) !important;
-  background: var(--surface) !important;
-  box-shadow: 0 16px 34px -30px rgb(17 35 39 / 36%) !important;
-  border-radius: 18px !important;
-}
-
-.ticket-card,
-.compact-list-card,
-.task-mobile-card,
-.reminder-card {
-  border-left-width: 1px !important;
-  border-top-width: 1px !important;
-}
-
-.ui-chip,
-.task-mobile-chip-soft,
-.task-minimal-titleline span {
-  min-height: 24px !important;
-  padding: 4px 8px !important;
-  border-radius: 999px !important;
-  border: 1px solid var(--border) !important;
-  background: var(--surface-soft) !important;
-  color: var(--muted) !important;
-  font-size: 11px !important;
-  font-weight: 720 !important;
-}
-
-.ui-chip-accent,
-.task-minimal-titleline span.is-accent {
-  background: var(--accent-ink) !important;
-  color: var(--accent) !important;
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
-}
-
-.ui-chip-success {
-  background: color-mix(in srgb, var(--success) 9%, white 91%) !important;
-  color: var(--success) !important;
-  border-color: color-mix(in srgb, var(--success) 20%, var(--border)) !important;
-}
-
-.ui-chip-warning,
-.task-minimal-titleline span.is-warning {
-  background: color-mix(in srgb, var(--warning) 9%, white 91%) !important;
-  color: var(--warning) !important;
-  border-color: color-mix(in srgb, var(--warning) 22%, var(--border)) !important;
-}
-
-.ui-chip-danger {
-  background: color-mix(in srgb, var(--danger) 8%, white 92%) !important;
-  color: var(--danger) !important;
-  border-color: color-mix(in srgb, var(--danger) 22%, var(--border)) !important;
-}
-
-.ticket-card-grid,
-.mobile-ticket-list,
-.tasks-content-area,
-.reminders-layout {
-  gap: 10px !important;
-}
-
-.task-minimal-row {
-  min-height: 58px !important;
-}
-
-.task-minimal-actions button,
-.task-minimal-actions select,
-.ticket-card select,
-.compact-list-card select,
-.data-list-table select {
-  min-height: 34px !important;
-  border-radius: 12px !important;
-  border: 1px solid var(--border) !important;
-  background: var(--surface-soft) !important;
-  color: var(--text) !important;
-}
-
-@media (max-width: 760px) {
-  .theme-work-page,
-  .project-workspace {
-    padding: 12px 10px 92px !important;
-  }
-
-  .theme-work-page .unified-page-header,
-  .theme-work-page .theme-page-heading,
-  .unified-page-header,
-  .theme-page-heading,
-  .projects-page-header,
-  .tickets-page-header,
-  .customers-page-header,
-  .fieldops-page-header,
-  .todos-page-header,
-  .deadlines-page-header,
-  .reminders-hero,
-  .tasks-minimal-header,
-  .reports-theme-page > div:first-child {
-    margin-bottom: 10px !important;
-  }
-
-  .theme-work-page h1,
-  .theme-work-page h2,
-  .theme-work-page h3,
-  .project-workspace h1,
-  .project-workspace h2,
-  .project-workspace h3,
-  .unified-page-header h2,
-  .theme-page-heading h2,
-  .tasks-minimal-header h2 {
-    font-size: 18px !important;
-  }
-
-  .unified-filter-row,
-  .theme-ticket-toolbar,
-  .theme-filter-strip,
-  .projects-filter-row,
-  .fieldops-filter-row,
-  .customers-filter-row,
-  .tasks-minimal-tabs,
-  .project-tab-scroll {
-    overflow-x: auto !important;
-    flex-wrap: nowrap !important;
-    scrollbar-width: none;
-  }
-
-  .unified-filter-row::-webkit-scrollbar,
-  .theme-ticket-toolbar::-webkit-scrollbar,
-  .theme-filter-strip::-webkit-scrollbar,
-  .projects-filter-row::-webkit-scrollbar,
-  .fieldops-filter-row::-webkit-scrollbar,
-  .customers-filter-row::-webkit-scrollbar,
-  .tasks-minimal-tabs::-webkit-scrollbar,
-  .project-tab-scroll::-webkit-scrollbar {
-    display: none;
-  }
-
-  .ticket-card-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* Final UI consistency pass: same page rhythm, stronger raised cards, warmer management accents. */
-:root {
-  --surface-raised: color-mix(in srgb, var(--surface) 92%, var(--surface-soft) 8%);
-  --surface-raised-strong: color-mix(in srgb, var(--surface) 96%, var(--accent-ink) 4%);
-  --card-border-strong: color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
-  --shadow-raised: 0 22px 54px -32px rgb(17 35 39 / 52%), 0 1px 0 rgb(255 255 255 / 82%) inset;
-  --shadow-raised-hover: 0 28px 68px -36px rgb(17 35 39 / 62%), 0 1px 0 rgb(255 255 255 / 88%) inset;
-}
-
-.theme-work-page .unified-page-header,
-.theme-work-page .theme-page-heading,
-.project-workspace .unified-page-header,
-.projects-page-header,
-.tickets-page-header,
-.customers-page-header,
-.fieldops-page-header,
-.todos-page-header,
-.deadlines-page-header,
-.reminders-hero,
-.tasks-minimal-header,
-.reports-theme-page > div:first-child,
-.management-hero {
-  min-height: 52px !important;
-  margin: 0 0 14px !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-.theme-work-page h1,
-.theme-work-page h2,
-.theme-work-page h3,
-.project-workspace h1,
-.project-workspace h2,
-.project-workspace h3,
-.unified-page-header h2,
-.theme-page-heading h2,
-.projects-page-header h2,
-.tickets-page-header h2,
-.customers-page-header h2,
-.fieldops-page-header h2,
-.todos-page-header h2,
-.deadlines-page-header h2,
-.tasks-minimal-header h2,
-.management-heading h2 {
-  font-family: var(--font-display) !important;
-  font-size: clamp(21px, 2.1vw, 25px) !important;
-  font-weight: 840 !important;
-  line-height: 1.12 !important;
-  letter-spacing: -0.032em !important;
-  color: var(--text) !important;
-}
-
-.projects-page-header p,
-.tickets-page-header p,
-.customers-page-header p,
-.fieldops-page-header p,
-.todos-page-header p,
-.deadlines-page-header p,
-.tasks-minimal-header p,
-.management-heading p,
-.theme-page-heading p,
-.unified-page-header p {
-  font-size: 12.5px !important;
-  line-height: 1.4 !important;
-  color: var(--muted) !important;
-}
-
-.soft-panel,
-.compact-list-card,
-.liquid-card,
-.ticket-card,
-.mobile-ticket-card-inner,
-.task-mobile-card,
-.reminders-form,
-.reminder-card,
-.data-list-shell,
-.milestone-card,
-.project-list-card,
-.project-business-card,
-.project-business-shell > .liquid-card,
-.dashboard-theme-page .liquid-card,
-.customer-dashboard-theme-page .liquid-card,
-.mobile-dashboard-theme-page .liquid-card,
-.management-theme-page .admin-summary-card,
-.management-theme-page .admin-kpi-card,
-.management-theme-page .management-dashboard-card,
-.management-theme-page .manager-stat-card,
-.management-theme-page .manager-assigned-toolbar,
-.management-theme-page .management-org-toolbar,
-.management-theme-page .manager-assigned-row,
-.management-theme-page .org-person-card,
-.management-theme-page .org-level-badge,
-.management-theme-page .org-level-people {
-  border: 1px solid var(--card-border-strong) !important;
-  background: var(--surface-raised) !important;
-  box-shadow: var(--shadow-raised) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-.compact-list-card:hover,
-.ticket-card:hover,
-.task-mobile-card:hover,
-.project-list-card:hover,
-.reminder-card:hover,
-.management-theme-page .admin-summary-card:hover,
-.management-theme-page .management-dashboard-card:hover,
-.management-theme-page .manager-assigned-row:hover {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--border)) !important;
-  box-shadow: var(--shadow-raised-hover) !important;
-  transform: translateY(-1px);
-}
-
-.unified-filter-row,
-.theme-ticket-toolbar,
-.theme-filter-strip,
-.projects-filter-row,
-.fieldops-filter-row,
-.customers-filter-row,
-.tasks-minimal-tabs,
-.segmented-control,
-.view-switch,
-.project-tab-scroll,
-.management-tabs,
-.management-command-bar {
-  border-color: color-mix(in srgb, var(--border) 86%, white 14%) !important;
-  background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft) 12%) !important;
-  box-shadow: 0 14px 38px -34px rgb(17 35 39 / 42%) !important;
-}
-
-.unified-filter-row button.is-active,
-.theme-ticket-toolbar button.is-active,
-.theme-filter-strip button.is-active,
-.projects-filter-row button.is-active,
-.fieldops-filter-row button.is-active,
-.customers-filter-row button.is-active,
-.segmented-control button.is-active,
-.view-switch button.is-active,
-.project-tab.is-active,
-.management-tabs button.is-active,
-.management-tabs button[aria-selected="true"],
-.theme-work-page button.is-active,
-.project-workspace button.is-active {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, white 84%), var(--accent-ink)) !important;
-  color: var(--accent) !important;
-  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border)) !important;
-}
-
-.management-theme-page.management-workspace {
-  padding: clamp(18px, 3vw, 28px) !important;
-}
-
-.management-hero {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  align-items: end !important;
-  gap: 14px !important;
-}
-
-.management-eyebrow {
-  display: none !important;
-}
-
-.management-heading p {
-  max-width: 680px !important;
-}
-
-.management-tabs {
-  width: auto !important;
-  max-width: 100% !important;
-  margin: 0 !important;
-  padding: 5px !important;
-  border-radius: 16px !important;
-}
-
-.management-theme-page .admin-summary-card,
-.management-theme-page .admin-kpi-card,
-.management-theme-page .management-dashboard-card,
-.management-theme-page .manager-stat-card {
-  position: relative;
-  overflow: hidden;
-}
-
-.management-theme-page .admin-summary-card::before,
-.management-theme-page .admin-kpi-card::before,
-.management-theme-page .management-dashboard-card::before,
-.management-theme-page .manager-stat-card::after {
-  content: "";
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 0;
-  height: 4px;
-  border-radius: 0 0 999px 999px;
-  background: linear-gradient(90deg, var(--accent), var(--success));
-  pointer-events: none;
-}
-
-.management-theme-page .admin-summary-card:nth-child(3n + 2)::before,
-.management-theme-page .admin-kpi-card:nth-child(3n + 2)::before,
-.management-theme-page .management-dashboard-card:nth-child(3n + 2)::before,
-.management-theme-page .manager-stat-card:nth-child(3n + 2)::after {
-  background: linear-gradient(90deg, var(--warning), var(--accent));
-}
-
-.management-theme-page .admin-summary-card:nth-child(3n + 3)::before,
-.management-theme-page .admin-kpi-card:nth-child(3n + 3)::before,
-.management-theme-page .management-dashboard-card:nth-child(3n + 3)::before,
-.management-theme-page .manager-stat-card:nth-child(3n + 3)::after {
-  background: linear-gradient(90deg, var(--danger), var(--warning));
-}
-
-.management-theme-page .admin-summary-card {
-  border-top: 1px solid var(--card-border-strong) !important;
-}
-
-.management-theme-page .admin-ai-summary {
-  border-color: color-mix(in srgb, var(--accent) 26%, var(--border)) !important;
-  background:
-    radial-gradient(circle at 5% 0%, color-mix(in srgb, var(--accent-ink) 72%, transparent), transparent 34%),
-    linear-gradient(145deg, var(--surface-raised-strong), var(--surface)) !important;
-  box-shadow: var(--shadow-raised) !important;
-}
-
-.management-theme-page .management-portfolio-card,
-.management-theme-page .management-ai-card {
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--border)) !important;
-  background:
-    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent-ink) 82%, transparent), transparent 38%),
-    var(--surface-raised-strong) !important;
-}
-
-.project-list-card {
-  border-radius: 20px !important;
-}
-
-.theme-work-page .project-list-card h3,
-.project-workspace .project-list-card h3 {
-  font-size: 15.5px !important;
-  font-weight: 720 !important;
-  line-height: 1.22 !important;
-  letter-spacing: -0.015em !important;
-}
-
-.project-business-card h2 {
-  font-size: clamp(19px, 2.45vw, 25px) !important;
-}
-
-.management-theme-page .admin-summary-card h3,
-.management-theme-page .admin-kpi-card h3,
-.management-theme-page .management-dashboard-card h3,
-.management-theme-page .manager-stat-card h3,
-.ticket-card h3,
-.compact-list-card h3,
-.reminder-card h3 {
-  font-size: clamp(14px, 1.4vw, 16px) !important;
-  font-weight: 780 !important;
-  line-height: 1.25 !important;
-}
-
-.project-list-card-header {
-  border-bottom-color: color-mix(in srgb, var(--border) 70%, white 30%) !important;
-}
-
-.project-list-card .project-progress-track,
-.project-business-card .project-progress-track {
-  background: color-mix(in srgb, var(--accent-ink) 55%, var(--surface-soft) 45%) !important;
-}
-
-.project-list-card .project-progress-fill,
-.project-business-card .project-progress-fill {
-  background: linear-gradient(90deg, var(--accent), var(--success)) !important;
-}
-
-@media (max-width: 760px) {
-  .theme-work-page h1,
-  .theme-work-page h2,
-  .theme-work-page h3,
-  .project-workspace h1,
-  .project-workspace h2,
-  .project-workspace h3,
-  .unified-page-header h2,
-  .theme-page-heading h2,
-  .projects-page-header h2,
-  .tickets-page-header h2,
-  .customers-page-header h2,
-  .fieldops-page-header h2,
-  .todos-page-header h2,
-  .deadlines-page-header h2,
-  .tasks-minimal-header h2,
-  .management-heading h2 {
-    font-size: 20px !important;
-  }
-
-  .management-hero {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
-  }
-
-  .management-tabs {
-    width: 100% !important;
   }
 }
 
@@ -6110,171 +4459,62 @@ body::before,
   border-color: color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
 }
 
-/* Final polish: semantic chips keep the liquid theme, but important tags stay visible. */
-.ui-chip,
-.task-mobile-chip-soft,
-.ticket-mobile-chip-soft,
-.task-minimal-titleline span,
-.theme-work-page [class*="chip"] {
-  --chip-tone: var(--muted);
-  --chip-bg: color-mix(in srgb, var(--muted) 8%, white 92%);
-  --chip-border: color-mix(in srgb, var(--muted) 18%, var(--border));
-  align-items: center;
-  background: var(--chip-bg) !important;
-  border: 1px solid var(--chip-border) !important;
-  border-radius: 999px !important;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%), 0 9px 22px -18px color-mix(in srgb, var(--chip-tone) 46%, transparent) !important;
-  color: var(--chip-tone) !important;
-  display: inline-flex;
-  gap: 5px;
-  letter-spacing: .01em;
-  white-space: nowrap;
+/* Canonical page system: one header, one filter rhythm, one chip language. */
+:root {
+  --page-gutter: clamp(16px, 3vw, 28px);
+  --page-gutter-mobile: 12px;
+  --page-header-min: 70px;
+  --page-header-radius: 22px;
+  --page-filter-radius: 18px;
+  --page-control-height: 40px;
+  --surface-raised: color-mix(in srgb, var(--surface) 92%, var(--surface-soft) 8%);
+  --surface-raised-strong: color-mix(in srgb, var(--surface) 97%, var(--accent-ink) 3%);
+  --card-border-strong: color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
+  --shadow-raised: 0 20px 52px -36px rgb(17 35 39 / 44%);
+  --shadow-card: 0 18px 42px -34px rgb(17 35 39 / 38%);
 }
 
-.ui-chip-accent,
-.ui-chip-info,
-.ticket-mobile-chip-main,
-.ticket-mobile-chip-link {
-  --chip-tone: var(--accent);
-  --chip-bg: color-mix(in srgb, var(--accent) 12%, white 88%);
-  --chip-border: color-mix(in srgb, var(--accent) 30%, var(--border));
+html,
+body,
+#root {
+  background: #f6f7f7 !important;
+  background-image: none !important;
 }
 
-.ui-chip-success,
-.work-type-chip-field {
-  --chip-tone: var(--success);
-  --chip-bg: color-mix(in srgb, var(--success) 13%, white 87%);
-  --chip-border: color-mix(in srgb, var(--success) 31%, var(--border));
+body::before,
+.app-loading-shell::before,
+.mobile-glass-topbar::after {
+  display: none !important;
 }
 
-.ui-chip-warning,
-.work-type-chip-remote {
-  --chip-tone: var(--warning);
-  --chip-bg: color-mix(in srgb, var(--warning) 15%, white 85%);
-  --chip-border: color-mix(in srgb, var(--warning) 34%, var(--border));
+.theme-work-page,
+.project-workspace,
+.logs-theme-page,
+.mobile-feature-menu-page,
+.dashboard-theme-page,
+.mobile-dashboard-theme-page,
+.customer-dashboard-theme-page,
+.reports-theme-page,
+.todos-theme-page,
+.deadlines-theme-page,
+.projects-theme-page,
+.tasks-theme-page,
+.tickets-theme-page,
+.management-theme-page,
+.fieldops-theme-page {
+  background: #f6f7f7 !important;
+  background-image: none !important;
+  color: var(--text) !important;
 }
 
-.ui-chip-danger {
-  --chip-tone: var(--danger);
-  --chip-bg: color-mix(in srgb, var(--danger) 12%, white 88%);
-  --chip-border: color-mix(in srgb, var(--danger) 30%, var(--border));
+.theme-work-page:not(.mobile-dashboard-theme-page),
+.project-workspace:not(.mobile-dashboard-theme-page),
+.tasks-theme-page,
+.reminders-page,
+.management-theme-page.management-workspace {
+  padding: var(--page-gutter) !important;
 }
 
-.theme-work-page span[style*="background: rgb(238, 242, 255)"],
-.theme-work-page span[style*="background:#EEF2FF"],
-.theme-work-page span[style*="background: #EEF2FF"],
-.project-workspace span[style*="background: rgb(238, 242, 255)"],
-.project-workspace span[style*="background:#EEF2FF"],
-.project-workspace span[style*="background: #EEF2FF"] {
-  background: color-mix(in srgb, var(--accent) 12%, white 88%) !important;
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)) !important;
-  color: var(--accent) !important;
-}
-
-.theme-work-page span[style*="background: rgb(236, 253, 245)"],
-.theme-work-page span[style*="background:#ECFDF5"],
-.theme-work-page span[style*="background: #ECFDF5"],
-.project-workspace span[style*="background: rgb(236, 253, 245)"],
-.project-workspace span[style*="background:#ECFDF5"],
-.project-workspace span[style*="background: #ECFDF5"] {
-  background: color-mix(in srgb, var(--success) 13%, white 87%) !important;
-  border: 1px solid color-mix(in srgb, var(--success) 31%, var(--border)) !important;
-  color: var(--success) !important;
-}
-
-.theme-work-page span[style*="background: rgb(255, 247, 237)"],
-.theme-work-page span[style*="background:#FFF7ED"],
-.theme-work-page span[style*="background: #FFF7ED"],
-.project-workspace span[style*="background: rgb(255, 247, 237)"],
-.project-workspace span[style*="background:#FFF7ED"],
-.project-workspace span[style*="background: #FFF7ED"] {
-  background: color-mix(in srgb, var(--warning) 15%, white 85%) !important;
-  border: 1px solid color-mix(in srgb, var(--warning) 34%, var(--border)) !important;
-  color: var(--warning) !important;
-}
-
-.theme-work-page span[style*="background: rgb(254, 242, 242)"],
-.theme-work-page span[style*="background:#FEF2F2"],
-.theme-work-page span[style*="background: #FEF2F2"],
-.project-workspace span[style*="background: rgb(254, 242, 242)"],
-.project-workspace span[style*="background:#FEF2F2"],
-.project-workspace span[style*="background: #FEF2F2"] {
-  background: color-mix(in srgb, var(--danger) 12%, white 88%) !important;
-  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)) !important;
-  color: var(--danger) !important;
-}
-
-.btn-base.icon-only-action,
-.icon-only-action {
-  align-items: center !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 999px !important;
-  box-shadow: none !important;
-  color: var(--accent) !important;
-  display: inline-grid !important;
-  flex: 0 0 44px !important;
-  font-size: 32px !important;
-  font-weight: 850 !important;
-  height: 44px !important;
-  justify-content: center !important;
-  line-height: 1 !important;
-  min-height: 44px !important;
-  min-width: 44px !important;
-  padding: 0 !important;
-  place-items: center !important;
-  width: 44px !important;
-}
-
-.btn-base.icon-only-action:hover,
-.icon-only-action:hover {
-  background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
-  transform: translateY(-1px);
-}
-
-.btn-base.icon-only-action:focus-visible,
-.icon-only-action:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 42%, transparent);
-  outline-offset: 2px;
-}
-
-.theme-work-page .btn-base.icon-only-action,
-.theme-work-page .page-header-actions .btn-base.icon-only-action,
-.theme-work-page .unified-page-header .btn-base.icon-only-action,
-.theme-work-page .theme-page-heading .btn-base.icon-only-action,
-.project-workspace .btn-base.icon-only-action,
-.project-workspace .page-header-actions .btn-base.icon-only-action,
-.project-workspace .unified-page-header .btn-base.icon-only-action,
-.tasks-minimal-header .btn-base.icon-only-action,
-.project-filter-shell .btn-base.icon-only-action {
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 999px !important;
-  box-shadow: none !important;
-  color: var(--accent) !important;
-  flex: 0 0 48px !important;
-  font-size: 30px !important;
-  height: 48px !important;
-  line-height: 1 !important;
-  min-height: 48px !important;
-  min-width: 48px !important;
-  padding: 0 !important;
-  width: 48px !important;
-}
-
-.theme-work-page .btn-base.icon-only-action:hover,
-.project-workspace .btn-base.icon-only-action:hover,
-.tasks-minimal-header .btn-base.icon-only-action:hover,
-.project-filter-shell .btn-base.icon-only-action:hover {
-  background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
-}
-
-.status-badge,
-.delay-badge {
-  font-weight: 760 !important;
-}
-
-/* Final page-system normalization: one header, one filter rhythm, one chip language. */
 .theme-work-page > .unified-page-header,
 .theme-work-page > .theme-page-heading,
 .project-workspace > .unified-page-header,
@@ -6285,58 +4525,90 @@ body::before,
 .todos-page-header,
 .deadlines-page-header,
 .reports-page-header,
+.logs-page-header,
 .mobile-feature-header,
+.reminders-hero,
 .management-hero {
   align-items: center !important;
-  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent) !important;
-  border-radius: 22px !important;
-  box-shadow: 0 18px 46px -38px rgb(17 35 39 / 44%) !important;
+  background: var(--surface-raised-strong) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: var(--page-header-radius) !important;
+  box-shadow: var(--shadow-raised) !important;
   display: flex !important;
   gap: 14px !important;
   justify-content: space-between !important;
   margin: 0 0 14px !important;
-  min-height: 76px !important;
+  min-height: var(--page-header-min) !important;
   padding: 14px 16px !important;
   width: 100% !important;
 }
 
+.tasks-minimal-header,
+.management-hero {
+  flex-wrap: wrap !important;
+}
+
+.theme-work-page .unified-title-row,
+.project-workspace .unified-title-row,
 .tasks-minimal-header .unified-title-row {
   align-items: center !important;
   display: flex !important;
+  gap: 12px !important;
   justify-content: space-between !important;
-  min-height: 48px !important;
+  min-height: 44px !important;
+  min-width: 0 !important;
+  width: 100% !important;
 }
 
-.theme-work-page > .unified-page-header h2,
-.theme-work-page > .theme-page-heading h2,
-.project-workspace > .unified-page-header h2,
-.project-workspace > .theme-page-heading h2,
-.tasks-minimal-header h2,
+.theme-work-page h1,
+.theme-work-page h2,
+.theme-work-page h3,
+.project-workspace h1,
+.project-workspace h2,
+.project-workspace h3,
+.unified-page-header h2,
+.theme-page-heading h2,
+.projects-page-header h2,
+.tickets-page-header h2,
 .customers-page-header h2,
 .fieldops-page-header h2,
 .todos-page-header h2,
-.deadlines-page-header h2 {
+.deadlines-page-header h2,
+.tasks-minimal-header h2,
+.management-heading h2,
+.logs-page-header h2 {
   color: var(--text) !important;
-  font-size: clamp(21px, 2.1vw, 25px) !important;
+  font-family: var(--font-display, var(--font-ui)) !important;
+  font-size: clamp(21px, 2vw, 24px) !important;
   font-weight: 820 !important;
-  letter-spacing: -.035em !important;
+  letter-spacing: -.032em !important;
   line-height: 1.12 !important;
 }
 
-.theme-work-page > .unified-page-header p,
-.theme-work-page > .theme-page-heading p,
-.project-workspace > .unified-page-header p,
-.project-workspace > .theme-page-heading p,
-.tasks-minimal-header p,
+.unified-page-header p,
+.theme-page-heading p,
+.projects-page-header p,
+.tickets-page-header p,
 .customers-page-header p,
 .fieldops-page-header p,
 .todos-page-header p,
-.deadlines-page-header p {
+.deadlines-page-header p,
+.tasks-minimal-header p,
+.management-heading p,
+.logs-page-header p {
   color: var(--muted) !important;
   font-size: 12px !important;
   line-height: 1.35 !important;
   margin-top: 4px !important;
+}
+
+.page-header-actions {
+  align-items: center !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  justify-content: flex-end !important;
+  margin-left: auto !important;
 }
 
 .unified-filter-row,
@@ -6349,88 +4621,289 @@ body::before,
 .management-command-bar,
 .admin-control-row,
 .segmented-control,
-.view-switch {
+.view-switch,
+.project-tab-scroll {
   align-items: center !important;
-  background: color-mix(in srgb, var(--surface) 80%, var(--surface-soft) 20%) !important;
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent) !important;
-  border-radius: 18px !important;
-  box-shadow: none !important;
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft) 12%) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent) !important;
+  border-radius: var(--page-filter-radius) !important;
+  box-shadow: 0 14px 38px -34px rgb(17 35 39 / 34%) !important;
+  display: flex !important;
   gap: 7px !important;
+  max-width: 100% !important;
   padding: 6px !important;
+}
+
+.unified-filter-row,
+.theme-ticket-toolbar,
+.theme-filter-strip,
+.projects-filter-row,
+.customers-filter-row,
+.fieldops-filter-row,
+.tasks-minimal-tabs,
+.management-command-bar,
+.admin-control-row {
+  flex-wrap: wrap !important;
+  margin: 0 0 14px !important;
+  width: 100% !important;
+}
+
+.segmented-control,
+.view-switch {
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.project-tab-scroll {
+  margin: 10px 0 12px !important;
+  overflow-x: auto !important;
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
 }
 
 .unified-filter-row input,
 .unified-filter-row select,
 .theme-ticket-toolbar input,
 .theme-ticket-toolbar select,
+.theme-filter-strip input,
+.theme-filter-strip select,
 .projects-filter-row input,
 .projects-filter-row select,
+.fieldops-filter-row input,
+.fieldops-filter-row select,
 .customers-filter-row input,
 .customers-filter-row select,
-.fieldops-filter-row input,
-.fieldops-filter-row select {
+.modal-panel input,
+.modal-panel select,
+.modal-panel textarea {
+  box-sizing: border-box !important;
+  min-height: var(--page-control-height) !important;
   min-width: 0 !important;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, white 14%) !important;
+  border-radius: 13px !important;
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%) !important;
 }
 
-.project-tab-scroll {
-  background: color-mix(in srgb, var(--surface) 78%, var(--surface-soft) 22%) !important;
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent) !important;
-  border-radius: 18px !important;
-  box-shadow: none !important;
-  margin: 10px 0 12px !important;
-  max-width: 100% !important;
-  overflow-x: auto !important;
-  padding: 6px !important;
-  position: static !important;
-  top: auto !important;
-  z-index: auto !important;
-}
-
-.project-tab {
+.unified-filter-row button,
+.theme-ticket-toolbar button,
+.theme-filter-strip button,
+.projects-filter-row button,
+.fieldops-filter-row button,
+.customers-filter-row button,
+.tasks-minimal-tabs button,
+.segmented-control button,
+.view-switch button,
+.project-tab,
+.management-command-bar button,
+.admin-control-row button {
+  align-items: center !important;
   background: transparent !important;
   border: 1px solid transparent !important;
   border-radius: 13px !important;
   color: var(--muted) !important;
-  min-height: 38px !important;
+  display: inline-flex !important;
+  font-size: 12px !important;
+  font-weight: 780 !important;
+  gap: 6px !important;
+  min-height: 36px !important;
   padding: 8px 12px !important;
+  white-space: nowrap !important;
 }
 
-.project-tab.is-active {
-  background: var(--surface) !important;
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--border)) !important;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent) !important;
+.unified-filter-row button.is-active,
+.theme-ticket-toolbar button.is-active,
+.theme-filter-strip button.is-active,
+.projects-filter-row button.is-active,
+.fieldops-filter-row button.is-active,
+.customers-filter-row button.is-active,
+.tasks-minimal-tabs button.is-active,
+.segmented-control button.is-active,
+.view-switch button.is-active,
+.project-tab.is-active,
+.management-command-bar button.is-active,
+.admin-control-row button.is-active,
+.theme-work-page button.is-active,
+.project-workspace button.is-active {
+  background: color-mix(in srgb, var(--accent) 12%, white 88%) !important;
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border)) !important;
   color: var(--accent) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 76%) !important;
+}
+
+.btn-base.icon-only-action,
+.icon-only-action,
+.theme-work-page .btn-base.icon-only-action,
+.project-workspace .btn-base.icon-only-action,
+.tasks-minimal-header .btn-base.icon-only-action,
+.project-filter-shell .btn-base.icon-only-action {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  color: var(--accent) !important;
+  display: inline-grid !important;
+  flex: 0 0 48px !important;
+  font-size: 30px !important;
+  font-weight: 850 !important;
+  height: 48px !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  min-height: 48px !important;
+  min-width: 48px !important;
+  padding: 0 !important;
+  place-items: center !important;
+  width: 48px !important;
+}
+
+.btn-base.icon-only-action:hover,
+.icon-only-action:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+  transform: translateY(-1px);
+}
+
+.soft-panel,
+.compact-list-card,
+.liquid-card,
+.ticket-card,
+.ticket-mobile-card,
+.mobile-ticket-card-inner,
+.task-mobile-card,
+.task-minimal-row,
+.reminders-form,
+.reminder-card,
+.data-list-shell,
+.milestone-card,
+.project-list-card,
+.project-business-card,
+.glass-form-panel,
+.management-theme-page .admin-summary-card,
+.management-theme-page .admin-kpi-card,
+.management-theme-page .management-dashboard-card,
+.management-theme-page .manager-stat-card,
+.management-theme-page .manager-assigned-row,
+.todos-theme-page .todo-columns > div,
+.reports-theme-page .soft-panel,
+.fieldops-theme-page .soft-panel,
+.fieldops-theme-page .compact-list-card,
+.import-theme-page .soft-panel,
+.customers-theme-page .soft-panel,
+.logs-theme-page .soft-panel {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--shadow-card) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.compact-list-card:hover,
+.ticket-card:hover,
+.task-mobile-card:hover,
+.project-list-card:hover,
+.reminder-card:hover,
+.management-theme-page .admin-summary-card:hover,
+.management-theme-page .management-dashboard-card:hover,
+.management-theme-page .manager-assigned-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border)) !important;
+  box-shadow: 0 24px 58px -38px rgb(17 35 39 / 48%) !important;
+  transform: translateY(-1px);
 }
 
 .ui-chip,
 .status-badge,
 .delay-badge,
-.tickets-theme-page .ui-chip,
-.project-workspace .ui-chip {
+.task-mobile-chip-soft,
+.ticket-mobile-chip-soft,
+.task-minimal-titleline span,
+.theme-work-page [class*="chip"],
+.project-workspace [class*="chip"] {
+  --chip-tone: var(--muted);
+  --chip-bg: color-mix(in srgb, var(--muted) 8%, white 92%);
+  --chip-border: color-mix(in srgb, var(--muted) 18%, var(--border));
+  align-items: center !important;
+  background: var(--chip-bg) !important;
+  border: 1px solid var(--chip-border) !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%), 0 8px 18px -16px color-mix(in srgb, var(--chip-tone) 46%, transparent) !important;
+  color: var(--chip-tone) !important;
+  display: inline-flex !important;
   font-size: 10.5px !important;
   font-weight: 820 !important;
+  gap: 5px !important;
+  letter-spacing: .01em !important;
+  line-height: 1.2 !important;
   min-height: 24px !important;
   padding: 3px 8px !important;
+  white-space: nowrap !important;
 }
 
-.ui-chip-accent {
-  --chip-bg: color-mix(in srgb, var(--accent) 18%, white 82%);
-  --chip-border: color-mix(in srgb, var(--accent) 42%, var(--border));
+.ui-chip-accent,
+.ui-chip-info,
+.ticket-mobile-chip-main,
+.ticket-mobile-chip-link {
+  --chip-tone: var(--accent);
+  --chip-bg: color-mix(in srgb, var(--accent) 15%, white 85%);
+  --chip-border: color-mix(in srgb, var(--accent) 38%, var(--border));
 }
 
-.ui-chip-success {
-  --chip-bg: color-mix(in srgb, var(--success) 18%, white 82%);
-  --chip-border: color-mix(in srgb, var(--success) 42%, var(--border));
+.ui-chip-success,
+.work-type-chip-field {
+  --chip-tone: var(--success);
+  --chip-bg: color-mix(in srgb, var(--success) 15%, white 85%);
+  --chip-border: color-mix(in srgb, var(--success) 38%, var(--border));
 }
 
-.ui-chip-warning {
-  --chip-bg: color-mix(in srgb, var(--warning) 20%, white 80%);
-  --chip-border: color-mix(in srgb, var(--warning) 46%, var(--border));
+.ui-chip-warning,
+.work-type-chip-remote {
+  --chip-tone: var(--warning);
+  --chip-bg: color-mix(in srgb, var(--warning) 18%, white 82%);
+  --chip-border: color-mix(in srgb, var(--warning) 42%, var(--border));
 }
 
 .ui-chip-danger {
-  --chip-bg: color-mix(in srgb, var(--danger) 18%, white 82%);
-  --chip-border: color-mix(in srgb, var(--danger) 42%, var(--border));
+  --chip-tone: var(--danger);
+  --chip-bg: color-mix(in srgb, var(--danger) 15%, white 85%);
+  --chip-border: color-mix(in srgb, var(--danger) 38%, var(--border));
+}
+
+.ticket-card {
+  border-top: 0 !important;
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.ticket-card::before {
+  background: linear-gradient(90deg, var(--accent), var(--success));
+  border-radius: 999px;
+  content: "";
+  display: block;
+  height: 4px;
+  width: 42px;
+}
+
+.ticket-card > div:first-child {
+  align-items: flex-start !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.ticket-card > div:first-child > b {
+  color: var(--text) !important;
+  flex: 1 1 100% !important;
+  min-width: 0 !important;
+  order: 2 !important;
+}
+
+.ticket-card > div:nth-child(2) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px 12px !important;
 }
 
 .management-theme-page .admin-summary-card::before,
@@ -6440,40 +4913,24 @@ body::before,
 }
 
 .management-theme-page .admin-summary-card,
-.management-theme-page .admin-kpi-card,
-.management-theme-page .management-dashboard-card {
-  background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft) 12%) !important;
-  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent) !important;
-  box-shadow: 0 18px 42px -34px rgb(17 35 39 / 42%) !important;
-}
-
-.management-theme-page .admin-summary-card,
 .management-theme-page .admin-kpi-card {
   border-top-width: 4px !important;
 }
 
-.dashboard-theme-page > div:nth-child(2) .liquid-card,
-.dashboard-theme-page > div:nth-child(4) .liquid-card,
-.mobile-dashboard-theme-page .liquid-card {
-  background: color-mix(in srgb, var(--surface) 84%, var(--surface-soft) 16%) !important;
-  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent) !important;
-  box-shadow: 0 16px 42px -36px rgb(17 35 39 / 48%) !important;
-}
-
-.dashboard-theme-page > div:nth-child(2) .liquid-card:nth-child(1) {
-  border-left: 4px solid var(--accent) !important;
-}
-
-.dashboard-theme-page > div:nth-child(2) .liquid-card:nth-child(2) {
-  border-left: 4px solid var(--warning) !important;
-}
-
 .project-logo-tile {
-  min-width: 52px !important;
-  min-height: 52px !important;
+  min-height: 56px !important;
+  min-width: 56px !important;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
+  .theme-work-page:not(.mobile-dashboard-theme-page),
+  .project-workspace:not(.mobile-dashboard-theme-page),
+  .tasks-theme-page,
+  .reminders-page,
+  .management-theme-page.management-workspace {
+    padding: var(--page-gutter-mobile) var(--page-gutter-mobile) 92px !important;
+  }
+
   .theme-work-page > .unified-page-header,
   .theme-work-page > .theme-page-heading,
   .project-workspace > .unified-page-header,
@@ -6482,48 +4939,75 @@ body::before,
   .customers-page-header,
   .fieldops-page-header,
   .todos-page-header,
-  .deadlines-page-header {
+  .deadlines-page-header,
+  .reports-page-header,
+  .logs-page-header,
+  .mobile-feature-header,
+  .reminders-hero,
+  .management-hero {
     border-radius: 18px !important;
-    min-height: 68px !important;
+    min-height: 64px !important;
     padding: 12px 13px !important;
   }
 
-  .theme-work-page > .unified-page-header h2,
-  .theme-work-page > .theme-page-heading h2,
-  .project-workspace > .unified-page-header h2,
-  .project-workspace > .theme-page-heading h2,
-  .tasks-minimal-header h2 {
+  .theme-work-page h1,
+  .theme-work-page h2,
+  .theme-work-page h3,
+  .project-workspace h1,
+  .project-workspace h2,
+  .project-workspace h3,
+  .unified-page-header h2,
+  .theme-page-heading h2,
+  .tasks-minimal-header h2,
+  .management-heading h2 {
     font-size: 20px !important;
-  }
-
-  .theme-work-page input,
-  .theme-work-page select,
-  .theme-work-page textarea,
-  .project-workspace input,
-  .project-workspace select,
-  .project-workspace textarea,
-  .modal-panel input,
-  .modal-panel select,
-  .modal-panel textarea {
-    box-sizing: border-box !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    width: 100% !important;
-  }
-
-  .modal-panel [style*="grid-template-columns"],
-  .visit-time-grid {
-    grid-template-columns: 1fr !important;
   }
 
   .unified-filter-row,
   .theme-ticket-toolbar,
+  .theme-filter-strip,
   .projects-filter-row,
   .fieldops-filter-row,
   .customers-filter-row,
-  .tasks-minimal-tabs {
-    overflow-x: auto !important;
+  .tasks-minimal-tabs,
+  .project-tab-scroll,
+  .segmented-control,
+  .view-switch,
+  .management-command-bar,
+  .admin-control-row {
     flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .unified-filter-row::-webkit-scrollbar,
+  .theme-ticket-toolbar::-webkit-scrollbar,
+  .theme-filter-strip::-webkit-scrollbar,
+  .projects-filter-row::-webkit-scrollbar,
+  .fieldops-filter-row::-webkit-scrollbar,
+  .customers-filter-row::-webkit-scrollbar,
+  .tasks-minimal-tabs::-webkit-scrollbar,
+  .project-tab-scroll::-webkit-scrollbar,
+  .management-command-bar::-webkit-scrollbar,
+  .admin-control-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .unified-filter-row input,
+  .unified-filter-row select,
+  .theme-ticket-toolbar input,
+  .theme-ticket-toolbar select,
+  .projects-filter-row input,
+  .projects-filter-row select,
+  .modal-panel input,
+  .modal-panel select,
+  .modal-panel textarea {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .ticket-card-grid {
+    grid-template-columns: 1fr !important;
   }
 }

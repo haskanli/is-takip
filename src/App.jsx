@@ -1195,24 +1195,22 @@ export default function App() {
 
       {/* PROJECTS LIST */}
       {view==="projects"&&!selProject&&<div className="project-workspace project-section theme-work-page projects-theme-page">
-        <div className="project-filter-shell unified-page-header projects-page-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, marginBottom:18, flexWrap:"wrap", padding:"15px 16px" }}>
-          <div className="unified-title-row">
-            <div><h2 style={{ margin:0, fontSize:22, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="projects" size={20}/>Projeler</h2><p style={{ margin:"3px 0 0", color:"var(--muted)", fontSize:13 }}>{listedProjects.length} proje</p></div>
-            {isAdmin&&<Btn className="icon-only-action" title="Yeni proje" aria-label="Yeni proje" onClick={()=>setModal({type:"addProject"})}>+</Btn>}
+        <div className="theme-page-heading unified-page-header projects-page-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, marginBottom:14, flexWrap:"wrap" }}>
+          <div><h2 style={{ margin:0, fontSize:22, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="projects" size={20}/>Projeler</h2><p style={{ margin:"3px 0 0", color:"var(--muted)", fontSize:13 }}>{listedProjects.length} proje</p></div>
+          {isAdmin&&<Btn className="icon-only-action" title="Yeni proje" aria-label="Yeni proje" onClick={()=>setModal({type:"addProject"})}>+</Btn>}
+        </div>
+        <div className="unified-filter-row projects-filter-row" style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          <input value={projectSearch} onChange={event=>setProjectSearch(event.target.value)} placeholder="Projelerde ara..." style={{...iStyle,width:220,maxWidth:"100%"}}/>
+          <Btn className="compact-tool-button" variant="secondary" title="XLSX indir" onClick={exportListedProjects}>XLSX</Btn>
+          <div className="segmented-control">
+            {isAdmin&&<button onClick={()=>setProjectScope("all")} className={projectScope==="all"?"is-active":""}>Tüm Projeler</button>}
+            <button onClick={()=>setProjectScope("mine")} className={projectScope==="mine"||!isAdmin?"is-active":""}>Projelerim</button>
           </div>
-          <div className="unified-filter-row projects-filter-row" style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <input value={projectSearch} onChange={event=>setProjectSearch(event.target.value)} placeholder="Projelerde ara..." style={{...iStyle,width:220,maxWidth:"100%"}}/>
-            <Btn className="compact-tool-button" variant="secondary" title="XLSX indir" onClick={exportListedProjects}>XLSX</Btn>
-            <div className="segmented-control">
-              {isAdmin&&<button onClick={()=>setProjectScope("all")} className={projectScope==="all"?"is-active":""}>Tüm Projeler</button>}
-              <button onClick={()=>setProjectScope("mine")} className={projectScope==="mine"||!isAdmin?"is-active":""}>Projelerim</button>
-            </div>
-            <div className="segmented-control">
-              {[["all","Tüm"],["connected","Connected Supplier"],["uat","UAT Alınanlar"],["standard","Standart"]].map(([id,label])=><button key={id} onClick={()=>setProjectSegment(id)} className={projectSegment===id?"is-active":""}>{label}</button>)}
-            </div>
-            <div className="segmented-control">
-              {[["cards","Kart"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setProjectViewMode(id)} className={projectViewMode===id?"is-active":""}>{label}</button>)}
-            </div>
+          <div className="segmented-control">
+            {[["all","Tüm"],["connected","Connected Supplier"],["uat","UAT Alınanlar"],["standard","Standart"]].map(([id,label])=><button key={id} onClick={()=>setProjectSegment(id)} className={projectSegment===id?"is-active":""}>{label}</button>)}
+          </div>
+          <div className="segmented-control">
+            {[["cards","Kart"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setProjectViewMode(id)} className={projectViewMode===id?"is-active":""}>{label}</button>)}
           </div>
         </div>
         {listedProjects.length===0&&<div className="liquid-card" style={{ textAlign:"center", padding:"50px", borderRadius:16, borderStyle:"dashed" }}>
