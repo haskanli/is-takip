@@ -157,7 +157,10 @@ export function GanttChart({ project, compact }) {
     cur.setMonth(cur.getMonth() + 1);
   }
 
-  const labelW = compact ? 110 : 150;
+  const isNarrow = typeof window !== "undefined" && window.innerWidth <= 768;
+  const labelW = compact ? 110 : isNarrow ? 96 : 150;
+  const taskLabelW = isNarrow ? 96 : 140;
+  const summaryW = isNarrow ? 34 : 50;
   const rowH = 28;
   const bgs = ["#FFFFFF", "#F8FAFF"];
 
@@ -171,7 +174,7 @@ export function GanttChart({ project, compact }) {
 
   return (
     <div className="project-gantt-panel" style={{ overflowX:"auto" }}>
-      <div style={{ minWidth: 520 }}>
+      <div style={{ minWidth: isNarrow ? "100%" : 520 }}>
         <div style={{ fontSize:10, color:"var(--muted)", marginBottom:8 }}>
           Milestone tıklayın → hedeflenen/gerçekleşen + görev satırları
         </div>
@@ -244,7 +247,7 @@ export function GanttChart({ project, compact }) {
                     </div>
                   )}
                 </div>
-                <div style={{ width:50, textAlign:"right", paddingLeft:6, fontSize:10, color:"var(--muted)" }}>{done}/{m.tasks.length}</div>
+                <div style={{ width:summaryW, textAlign:"right", paddingLeft:6, fontSize:10, color:"var(--muted)" }}>{done}/{m.tasks.length}</div>
               </div>
 
               {/* Expanded: comparison + tasks */}
@@ -266,7 +269,7 @@ export function GanttChart({ project, compact }) {
                         const donePct = t.status === "Tamamland\u0131" ? 100 : 0;
                         return (
                           <div key={t.id} style={{ display:"flex", alignItems:"center", marginBottom:5 }}>
-                            <div style={{ width:140, flexShrink:0, fontSize:9, color:"var(--muted)", paddingRight:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight: t.status==="Tamamland\u0131"?400:500 }} title={t.title}>
+                            <div style={{ width:taskLabelW, flexShrink:0, fontSize:9, color:"var(--muted)", paddingRight:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight: t.status==="Tamamland\u0131"?400:500 }} title={t.title}>
                               {t.status==="Tamamland\u0131" ? "✓ " : ""}{t.title}
                             </div>
                             <div style={{ flex:1, position:"relative", height:20, background:"#fff", borderRadius:4, border:"1px solid #E8EDF5", overflow:"hidden" }}>

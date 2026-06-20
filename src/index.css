@@ -4090,12 +4090,67 @@ textarea:focus {
   overflow-wrap: normal !important;
 }
 
+.tasks-minimal-header.unified-page-header,
+.tasks-minimal-header > .unified-page-header {
+  align-items: center !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+}
+
+.tasks-minimal-header.unified-page-header > div:last-child,
+.tasks-minimal-header > .unified-page-header > div:last-child,
+.tasks-minimal-header .page-header-actions {
+  align-items: center !important;
+  display: flex !important;
+  flex: 0 0 auto !important;
+  justify-content: flex-end !important;
+  margin-left: auto !important;
+}
+
+.tasks-minimal-header .icon-only-action,
+.tasks-minimal-header .btn-base.icon-only-action,
+.tasks-minimal-header.unified-page-header button,
+.tasks-minimal-header > .unified-page-header button {
+  background: var(--accent) !important;
+  border-color: color-mix(in srgb, var(--accent) 58%, white 42%) !important;
+  color: white !important;
+  min-height: 42px !important;
+  min-width: 42px !important;
+}
+
+.tasks-minimal-tabs {
+  display: flex !important;
+  gap: 8px !important;
+  margin: 12px 0 4px !important;
+  overflow-x: auto !important;
+  padding: 0 0 6px !important;
+  scrollbar-width: none !important;
+}
+
+.tasks-minimal-tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+.tasks-minimal-tabs button {
+  align-items: center !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  gap: 6px !important;
+  min-height: 42px !important;
+  white-space: nowrap !important;
+}
+
 .project-detail-workspace .project-actions-page,
 .project-detail-workspace .project-actions-panel {
+  box-sizing: border-box !important;
+  flex: 1 1 auto !important;
   max-width: var(--ui-page-max-final) !important;
   margin: 0 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
   width: 100% !important;
-  padding: 12px !important;
+  padding: 12px 12px max(var(--mobile-nav-clearance, 118px), 24px) !important;
 }
 
 .project-actions-header {
@@ -4256,6 +4311,55 @@ textarea:focus {
   min-width: 0 !important;
 }
 
+.tickets-theme-page .multi-choice-filter {
+  position: relative !important;
+}
+
+.multi-choice-backdrop {
+  background: transparent !important;
+  border: 0 !important;
+  display: none !important;
+  inset: 0 !important;
+  padding: 0 !important;
+  position: fixed !important;
+  z-index: 4998 !important;
+}
+
+.tickets-theme-page .multi-choice-menu {
+  overflow: auto !important;
+}
+
+.tickets-theme-page .multi-choice-option {
+  align-items: center !important;
+  color: var(--text) !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  font-size: 12px !important;
+  font-weight: 760 !important;
+  gap: 10px !important;
+  grid-template-columns: 22px minmax(0, 1fr) !important;
+  line-height: 1.25 !important;
+  min-height: 38px !important;
+  padding: 8px 9px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.tickets-theme-page .multi-choice-option input {
+  accent-color: var(--accent) !important;
+  height: 18px !important;
+  margin: 0 !important;
+  width: 18px !important;
+}
+
+.tickets-theme-page .multi-choice-option span {
+  display: block !important;
+  min-width: 0 !important;
+  overflow-wrap: normal !important;
+  white-space: normal !important;
+  word-break: normal !important;
+}
+
 .tickets-theme-page .ticket-card {
   display: grid !important;
   gap: 9px !important;
@@ -4285,17 +4389,19 @@ textarea:focus {
   .project-detail-workspace .project-plan-list-card {
     margin-left: 0 !important;
     margin-right: 0 !important;
+    overflow-x: hidden !important;
     width: 100% !important;
   }
 
   .project-detail-workspace .project-gantt-panel > div {
-    min-width: 640px !important;
+    min-width: 100% !important;
   }
 
   .project-actions-toolbar,
   .project-detail-workspace .project-actions-toolbar {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
   }
 
   .project-actions-toolbar select,
@@ -4305,17 +4411,24 @@ textarea:focus {
   }
 
   .project-actions-toolbar > select {
-    grid-column: 1 / -1 !important;
+    flex: 1 1 100% !important;
   }
 
   .project-actions-toolbar > input {
-    grid-column: 1 / -1 !important;
+    flex: 1 1 calc(100% - 50px) !important;
+    width: auto !important;
+  }
+
+  .project-actions-toolbar .toolbar-search-toggle {
+    flex: 0 0 42px !important;
+    max-width: 42px !important;
+    min-width: 42px !important;
+    width: 42px !important;
   }
 
   .project-actions-toolbar .compact-tool-button,
-  .project-actions-toolbar .btn-base {
-    grid-column: 1 / -1 !important;
-    justify-self: stretch !important;
+  .project-actions-toolbar .btn-base:not(.toolbar-search-toggle) {
+    flex: 1 1 100% !important;
     width: 100% !important;
   }
 
@@ -4347,5 +4460,62 @@ textarea:focus {
 
   .tickets-theme-page .ticket-card {
     padding: 13px !important;
+  }
+
+  .tickets-theme-page .multi-choice-menu {
+    background: var(--surface-raised) !important;
+    border: 1px solid var(--card-border-strong) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 26px 72px -30px rgb(17 35 39 / 65%) !important;
+    left: 50% !important;
+    max-height: min(420px, 58vh) !important;
+    max-width: min(330px, calc(100vw - 32px)) !important;
+    min-width: 0 !important;
+    padding: 10px !important;
+    position: fixed !important;
+    right: auto !important;
+    top: 198px !important;
+    transform: translateX(-50%) !important;
+    width: min(330px, calc(100vw - 32px)) !important;
+    box-sizing: border-box !important;
+    z-index: 5000 !important;
+  }
+
+  .tickets-theme-page .multi-choice-filter.is-open .multi-choice-backdrop {
+    display: block !important;
+  }
+
+  .tickets-theme-page .multi-choice-menu .multi-choice-option {
+    display: block !important;
+    min-height: 42px !important;
+    padding: 10px 10px 10px 42px !important;
+    position: relative !important;
+    text-align: left !important;
+    width: 100% !important;
+  }
+
+  .tickets-theme-page .multi-choice-menu .multi-choice-option input {
+    left: 12px !important;
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+  }
+
+  .tickets-theme-page .multi-choice-menu .multi-choice-option span {
+    display: block !important;
+    line-height: 1.3 !important;
+    max-width: 100% !important;
+  }
+
+  .tasks-minimal-header.unified-page-header,
+  .tasks-minimal-header > .unified-page-header {
+    align-items: center !important;
+    flex-direction: row !important;
+  }
+
+  .tasks-minimal-tabs {
+    margin-left: -2px !important;
+    padding-left: 0 !important;
+    width: calc(100% + 4px) !important;
   }
 }

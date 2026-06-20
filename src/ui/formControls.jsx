@@ -38,7 +38,7 @@ export function MultiChoiceFilter({ label, options, value, onChange }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="multi-choice-filter" style={{ position: "relative" }}>
+    <div className={`multi-choice-filter${open ? " is-open" : ""}`} style={{ position: "relative" }}>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -57,55 +57,58 @@ export function MultiChoiceFilter({ label, options, value, onChange }) {
         {value.length ? ` (${value.length})` : ""}
       </button>
       {open && (
-        <div
-          className="multi-choice-menu"
-          style={{
-            position: "absolute",
-            top: "calc(100% + 5px)",
-            left: 0,
-            zIndex: 1000,
-            minWidth: 230,
-            maxHeight: 280,
-            overflow: "auto",
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            borderRadius: 11,
-            padding: 8,
-            boxShadow: "0 16px 35px rgba(15,23,42,.16)",
-          }}
-        >
-          {options.map((option) => (
-            <label key={option.value} className="multi-choice-option" style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", fontSize: 11, cursor: "pointer", borderRadius: 7 }}>
-              <input
-                type="checkbox"
-                checked={value.includes(option.value)}
-                onChange={(event) =>
-                  onChange(event.target.checked ? [...value, option.value] : value.filter((item) => item !== option.value))
-                }
-              />
-              <span>{option.label}</span>
-            </label>
-          ))}
-          {value.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              style={{
-                width: "100%",
-                border: 0,
-                borderTop: "1px solid var(--border)",
-                background: "transparent",
-                color: "var(--danger)",
-                padding: "8px 4px 2px",
-                fontSize: 10,
-                fontWeight: 800,
-                cursor: "pointer",
-              }}
-            >
-              Secimi temizle
-            </button>
-          )}
-        </div>
+        <>
+          <button type="button" className="multi-choice-backdrop" aria-label="Filtreyi kapat" onClick={() => setOpen(false)} />
+          <div
+            className="multi-choice-menu"
+            style={{
+              position: "absolute",
+              top: "calc(100% + 5px)",
+              left: 0,
+              zIndex: 1000,
+              minWidth: 230,
+              maxHeight: 280,
+              overflow: "auto",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 11,
+              padding: 8,
+              boxShadow: "0 16px 35px rgba(15,23,42,.16)",
+            }}
+          >
+            {options.map((option) => (
+              <label key={option.value} className="multi-choice-option" style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", fontSize: 11, cursor: "pointer", borderRadius: 7 }}>
+                <input
+                  type="checkbox"
+                  checked={value.includes(option.value)}
+                  onChange={(event) =>
+                    onChange(event.target.checked ? [...value, option.value] : value.filter((item) => item !== option.value))
+                  }
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+            {value.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                style={{
+                  width: "100%",
+                  border: 0,
+                  borderTop: "1px solid var(--border)",
+                  background: "transparent",
+                  color: "var(--danger)",
+                  padding: "8px 4px 2px",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                Secimi temizle
+              </button>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
