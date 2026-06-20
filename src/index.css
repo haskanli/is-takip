@@ -3592,6 +3592,11 @@ body::before,
 
 .ticket-status-select {
   color: color-mix(in srgb, var(--text) 88%, var(--accent) 12%) !important;
+  font-size: 11px !important;
+  font-weight: 760 !important;
+  max-width: 148px !important;
+  min-height: 28px !important;
+  padding: 4px 26px 4px 9px !important;
 }
 
 .ticket-age-chip.ui-chip-muted {
@@ -3659,14 +3664,7 @@ body::before,
 }
 
 .task-minimal-row::before {
-  background: linear-gradient(180deg, var(--accent), var(--success));
-  border-radius: 999px;
-  bottom: 13px;
-  content: "";
-  left: 0;
-  position: absolute;
-  top: 13px;
-  width: 3px;
+  display: none !important;
 }
 
 .task-minimal-actions {
@@ -4860,30 +4858,36 @@ body::before,
 
   .projects-theme-page .projects-filter-row {
     display: grid !important;
-    gap: 7px !important;
+    gap: 6px !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     overflow-x: visible !important;
-    padding: 7px !important;
+    padding: 6px !important;
   }
 
   .projects-theme-page .projects-filter-row > input {
     grid-column: 1 / -1 !important;
+    min-height: 38px !important;
     width: 100% !important;
   }
 
   .projects-theme-page .projects-filter-row > .compact-tool-button {
     justify-content: center !important;
+    min-height: 36px !important;
     width: 100% !important;
   }
 
   .projects-theme-page .projects-filter-row > .segmented-control {
     justify-self: stretch !important;
+    min-height: 36px !important;
+    padding: 4px !important;
     width: 100% !important;
   }
 
   .projects-theme-page .projects-filter-row > .segmented-control button {
     flex: 1 0 auto !important;
     justify-content: center !important;
+    min-height: 28px !important;
+    padding: 5px 9px !important;
   }
 
   .multi-choice-menu {
@@ -4950,8 +4954,8 @@ body::before,
   .tickets-theme-page .ticket-status-select {
     grid-column: 1 / span 2 !important;
     grid-row: 3 !important;
-    max-width: 168px !important;
-    min-height: 30px !important;
+    max-width: 148px !important;
+    min-height: 28px !important;
     width: auto !important;
   }
 
