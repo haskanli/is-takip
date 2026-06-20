@@ -747,8 +747,8 @@ export default function App() {
     ? state.projects.filter(project=>project.id===effectiveCustomerId||project.customerId===effectiveCustomerId||canCustomerAccessProject(currentUser,project))
     : state.projects;
   const myProjects=customerView?visibleProjects:state.projects.filter(p=>projectPmIds(p).includes(currentUser.id)||projectCustomerSuccessIds(p).includes(currentUser.id)||projectStakeholders(p).some(item=>item.userId===currentUser.id)||(p.members||[]).includes(currentUser.id)||p.milestones.some(ms=>ms.tasks.some(t=>t.assignee===currentUser.id)));
-  const listedProjects=(projectScope==="mine"?myProjects:visibleProjects)
-    .filter(item=>projectSegment==="connected"?Boolean(item.connectedSupplier):projectSegment==="uat"?Boolean(item.uatAccepted):projectSegment==="standard"?!item.connectedSupplier&&!item.uatAccepted:true)
+  const listedProjects=(projectSegment==="mine"?myProjects:visibleProjects)
+    .filter(item=>projectSegment==="connected"?Boolean(item.connectedSupplier):projectSegment==="uat"?Boolean(item.uatAccepted):true)
     .filter(item=>`${item.name||""} ${item.description||""} ${(item.customerProfile?.website)||""}`.toLocaleLowerCase("tr-TR").includes(projectSearch.trim().toLocaleLowerCase("tr-TR")));
   const exportListedProjects=()=>downloadXlsx([
     ["Proje","Müşteri","Durum","Sorumluluk","Sorumlu","UAT / Devir","Başlangıç","Hedef Bitiş","İlerleme %","Görev","Geciken","Ticket","Makine","Devrede"],
@@ -1208,12 +1208,8 @@ export default function App() {
         </div>
         <div className="unified-filter-row projects-filter-row" style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
           <input value={projectSearch} onChange={event=>setProjectSearch(event.target.value)} placeholder="Projelerde ara..." style={{...iStyle,width:220,maxWidth:"100%"}}/>
-          <div className="segmented-control icon-filter-segment project-scope-switch" role="group" aria-label="Proje kapsamı">
-            {isAdmin&&<button title="Tüm projeler" aria-label="Tüm projeler" onClick={()=>setProjectScope("all")} className={projectScope==="all"?"is-active":""}><Icon name="projects" size={15}/><span className="sr-only">Tüm projeler</span></button>}
-            <button title="Benim projelerim" aria-label="Benim projelerim" onClick={()=>setProjectScope("mine")} className={projectScope==="mine"||!isAdmin?"is-active":""}><Icon name="user" size={15}/><span className="sr-only">Benim projelerim</span></button>
-          </div>
           <div className="segmented-control compact-filter-segment project-segment-switch" role="group" aria-label="Proje tipi">
-            {[["all","Tüm"],["connected","CS"],["uat","UAT"],["standard","Std"]].map(([id,label])=><button key={id} title={id==="connected"?"Connected Supplier":id==="uat"?"UAT alınanlar":label} onClick={()=>setProjectSegment(id)} className={projectSegment===id?"is-active":""}>{label}</button>)}
+            {[["all","Tüm",""],["mine","Benim projelerim","user"],["connected","CS",""],["uat","UAT",""]].map(([id,label,icon])=><button key={id} title={id==="connected"?"Connected Supplier":id==="uat"?"UAT alınanlar":label} aria-label={label} onClick={()=>setProjectSegment(id)} className={projectSegment===id?"is-active":""}>{icon?<><Icon name={icon} size={15}/><span className="sr-only">{label}</span></>:label}</button>)}
           </div>
           <div className="view-switch icon-view-switch" role="group" aria-label="Proje görünümü">
             {[["cards","grid","Kart görünümü"],["list","list","Liste görünümü"]].map(([id,icon,label])=><button key={id} type="button" title={label} aria-label={label} onClick={()=>setProjectViewMode(id)} className={projectViewMode===id?"is-active":""}><Icon name={icon} size={15}/><span className="sr-only">{label}</span></button>)}

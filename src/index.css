@@ -3236,14 +3236,12 @@ body::before,
   width: auto !important;
 }
 
-.icon-filter-segment,
 .icon-view-switch {
   border-radius: 15px !important;
   gap: 4px !important;
   padding: 4px !important;
 }
 
-.icon-filter-segment button,
 .icon-view-switch button {
   aspect-ratio: 1 / 1 !important;
   justify-content: center !important;
@@ -3259,7 +3257,6 @@ body::before,
   padding-inline: 10px !important;
 }
 
-.icon-filter-segment svg,
 .icon-view-switch svg,
 .compact-filter-segment svg {
   flex: 0 0 auto !important;
@@ -4932,7 +4929,6 @@ body::before,
     padding: 5px 9px !important;
   }
 
-  .projects-theme-page .projects-filter-row > .icon-filter-segment,
   .projects-theme-page .projects-filter-row > .icon-view-switch,
   .tickets-theme-page .theme-ticket-toolbar > .icon-view-switch {
     align-content: center !important;
@@ -4942,7 +4938,6 @@ body::before,
     width: 100% !important;
   }
 
-  .projects-theme-page .projects-filter-row > .icon-filter-segment button,
   .projects-theme-page .projects-filter-row > .icon-view-switch button,
   .tickets-theme-page .theme-ticket-toolbar > .icon-view-switch button {
     flex: 0 0 34px !important;
