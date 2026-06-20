@@ -16,10 +16,12 @@ const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "-";
 const WAIT = ["PM","M\u00fc\u015fteri","ERP","Tedarik\u00e7i","Teknik","\u00dcr\u00fcn-Teknoloji","Y\u00f6netim","Di\u011fer"];
 
 function MinimalTaskRow({task,people=[],projectName="",formatDate=fmt,onOpen,onStatusChange,onCheck,onEdit,onDelete,onTime}) {
+  const [menuOpen,setMenuOpen]=useState(false);
   const assignee=people.find(person=>person.id===task.assignee);
   const delayed=delayLvl(task.dueDate,task.status);
   const done=task.status==="Tamamlandı";
   const role=task.assignmentRole||task.responsibilityGroup||task.sourceLabel||"Görev";
+  const hasMoreActions=Boolean(onTime||onEdit||onDelete);
   return <div className="task-minimal-row" onClick={onOpen}>
     <button type="button" className="task-minimal-check" onClick={event=>{event.stopPropagation();onCheck?.(!done);}} aria-label={done?"Görevi aç":"Görevi tamamla"}>{done?"✓":""}</button>
     <div className="task-minimal-main">
@@ -42,9 +44,14 @@ function MinimalTaskRow({task,people=[],projectName="",formatDate=fmt,onOpen,onS
         {["Bekliyor","Devam Ediyor","Engellendi","Tamamlandı"].map(status=><option key={status}>{status}</option>)}
         {!["Bekliyor","Devam Ediyor","Engellendi","Tamamlandı"].includes(task.status)&&task.status&&<option>{task.status}</option>}
       </select>}
-      {onTime&&<button type="button" onClick={onTime}>Efor</button>}
-      {onEdit&&<button type="button" onClick={onEdit} aria-label="Düzenle"><Icon name="edit" size={15}/></button>}
-      {onDelete&&<button type="button" className="is-danger" onClick={onDelete} aria-label="Sil">×</button>}
+      {hasMoreActions&&<div className="task-more-menu">
+        <button type="button" className="task-more-trigger" onClick={()=>setMenuOpen(value=>!value)} aria-label="Gorev aksiyonlari">{"\u22EE"}</button>
+        {menuOpen&&<div className="task-more-popover">
+          {onTime&&<button type="button" onClick={()=>{setMenuOpen(false);onTime();}}>Efor gir</button>}
+          {onEdit&&<button type="button" onClick={()=>{setMenuOpen(false);onEdit();}}>{"D\u00fczenle"}</button>}
+          {onDelete&&<button type="button" className="is-danger" onClick={()=>{setMenuOpen(false);onDelete();}}>Sil</button>}
+        </div>}
+      </div>}
     </div>
   </div>;
 }

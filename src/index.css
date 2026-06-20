@@ -4981,6 +4981,75 @@ body::before,
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%), 0 10px 24px -17px color-mix(in srgb, var(--danger) 68%, transparent) !important;
 }
 
+.task-minimal-row {
+  overflow: visible !important;
+}
+
+.task-minimal-actions {
+  position: relative;
+}
+
+.task-more-menu {
+  position: relative;
+}
+
+.task-minimal-actions .task-more-trigger {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: var(--muted) !important;
+  display: inline-grid !important;
+  font-size: 20px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  place-items: center !important;
+  width: 36px !important;
+}
+
+.task-minimal-actions .task-more-trigger:hover {
+  background: color-mix(in srgb, var(--accent) 8%, white 92%) !important;
+  color: var(--accent) !important;
+}
+
+.task-more-popover {
+  background: var(--surface) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 84%, var(--accent) 16%) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 24px 56px -34px rgb(17 35 39 / 58%) !important;
+  display: grid !important;
+  gap: 4px !important;
+  min-width: 136px !important;
+  padding: 6px !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: calc(100% + 6px) !important;
+  z-index: 80 !important;
+}
+
+.task-more-popover button {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  color: var(--text) !important;
+  justify-content: flex-start !important;
+  min-height: 34px !important;
+  padding: 8px 10px !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+.task-more-popover button:hover {
+  background: color-mix(in srgb, var(--accent) 8%, white 92%) !important;
+  color: var(--accent) !important;
+}
+
+.task-more-popover button.is-danger {
+  color: var(--danger) !important;
+}
+
 .project-subtab-shell {
   position: static !important;
   top: auto !important;
@@ -5077,42 +5146,51 @@ body::before,
   }
 
   .tickets-theme-page .theme-ticket-toolbar {
-    display: grid !important;
-    grid-template-columns: 1fr auto !important;
-    flex-wrap: wrap !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
     gap: 8px !important;
-    overflow: visible !important;
-    padding: 10px !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    padding: 9px !important;
+    scrollbar-width: none;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar::-webkit-scrollbar {
+    display: none;
   }
 
   .tickets-theme-page .theme-ticket-toolbar > input {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    min-width: 0 !important;
+    flex: 0 0 245px !important;
+    width: 245px !important;
+    min-width: 245px !important;
   }
 
   .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter,
   .tickets-theme-page .theme-ticket-toolbar > .view-switch {
+    flex: 0 0 auto !important;
     min-width: 0 !important;
   }
 
   .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter {
-    position: static !important;
+    position: relative !important;
   }
 
   .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter > button {
     min-width: 0 !important;
-    width: 100% !important;
+    width: auto !important;
   }
 
   .multi-choice-menu {
-    left: 10px !important;
+    border-radius: 18px !important;
+    left: 12px !important;
     max-height: 52dvh !important;
     max-width: none !important;
     min-width: 0 !important;
-    right: 10px !important;
-    top: calc(100% + 8px) !important;
-    width: auto !important;
+    position: fixed !important;
+    right: 12px !important;
+    top: 172px !important;
+    width: calc(100vw - 24px) !important;
+    z-index: 1400 !important;
   }
 
   .multi-choice-menu label {

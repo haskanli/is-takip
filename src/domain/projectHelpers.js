@@ -37,7 +37,11 @@ export const nextTicketNumber = (state) => {
   return `CJT-${max + 1}`;
 };
 
-export const ticketNumber = (ticket) => ticket?.ticketNo || "CJT";
+export const ticketNumber = (ticket) => {
+  const raw = String(ticket?.ticketNo || "");
+  const match = raw.match(/(\d+)$/);
+  return match ? match[1].padStart(4, "0") : "0000";
+};
 
 export const commissioningMachines = (sectors = []) =>
   sectors.flatMap((sector) =>
