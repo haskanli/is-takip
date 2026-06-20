@@ -1828,11 +1828,11 @@ code,
 }
 
 .project-tab-shell {
-  background: rgb(255 255 255 / 72%);
-  border-bottom: 1px solid var(--glass-border);
-  box-shadow: 0 18px 42px -40px rgb(17 35 39 / 44%);
-  backdrop-filter: blur(18px) saturate(1.12);
-  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+  background: transparent !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .fieldops-shell {
@@ -3255,6 +3255,15 @@ body::before,
   box-shadow: 0 14px 38px -34px rgb(17 35 39 / 34%) !important;
 }
 
+.project-detail-workspace > .project-tab-shell .project-tab-scroll,
+.project-subtab-shell .project-tab-scroll {
+  background: transparent !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 0 3px !important;
+}
+
 .icon-view-switch {
   border-radius: 15px !important;
   gap: 4px !important;
@@ -3817,6 +3826,9 @@ body::before,
 }
 
 .project-subtab-shell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
   position: static !important;
   top: auto !important;
   z-index: auto !important;
@@ -4856,6 +4868,14 @@ body::before,
   .management-command-bar::-webkit-scrollbar,
   .admin-control-row::-webkit-scrollbar {
     display: none;
+  }
+
+  .project-detail-workspace > .project-tab-shell .project-tab-scroll,
+  .project-subtab-shell .project-tab-scroll {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    padding: 0 0 3px !important;
   }
 
   .unified-filter-row input,
