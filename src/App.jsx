@@ -1122,7 +1122,7 @@ export default function App() {
       {view==="mailcenter"&&isAdmin&&!selProject&&<SharedMailCenterPage state={state} setState={setState}/>}
 
       {/* PROJECT DETAIL */}
-      {selProject&&project&&<div className="project-workspace" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      {selProject&&project&&<div className="project-workspace project-detail-workspace" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
         <SharedProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={(project.raciContacts||[]).filter(contact=>contact.side==="Müşteri")} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>openProjectTab("setup")} formatDate={fmt} mapsUrlForLocation={mapsUrl} moduleOptions={DEFAULT_ACTIVE_MODULES}/>
         <div className="project-tab-shell" style={{padding:isMobile?"9px clamp(12px,2.2vw,22px) 11px":"0 clamp(12px,2.2vw,22px) 12px"}}>
           <div className="project-tab-scroll">
@@ -1188,14 +1188,14 @@ export default function App() {
 
         {!customerView&&projectTab==="actions"&&<SharedProjectActionsPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} canManage={canManageProjectActions}/>}
 
-        {!customerView&&projectTab==="risks"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px", maxWidth:680 }}>
+        {!customerView&&projectTab==="risks"&&<div className="project-detail-scroll-panel" style={{ flex:1, overflow:"auto", padding:"20px 24px", maxWidth:680 }}>
           <SharedRiskPanel risks={project.risks||[]} milestones={project.milestones||[]} onAdd={()=>setModal({type:"addRisk"})} onUpdate={updateRisk} onDelete={deleteRisk} canEdit={isAdmin} />
         </div>}
 
         {projectTab==="tickets"&&<SharedTicketsPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin&&!customerView} customerMode={customerView} />}
         {!customerView&&projectTab==="notlar"&&<SharedProjectNotesPanel project={project} currentUser={currentUser} state={state} setState={setState} isAdmin={isAdmin} canManage={canManageProjectActions} />}
 
-        {!customerView&&projectTab==="projlogs"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
+        {!customerView&&projectTab==="projlogs"&&<div className="project-detail-scroll-panel" style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
           <SharedLogPage logs={state.logs.filter(l=>l.project===project.name)} projects={state.projects} />
         </div>}
       </div>}

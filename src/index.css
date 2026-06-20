@@ -1919,6 +1919,10 @@ code,
   padding: clamp(16px, 3vw, 26px);
 }
 
+.project-detail-workspace {
+  min-height: 0;
+}
+
 .milestone-card {
   background: rgb(255 255 255 / 82%);
   border: 1px solid var(--border);
@@ -4867,7 +4871,20 @@ body::before,
     grid-template-columns: 1fr !important;
   }
 
-  .project-plan-scroll-panel {
+  .project-detail-workspace {
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+  }
+
+  .project-detail-workspace > .project-section,
+  .project-detail-workspace > .project-plan-scroll-panel,
+  .project-detail-workspace > .project-actions-panel,
+  .project-detail-workspace > .tickets-theme-page,
+  .project-detail-workspace > .project-detail-scroll-panel {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: auto !important;
     padding-bottom: calc(148px + env(safe-area-inset-bottom)) !important;
     scroll-padding-bottom: calc(148px + env(safe-area-inset-bottom));
   }

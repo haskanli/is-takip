@@ -562,7 +562,7 @@ export function ProjectNotesPanel({ project, currentUser, state, setState, isAdm
   // User todos linked to this project
   const linkedTodos=((((state.userNotes||{})[currentUser.id]?.todos)||[]).filter(t=>t.projectId===project.id)).map(t=>({...t,personName:currentUser.name,personAvatar:currentUser.avatar,personAvatarUrl:currentUser.avatarUrl,personIsAdmin:currentUser.isAdmin}));
 
-  return <div style={{ flex:1, overflow:"auto", padding:"clamp(14px, 3vw, 24px)" }}>
+  return <div className="project-detail-scroll-panel" style={{ flex:1, overflow:"auto", padding:"clamp(14px, 3vw, 24px)" }}>
     <div style={{display:"flex",gap:7,marginBottom:16}}>
       {[["notes","notes","Notlar"],["todos","ticket","To-Do"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 14px",background:section===id?project.color:"var(--accent-ink)",color:section===id?"#fff":"var(--muted)",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
     </div>
