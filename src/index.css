@@ -762,14 +762,14 @@ code,
 
 .mobile-bottom-nav-icon.is-quick {
   background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 76%, var(--text)));
-  border-radius: 17px;
-  box-shadow: 0 14px 30px -23px rgb(11 138 148 / 82%);
+  border-radius: 20px;
+  box-shadow: 0 20px 38px -24px rgb(11 138 148 / 88%);
   color: #fff;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 900;
-  height: 48px;
-  transform: translateY(-9px);
-  width: 48px;
+  height: 58px;
+  transform: translateY(-16px);
+  width: 58px;
 }
 
 .mobile-bottom-nav-label {
@@ -783,7 +783,7 @@ code,
 }
 
 .mobile-bottom-nav-button.is-quick .mobile-bottom-nav-label {
-  margin-top: -5px;
+  margin-top: -11px;
 }
 
 .mobile-bottom-badge {
@@ -3378,6 +3378,57 @@ body::before,
   --chip-border: color-mix(in srgb, var(--danger) 38%, var(--border));
 }
 
+.compact-list-card:has(.ui-chip-success),
+.ticket-card:has(.ui-chip-success),
+.task-mobile-card:has(.ui-chip-success),
+.reminder-card:has(.ui-chip-success),
+.project-list-card:has(.project-metric-pill.is-good),
+.customer-project-report-card:has(.ui-chip-success) {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--success) 8%, transparent), transparent 54%),
+    var(--surface-raised) !important;
+  border-color: color-mix(in srgb, var(--success) 28%, var(--card-border-strong)) !important;
+}
+
+.compact-list-card:has(.ui-chip-warning),
+.ticket-card:has(.ui-chip-warning),
+.task-mobile-card:has(.ui-chip-warning),
+.reminder-card:has(.ui-chip-warning),
+.project-list-card:has(.project-metric-pill.is-warn),
+.customer-project-report-card:has(.ui-chip-warning) {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--warning) 10%, transparent), transparent 56%),
+    var(--surface-raised) !important;
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--card-border-strong)) !important;
+}
+
+.compact-list-card:has(.ui-chip-danger),
+.ticket-card:has(.ui-chip-danger),
+.task-mobile-card:has(.ui-chip-danger),
+.reminder-card:has(.ui-chip-danger),
+.project-list-card:has(.project-metric-pill.is-danger),
+.customer-project-report-card:has(.ui-chip-danger) {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--danger) 9%, transparent), transparent 58%),
+    var(--surface-raised) !important;
+  border-color: color-mix(in srgb, var(--danger) 32%, var(--card-border-strong)) !important;
+}
+
+.ticket-card:has(.ui-chip-danger)::before,
+.task-mobile-card:has(.ui-chip-danger)::before {
+  background: linear-gradient(90deg, var(--danger), color-mix(in srgb, var(--danger) 50%, var(--warning))) !important;
+}
+
+.ticket-card:has(.ui-chip-warning)::before,
+.task-mobile-card:has(.ui-chip-warning)::before {
+  background: linear-gradient(90deg, var(--warning), color-mix(in srgb, var(--warning) 52%, var(--accent))) !important;
+}
+
+.ticket-card:has(.ui-chip-success)::before,
+.task-mobile-card:has(.ui-chip-success)::before {
+  background: linear-gradient(90deg, var(--success), color-mix(in srgb, var(--success) 58%, var(--accent))) !important;
+}
+
 .ticket-card {
   border-top: 0 !important;
   display: grid !important;
@@ -4634,6 +4685,11 @@ body::before,
 
   .ticket-card-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .project-plan-scroll-panel {
+    padding-bottom: calc(148px + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(148px + env(safe-area-inset-bottom));
   }
 
   .tickets-theme-page .theme-ticket-toolbar {

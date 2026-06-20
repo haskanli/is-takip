@@ -1162,7 +1162,7 @@ export default function App() {
           {!project.milestones.length&&<div className="liquid-card" style={{padding:40,textAlign:"center",color:"var(--muted, #5b6f74)",borderRadius:18}}>Milestone yok.</div>}
         </div>}
 
-        {projectTab==="gantt"&&<div style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
+        {projectTab==="gantt"&&<div className="project-plan-scroll-panel" style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
             <h3 style={{ margin:"0 0 3px", fontSize:14, fontWeight:800 }}>Proje Planı (Gantt)</h3>
             {!customerView&&<div style={{ display:"flex", gap:7, alignItems:"center" }}>
