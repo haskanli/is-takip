@@ -14,12 +14,18 @@ const now = () => new Date().toISOString();
 export const TICKET_STATUSES = ["A\u00e7\u0131k","Operasyon \u0130ncelemesinde","\u00dcr\u00fcn De\u011ferlendirmesinde","Jira'da \u00c7al\u0131\u015f\u0131l\u0131yor","Operasyon Testinde","Test Ba\u015far\u0131s\u0131z","Yay\u0131na Haz\u0131r","M\u00fc\u015fteri Onay\u0131nda","M\u00fc\u015fteri Reddetti","Tamamland\u0131","Beklemede","\u0130ptal Edildi"];
 export const TICKET_CATEGORIES = ["Operasyonel","Bug","Geli\u015ftirme","Entegrasyon","\u0130yile\u015ftirme","Veri","E\u011fitim","Di\u011fer"];
 
+const normalizeTicketText=(value="")=>String(value||"")
+  .toLocaleLowerCase("tr-TR")
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g,"")
+  .replace(/[^\w\s]/g," ");
+
 const ticketToneClass=(value="")=>{
-  const text=String(value||"").toLocaleLowerCase("tr-TR");
-  if(["tamam","done","resolved","yayına hazır","yayina hazir","başarılı","basarili"].some(item=>text.includes(item))&&!["başarısız","basarisiz"].some(item=>text.includes(item)))return "ui-chip-success";
-  if(["kritik","yüksek","yuksek","başarısız","basarisiz","redd","iptal","cancel","fail"].some(item=>text.includes(item)))return "ui-chip-danger";
-  if(["bekle","devam","jira","test","inceleme","değerlendirme","degerlendirme","operasyon","ürün","urun"].some(item=>text.includes(item)))return "ui-chip-warning";
-  if(["açık","acik","bug","geliştirme","gelistirme","entegrasyon","iyileştirme","iyilestirme"].some(item=>text.includes(item)))return "ui-chip-accent";
+  const text=normalizeTicketText(value);
+  if(["tamam","done","resolved","yayina hazir","basarili"].some(item=>text.includes(item))&&!["basarisiz","fail"].some(item=>text.includes(item)))return "ui-chip-success";
+  if(["kritik","yuksek","basarisiz","redd","iptal","cancel","fail"].some(item=>text.includes(item)))return "ui-chip-danger";
+  if(["bekle","devam","jira","test","inceleme","degerlendirme","operasyon","urun"].some(item=>text.includes(item)))return "ui-chip-warning";
+  if(["acik","bug","gelistirme","entegrasyon","iyilestirme","veri","egitim"].some(item=>text.includes(item)))return "ui-chip-accent";
   return "ui-chip-muted";
 };
 

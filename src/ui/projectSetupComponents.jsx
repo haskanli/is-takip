@@ -493,7 +493,7 @@ export function ProjectSetupPanel({project,onChange,canEdit,customerView=false,s
   const tabs=[["overview","Özet"],["readiness","Proje Sağlığı"],["training","Eğitimler"],["cost","Proje Maliyeti"],...(isAdmin?[["billing","Fatura Koşulları"]]:[]),["raci","RACI ve Kontaklar"],["communication","İletişim Planı"],["access","Uzaktan Erişim"],["machines","Makineler"],...(project.commissioningTracking?[["commissioning","Devreye Alma"]]:[]),["effort","Efor"],["lessons","Öğrenilmiş Dersler"],["documents","Dokümanlar"],["automation","Ayarlar / Rapor"],["ai","AI Proje Yorumu"]].filter(([id])=>!customerView||customerSections.includes(id));
   useEffect(()=>{if(customerView&&!customerSections.includes(section))setSection("overview");},[customerView,section]);
   return <div className="project-section">
-    <div className="glass-surface" style={{position:"sticky",top:0,zIndex:5,borderRadius:18,padding:8,marginBottom:16}}>
+    <div className="glass-surface project-subtab-shell" style={{borderRadius:18,padding:8,marginBottom:16}}>
       <div className="project-tab-scroll">{tabs.map(([id,label])=><button key={id} className={`project-tab ${section===id?"is-active":""}`} onClick={()=>setSection(id)}>{label}</button>)}</div>
     </div>
     {section==="overview"&&<ProjectOverviewPanel project={project} onChange={onChange} canEdit={canEdit}/>}

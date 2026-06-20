@@ -37,7 +37,7 @@ export function MultiChoiceFilter({ label, options, value, onChange }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className="multi-choice-filter" style={{ position: "relative" }}>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -57,11 +57,12 @@ export function MultiChoiceFilter({ label, options, value, onChange }) {
       </button>
       {open && (
         <div
+          className="multi-choice-menu"
           style={{
             position: "absolute",
             top: "calc(100% + 5px)",
             left: 0,
-            zIndex: 30,
+            zIndex: 1000,
             minWidth: 230,
             maxHeight: 280,
             overflow: "auto",
