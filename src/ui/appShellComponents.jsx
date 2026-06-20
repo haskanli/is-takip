@@ -170,9 +170,9 @@ function LegacyAppLoadingScreen({progress=10,status="Oturum hazirlanıyor",logoS
     @keyframes corjectRingSweep { 0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 12px rgba(37,99,235,.28)); } 55% { transform: rotate(174deg) scale(1.02); filter: drop-shadow(0 0 20px rgba(34,211,238,.38)); } 100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 14px rgba(124,58,237,.32)); } }
     @keyframes corjectPathFill { 0% { transform: scaleX(0); opacity:.45; } 18% { transform: scaleX(.28); opacity:.85; } 48% { transform: scaleX(.68); opacity:1; } 72%, 100% { transform: scaleX(1); opacity:1; } }
     @keyframes corjectSpark { 0% { left:39px; opacity:0; transform:scale(.7); } 10% { opacity:1; } 48% { left:78px; transform:scale(1); } 74% { left:115px; opacity:1; transform:scale(.92); } 100% { left:115px; opacity:0; transform:scale(.65); } }
-    @keyframes corjectNodeReady { 0%, 18% { background:#0B1224; border-color:#334155; box-shadow:none; } 34%, 100% { background:#E0F2FE; border-color:#4A6CF7; box-shadow:0 0 20px rgba(74,108,247,.62); } }
-    @keyframes corjectNodeReadyTwo { 0%, 40% { background:#0B1224; border-color:#334155; box-shadow:none; } 55%, 100% { background:#EDE9FE; border-color:#8B5CF6; box-shadow:0 0 20px rgba(139,92,246,.62); } }
-    @keyframes corjectNodeReadyThree { 0%, 62% { background:#0B1224; border-color:#334155; box-shadow:none; } 78%, 100% { background:#CFFAFE; border-color:#22D3EE; box-shadow:0 0 22px rgba(34,211,238,.72); } }
+    @keyframes corjectNodeReady { 0%, 18% { background:var(--text); border-color:var(--text); box-shadow:none; } 34%, 100% { background:var(--accent-ink); border-color:var(--accent); box-shadow:0 0 20px rgba(74,108,247,.62); } }
+    @keyframes corjectNodeReadyTwo { 0%, 40% { background:var(--text); border-color:var(--text); box-shadow:none; } 55%, 100% { background:var(--accent-ink); border-color:var(--accent); box-shadow:0 0 20px rgba(139,92,246,.62); } }
+    @keyframes corjectNodeReadyThree { 0%, 62% { background:var(--text); border-color:var(--text); box-shadow:none; } 78%, 100% { background:var(--accent-ink); border-color:var(--accent); box-shadow:0 0 22px rgba(34,211,238,.72); } }
     @keyframes corjectCheckPulse { 0%, 68% { transform: scale(.75); opacity:0; } 78% { transform: scale(1.1); opacity:1; } 88%, 100% { transform: scale(1); opacity:1; } }
     @keyframes corjectGlowPulse { 0%, 100% { opacity:.25; transform: scale(.9); } 50% { opacity:.6; transform: scale(1.03); } }
     @keyframes corjectDots { 0%, 80%, 100% { opacity:.25; transform: translateY(0); } 40% { opacity:1; transform: translateY(-3px); } }
@@ -181,14 +181,14 @@ function LegacyAppLoadingScreen({progress=10,status="Oturum hazirlanıyor",logoS
     <div style={{position:"absolute",inset:"auto 12% 9%",height:90,background:"radial-gradient(ellipse,rgba(17,35,39,.12),transparent 65%)",filter:"blur(18px)"}} />
     <div style={{width:"min(390px,100%)",textAlign:"center",border:"1px solid rgba(15,23,42,.12)",borderRadius:32,padding:"34px 28px 30px",background:"linear-gradient(180deg,rgba(255,255,255,.85),rgba(246,250,251,.75))",boxShadow:"0 30px 90px rgba(15,23,42,.2)",backdropFilter:"blur(16px)",position:"relative"}}>
       <div style={{width:150,height:150,margin:"0 auto 18px",position:"relative",display:"grid",placeItems:"center"}}>
-        <div style={{position:"absolute",inset:8,borderRadius:"50%",background:"conic-gradient(from 18deg,#2563EB 0 116deg,transparent 116deg 174deg,#7C3AED 174deg 306deg,transparent 306deg 360deg)",animation:"corjectRingSweep 3.6s cubic-bezier(.45,0,.2,1) infinite"}} />
-        <div style={{position:"absolute",inset:32,borderRadius:"50%",background:"#050A16",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.06)"}} />
-        <div style={{position:"absolute",left:42,right:34,top:78,height:8,borderRadius:999,background:"rgba(148,163,184,.18)",overflow:"hidden"}}><span style={{display:"block",height:"100%",width:"100%",borderRadius:999,background:"linear-gradient(90deg,#22D3EE,#4A6CF7,#A855F7)",transformOrigin:"left center",animation:"corjectPathFill 2.4s ease-in-out infinite",boxShadow:"0 0 16px rgba(34,211,238,.55)"}} /></div>
-        <span style={{position:"absolute",left:37,top:66,width:30,height:30,borderRadius:"50%",background:"#0B1224",border:"7px solid #334155",animation:"corjectNodeReady 2.4s ease-in-out infinite"}} />
-        <span style={{position:"absolute",left:75,top:72,width:18,height:18,borderRadius:"50%",background:"#0B1224",border:"5px solid #334155",animation:"corjectNodeReadyTwo 2.4s ease-in-out infinite"}} />
-        <span style={{position:"absolute",left:112,top:70,width:22,height:22,borderRadius:"50%",background:"#0B1224",border:"5px solid #334155",animation:"corjectNodeReadyThree 2.4s ease-in-out infinite"}} />
-        <span style={{position:"absolute",top:74,width:18,height:18,borderRadius:"50%",background:"#E0F2FE",boxShadow:"0 0 24px rgba(34,211,238,.9)",animation:"corjectSpark 2.4s ease-in-out infinite"}} />
-        <span style={{position:"absolute",right:26,top:52,width:38,height:38,borderRadius:"50%",background:"#22D3EE",display:"grid",placeItems:"center",boxShadow:"0 0 28px rgba(34,211,238,.75)",animation:"corjectCheckPulse 2.1s ease-in-out infinite"}}>
+        <div style={{position:"absolute",inset:8,borderRadius:"50%",background:"conic-gradient(from 18deg,var(--accent) 0 116deg,transparent 116deg 174deg,var(--accent) 174deg 306deg,transparent 306deg 360deg)",animation:"corjectRingSweep 3.6s cubic-bezier(.45,0,.2,1) infinite"}} />
+        <div style={{position:"absolute",inset:32,borderRadius:"50%",background:"var(--text)",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.06)"}} />
+        <div style={{position:"absolute",left:42,right:34,top:78,height:8,borderRadius:999,background:"rgba(148,163,184,.18)",overflow:"hidden"}}><span style={{display:"block",height:"100%",width:"100%",borderRadius:999,background:"linear-gradient(90deg,var(--accent),var(--accent),var(--accent))",transformOrigin:"left center",animation:"corjectPathFill 2.4s ease-in-out infinite",boxShadow:"0 0 16px rgba(34,211,238,.55)"}} /></div>
+        <span style={{position:"absolute",left:37,top:66,width:30,height:30,borderRadius:"50%",background:"var(--text)",border:"7px solid var(--text)",animation:"corjectNodeReady 2.4s ease-in-out infinite"}} />
+        <span style={{position:"absolute",left:75,top:72,width:18,height:18,borderRadius:"50%",background:"var(--text)",border:"5px solid var(--text)",animation:"corjectNodeReadyTwo 2.4s ease-in-out infinite"}} />
+        <span style={{position:"absolute",left:112,top:70,width:22,height:22,borderRadius:"50%",background:"var(--text)",border:"5px solid var(--text)",animation:"corjectNodeReadyThree 2.4s ease-in-out infinite"}} />
+        <span style={{position:"absolute",top:74,width:18,height:18,borderRadius:"50%",background:"var(--accent-ink)",boxShadow:"0 0 24px rgba(34,211,238,.9)",animation:"corjectSpark 2.4s ease-in-out infinite"}} />
+        <span style={{position:"absolute",right:26,top:52,width:38,height:38,borderRadius:"50%",background:"var(--accent)",display:"grid",placeItems:"center",boxShadow:"0 0 28px rgba(34,211,238,.75)",animation:"corjectCheckPulse 2.1s ease-in-out infinite"}}>
           <i style={{width:15,height:8,borderLeft:"4px solid #fff",borderBottom:"4px solid #fff",transform:"rotate(-45deg)",display:"block",marginTop:-2}} />
         </span>
         <span style={{position:"absolute",inset:48,borderRadius:"50%",background:"radial-gradient(circle,rgba(34,211,238,.3),transparent 62%)",animation:"corjectGlowPulse 1.8s ease-in-out infinite"}} />
@@ -197,10 +197,10 @@ function LegacyAppLoadingScreen({progress=10,status="Oturum hazirlanıyor",logoS
       <div style={{fontSize:32,fontWeight:950,letterSpacing:"-.04em",color:"var(--text)",lineHeight:1}}>Corject</div>
       <div style={{fontSize:13,color:"var(--muted)",marginTop:10,minHeight:18}}>{status}</div>
       <div style={{display:"flex",justifyContent:"center",gap:7,margin:"13px 0 22px"}}>
-        {[0,1,2].map(index=><span key={index} style={{width:7,height:7,borderRadius:"50%",background:index===1?"#8B5CF6":"#22D3EE",animation:`corjectDots 1.2s ease-in-out ${index*.16}s infinite`}} />)}
+        {[0,1,2].map(index=><span key={index} style={{width:7,height:7,borderRadius:"50%",background:index===1?"var(--accent)":"var(--accent)",animation:`corjectDots 1.2s ease-in-out ${index*.16}s infinite`}} />)}
       </div>
-      <div style={{height:8,borderRadius:20,background:"rgba(15,23,42,.12)",overflow:"hidden",border:"1px solid rgba(15,23,42,.12)"}}><div style={{height:"100%",width:`${safeProgress}%`,borderRadius:20,background:"linear-gradient(90deg,#4A6CF7,#0B8A94,#BF7A12)",transition:"width .35s ease",boxShadow:"0 0 24px rgba(11,138,148,.24)"}}/></div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted)",marginTop:9}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"#0B8A94"}}>%{safeProgress}</b></div>
+      <div style={{height:8,borderRadius:20,background:"rgba(15,23,42,.12)",overflow:"hidden",border:"1px solid rgba(15,23,42,.12)"}}><div style={{height:"100%",width:`${safeProgress}%`,borderRadius:20,background:"linear-gradient(90deg,var(--accent),var(--accent),var(--warning))",transition:"width .35s ease",boxShadow:"0 0 24px rgba(11,138,148,.24)"}}/></div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted)",marginTop:9}}><span>Güvenli çalışma alanı yükleniyor</span><b style={{color:"var(--accent)"}}>%{safeProgress}</b></div>
     </div>
   </div></>;
 }
@@ -256,7 +256,7 @@ export function AppLoadingScreen({progress=10,status="Oturum haz\u0131rlan\u0131
       <span style={{position:"absolute",inset:0,borderRadius:"50%",border:"1px dashed color-mix(in srgb, var(--accent) 55%, transparent)",animation:"corjectOrbitSpin 20s linear infinite"}} />
       <span style={{position:"absolute",inset:"16% 20% auto",width:"12px",height:"12px",borderRadius:"50%",background:"var(--success)",boxShadow:"0 0 20px color-mix(in srgb, var(--success) 60%, transparent)",animation:"corjectOrbitSpin 8s linear infinite"}} />
       <span style={{position:"absolute",left:"18%",top:"55%",width:"8px",height:"8px",borderRadius:"50%",background:"var(--warning)",animation:"corjectOrbitSpin 10s linear infinite reverse"}} />
-      <span style={{position:"absolute",right:"16%",top:"33%",width:"10px",height:"10px",borderRadius:"50%",background:"#7c3aed",animation:"corjectOrbitSpin 12s linear infinite"}} />
+      <span style={{position:"absolute",right:"16%",top:"33%",width:"10px",height:"10px",borderRadius:"50%",background:"var(--accent)",animation:"corjectOrbitSpin 12s linear infinite"}} />
     </div>
     <div style={{width:"min(360px,100%)",textAlign:"center",padding:"8px 2px",position:"relative",zIndex:1}}>
       <div style={{position:"relative",borderRadius:28,padding:"30px 28px 24px",background:"linear-gradient(145deg, rgb(255 255 255 / 84%), rgb(244 250 251 / 78%))",backdropFilter:"blur(24px) saturate(1.08)",WebkitBackdropFilter:"blur(24px) saturate(1.08)",boxShadow:"0 28px 82px -46px rgb(17 35 39 / 48%)",overflow:"hidden",animation:"corjectFloatField 340ms cubic-bezier(.2,.9,.2,1) both",border:"1px solid color-mix(in srgb, var(--glass-border) 84%, transparent)"}}>

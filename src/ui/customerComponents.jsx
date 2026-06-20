@@ -129,7 +129,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
         style={{
           width: "100%",
           border: 0,
-          background: open ? "#EEF2FF" : "#F8FAFC",
+          background: open ? "var(--accent-ink)" : "var(--surface-soft)",
           borderRadius: 12,
           padding: "11px 12px",
           display: "flex",
@@ -139,12 +139,12 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
           textAlign: "left",
         }}
       >
-        <span style={{ color: open ? "#4338CA" : "#64748B", display: "flex" }}><Icon name={icon} size={17} /></span>
+        <span style={{ color: open ? "var(--accent)" : "var(--muted)", display: "flex" }}><Icon name={icon} size={17} /></span>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <b style={{ display: "block", fontSize: 12, color: "#172033" }}>{title}</b>
-          <small style={{ color: "#64748B", fontSize: 10 }}>{desc}</small>
+          <b style={{ display: "block", fontSize: 12, color: "var(--text)" }}>{title}</b>
+          <small style={{ color: "var(--muted)", fontSize: 10 }}>{desc}</small>
         </span>
-        <b style={{ color: "#64748B", fontSize: 18 }}>{open ? "−" : "+"}</b>
+        <b style={{ color: "var(--muted)", fontSize: 18 }}>{open ? "−" : "+"}</b>
       </button>
     );
   };
@@ -154,7 +154,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
       <div className="unified-page-header customers-page-header" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 18 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 22 }}>Müşteriler</h2>
-          <p style={{ margin: "5px 0 0", fontSize: 12, color: "#64748B", lineHeight: 1.55 }}>
+          <p style={{ margin: "5px 0 0", fontSize: 12, color: "var(--muted)", lineHeight: 1.55 }}>
             Her proje bir müşteri alanıdır. Tüm müşteriler burada listelenir; bilgiler ve RACI kontakları kart içinden açılır.
           </p>
         </div>
@@ -165,7 +165,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Müşteri, proje, şehir ara"
           />
-          <span style={{ background: "#EEF2FF", color: "#4338CA", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 900 }}>
+          <span style={{ background: "var(--accent-ink)", color: "var(--accent)", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 900 }}>
             {listedProjects.length}/{projects.length} müşteri
           </span>
         </div>
@@ -175,7 +175,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
         {listedProjects.map((project) => {
           const name = customerName(project);
           const logo = project.customerProfile?.logoUrl;
-          const accent = project.customerProfile?.accentColor || project.color || "#4A6CF7";
+          const accent = project.customerProfile?.accentColor || project.color || "var(--accent)";
           const users = customerUsersForProject(project);
           const contacts = uniqueCustomerContacts(project);
           const location = customerLocation(project);
@@ -184,14 +184,14 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
           const raciOpen = Boolean(openCards[`${project.id}:raci`]);
 
           return (
-            <section key={project.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderTop: `4px solid ${accent}`, borderRadius: 18, padding: 15, boxShadow: "0 10px 26px rgba(15,23,42,.055)", display: "grid", gap: 12 }}>
+            <section key={project.id} style={{ background: "#fff", border: "1px solid var(--border)", borderTop: `4px solid ${accent}`, borderRadius: 18, padding: 15, boxShadow: "0 10px 26px rgba(15,23,42,.055)", display: "grid", gap: 12 }}>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <span style={{ width: 52, height: 52, borderRadius: 16, background: "#F8FAFC", display: "grid", placeItems: "center", overflow: "hidden", flexShrink: 0, border: "1px solid #E2E8F0" }}>
+                <span style={{ width: 52, height: 52, borderRadius: 16, background: "var(--surface-soft)", display: "grid", placeItems: "center", overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
                   {logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 5 }} /> : <b style={{ color: accent, fontSize: 17 }}>{name.slice(0, 2).toLocaleUpperCase("tr-TR")}</b>}
                 </span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <b style={{ display: "block", fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</b>
-                  <small style={{ color: "#64748B", fontSize: 11, lineHeight: 1.45 }}>
+                  <small style={{ color: "var(--muted)", fontSize: 11, lineHeight: 1.45 }}>
                     {project.name} · {users.length} portal kullanıcısı · {contacts.length} RACI kontağı
                   </small>
                 </span>
@@ -200,7 +200,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
 
               <ToggleHeader projectId={project.id} section="info" icon="projects" title="Müşteri alanı bilgileri" desc="Logo, web sitesi, vurgu rengi ve lokasyon" />
               {infoOpen && (
-                <div style={{ border: "1px solid #E2E8F0", borderRadius: 14, padding: 13, display: "grid", gap: 10 }}>
+                <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 13, display: "grid", gap: 10 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10 }}>
                     <Field label="Müşteri / Firma Adı">
                       <input style={iStyle} value={name} onChange={(event) => updateProjectCustomer(project.id, { name: event.target.value })} />
@@ -216,7 +216,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
                   <Field label="Logo">
                     <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 8 }}>
                       <input style={iStyle} value={(project.customerProfile?.logoUrl || "").startsWith("data:") ? "" : project.customerProfile?.logoUrl || ""} onChange={(event) => updateProjectCustomer(project.id, { logoUrl: event.target.value })} placeholder="https://.../logo.png" />
-                      <label style={{ border: 0, background: "#EEF2FF", color: "#4338CA", borderRadius: 9, padding: "8px 10px", fontSize: 11, fontWeight: 900, cursor: "pointer", display: "inline-flex", alignItems: "center" }}>
+                      <label style={{ border: 0, background: "var(--accent-ink)", color: "var(--accent)", borderRadius: 9, padding: "8px 10px", fontSize: 11, fontWeight: 900, cursor: "pointer", display: "inline-flex", alignItems: "center" }}>
                         Yükle
                         <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={(event) => uploadLogo(project.id, event.target.files?.[0])} />
                       </label>
@@ -238,7 +238,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
                     </Field>
                   </div>
                   {mapUrl && (
-                    <a href={mapUrl} target="_blank" rel="noreferrer" style={{ color: "#4338CA", fontSize: 11, fontWeight: 900, textDecoration: "none" }}>
+                    <a href={mapUrl} target="_blank" rel="noreferrer" style={{ color: "var(--accent)", fontSize: 11, fontWeight: 900, textDecoration: "none" }}>
                       Haritada aç
                     </a>
                   )}
@@ -247,20 +247,20 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
 
               <ToggleHeader projectId={project.id} section="raci" icon="people" title="RACI kontakları ve portal erişimi" desc="Müşteri kontaklarını görüntüle, erişim aç/kapat" />
               {raciOpen && (
-                <div style={{ border: "1px solid #E2E8F0", borderRadius: 14, padding: 13, display: "grid", gap: 8 }}>
+                <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 13, display: "grid", gap: 8 }}>
                   {contacts.map((contact) => {
                     const user = users.find((person) => normalizeEmail(person.email) === normalizeEmail(contact.email));
                     return (
-                      <div key={contact.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 10, alignItems: "center", padding: "10px 11px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, fontSize: 12 }}>
+                      <div key={contact.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 10, alignItems: "center", padding: "10px 11px", background: "var(--surface-soft)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }}>
                         <span style={{ minWidth: 0 }}>
                           <b style={{ display: "block" }}>{contact.name}</b>
-                          <small style={{ color: "#64748B", lineHeight: 1.45 }}>
+                          <small style={{ color: "var(--muted)", lineHeight: 1.45 }}>
                             {contact.title || contact.raci || "Müşteri kontağı"}
                             {contact.department ? ` · ${contact.department}` : ""}
                             {contact.email ? ` · ${contact.email}` : ""}
                             {contact.phone ? ` · ${contact.phone}` : ""}
                           </small>
-                          {contact.scope && <small style={{ display: "block", color: "#94A3B8", marginTop: 3 }}>{contact.scope}</small>}
+                          {contact.scope && <small style={{ display: "block", color: "var(--muted)", marginTop: 3 }}>{contact.scope}</small>}
                         </span>
                         {contact.email ? (
                           user ? (
@@ -269,17 +269,17 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
                             <Btn small onClick={() => enableAccess(project, contact)}>Portal Erişimi Aç</Btn>
                           )
                         ) : (
-                          <span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 800 }}>E-posta yok</span>
+                          <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>E-posta yok</span>
                         )}
                       </div>
                     );
                   })}
                   {!contacts.length && (
-                    <div style={{ color: "#94A3B8", fontSize: 11, padding: 18, border: "1px dashed #CBD5E1", borderRadius: 12 }}>
+                    <div style={{ color: "var(--muted)", fontSize: 11, padding: 18, border: "1px dashed var(--muted)", borderRadius: 12 }}>
                       Bu projede müşteri tarafında RACI kontağı yok.
                     </div>
                   )}
-                  <div style={{ fontSize: 10, color: "#64748B", lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.5 }}>
                     Kontak eklemek için proje içindeki <b>Proje Bilgileri → RACI ve Kontaklar</b> alanını kullanın.
                   </div>
                 </div>
@@ -290,7 +290,7 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
       </div>
 
       {!listedProjects.length && (
-        <div style={{ marginTop: 18, padding: 34, textAlign: "center", color: "#94A3B8", border: "1px dashed #CBD5E1", borderRadius: 16, background: "#fff" }}>
+        <div style={{ marginTop: 18, padding: 34, textAlign: "center", color: "var(--muted)", border: "1px dashed var(--muted)", borderRadius: 16, background: "#fff" }}>
           Aramaya uygun müşteri bulunamadı.
         </div>
       )}

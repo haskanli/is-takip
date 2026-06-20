@@ -79,16 +79,16 @@ const buildThemeReport = ({title, subtitle, accent = "#0b8a94", content}) => `<!
 const escapeHtml = (value="") => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
 const commissioningRows=(sectors=[])=>sectors.flatMap(sector=>(sector.productionCenters||[]).flatMap(center=>(center.workplaces||[]).flatMap(workplace=>(workplace.lines||[]).flatMap(line=>(line.machines||[]).map(machine=>({sector:sector.name,productionCenter:center.name,workplace:workplace.name,line:line.name,machine}))))));
 const LOG_META = {
-  task_done:{ icon:"?", color:"#059669", bg:"#ECFDF5", label:"Tamamland?" },
-  task_add:{ icon:"+", color:"#4A6CF7", bg:"#F1F5FF", label:"Görev Eklendi" },
-  task_delete:{ icon:"?", color:"#E11D48", bg:"#FFF1F2", label:"Görev Silindi" },
-  status_change:{ icon:"?", color:"#EA6C00", bg:"#FFF7ED", label:"Durum Değişti" },
-  milestone_add:{ icon:"?", color:"#7C3AED", bg:"#F5F3FF", label:"Milestone" },
-  project_create:{ icon:"?", color:"#0EA5E9", bg:"#F0F9FF", label:"Proje" },
-  risk_add:{ icon:"!", color:"#E11D48", bg:"#FFF1F2", label:"Risk" },
-  import:{ icon:"?", color:"#64748B", bg:"#F8FAFC", label:"Import" },
-  person_add:{ icon:"?", color:"#4A6CF7", bg:"#F1F5FF", label:"Ekip" },
-  general:{ icon:"?", color:"#64748B", bg:"#F8FAFC", label:"Genel" },
+  task_done:{ icon:"?", color:"var(--r-ok)", bg:"#dff4eb", label:"Tamamland?" },
+  task_add:{ icon:"+", color:"var(--r-accent)", bg:"#def5f8", label:"Görev Eklendi" },
+  task_delete:{ icon:"?", color:"var(--r-danger)", bg:"#ffe6ea", label:"Görev Silindi" },
+  status_change:{ icon:"?", color:"var(--r-warn)", bg:"#fff3dc", label:"Durum Değişti" },
+  milestone_add:{ icon:"?", color:"var(--r-accent)", bg:"var(--r-surface-soft)", label:"Milestone" },
+  project_create:{ icon:"?", color:"var(--r-accent)", bg:"#def5f8", label:"Proje" },
+  risk_add:{ icon:"!", color:"var(--r-danger)", bg:"#ffe6ea", label:"Risk" },
+  import:{ icon:"?", color:"var(--muted)", bg:"var(--r-surface-soft)", label:"Import" },
+  person_add:{ icon:"?", color:"var(--r-accent)", bg:"#def5f8", label:"Ekip" },
+  general:{ icon:"?", color:"var(--muted)", bg:"var(--r-surface-soft)", label:"Genel" },
 };
 
 const safeFileName=(value)=>String(value||"rapor").replace(/[^a-zA-Z0-9_-]/g,"_");
@@ -338,7 +338,7 @@ export function generatePortfolioReport(state,people){
   const html = buildThemeReport({
     title: "Corject Genel Durum Raporu",
     subtitle: `${state.projects.length} projelik portföy özeti`,
-    accent: "#7c3aed",
+    accent: "#0b8a94",
     content: `
       <section class="r-grid">
         <div class="r-kpi"><small>Toplam Proje</small><b>${state.projects.length}</b></div>
@@ -445,7 +445,7 @@ export function generateHTMLReport(project, people, logs) {
   const html = buildThemeReport({
     title: `${project.name} - Yönetici Raporu`,
     subtitle: "Görev, Gantt ve geçmiş notları birleştirilmiş görünüm",
-    accent: project.color || "#4A6CF7",
+    accent: project.color || "#0b8a94",
     content,
   });
 
@@ -476,7 +476,7 @@ export function generateTeamCapacityReport(state,people){
         </div>
         <span class="r-pill ${item.delayed ? "danger" : "ok"}">${item.active} aktif</span>
       </div>
-      <div style="height:8px;background:#e8f4f6;border-radius:999px;overflow:hidden"><i style="display:block;height:100%;width:${Math.min(100,(item.assigned/max)*100)}%;background:${item.delayed ? "linear-gradient(90deg,#f59e0b,#ef4444)" : "linear-gradient(90deg,#4f46e5,#7c3aed)"}"></i></div>
+      <div style="height:8px;background:#e8f4f6;border-radius:999px;overflow:hidden"><i style="display:block;height:100%;width:${Math.min(100,(item.assigned/max)*100)}%;background:${item.delayed ? "linear-gradient(90deg,#f59e0b,#ef4444)" : "linear-gradient(90deg,#0b8a94,#1f9cad)"}"></i></div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#5b6f74;margin-top:8px">
         <span>Toplam Görev ${item.assigned}</span>
         <span class="${item.delayed ? "danger" : ""}">Gecikmiş ${item.delayed}</span>
@@ -488,7 +488,7 @@ export function generateTeamCapacityReport(state,people){
   const html = buildThemeReport({
     title: "Ekip Kapasite Raporu",
     subtitle: `${state.projects.length} proje · ${tasks.length} görev dağılımı`,
-    accent: "#7c3aed",
+    accent: "#0b8a94",
     content: `
       <section class="r-grid">
         <div class="r-kpi"><small>Takım Üyesi</small><b>${rows.length}</b></div>
@@ -517,7 +517,7 @@ export function generateRiskPortfolioReport(state){
     const total = Math.max(1, (project.risks || []).length);
     return `<div style="margin-bottom:10px">
       <div class="r-section"><strong>${escapeHtml(project.name)}</strong><span class="r-pill ${criticalCount ? "danger" : "ok"}">${openCount} açık risk</span></div>
-      <div style="height:8px;background:#e8f4f6;border-radius:999px;overflow:hidden"><i style="display:block;height:100%;width:${(openCount/total)*100}%;background:${criticalCount ? "#E11D48" : "#EA6C00"}"></i></div>
+      <div style="height:8px;background:#e8f4f6;border-radius:999px;overflow:hidden"><i style="display:block;height:100%;width:${(openCount/total)*100}%;background:${criticalCount ? "#b93f33" : "#bf7a12"}"></i></div>
       <div style="font-size:11px;color:#5b6f74">Yüksek/Kritik: ${criticalCount}</div>
     </div>`;
   }).join("");
@@ -628,7 +628,7 @@ export function generateSteercoReport(project,state,people){
   const html = buildThemeReport({
     title: `Steerco Proje Durum Raporu - ${project.name}`,
     subtitle: `${new Date().toLocaleDateString("tr-TR")} · Yönetim karar toplantısı özeti`,
-    accent: project.color || "#4f46e5",
+    accent: project.color || "#0b8a94",
     content,
   });
 
@@ -679,7 +679,7 @@ export function generateFieldManagementReport(state,people){
       <td>${escapeHtml(plan.visitNotes||"-")}</td>
     </tr>`)
     .join("");
-  const stats=[["Toplam Plan",plans.length,"var(--chart-4)"],["Gerçekleşen",completed.length,"var(--success)"],["Saha",inField.length,"var(--chart-1)"],["Uzaktan",remote.length,"var(--warning)"]]
+  const stats=[["Toplam Plan",plans.length,"#6f7f84"],["Gerçekleşen",completed.length,"var(--success)"],["Saha",inField.length,"#0b8a94"],["Uzaktan",remote.length,"#bf7a12"]]
     .map(([label,value,color])=>`<div class="r-kpi"><small>${escapeHtml(label)}</small><b style="color:${color}">${value}</b></div>`).join("");
   const heat=Object.entries(groupedByDay).map(([day,count])=>`<div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--r-muted)"><span>${escapeHtml(day)}</span><span>${count}</span></div><div class="r-table"><div style="height:8px;background:var(--r-surface-soft);border-radius:8px;overflow:hidden"><span style="display:block;height:100%;width:${Math.max(8,(count/max)*100)}%;background:var(--r-accent)"/></div></div>`).join("");
   const html=buildThemeReport({
@@ -787,7 +787,7 @@ export function MailCenterPage({state,setState}) {
   };
   return <div className="project-workspace" style={{padding:"22px 26px",flex:1,overflow:"auto"}}>
     <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",flexWrap:"wrap",marginBottom:18}}>
-      <div><h1 style={{margin:0,fontSize:22}}>Mail Merkezi</h1><p style={{margin:"5px 0 0",fontSize:12,color:"#64748B"}}>Firma markası, dinamik şablonlar, önizleme ve manuel gönderim.</p></div>
+      <div><h1 style={{margin:0,fontSize:22}}>Mail Merkezi</h1><p style={{margin:"5px 0 0",fontSize:12,color:"var(--muted)"}}>Firma markası, dinamik şablonlar, önizleme ve manuel gönderim.</p></div>
       <Btn onClick={addTemplate}>+ Yeni Şablon</Btn>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"minmax(280px,.8fr) minmax(380px,1.25fr)",gap:16,alignItems:"start"}} className="admin-main-grid">
@@ -797,24 +797,24 @@ export function MailCenterPage({state,setState}) {
           <Field label="Firma Adı"><input style={iStyle} value={tenant.name} onChange={e=>updateTenant({name:e.target.value})} placeholder="A Firması"/></Field>
           <Field label="Logo">
             <div style={{display:"flex",gap:9,alignItems:"center"}}>
-              <div style={{width:58,height:58,border:"1px solid #E2E8F0",borderRadius:13,display:"grid",placeItems:"center",overflow:"hidden",background:"#F8FAFC",flexShrink:0}}>{tenant.logoUrl?<img src={tenant.logoUrl} alt="" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}}/>:<b style={{color:tenant.accentColor}}>{tenant.name.slice(0,2).toUpperCase()}</b>}</div>
-              <div style={{flex:1}}><input style={iStyle} value={tenant.logoUrl.startsWith("data:")?"":tenant.logoUrl} onChange={e=>updateTenant({logoUrl:e.target.value})} placeholder="https://firma.com/logo.png"/><button onClick={()=>fileInput.current?.click()} style={{border:0,background:"transparent",color:"#4338CA",fontSize:10,fontWeight:800,cursor:"pointer",padding:"6px 0 0"}}>veya dosya yükle</button><input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e=>uploadLogo(e.target.files?.[0])}/></div>
+              <div style={{width:58,height:58,border:"1px solid var(--border)",borderRadius:13,display:"grid",placeItems:"center",overflow:"hidden",background:"#F8FAFC",flexShrink:0}}>{tenant.logoUrl?<img src={tenant.logoUrl} alt="" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}}/>:<b style={{color:tenant.accentColor}}>{tenant.name.slice(0,2).toUpperCase()}</b>}</div>
+              <div style={{flex:1}}><input style={iStyle} value={tenant.logoUrl.startsWith("data:")?"":tenant.logoUrl} onChange={e=>updateTenant({logoUrl:e.target.value})} placeholder="https://firma.com/logo.png"/><button onClick={()=>fileInput.current?.click()} style={{border:0,background:"transparent",color:"var(--r-accent)",fontSize:10,fontWeight:800,cursor:"pointer",padding:"6px 0 0"}}>veya dosya yükle</button><input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e=>uploadLogo(e.target.files?.[0])}/></div>
             </div>
           </Field>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
             <Field label="Marka Rengi"><input type="color" style={{...iStyle,padding:4,height:39}} value={tenant.accentColor} onChange={e=>updateTenant({accentColor:e.target.value})}/></Field>
             <Field label="Yanıt Adresi"><input type="email" style={iStyle} value={tenant.replyTo} onChange={e=>updateTenant({replyTo:e.target.value})} placeholder="info@firma.com"/></Field>
           </div>
-          <div style={{fontSize:10,color:"#64748B",background:"#F8FAFC",borderRadius:9,padding:10}}>Gönderici teknik olarak <b>info@corject.com</b> kalır. Görünen marka firma olur; yanıtlar belirlediğiniz adrese yönlenir.</div>
+          <div style={{fontSize:10,color:"var(--muted)",background:"#F8FAFC",borderRadius:9,padding:10}}>Gönderici teknik olarak <b>info@corject.com</b> kalır. Görünen marka firma olur; yanıtlar belirlediğiniz adrese yönlenir.</div>
         </Card>
         <Card>
           <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Şablonlar</div>
-          <div style={{display:"grid",gap:7}}>{templates.map(item=><button key={item.id} onClick={()=>selectTemplate(item)} style={{border:`1px solid ${selectedId===item.id?item.accentColor:"#E2E8F0"}`,borderLeft:`5px solid ${item.accentColor}`,borderRadius:10,background:selectedId===item.id?item.accentColor+"0D":"#fff",padding:"10px 11px",textAlign:"left",cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:11}}>{item.name}</b><span style={{fontSize:8,color:item.enabled===false?"#E11D48":"#059669",fontWeight:850}}>{item.enabled===false?"PASİF":"AKTİF"}</span></div><div style={{fontSize:9,color:"#94A3B8",marginTop:3}}>{item.category}</div></button>)}</div>
+          <div style={{display:"grid",gap:7}}>{templates.map(item=><button key={item.id} onClick={()=>selectTemplate(item)} style={{border:`1px solid ${selectedId===item.id?item.accentColor:"var(--border)"}`,borderLeft:`5px solid ${item.accentColor}`,borderRadius:10,background:selectedId===item.id?item.accentColor+"0D":"#fff",padding:"10px 11px",textAlign:"left",cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:11}}>{item.name}</b><span style={{fontSize:8,color:item.enabled===false?"var(--danger)":"var(--success)",fontWeight:850}}>{item.enabled===false?"PASİF":"AKTİF"}</span></div><div style={{fontSize:9,color:"var(--muted)",marginTop:3}}>{item.category}</div></button>)}</div>
         </Card>
       </div>
       <div style={{display:"grid",gap:14}}>
         <Card>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:12}}><b style={{fontSize:14}}>Şablon Düzenleyici</b><label style={{fontSize:10,fontWeight:800,color:"#64748B"}}><input type="checkbox" checked={draft?.enabled!==false} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/> Aktif</label></div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:12}}><b style={{fontSize:14}}>Şablon Düzenleyici</b><label style={{fontSize:10,fontWeight:800,color:"var(--muted)"}}><input type="checkbox" checked={draft?.enabled!==false} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/> Aktif</label></div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}><Field label="Şablon Adı"><input style={iStyle} value={draft?.name||""} onChange={e=>setDraft({...draft,name:e.target.value})}/></Field><Field label="Kategori"><input style={iStyle} value={draft?.category||""} onChange={e=>setDraft({...draft,category:e.target.value})}/></Field></div>
           <Field label="Konu"><input style={iStyle} value={draft?.subject||""} onChange={e=>setDraft({...draft,subject:e.target.value})}/></Field>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}><Field label="Üst Etiket"><input style={iStyle} value={draft?.eyebrow||""} onChange={e=>setDraft({...draft,eyebrow:e.target.value})}/></Field><Field label="Vurgu Rengi"><input type="color" style={{...iStyle,padding:4,height:39}} value={draft?.accentColor||tenant.accentColor} onChange={e=>setDraft({...draft,accentColor:e.target.value})}/></Field></div>
@@ -822,19 +822,19 @@ export function MailCenterPage({state,setState}) {
           <Field label="Giriş"><input style={iStyle} value={draft?.intro||""} onChange={e=>setDraft({...draft,intro:e.target.value})}/></Field>
           <Field label="İçerik"><textarea style={{...iStyle,minHeight:120,resize:"vertical"}} value={draft?.body||""} onChange={e=>setDraft({...draft,body:e.target.value})}/></Field>
           <Field label="Buton Metni"><input style={iStyle} value={draft?.buttonLabel||""} onChange={e=>setDraft({...draft,buttonLabel:e.target.value})}/></Field>
-          <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",padding:10,borderRadius:10}}><div style={{fontSize:10,fontWeight:850,color:"#475569",marginBottom:7}}>Dinamik alan ekle</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:7}}><select style={iStyle} value={selectedVariable} onChange={event=>setSelectedVariable(event.target.value)}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select><select style={iStyle} value={variableTarget} onChange={event=>setVariableTarget(event.target.value)}>{[["subject","Konu"],["eyebrow","Üst etiket"],["title","Başlık"],["intro","Giriş"],["body","İçerik"],["buttonLabel","Buton"]].map(([key,label])=><option key={key} value={key}>{label}</option>)}</select><Btn small variant="secondary" onClick={insertVariable}>Ekle</Btn></div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:8}}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><button key={key} onClick={()=>{setSelectedVariable(key);setDraft({...draft,[variableTarget]:`${draft[variableTarget]||""}${draft[variableTarget]?" ":""}{{${key}}}`});}} style={{border:0,background:"#EEF2FF",color:"#4338CA",borderRadius:7,padding:"4px 7px",fontSize:8,fontWeight:800,cursor:"pointer"}}>{label}</button>)}</div></div>
+          <div style={{background:"#F8FAFC",border:"1px solid var(--border)",padding:10,borderRadius:10}}><div style={{fontSize:10,fontWeight:850,color:"var(--muted)",marginBottom:7}}>Dinamik alan ekle</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:7}}><select style={iStyle} value={selectedVariable} onChange={event=>setSelectedVariable(event.target.value)}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select><select style={iStyle} value={variableTarget} onChange={event=>setVariableTarget(event.target.value)}>{[["subject","Konu"],["eyebrow","Üst etiket"],["title","Başlık"],["intro","Giriş"],["body","İçerik"],["buttonLabel","Buton"]].map(([key,label])=><option key={key} value={key}>{label}</option>)}</select><Btn small variant="secondary" onClick={insertVariable}>Ekle</Btn></div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:8}}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><button key={key} onClick={()=>{setSelectedVariable(key);setDraft({...draft,[variableTarget]:`${draft[variableTarget]||""}${draft[variableTarget]?" ":""}{{${key}}}`});}} style={{border:0,background:"var(--accent-ink)",color:"var(--r-accent)",borderRadius:7,padding:"4px 7px",fontSize:8,fontWeight:800,cursor:"pointer"}}>{label}</button>)}</div></div>
           <div style={{display:"flex",gap:8,marginTop:12}}><Btn onClick={saveTemplate}>Şablonu Kaydet</Btn><Btn variant="secondary" onClick={removeTemplate}>Sil</Btn></div>
         </Card>
         <Card>
           <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Canlı Önizleme</div>
-          <iframe title="Mail önizleme" srcDoc={preview.html} style={{width:"100%",height:560,border:"1px solid #E2E8F0",borderRadius:12,background:"#F1F5F9"}}/>
+          <iframe title="Mail önizleme" srcDoc={preview.html} style={{width:"100%",height:560,border:"1px solid var(--border)",borderRadius:12,background:"var(--surface-soft)"}}/>
         </Card>
         <Card>
           <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Manuel Gönderim</div>
           <Field label="Alıcı"><input type="email" style={iStyle} value={recipient} onChange={e=>setRecipient(e.target.value)} placeholder="alici@firma.com"/></Field>
-          <Field label="Önizleme ve test verileri"><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:7}}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><label key={key} style={{fontSize:9,color:"#64748B"}}>{label}<input style={{...iStyle,marginTop:3}} value={variables[key]||""} onChange={event=>setVariablesText(JSON.stringify({...variables,[key]:event.target.value},null,2))}/></label>)}</div><details style={{marginTop:8}}><summary style={{fontSize:9,color:"#64748B",cursor:"pointer"}}>Gelişmiş JSON görünümü</summary><textarea style={{...iStyle,minHeight:150,marginTop:6,fontFamily:"Consolas,monospace",fontSize:10}} value={variablesText} onChange={e=>setVariablesText(e.target.value)}/></details></Field>
+          <Field label="Önizleme ve test verileri"><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:7}}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><label key={key} style={{fontSize:9,color:"var(--muted)"}}>{label}<input style={{...iStyle,marginTop:3}} value={variables[key]||""} onChange={event=>setVariablesText(JSON.stringify({...variables,[key]:event.target.value},null,2))}/></label>)}</div><details style={{marginTop:8}}><summary style={{fontSize:9,color:"var(--muted)",cursor:"pointer"}}>Gelişmiş JSON görünümü</summary><textarea style={{...iStyle,minHeight:150,marginTop:6,fontFamily:"Consolas,monospace",fontSize:10}} value={variablesText} onChange={e=>setVariablesText(e.target.value)}/></details></Field>
           <Btn onClick={send} disabled={sendStatus.loading}>Gönder</Btn>
-          {sendStatus.message&&<div style={{marginTop:9,fontSize:10,color:sendStatus.error?"#E11D48":"#059669"}}>{sendStatus.message}</div>}
+          {sendStatus.message&&<div style={{marginTop:9,fontSize:10,color:sendStatus.error?"var(--danger)":"var(--success)"}}>{sendStatus.message}</div>}
         </Card>
       </div>
     </div>
@@ -857,17 +857,17 @@ export function ReportsPage({ state, people, isAdmin, projectId: controlledProje
   const hours=taskHours+fieldHours;
   const machines=project?(project.commissioningTracking?commissioningMachines(project.commissioningTree||[]):project.machines||[]):[];
   const cards=[
-    {group:"operations",title:"Gecikme Raporu",desc:"Gecikme yaşını, nedeni ve sorumluları tek bakışta özetler.",color:"var(--danger)",action:()=>downloadDelayReport(state,people),label:"XLSX İndir"},
-    {group:"operations",title:"Efor Raporu",desc:"Görevler, saha ziyaretleri ve proje aksiyonlarından saat dağılımı.",color:"var(--success)",action:()=>downloadEffortReport(state,people),label:"XLSX İndir"},
-    {group:"operations",title:"Proje Aksiyonları",desc:"Atanan aksiyonların tarih, sahip ve efor bazlı listesi.",color:"#0F766E",action:()=>downloadProjectActionsReport(state),label:"XLSX İndir"},
-    {group:"operations",title:"Saha Ziyaretleri",desc:"Gerçekleşen ziyaretler ve notlarla saha operasyon takibi.",color:"var(--success)",action:()=>downloadFieldVisitsReport(state,people),label:"XLSX İndir"},
-    {group:"operations",title:"Saha Yönetim Raporu",desc:"Planlanan/gerçekleşen saha saatleri, kişi ve proje bazlı saha görünümü.",color:"var(--accent)",action:()=>generateFieldManagementReport(state,people),label:"HTML / PDF"},
-    {group:"technical",title:"Makine Devreye Alma",desc:"Fiziksel/sanal makinelerin devre durumu ve ilerleme durumu.",color:"#2563EB",action:()=>downloadMachineReport(state),label:"XLSX İndir"},
+    {group:"operations",title:"Gecikme Raporu",desc:"Gecikme yaşını, nedeni ve sorumluları tek bakışta özetler.",color:"var(--r-danger)",action:()=>downloadDelayReport(state,people),label:"XLSX İndir"},
+    {group:"operations",title:"Efor Raporu",desc:"Görevler, saha ziyaretleri ve proje aksiyonlarından saat dağılımı.",color:"var(--r-ok)",action:()=>downloadEffortReport(state,people),label:"XLSX İndir"},
+    {group:"operations",title:"Proje Aksiyonları",desc:"Atanan aksiyonların tarih, sahip ve efor bazlı listesi.",color:"var(--r-accent)",action:()=>downloadProjectActionsReport(state),label:"XLSX İndir"},
+    {group:"operations",title:"Saha Ziyaretleri",desc:"Gerçekleşen ziyaretler ve notlarla saha operasyon takibi.",color:"var(--r-ok)",action:()=>downloadFieldVisitsReport(state,people),label:"XLSX İndir"},
+    {group:"operations",title:"Saha Yönetim Raporu",desc:"Planlanan/gerçekleşen saha saatleri, kişi ve proje bazlı saha görünümü.",color:"var(--r-accent)",action:()=>generateFieldManagementReport(state,people),label:"HTML / PDF"},
+    {group:"technical",title:"Makine Devreye Alma",desc:"Fiziksel/sanal makinelerin devre durumu ve ilerleme durumu.",color:"var(--r-accent)",action:()=>downloadMachineReport(state),label:"XLSX İndir"},
     {group:"project",title:"İç Operasyon Raporu",desc:"Grafik ve tabloyla görev bazlı yönetim özeti.",color:"var(--chart-4)",action:()=>project&&generateVisualReport(project,people,{fieldHours}),label:"HTML / PDF"},
-    {group:"project",title:"Müşteri İlerleme Raporu",desc:"Müşteri görünümüne uygun sade ilerleme özeti.",color:"var(--warning)",action:()=>project&&generateVisualReport(project,people,{customer:true,fieldHours}),label:"HTML / PDF"},
-    {group:"project",title:"Steerco Toplantı Raporu",desc:"Yönetim toplantısı için karar noktaları ve kritik takip maddeleri.",color:"var(--warning)",action:()=>project&&generateSteercoReport(project,state,people),label:"HTML / PDF"},
+    {group:"project",title:"Müşteri İlerleme Raporu",desc:"Müşteri görünümüne uygun sade ilerleme özeti.",color:"var(--r-warn)",action:()=>project&&generateVisualReport(project,people,{customer:true,fieldHours}),label:"HTML / PDF"},
+    {group:"project",title:"Steerco Toplantı Raporu",desc:"Yönetim toplantısı için karar noktaları ve kritik takip maddeleri.",color:"var(--r-warn)",action:()=>project&&generateSteercoReport(project,state,people),label:"HTML / PDF"},
     ...(isAdmin?[{group:"management",title:"Genel Durum Raporu",desc:"Portföy bazında ilerleme, gecikme ve kapasite karşılaştırması.",color:"var(--chart-1)",action:()=>generatePortfolioReport(state,people),label:"HTML / PDF"}]:[]),
-    ...(isAdmin?[{group:"management",title:"Ticket Durum Raporu",desc:"Ticket yaş, son aksiyon ve Jira eşleştirmesi.",color:"#BE123C",action:()=>generateTicketStatusReport(state,people),label:"HTML / PDF"}]:[]),
+    ...(isAdmin?[{group:"management",title:"Ticket Durum Raporu",desc:"Ticket yaş, son aksiyon ve Jira eşleştirmesi.",color:"var(--r-danger)",action:()=>generateTicketStatusReport(state,people),label:"HTML / PDF"}]:[]),
     ...(isAdmin?[{group:"management",title:"Ekip Kapasite Raporu",desc:"Kişi bazlı aktif iş ve efor odaklı kapasite görünümü.",color:"var(--chart-2)",action:()=>generateTeamCapacityReport(state,people),label:"HTML / PDF"}]:[]),
     ...(isAdmin?[{group:"management",title:"Risk Portföyü Raporu",desc:"Açık riskleri önem seviyesine göre filtreleyerek izler.",color:"var(--chart-5)",action:()=>generateRiskPortfolioReport(state),label:"HTML / PDF"}]:[]),
   ];
@@ -897,7 +897,7 @@ export function generateTicketStatusReport(state,people){
   const html = buildThemeReport({
     title: "Ticket Durum Raporu",
     subtitle: "Tüm projeler ve son durumu",
-    accent: "#4f46e5",
+    accent: "#0b8a94",
     content: `
       <section class="r-grid">
         <div class="r-kpi"><small>Toplam Ticket</small><b>${tickets.length}</b></div>

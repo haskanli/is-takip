@@ -111,24 +111,24 @@ export function EmptyMobileRow({ text }) {
 export function MobileQuickSheet({ onClose, onSelect, isAdminMode = false }) {
   const options = isAdminMode
     ? [
-        ["assign", "tasks", "Görev Ata", "Ekip üyesine görev ve hedef saat ata", "#111827"],
-        ["fieldops", "calendar", "Saha Planı", "Ziyaret veya uzaktan çalışma planla", "#0F766E"],
+        ["assign", "tasks", "Görev Ata", "Ekip üyesine görev ve hedef saat ata", "var(--text)"],
+        ["fieldops", "calendar", "Saha Planı", "Ziyaret veya uzaktan çalışma planla", "var(--accent)"],
       ]
     : [
         ["todo", "ticket", "To-Do", "Kişisel aksiyon ve termin ekle", "#DB2777"],
-        ["action", "activity", "Aksiyon", "Projeye görüşme, not veya efor gir", "#2563EB"],
-        ["ticket", "ticket", "Ticket", "Müşteri talebi veya problem kaydı aç", "#EA6C00"],
-        ["fieldops", "calendar", "Saha Planı", "Ziyaret veya uzaktan çalışma planla", "#0F766E"],
+        ["action", "activity", "Aksiyon", "Projeye görüşme, not veya efor gir", "var(--accent)"],
+        ["ticket", "ticket", "Ticket", "Müşteri talebi veya problem kaydı aç", "var(--warning)"],
+        ["fieldops", "calendar", "Saha Planı", "Ziyaret veya uzaktan çalışma planla", "var(--accent)"],
       ];
 
   return (
     <div className="modal-scrim" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 980, display: "flex", alignItems: "flex-end", padding: 12 }}>
       <div className="glass-surface" onClick={(event) => event.stopPropagation()} style={{ width: "100%", borderRadius: 28, padding: 16, boxShadow: "0 -22px 62px -36px rgb(17 35 39 / 64%)" }}>
-        <div style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", margin: "0 auto 14px" }} />
+        <div style={{ width: 44, height: 5, borderRadius: 99, background: "var(--muted)", margin: "0 auto 14px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div>
             <b style={{ fontSize: 16 }}>Hızlı Ekle</b>
-            <div style={{ fontSize: 11, color: "#64748B", marginTop: 3 }}>Ne eklemek istiyorsun?</div>
+            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>Ne eklemek istiyorsun?</div>
           </div>
           <button className="btn-base" onClick={onClose} style={{ border: "1px solid var(--border, #cfe0e3)", background: "var(--surface, #ffffff)", color: "var(--muted, #5b6f74)", borderRadius: 12, width: 34, height: 34, cursor: "pointer" }}>×</button>
         </div>
@@ -138,8 +138,8 @@ export function MobileQuickSheet({ onClose, onSelect, isAdminMode = false }) {
               <span style={{ width: 42, height: 42, borderRadius: 15, background: color + "16", color, display: "grid", placeItems: "center", marginBottom: 10 }}>
                 <Icon name={icon} size={20} />
               </span>
-              <b style={{ display: "block", fontSize: 14, color: "#111827" }}>{title}</b>
-              <span style={{ display: "block", fontSize: 10, color: "#64748B", lineHeight: 1.35, marginTop: 4 }}>{desc}</span>
+              <b style={{ display: "block", fontSize: 14, color: "var(--text)" }}>{title}</b>
+              <span style={{ display: "block", fontSize: 10, color: "var(--muted)", lineHeight: 1.35, marginTop: 4 }}>{desc}</span>
             </button>
           ))}
         </div>
@@ -167,7 +167,7 @@ export function MobileBottomNav({ view, onNavigate, onQuick, onProfile, deadline
               {id === "quick" ? "+" : <Icon name={icon} size={17} />}
             </span>
             <span style={{ marginTop: id === "quick" ? -8 : 0 }}>{label}</span>
-            {badge > 0 && <b className="mobile-bottom-badge" style={{ position: "absolute", top: 2, right: "24%", minWidth: 16, height: 16, borderRadius: 8, display: "grid", placeItems: "center", background: "#E11D48", color: "#fff", fontSize: 8, border: "2px solid #fff" }}>{badge}</b>}
+            {badge > 0 && <b className="mobile-bottom-badge" style={{ position: "absolute", top: 2, right: "24%", minWidth: 16, height: 16, borderRadius: 8, display: "grid", placeItems: "center", background: "var(--danger)", color: "#fff", fontSize: 8, border: "2px solid #fff" }}>{badge}</b>}
           </button>
         );
       })}
@@ -177,38 +177,38 @@ export function MobileBottomNav({ view, onNavigate, onQuick, onProfile, deadline
 
 export function MobileFeatureMenuPage({ isAdmin, onNavigate }) {
   const items = [
-    ["tickets", "ticket", "Ticketlar", "Müşteri talepleri ve durum takibi", "#EA6C00"],
-    ["reports", "reports", "Raporlar", "HTML/XLSX raporlar ve özetler", "#4A6CF7"],
-    ["ai", "activity", "AI Tool", "Proje veya portföy yorumu", "#7C3AED"],
-    ["fieldops", "calendar", "Saha Yönetimi", "Planlar ve ziyaretler", "#0F766E"],
-    ["deadlines", "clock", "Termin Uyarıları", "Gecikmeler ve yaklaşan işler", "#E11D48"],
-    ["reminders", "bell", "Hatırlatıcılar", "Slack bildirimleri için zamanlayıcı kur", "#7C3AED"],
+    ["tickets", "ticket", "Ticketlar", "Müşteri talepleri ve durum takibi", "var(--warning)"],
+    ["reports", "reports", "Raporlar", "HTML/XLSX raporlar ve özetler", "var(--accent)"],
+    ["ai", "activity", "AI Tool", "Proje veya portföy yorumu", "var(--accent)"],
+    ["fieldops", "calendar", "Saha Yönetimi", "Planlar ve ziyaretler", "var(--accent)"],
+    ["deadlines", "clock", "Termin Uyarıları", "Gecikmeler ve yaklaşan işler", "var(--danger)"],
+    ["reminders", "bell", "Hatırlatıcılar", "Slack bildirimleri için zamanlayıcı kur", "var(--accent)"],
     ["todos", "tasks", "To-Do", "Kişisel aksiyonlar", "#DB2777"],
-    ["people", "people", "Ekip", "Organizasyon ve kişiler", "#0369A1"],
-    ...(isAdmin ? [["customers", "people", "Müşteri Görünümü", "Müşteri portalını ve proje erişimini kontrol et", "#0F766E"]] : []),
+    ["people", "people", "Ekip", "Organizasyon ve kişiler", "var(--accent)"],
+    ...(isAdmin ? [["customers", "people", "Müşteri Görünümü", "Müşteri portalını ve proje erişimini kontrol et", "var(--accent)"]] : []),
     ...(isAdmin
       ? [
-          ["admin", "admin", "Yönetici", "KPI ve yönetim paneli", "#111827"],
-          ["import", "download", "Import Merkezi", "Şablon ve veri aktarımı", "#059669"],
-          ["mailcenter", "mail", "Mail Merkezi", "Şablonlar ve otomasyon", "#4338CA"],
+          ["admin", "admin", "Yönetici", "KPI ve yönetim paneli", "var(--text)"],
+          ["import", "download", "Import Merkezi", "Şablon ve veri aktarımı", "var(--success)"],
+          ["mailcenter", "mail", "Mail Merkezi", "Şablonlar ve otomasyon", "var(--accent)"],
         ]
       : []),
   ];
 
   return (
-    <div className="theme-work-page mobile-feature-menu-page" style={{ minHeight: "100%", background: "#F8FAFC", padding: "18px 14px 92px", overflow: "auto" }}>
+    <div className="theme-work-page mobile-feature-menu-page" style={{ minHeight: "100%", background: "var(--surface-soft)", padding: "18px 14px 92px", overflow: "auto" }}>
       <div className="unified-page-header mobile-feature-header" style={{ marginBottom: 14 }}>
         <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Tüm Özellikler</h2>
-        <div style={{ fontSize: 12, color: "#64748B" }}>Web tarafındaki ana alanlara mobilde de buradan erişebilirsiniz.</div>
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>Web tarafındaki ana alanlara mobilde de buradan erişebilirsiniz.</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
         {items.map(([targetView, icon, title, desc, color]) => (
-          <button className="mobile-feature-card" key={targetView} onClick={() => onNavigate(targetView)} style={{ border: "1px solid #E2E8F0", background: "#fff", borderRadius: 18, padding: 14, textAlign: "left", cursor: "pointer", minHeight: 122, boxShadow: "0 8px 22px rgba(15,23,42,.04)" }}>
+          <button className="mobile-feature-card" key={targetView} onClick={() => onNavigate(targetView)} style={{ border: "1px solid var(--border)", background: "#fff", borderRadius: 18, padding: 14, textAlign: "left", cursor: "pointer", minHeight: 122, boxShadow: "0 8px 22px rgba(15,23,42,.04)" }}>
             <span style={{ width: 38, height: 38, borderRadius: 13, background: color + "16", color, display: "grid", placeItems: "center", marginBottom: 10 }}>
               <Icon name={icon} size={18} />
             </span>
-            <b style={{ display: "block", fontSize: 13, color: "#111827" }}>{title}</b>
-            <span style={{ display: "block", fontSize: 10, color: "#64748B", lineHeight: 1.35, marginTop: 4 }}>{desc}</span>
+            <b style={{ display: "block", fontSize: 13, color: "var(--text)" }}>{title}</b>
+            <span style={{ display: "block", fontSize: 10, color: "var(--muted)", lineHeight: 1.35, marginTop: 4 }}>{desc}</span>
           </button>
         ))}
       </div>

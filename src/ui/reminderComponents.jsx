@@ -21,12 +21,12 @@ const datetimeLocalValue = (date = new Date(Date.now() + 60 * 60 * 1000)) => {
 const localToIso = (value) => (value ? new Date(value).toISOString() : "");
 
 const reminderStatus = (reminder) => {
-  if (reminder.status === "sent") return ["Gönderildi", "#059669", "#ECFDF5"];
-  if (reminder.status === "failed") return ["Hata", "#E11D48", "#FFF1F2"];
-  if (reminder.status === "cancelled") return ["İptal", "#64748B", "#F1F5F9"];
-  if (reminder.status === "skipped") return ["Atlandı", "#EA6C00", "#FFF7ED"];
-  if (reminder.scheduledAt && new Date(reminder.scheduledAt) < new Date()) return ["Bekleyen gönderim", "#EA6C00", "#FFF7ED"];
-  return ["Planlandı", "#4A6CF7", "#EEF2FF"];
+  if (reminder.status === "sent") return ["Gönderildi", "var(--success)", "color-mix(in srgb, var(--success) 10%, white 90%)"];
+  if (reminder.status === "failed") return ["Hata", "var(--danger)", "color-mix(in srgb, var(--danger) 9%, white 91%)"];
+  if (reminder.status === "cancelled") return ["İptal", "var(--muted)", "var(--surface-soft)"];
+  if (reminder.status === "skipped") return ["Atlandı", "var(--warning)", "color-mix(in srgb, var(--warning) 10%, white 90%)"];
+  if (reminder.scheduledAt && new Date(reminder.scheduledAt) < new Date()) return ["Bekleyen gönderim", "var(--warning)", "color-mix(in srgb, var(--warning) 10%, white 90%)"];
+  return ["Planlandı", "var(--accent)", "var(--accent-ink)"];
 };
 
 const taskKey = (task) => [task.source, task.projectId || "", task.milestoneId || "", task.id].join(":");
@@ -155,7 +155,7 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
           <h2 style={{ margin: 0, fontSize: 22, display: "flex", alignItems: "center", gap: 8 }}>
             <Icon name="bell" size={22} /> Hatırlatıcılar
           </h2>
-          <p style={{ margin: "5px 0 0", color: "#64748B", fontSize: 13 }}>
+          <p style={{ margin: "5px 0 0", color: "var(--muted)", fontSize: 13 }}>
             Kişisel not, görev veya ekip işi için zamanlı Slack bildirimi planlayın.
           </p>
         </div>
@@ -176,7 +176,7 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
           <Field label="Alıcılar">
             <PeopleMultiSelect people={visiblePeople} value={suggestedRecipients} onChange={(value) => update("recipientIds", value)} />
             {linkedTasks.length > 0 && (
-              <div style={{ marginTop: 6, fontSize: 10, color: "#64748B" }}>
+              <div style={{ marginTop: 6, fontSize: 10, color: "var(--muted)" }}>
                 Görev sorumluları alıcı listesine otomatik eklenir.
               </div>
             )}
@@ -194,12 +194,12 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
                     />
                     <span style={{ minWidth: 0 }}>
                       <b style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</b>
-                      <small style={{ color: "#64748B" }}>{task.projectName}{task.dueDate ? ` · Termin ${fmtDateTime(task.dueDate)}` : ""}</small>
+                      <small style={{ color: "var(--muted)" }}>{task.projectName}{task.dueDate ? ` · Termin ${fmtDateTime(task.dueDate)}` : ""}</small>
                     </span>
                   </label>
                 );
               })}
-              {!taskOptions.length && <div style={{ fontSize: 11, color: "#94A3B8", padding: 10 }}>Seçilebilir görev yok.</div>}
+              {!taskOptions.length && <div style={{ fontSize: 11, color: "var(--muted)", padding: 10 }}>Seçilebilir görev yok.</div>}
             </div>
           </Field>
           <Field label="Not">
@@ -228,16 +228,16 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                      <b style={{ fontSize: 14, color: "#172033", overflowWrap: "anywhere" }}>{reminder.title}</b>
+                      <b style={{ fontSize: 14, color: "var(--text)", overflowWrap: "anywhere" }}>{reminder.title}</b>
                       <span style={{ background: bg, color, borderRadius: 999, padding: "3px 8px", fontSize: 9, fontWeight: 900 }}>{label}</span>
                     </div>
-                    <div style={{ color: "#64748B", fontSize: 11, marginTop: 4 }}>
+                    <div style={{ color: "var(--muted)", fontSize: 11, marginTop: 4 }}>
                       {fmtDateTime(reminder.scheduledAt)} · Oluşturan: {reminder.createdByName || "-"}
                     </div>
-                    {reminder.note && <p style={{ margin: "8px 0 0", fontSize: 12, color: "#334155", lineHeight: 1.45, overflowWrap: "anywhere" }}>{reminder.note}</p>}
+                    {reminder.note && <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--text)", lineHeight: 1.45, overflowWrap: "anywhere" }}>{reminder.note}</p>}
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 9 }}>
                       {recipientNames.map((person) => (
-                        <span key={person.id} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 999, padding: "3px 8px", fontSize: 10, fontWeight: 750 }}>
+                        <span key={person.id} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "var(--surface-soft)", border: "1px solid var(--border)", borderRadius: 999, padding: "3px 8px", fontSize: 10, fontWeight: 750 }}>
                           <Avatar initials={person.avatar} imageUrl={person.avatarUrl} size={18} /> {person.name}
                         </span>
                       ))}
@@ -245,18 +245,18 @@ export function RemindersPage({ state, setState, currentUser, isAdmin }) {
                     {tasks.length > 0 && (
                       <div style={{ marginTop: 9, display: "grid", gap: 5 }}>
                         {tasks.map((task) => (
-                          <div key={taskKey(task)} style={{ background: "#F8FAFC", borderRadius: 9, padding: "7px 9px", fontSize: 11, color: "#334155" }}>
-                            <b>{task.title}</b> <span style={{ color: "#64748B" }}>· {task.projectName || "Genel Görev"}</span>
+                          <div key={taskKey(task)} style={{ background: "var(--surface-soft)", borderRadius: 9, padding: "7px 9px", fontSize: 11, color: "var(--text)" }}>
+                            <b>{task.title}</b> <span style={{ color: "var(--muted)" }}>· {task.projectName || "Genel Görev"}</span>
                           </div>
                         ))}
                       </div>
                     )}
                     {(reminder.deliveryLog || []).length > 0 && (
                       <details style={{ marginTop: 9 }}>
-                        <summary style={{ cursor: "pointer", fontSize: 10, color: "#64748B", fontWeight: 800 }}>Gönderim geçmişi</summary>
+                        <summary style={{ cursor: "pointer", fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>Gönderim geçmişi</summary>
                         <div style={{ display: "grid", gap: 5, marginTop: 7 }}>
                           {(reminder.deliveryLog || []).slice(0, 3).map((entry) => (
-                            <div key={entry.id} style={{ fontSize: 10, color: "#64748B", background: "#F8FAFC", borderRadius: 8, padding: 8 }}>
+                            <div key={entry.id} style={{ fontSize: 10, color: "var(--muted)", background: "var(--surface-soft)", borderRadius: 8, padding: 8 }}>
                               <b>{fmtDateTime(entry.at)}</b> · {(entry.delivery || []).filter((item) => item.sent).length} başarılı · {(entry.delivery || []).filter((item) => item.error || item.skipped).length} atlandı/hata
                             </div>
                           ))}

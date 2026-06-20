@@ -17,7 +17,7 @@ const customerDisplayName = (project = {}) =>
 
 const customerLogo = (project = {}) => project.customerProfile?.logoUrl || project.logoUrl || "";
 const customerWebsite = (project = {}) => project.customerProfile?.website || project.website || "";
-const customerAccent = (project = {}) => project.customerProfile?.accentColor || project.color || "#4A6CF7";
+const customerAccent = (project = {}) => project.customerProfile?.accentColor || project.color || "var(--accent)";
 
 export function CustomerDashboardPage({ state, currentUser, projects = [], onNavigate, onOpenProject }) {
   const projectSummaries = projects.map((project) => {
@@ -70,47 +70,47 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
     : 0;
 
   if (!projectSummaries.length) {
-    return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(18px,4vw,34px)", background: "#F8FAFC" }}>
-      <div style={{ maxWidth: 920, margin: "0 auto", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 24, padding: 26, boxShadow: "0 18px 45px rgba(15,23,42,.06)" }}>
-        <div style={{ width: 54, height: 54, borderRadius: 18, background: "#EEF2FF", color: "#4A6CF7", display: "grid", placeItems: "center", marginBottom: 14 }}><Icon name="projects" size={25} /></div>
+    return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(18px,4vw,34px)", background: "var(--surface-soft)" }}>
+      <div style={{ maxWidth: 920, margin: "0 auto", background: "#fff", border: "1px solid var(--border)", borderRadius: 24, padding: 26, boxShadow: "0 18px 45px rgba(15,23,42,.06)" }}>
+        <div style={{ width: 54, height: 54, borderRadius: 18, background: "var(--accent-ink)", color: "var(--accent)", display: "grid", placeItems: "center", marginBottom: 14 }}><Icon name="projects" size={25} /></div>
         <h2 style={{ margin: 0, fontSize: 24 }}>Proje özeti hazırlanıyor</h2>
-        <p style={{ margin: "8px 0 0", color: "#64748B", lineHeight: 1.55 }}>Hesabınıza bağlı görüntülenebilir proje bulunamadı. Proje erişimi tanımlandığında burada yalnızca size ait proje raporu görünecek.</p>
+        <p style={{ margin: "8px 0 0", color: "var(--muted)", lineHeight: 1.55 }}>Hesabınıza bağlı görüntülenebilir proje bulunamadı. Proje erişimi tanımlandığında burada yalnızca size ait proje raporu görünecek.</p>
       </div>
     </div>;
   }
 
-  return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(16px,4vw,34px)", background: "linear-gradient(180deg,#F8FAFC 0%,#EEF2FF 100%)" }}>
+  return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(16px,4vw,34px)", background: "linear-gradient(180deg,var(--surface-soft) 0%,var(--accent-ink) 100%)" }}>
     <div style={{ maxWidth: 1160, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #C7D2FE", background: "#EEF2FF", color: "#4338CA", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 900, marginBottom: 10 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid color-mix(in srgb, var(--accent) 22%, var(--border))", background: "var(--accent-ink)", color: "var(--accent)", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 900, marginBottom: 10 }}>
             <Icon name="reports" size={14} /> Müşteri Proje Özeti
           </div>
-          <h1 style={{ margin: 0, fontSize: "clamp(24px,4vw,38px)", letterSpacing: "-.04em", color: "#111827" }}>Proje durum raporu</h1>
-          <p style={{ margin: "8px 0 0", color: "#64748B", fontSize: 14, lineHeight: 1.55, maxWidth: 680 }}>Bu ekranda size ait proje planı, sağlık skoru, eğitim/RACI, makineler ve görünür ticketların güncel özeti yer alır.</p>
+          <h1 style={{ margin: 0, fontSize: "clamp(24px,4vw,38px)", letterSpacing: "-.04em", color: "var(--text)" }}>Proje durum raporu</h1>
+          <p style={{ margin: "8px 0 0", color: "var(--muted)", fontSize: 14, lineHeight: 1.55, maxWidth: 680 }}>Bu ekranda size ait proje planı, sağlık skoru, eğitim/RACI, makineler ve görünür ticketların güncel özeti yer alır.</p>
         </div>
         <div style={{display:"flex",gap:9,flexWrap:"wrap",justifyContent:"flex-end"}}>
-          <button onClick={() => onNavigate?.("tickets")} style={{ border: 0, borderRadius: 14, background: "linear-gradient(135deg,#4A6CF7,#7C3AED)", color: "#fff", padding: "12px 15px", fontWeight: 900, cursor: "pointer", boxShadow: "0 14px 30px rgba(79,70,229,.22)" }}>+ Yeni Ticket Aç</button>
-          <button onClick={() => onNavigate?.("tickets")} style={{ border: "1px solid #E2E8F0", borderRadius: 14, background: "#fff", color: "#334155", padding: "12px 15px", fontWeight: 900, cursor: "pointer" }}>Ticketları Gör</button>
+          <button onClick={() => onNavigate?.("tickets")} style={{ border: 0, borderRadius: 14, background: "linear-gradient(135deg,var(--accent),var(--accent))", color: "#fff", padding: "12px 15px", fontWeight: 900, cursor: "pointer", boxShadow: "0 14px 30px rgba(79,70,229,.22)" }}>+ Yeni Ticket Aç</button>
+          <button onClick={() => onNavigate?.("tickets")} style={{ border: "1px solid var(--border)", borderRadius: 14, background: "#fff", color: "var(--text)", padding: "12px 15px", fontWeight: 900, cursor: "pointer" }}>Ticketları Gör</button>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 16 }}>
         {[
-          ["Genel İlerleme", `%${averageProgress}`, `${doneTasks}/${totalTasks} görev tamamlandı`, "#4A6CF7"],
-          ["Proje Sağlığı", averageReadiness ? `%${averageReadiness}` : "-", "Hazırlık skoru", "#059669"],
-          ["Açık Ticket", openTickets, `${totalTickets} görünür ticket`, "#EA6C00"],
-          ["Geciken İş", totalOverdue, "Müşteri görünür plan", "#E11D48"],
-        ].map(([label, value, desc, color]) => <div key={label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderTop: `4px solid ${color}`, borderRadius: 18, padding: 16, boxShadow: "0 10px 26px rgba(15,23,42,.05)", minWidth: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 950, color: "#64748B", letterSpacing: ".08em", textTransform: "uppercase" }}>{label}</div>
+          ["Genel İlerleme", `%${averageProgress}`, `${doneTasks}/${totalTasks} görev tamamlandı`, "var(--accent)"],
+          ["Proje Sağlığı", averageReadiness ? `%${averageReadiness}` : "-", "Hazırlık skoru", "var(--success)"],
+          ["Açık Ticket", openTickets, `${totalTickets} görünür ticket`, "var(--warning)"],
+          ["Geciken İş", totalOverdue, "Müşteri görünür plan", "var(--danger)"],
+        ].map(([label, value, desc, color]) => <div key={label} style={{ background: "#fff", border: "1px solid var(--border)", borderTop: `4px solid ${color}`, borderRadius: 18, padding: 16, boxShadow: "0 10px 26px rgba(15,23,42,.05)", minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 950, color: "var(--muted)", letterSpacing: ".08em", textTransform: "uppercase" }}>{label}</div>
           <div style={{ fontSize: 28, lineHeight: 1.1, fontWeight: 950, color, marginTop: 7 }}>{value}</div>
-          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4, overflowWrap: "anywhere" }}>{desc}</div>
+          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, overflowWrap: "anywhere" }}>{desc}</div>
         </div>)}
       </div>
 
       <div style={{ display: "grid", gap: 16 }}>
-        {projectSummaries.map((item) => <section key={item.project.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 24, overflow: "hidden", boxShadow: "0 18px 45px rgba(15,23,42,.07)" }}>
-          <div style={{ background: `linear-gradient(135deg,${item.accent} 0%,#111827 120%)`, color: "#fff", padding: "18px clamp(16px,3vw,24px)", display: "flex", gap: 15, alignItems: "center", minWidth: 0 }}>
+        {projectSummaries.map((item) => <section key={item.project.id} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 24, overflow: "hidden", boxShadow: "0 18px 45px rgba(15,23,42,.07)" }}>
+          <div style={{ background: `linear-gradient(135deg,${item.accent} 0%,var(--text) 120%)`, color: "#fff", padding: "18px clamp(16px,3vw,24px)", display: "flex", gap: 15, alignItems: "center", minWidth: 0 }}>
             <div style={{ width: 58, height: 58, borderRadius: 18, background: "rgba(255,255,255,.95)", display: "grid", placeItems: "center", overflow: "hidden", flexShrink: 0 }}>
               {item.logo ? <img src={item.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 8 }} /> : <b style={{ color: item.accent, fontSize: 22 }}>{item.customerName.slice(0, 1)}</b>}
             </div>
@@ -128,21 +128,21 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
             </div>
           </div>
           <div style={{ padding: "18px clamp(16px,3vw,24px)" }}>
-            <div style={{ height: 9, borderRadius: 999, background: "#E2E8F0", overflow: "hidden", marginBottom: 16 }}>
-              <div style={{ height: "100%", width: `${item.progress}%`, background: `linear-gradient(90deg,${item.accent},#22D3EE)`, borderRadius: 999 }} />
+            <div style={{ height: 9, borderRadius: 999, background: "var(--border)", overflow: "hidden", marginBottom: 16 }}>
+              <div style={{ height: "100%", width: `${item.progress}%`, background: `linear-gradient(90deg,${item.accent},var(--accent))`, borderRadius: 999 }} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 12 }}>
               <CustomerMetric title="Proje Planı" value={`${item.doneTasks}/${item.tasks.length}`} desc={item.activeMilestone ? `Aktif: ${item.activeMilestone.name}` : "Milestone bulunmuyor"} icon="tasks" color={item.accent} />
-              <CustomerMetric title="Proje Sağlığı" value={`%${item.readiness}`} desc={item.readiness >= 80 ? "Başlamaya uygun" : "Hazırlık takibi gerekli"} icon="activity" color={item.readiness >= 80 ? "#059669" : "#EA6C00"} />
-              <CustomerMetric title="Ticketlar" value={item.openTickets} desc={`${item.visibleTickets.length} müşteri görünür ticket`} icon="ticket" color="#EA6C00" />
-              <CustomerMetric title="Makineler" value={`${item.commissioned}/${item.machines.length}`} desc="Devreye alma durumu" icon="projects" color="#0F766E" />
-              <CustomerMetric title="Eğitimler" value={item.trainings.length} desc="Kayıtlı eğitim" icon="people" color="#7C3AED" />
-              <CustomerMetric title="RACI / Kontak" value={item.raciCount} desc="Tanımlı sorumlu ve kontak" icon="people" color="#0369A1" />
+              <CustomerMetric title="Proje Sağlığı" value={`%${item.readiness}`} desc={item.readiness >= 80 ? "Başlamaya uygun" : "Hazırlık takibi gerekli"} icon="activity" color={item.readiness >= 80 ? "var(--success)" : "var(--warning)"} />
+              <CustomerMetric title="Ticketlar" value={item.openTickets} desc={`${item.visibleTickets.length} müşteri görünür ticket`} icon="ticket" color="var(--warning)" />
+              <CustomerMetric title="Makineler" value={`${item.commissioned}/${item.machines.length}`} desc="Devreye alma durumu" icon="projects" color="var(--accent)" />
+              <CustomerMetric title="Eğitimler" value={item.trainings.length} desc="Kayıtlı eğitim" icon="people" color="var(--accent)" />
+              <CustomerMetric title="RACI / Kontak" value={item.raciCount} desc="Tanımlı sorumlu ve kontak" icon="people" color="var(--accent)" />
             </div>
-            {item.overdue > 0 && <div style={{ marginTop: 13, border: "1px solid #FECACA", background: "#FFF1F2", color: "#BE123C", borderRadius: 14, padding: "10px 12px", fontSize: 12, fontWeight: 800 }}>{item.overdue} geciken iş takip bekliyor.</div>}
+            {item.overdue > 0 && <div style={{ marginTop: 13, border: "1px solid #FECACA", background: "color-mix(in srgb, var(--danger) 9%, white 91%)", color: "var(--danger)", borderRadius: 14, padding: "10px 12px", fontSize: 12, fontWeight: 800 }}>{item.overdue} geciken iş takip bekliyor.</div>}
             <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:14}}>
               <button onClick={()=>onOpenProject?.(item.project.id)} style={{border:0,borderRadius:13,background:item.accent,color:"#fff",padding:"10px 13px",fontSize:12,fontWeight:900,cursor:"pointer",boxShadow:"0 10px 22px rgba(15,23,42,.12)"}}>Proje detaylarını gör</button>
-              <button onClick={()=>onNavigate?.("tickets")} style={{border:"1px solid #E2E8F0",borderRadius:13,background:"#fff",color:"#334155",padding:"10px 13px",fontSize:12,fontWeight:900,cursor:"pointer"}}>Ticketları aç</button>
+              <button onClick={()=>onNavigate?.("tickets")} style={{border:"1px solid var(--border)",borderRadius:13,background:"#fff",color:"var(--text)",padding:"10px 13px",fontSize:12,fontWeight:900,cursor:"pointer"}}>Ticketları aç</button>
             </div>
           </div>
         </section>)}
@@ -152,15 +152,15 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
 }
 
 function CustomerMetric({ title, value, desc, icon, color }) {
-  return <div style={{ border: "1px solid #E2E8F0", background: "#F8FAFC", borderRadius: 16, padding: 14, minWidth: 0 }}>
+  return <div style={{ border: "1px solid var(--border)", background: "var(--surface-soft)", borderRadius: 16, padding: 14, minWidth: 0 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
       <span style={{ width: 34, height: 34, borderRadius: 12, background: `${color}16`, color, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name={icon} size={17} /></span>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 10, color: "#64748B", fontWeight: 950, letterSpacing: ".06em", textTransform: "uppercase" }}>{title}</div>
+        <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 950, letterSpacing: ".06em", textTransform: "uppercase" }}>{title}</div>
         <div style={{ fontSize: 23, fontWeight: 950, color, lineHeight: 1.1, marginTop: 2 }}>{value}</div>
       </div>
     </div>
-    <div style={{ marginTop: 8, color: "#64748B", fontSize: 11, lineHeight: 1.4, overflowWrap: "anywhere" }}>{desc}</div>
+    <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 11, lineHeight: 1.4, overflowWrap: "anywhere" }}>{desc}</div>
   </div>;
 }
 
@@ -204,19 +204,19 @@ export function DashboardPage({state,setState,currentUser,isAdmin,myProjects,dea
     if(project)onOpenProject(project.id);
   };
   return <div className="theme-work-page dashboard-theme-page" style={{padding:"clamp(18px,4vw,30px)",flex:1,overflow:"auto",background:"radial-gradient(circle at 16% 4%,rgb(11 138 148 / 10%),transparent 28%),radial-gradient(circle at 88% 0%,rgb(191 122 18 / 9%),transparent 24%)"}}>
-    <div style={{marginBottom:22}}><h2 style={{margin:0,fontSize:22}}>Merhaba, {currentUser.name}</h2><p style={{margin:"5px 0 0",color:"#64748B",fontSize:13}}>Bugün neye odaklanmak istersiniz?</p></div>
+    <div style={{marginBottom:22}}><h2 style={{margin:0,fontSize:22}}>Merhaba, {currentUser.name}</h2><p style={{margin:"5px 0 0",color:"var(--muted)",fontSize:13}}>Bugün neye odaklanmak istersiniz?</p></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:12,marginBottom:18}}>
       <button className="liquid-card" onClick={()=>setQuick("todo")} style={{border:0,borderRadius:18,padding:16,textAlign:"left",cursor:"pointer",color:"var(--text, #112327)"}}><b style={{display:"block",fontSize:16,color:"var(--accent, #0b8a94)"}}>+ Hızlı To-Do</b><span style={{fontSize:11,color:"var(--muted, #5b6f74)"}}>Müşteri, termin ve aksiyonu hemen kaydet</span></button>
       <button className="liquid-card" onClick={()=>setQuick("action")} style={{border:0,borderRadius:18,padding:16,textAlign:"left",cursor:"pointer",color:"var(--text, #112327)"}}><b style={{display:"block",fontSize:16,color:"var(--warning, #bf7a12)"}}>+ Hızlı Aksiyon</b><span style={{fontSize:11,color:"var(--muted, #5b6f74)"}}>Proje görüşmesi, yazışma veya saha notu gir</span></button>
     </div>
     <div className="liquid-card" style={{borderRadius:20,padding:18,marginBottom:18}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><span style={{width:28,height:28,borderRadius:10,background:"var(--accent, #0b8a94)",color:"#fff",display:"grid",placeItems:"center",fontSize:12,fontWeight:950}}>AI</span><b style={{fontSize:14,color:"var(--text, #112327)"}}>Bugünün Akışı</b></div>
-      <div style={{display:"grid",gap:5}}>{todayFlowLines.map(line=><div key={line} style={{fontSize:12,color:"#475569",lineHeight:1.45,wordBreak:"break-word"}}>{line}</div>)}</div>
+      <div style={{display:"grid",gap:5}}>{todayFlowLines.map(line=><div key={line} style={{fontSize:12,color:"var(--muted)",lineHeight:1.45,wordBreak:"break-word"}}>{line}</div>)}</div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:13,marginBottom:24}}>
       {cards.map(card=><button className="liquid-card" key={card.view} onClick={()=>onNavigate(card.view)} style={{aspectRatio:"1.15/1",minHeight:145,borderRadius:19,padding:17,textAlign:"left",cursor:"pointer",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
         <span style={{width:38,height:38,borderRadius:12,display:"grid",placeItems:"center",background:card.color+"15",color:card.color}}><Icon name={card.icon} size={20}/></span>
-        <span><span style={{display:"block",fontSize:card.value===""?15:25,fontWeight:850,color:card.color}}>{card.value===""?card.label:card.value}</span><span style={{display:"block",fontSize:12,fontWeight:800,color:"#1E293B",marginTop:2}}>{card.value===""?"":card.label}</span><span style={{display:"block",fontSize:10,color:"#94A3B8",marginTop:3}}>{card.desc}</span></span>
+        <span><span style={{display:"block",fontSize:card.value===""?15:25,fontWeight:850,color:card.color}}>{card.value===""?card.label:card.value}</span><span style={{display:"block",fontSize:12,fontWeight:800,color:"var(--text)",marginTop:2}}>{card.value===""?"":card.label}</span><span style={{display:"block",fontSize:10,color:"var(--muted)",marginTop:3}}>{card.desc}</span></span>
       </button>)}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:14}}>
@@ -279,24 +279,24 @@ export function MobileHomePage({state,setState,currentUser,myProjects,deadlineWa
       <div style={{display:"flex",alignItems:"flex-start",gap:10}}><span style={{width:42,height:42,borderRadius:15,background:"var(--accent-ink, #def5f8)",color:"var(--accent, #0b8a94)",display:"grid",placeItems:"center",flexShrink:0}}><Icon name="activity" size={20}/></span><div style={{flex:1}}><div style={{fontSize:11,color:"var(--accent, #0b8a94)",fontWeight:900}}>AI · Bugünün Akışı</div><h2 style={{margin:"2px 0 6px",fontSize:18,color:"var(--text, #112327)"}}>Merhaba, {currentUser.name.split(" ")[0]}</h2><div style={{display:"grid",gap:5}}>{dailyLines.map(line=><div key={line} style={{fontSize:12,color:"var(--muted, #5b6f74)",lineHeight:1.45}}>• {line}</div>)}</div></div><button className="btn-base" onClick={closeDailySummary} style={{border:"1px solid var(--border, #cfe0e3)",background:"var(--surface, #ffffff)",borderRadius:10,width:30,height:30,cursor:"pointer",color:"var(--muted, #5b6f74)",fontWeight:900}}>×</button></div>
     </div>}
     <MobileFeedCard title="To-Do" actionLabel="Tümü" onAction={()=>onNavigate("todos")}>
-      {todos.slice(0,4).map(todo=><MobileFeedRow key={todo.id} color={todo.dueDate&&daysDiff(todo.dueDate)>0?"#E11D48":"#DB2777"} icon="ticket" title={todo.action||todo.text} meta={`${todo.customer||state.projects.find(item=>item.id===todo.projectId)?.name||"Genel"}${todo.dueDate?` · ${fmt(todo.dueDate)}`:""}`} onClick={()=>onNavigate("todos")}/>)}
+      {todos.slice(0,4).map(todo=><MobileFeedRow key={todo.id} color={todo.dueDate&&daysDiff(todo.dueDate)>0?"var(--danger)":"#DB2777"} icon="ticket" title={todo.action||todo.text} meta={`${todo.customer||state.projects.find(item=>item.id===todo.projectId)?.name||"Genel"}${todo.dueDate?` · ${fmt(todo.dueDate)}`:""}`} onClick={()=>onNavigate("todos")}/>)}
       {!todos.length&&<EmptyMobileRow text="Açık To-Do yok."/>}
     </MobileFeedCard>
     <MobileFeedCard title="Yaklaşan Planlar" actionLabel="Tümü" onAction={()=>onNavigate("fieldops")}>
-      {plans.map(plan=>{const project=state.projects.find(item=>item.id===plan.projectId);const dayName=plan.date?new Date(plan.date).toLocaleDateString("tr-TR",{weekday:"long"}):"";return <MobileFeedRow key={plan.id} color={plan.workType==="remote"?"#7C3AED":project?.color||"#0F766E"} icon="calendar" title={project?.name||"Plan"} meta={`${dayName?`${dayName} · `:""}${fmt(plan.date)} · ${plan.startTime||""} - ${plan.endTime||""}`} onClick={()=>onNavigate("fieldops")}/>;})}
+      {plans.map(plan=>{const project=state.projects.find(item=>item.id===plan.projectId);const dayName=plan.date?new Date(plan.date).toLocaleDateString("tr-TR",{weekday:"long"}):"";return <MobileFeedRow key={plan.id} color={plan.workType==="remote"?"var(--accent)":project?.color||"var(--accent)"} icon="calendar" title={project?.name||"Plan"} meta={`${dayName?`${dayName} · `:""}${fmt(plan.date)} · ${plan.startTime||""} - ${plan.endTime||""}`} onClick={()=>onNavigate("fieldops")}/>;})}
       {!plans.length&&<EmptyMobileRow text="Yaklaşan saha/uzaktan çalışma yok."/>}
     </MobileFeedCard>
     <MobileFeedCard title="Son Aksiyonlar" actionLabel="Tümü" onAction={()=>onNavigate("projects")}>
-      {actions.slice(0,4).map(({action,project})=><MobileFeedRow key={action.id} color={project?.color||"#4A6CF7"} icon="activity" title={action.text||"Aksiyon"} meta={`${project?.name||"Proje"} · ${action.authorName||""}`} onClick={()=>project&&onOpenProject(project.id)}/>)}
+      {actions.slice(0,4).map(({action,project})=><MobileFeedRow key={action.id} color={project?.color||"var(--accent)"} icon="activity" title={action.text||"Aksiyon"} meta={`${project?.name||"Proje"} · ${action.authorName||""}`} onClick={()=>project&&onOpenProject(project.id)}/>)}
       {!actions.length&&<EmptyMobileRow text="Henüz aksiyon kaydı yok."/>}
     </MobileFeedCard>
     <MobileFeedCard title="Projeler" actionLabel="Tümü" onAction={()=>onNavigate("projects")}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10}}>
-        {myProjects.slice(0,4).map(project=>{const total=project.milestones.reduce((sum,ms)=>sum+ms.tasks.length,0);const done=project.milestones.reduce((sum,ms)=>sum+ms.tasks.filter(task=>task.status==="Tamamlandı").length,0);const progress=total?Math.round(done/total*100):0;return <button key={project.id} onClick={()=>onOpenProject(project.id)} style={{border:0,borderRadius:16,background:"#F8FAFC",padding:12,textAlign:"left",cursor:"pointer"}}>
+        {myProjects.slice(0,4).map(project=>{const total=project.milestones.reduce((sum,ms)=>sum+ms.tasks.length,0);const done=project.milestones.reduce((sum,ms)=>sum+ms.tasks.filter(task=>task.status==="Tamamlandı").length,0);const progress=total?Math.round(done/total*100):0;return <button key={project.id} onClick={()=>onOpenProject(project.id)} style={{border:0,borderRadius:16,background:"var(--surface-soft)",padding:12,textAlign:"left",cursor:"pointer"}}>
           <span style={{width:28,height:28,borderRadius:10,background:project.color+"18",color:project.color,display:"grid",placeItems:"center",marginBottom:10}}><Icon name="projects" size={15}/></span>
           <b style={{display:"block",fontSize:12,lineHeight:1.35,wordBreak:"break-word",overflowWrap:"anywhere"}}>{project.name}</b>
-          <span style={{display:"block",fontSize:10,color:"#94A3B8",marginTop:3}}>%{progress} ilerleme</span>
-          <span style={{display:"block",height:5,background:"#E2E8F0",borderRadius:8,overflow:"hidden",marginTop:8}}><i style={{display:"block",height:"100%",width:`${progress}%`,background:project.color}}/></span>
+          <span style={{display:"block",fontSize:10,color:"var(--muted)",marginTop:3}}>%{progress} ilerleme</span>
+          <span style={{display:"block",height:5,background:"var(--border)",borderRadius:8,overflow:"hidden",marginTop:8}}><i style={{display:"block",height:"100%",width:`${progress}%`,background:project.color}}/></span>
         </button>;})}
       </div>
       {!myProjects.length&&<EmptyMobileRow text="Atanmış proje yok."/>}

@@ -183,7 +183,7 @@ export function GanttChart({ project, compact }) {
         </div>
         {/* Today line header */}
         <div style={{ display:"flex", marginLeft:labelW, marginBottom:2, position:"relative", height:2 }}>
-          <div style={{ flex:1, position:"relative", height:2, background:"#F1F5FF", borderRadius:1 }}>
+          <div style={{ flex:1, position:"relative", height:2, background:"var(--accent-ink)", borderRadius:1 }}>
             {todayOff >= 0 && todayOff <= total && (
               <div style={{ position:"absolute", left:`${todayOff/total*100}%`, top:-2, bottom:-2, width:2, background:"#E11D48", opacity:0.5 }} />
             )}
@@ -374,7 +374,7 @@ export function PlanListTable({ project, people }) {
   const toggle = (id) => setExpandedMs(s => ({ ...s, [id]: !s[id] }));
   const findName = (id) => people.find(p => p.id === id)?.name || "—";
   const thStyle = { padding:"8px 12px", textAlign:"left", fontWeight:600, color:"#64748B", borderBottom:"1px solid #E2E8F0", fontSize:11 };
-  const tdStyle = (extra={}) => ({ padding:"8px 12px", borderBottom:"1px solid #F1F5FF", fontSize:12, ...extra });
+  const tdStyle = (extra={}) => ({ padding:"8px 12px", borderBottom:"1px solid var(--accent-ink)", fontSize:12, ...extra });
   const bgs = ["#FAFBFF", "#F5F9FF"];
 
   // Flatten rows: milestone rows + optional task rows
@@ -390,8 +390,8 @@ export function PlanListTable({ project, people }) {
         <td style={{ ...tdStyle(), fontWeight:700 }}>{m.name}</td>
         <td style={tdStyle({ color:"#64748B" })}>{fmt(m.startDate)}</td>
         <td style={tdStyle({ color:"#64748B" })}>{fmt(m.dueDate)}</td>
-        <td style={tdStyle({ color: m.actualStart ? "#1E293B" : "#CBD5E1" })}>{fmt(m.actualStart) || "—"}</td>
-        <td style={tdStyle({ color: m.actualEnd ? "#1E293B" : "#CBD5E1" })}>{fmt(m.actualEnd) || "—"}</td>
+        <td style={tdStyle({ color: m.actualStart ? "#1E293B" : "var(--muted)" })}>{fmt(m.actualStart) || "—"}</td>
+        <td style={tdStyle({ color: m.actualEnd ? "#1E293B" : "var(--muted)" })}>{fmt(m.actualEnd) || "—"}</td>
         <td style={tdStyle()}><Badge label={m.status} /></td>
         <td style={tdStyle()}>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -408,7 +408,7 @@ export function PlanListTable({ project, people }) {
         const dl = delayLvl(t.dueDate, t.status);
         rows.push(
           <tr key={t.id} style={{ background:"#F8FAFC" }}>
-            <td style={{ ...tdStyle(), color:"#CBD5E1" }}></td>
+            <td style={{ ...tdStyle(), color:"var(--muted)" }}></td>
             <td style={{ ...tdStyle(), paddingLeft:28 }}>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ fontSize:11, color:"#1E293B" }}>{t.title}</span>
@@ -420,8 +420,8 @@ export function PlanListTable({ project, people }) {
             </td>
             <td style={tdStyle({ color:t.startDate?"#64748B":"#94A3B8" })}>{fmt(t.startDate)}</td>
             <td style={tdStyle({ color: dl ? "#E11D48" : "#64748B" })}>{fmt(t.dueDate)}</td>
-            <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
-            <td style={tdStyle({ color:"#CBD5E1" })}>—</td>
+            <td style={tdStyle({ color:"var(--muted)" })}>—</td>
+            <td style={tdStyle({ color:"var(--muted)" })}>—</td>
             <td style={tdStyle()}><Badge label={t.status} /></td>
             <td style={tdStyle({ color:"#64748B", fontSize:11 })}>{findName(t.assignee)}</td>
           </tr>

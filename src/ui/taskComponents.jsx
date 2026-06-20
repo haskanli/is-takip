@@ -386,7 +386,7 @@ export function TaskModal({
         </Field>
       </div>
       {exceedsMilestoneDue && (
-        <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", color: "#9A3412", borderRadius: 10, padding: "8px 10px", fontSize: 11, fontWeight: 700, marginBottom: 13 }}>
+        <div style={{ background: "color-mix(in srgb, var(--warning) 10%, white 90%)", border: "1px solid color-mix(in srgb, var(--warning) 24%, var(--border))", color: "var(--warning)", borderRadius: 10, padding: "8px 10px", fontSize: 11, fontWeight: 700, marginBottom: 13 }}>
           Uyarı: görev termini milestone termininden ileri. Milestone termini: {milestone.dueDate}
         </div>
       )}      <Field label="Bekleme Kaynağı">
@@ -548,12 +548,12 @@ export function PersonalTaskModal({
       ) : (
         <div
           style={{
-            background: "#F1F5FF",
+            background: "var(--accent-ink)",
             borderRadius: 8,
             padding: "8px 12px",
             marginBottom: 13,
             fontSize: 12,
-            color: "#4A6CF7",
+            color: "var(--accent)",
           }}
         >
           Görev size atanacak: <b>{currentUser.name}</b>
@@ -583,13 +583,13 @@ export function PersonalTaskModal({
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
         <Field label="Hedef Başlangıç">
-          <input type="date" disabled={lockStartAt && !editing} style={{ ...iStyle, background: lockStartAt && !editing ? "#F1F5F9" : iStyle.background }} value={form.startDate || ""} onChange={(event) => update("startDate", event.target.value)} />
+          <input type="date" disabled={lockStartAt && !editing} style={{ ...iStyle, background: lockStartAt && !editing ? "var(--surface-soft)" : iStyle.background }} value={form.startDate || ""} onChange={(event) => update("startDate", event.target.value)} />
         </Field>
         <Field label="Başlangıç Saati">
-          <input type="time" disabled={lockStartAt && !editing} style={{ ...iStyle, background: lockStartAt && !editing ? "#F1F5F9" : iStyle.background }} value={form.startTime || ""} onChange={(event) => update("startTime", event.target.value)} />
+          <input type="time" disabled={lockStartAt && !editing} style={{ ...iStyle, background: lockStartAt && !editing ? "var(--surface-soft)" : iStyle.background }} value={form.startTime || ""} onChange={(event) => update("startTime", event.target.value)} />
         </Field>
       </div>
-      {lockStartAt && !editing && <div style={{ fontSize: 10, color: "#64748B", margin: "-6px 0 10px" }}>Yönetici atamalarında başlangıç tarih ve saati atama anı olarak kilitlenir.</div>}
+      {lockStartAt && !editing && <div style={{ fontSize: 10, color: "var(--muted)", margin: "-6px 0 10px" }}>Yönetici atamalarında başlangıç tarih ve saati atama anı olarak kilitlenir.</div>}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
         <Field label="Hedef Bitiş">
           <input type="date" style={iStyle} value={form.dueDate} onChange={(event) => update("dueDate", event.target.value)} />
@@ -611,7 +611,7 @@ export function PersonalTaskModal({
       </Field>
 
       {!editing && (
-        <div style={{ background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 10, padding: 12, marginBottom: 13 }}>
+        <div style={{ background: "var(--surface-soft)", border: "1.5px solid var(--border)", borderRadius: 10, padding: 12, marginBottom: 13 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             <input type="checkbox" checked={form.recurring} onChange={(event) => update("recurring", event.target.checked)} /> Periyodik
             takip görevi
@@ -633,7 +633,7 @@ export function PersonalTaskModal({
         </div>
       )}
 
-      {error && <div style={{ color: "#DC2626", fontSize: 12, fontWeight: 600, marginBottom: 10 }}>{error}</div>}
+      {error && <div style={{ color: "var(--danger)", fontSize: 12, fontWeight: 600, marginBottom: 10 }}>{error}</div>}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 7 }}>
         <Btn variant="ghost" onClick={onClose}>
           İptal
@@ -686,7 +686,7 @@ export function TaskDetailModal({
           <h2 style={{ fontSize: 18, margin: "0 0 5px", lineHeight: 1.25, wordBreak: "break-word", overflowWrap: "anywhere" }}>
             {task.title}
           </h2>
-          <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.4, wordBreak: "break-word", overflowWrap: "anywhere" }}>
+          <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.4, wordBreak: "break-word", overflowWrap: "anywhere" }}>
             {assignee?.name || "Atanmamış"}
             {linkedProjectName ? ` · ${linkedProjectName}` : ""} · Termin: {formatDate(task.dueDate) || "Belirtilmedi"}
             {task.dueTime ? ` ${task.dueTime}` : ""}
@@ -696,8 +696,8 @@ export function TaskDetailModal({
         {task.assignmentRole && (
           <span
             style={{
-              background: task.assignmentRole === "Destek Sorumlusu" ? "#F0F9FF" : "#EEF2FF",
-              color: task.assignmentRole === "Destek Sorumlusu" ? "#0369A1" : "#4338CA",
+              background: task.assignmentRole === "Destek Sorumlusu" ? "var(--accent-ink)" : "var(--accent-ink)",
+              color: task.assignmentRole === "Destek Sorumlusu" ? "var(--accent)" : "var(--accent)",
               borderRadius: 999,
               padding: "7px 10px",
               fontSize: 10,
@@ -717,7 +717,7 @@ export function TaskDetailModal({
       {task.notes && (
         <div
           style={{
-            background: "#F8FAFC",
+            background: "var(--surface-soft)",
             borderRadius: 10,
             padding: 13,
             fontSize: 13,
@@ -734,9 +734,9 @@ export function TaskDetailModal({
       <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 9 }}>Yorumlar ({comments.length})</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", marginBottom: 12 }}>
         {comments.map((item) => (
-          <div key={item.id} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: "10px 12px", minWidth: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 10, color: "#64748B", marginBottom: 4, flexWrap: "wrap" }}>
-              <b style={{ color: "#334155", wordBreak: "break-word", overflowWrap: "anywhere" }}>
+          <div key={item.id} style={{ background: "var(--surface-soft)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 10, color: "var(--muted)", marginBottom: 4, flexWrap: "wrap" }}>
+              <b style={{ color: "var(--text)", wordBreak: "break-word", overflowWrap: "anywhere" }}>
                 {item.userName || people.find((person) => person.id === item.userId)?.name || "Kullanıcı"}
               </b>
               <span>{item.ts ? new Date(item.ts).toLocaleString("tr-TR") : ""}</span>
@@ -744,7 +744,7 @@ export function TaskDetailModal({
             <div style={{ fontSize: 12, lineHeight: 1.5, wordBreak: "break-word", overflowWrap: "anywhere" }}>{item.text}</div>
           </div>
         ))}
-        {!comments.length && <div style={{ fontSize: 12, color: "#94A3B8" }}>Henüz yorum eklenmedi.</div>}
+        {!comments.length && <div style={{ fontSize: 12, color: "var(--muted)" }}>Henüz yorum eklenmedi.</div>}
       </div>
 
       <textarea
@@ -807,7 +807,7 @@ export function TimeLogModal({
     <Modal title={`Süre Girişi — ${task.title}`} onClose={onClose} wide>
       <div
         style={{
-          background: "#F5F3FF",
+          background: "var(--surface-soft)",
           borderRadius: 10,
           padding: "12px 16px",
           marginBottom: 16,
@@ -816,10 +816,10 @@ export function TimeLogModal({
           alignItems: "center",
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#7C3AED" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>
           Toplam Harcanan{planned ? ` / Planlanan ${planned} saat` : ""}
         </span>
-        <span style={{ fontSize: 20, fontWeight: 800, color: planned && total > planned ? "#E11D48" : "#7C3AED" }}>
+        <span style={{ fontSize: 20, fontWeight: 800, color: planned && total > planned ? "var(--danger)" : "var(--accent)" }}>
           {total} saat
         </span>
       </div>
@@ -860,7 +860,7 @@ export function TimeLogModal({
             style={{
               fontWeight: 700,
               fontSize: 11,
-              color: "#64748B",
+              color: "var(--muted)",
               textTransform: "uppercase",
               letterSpacing: 1,
               marginBottom: 8,
@@ -879,22 +879,22 @@ export function TimeLogModal({
                   alignItems: "center",
                   gap: 10,
                   padding: "9px 13px",
-                  background: "#F8FAFC",
+                  background: "var(--surface-soft)",
                   borderRadius: 8,
-                  border: "1.5px solid #E2E8F0",
+                  border: "1.5px solid var(--border)",
                   marginBottom: 5,
                 }}
               >
-                <span style={{ fontWeight: 800, fontSize: 14, color: "#7C3AED", minWidth: 55 }}>{entry.hours} sa</span>
+                <span style={{ fontWeight: 800, fontSize: 14, color: "var(--accent)", minWidth: 55 }}>{entry.hours} sa</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "#1E293B" }}>{entry.note || "—"}</div>
-                  <div style={{ fontSize: 10, color: "#94A3B8" }}>
+                  <div style={{ fontSize: 12, color: "var(--text)" }}>{entry.note || "—"}</div>
+                  <div style={{ fontSize: 10, color: "var(--muted)" }}>
                     {entry.user} · {formatDate(entry.date)}
                   </div>
                 </div>
                 <button
                   onClick={() => remove(entry.id)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#CBD5E1", fontSize: 14 }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 14 }}
                 >
                   x
                 </button>

@@ -66,7 +66,7 @@ export function MultiChoiceFilter({ label, options, value, onChange }) {
             maxHeight: 280,
             overflow: "auto",
             background: "#fff",
-            border: "1px solid #CBD5E1",
+            border: "1px solid var(--muted)",
             borderRadius: 11,
             padding: 8,
             boxShadow: "0 16px 35px rgba(15,23,42,.16)",

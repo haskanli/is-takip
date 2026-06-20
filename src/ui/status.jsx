@@ -1,15 +1,15 @@
 export const STATUS_COLORS = {
-  "Ba\u015flamad\u0131": { bg: "#F8FAFC", text: "#94A3B8", dot: "#94A3B8" },
-  Bekliyor: { bg: "#F1F5FF", text: "#4A6CF7", dot: "#4A6CF7" },
-  "Devam Ediyor": { bg: "#FFF7ED", text: "#EA6C00", dot: "#EA6C00" },
-  "Tamamland\u0131": { bg: "#ECFDF5", text: "#059669", dot: "#059669" },
-  Engellendi: { bg: "#FFF1F2", text: "#E11D48", dot: "#E11D48" },
+  "Ba\u015flamad\u0131": { bg: "var(--surface-soft)", text: "var(--muted)", dot: "var(--muted)" },
+  Bekliyor: { bg: "var(--accent-ink)", text: "var(--accent)", dot: "var(--accent)" },
+  "Devam Ediyor": { bg: "color-mix(in srgb, var(--warning) 10%, white 90%)", text: "var(--warning)", dot: "var(--warning)" },
+  "Tamamland\u0131": { bg: "color-mix(in srgb, var(--success) 10%, white 90%)", text: "var(--success)", dot: "var(--success)" },
+  Engellendi: { bg: "color-mix(in srgb, var(--danger) 9%, white 91%)", text: "var(--danger)", dot: "var(--danger)" },
 };
 
 export const PRIORITY_COLORS = {
-  "D\u00fc\u015f\u00fck": "#94A3B8",
-  Orta: "#EA6C00",
-  "Y\u00fcksek": "#E11D48",
+  "D\u00fc\u015f\u00fck": "var(--muted)",
+  Orta: "var(--warning)",
+  "Y\u00fcksek": "var(--danger)",
 };
 
 export const STATUSES = Object.keys(STATUS_COLORS);
@@ -31,7 +31,7 @@ export const delayLvl = (date, status) => {
 };
 
 export function Badge({ label }) {
-  const color = STATUS_COLORS[label] || { bg: "#F1F5FF", text: "#4A6CF7", dot: "#4A6CF7" };
+  const color = STATUS_COLORS[label] || { bg: "var(--accent-ink)", text: "var(--accent)", dot: "var(--accent)" };
   return (
     <span
       style={{
@@ -59,8 +59,8 @@ export function DelayBadge({ dateStr, status }) {
   return (
     <span
       style={{
-        background: level === "critical" ? "#FFF1F2" : "#FFF7ED",
-        color: level === "critical" ? "#E11D48" : "#EA6C00",
+        background: level === "critical" ? "color-mix(in srgb, var(--danger) 9%, white 91%)" : "color-mix(in srgb, var(--warning) 10%, white 90%)",
+        color: level === "critical" ? "var(--danger)" : "var(--warning)",
         borderRadius: 20,
         padding: "2px 9px",
         fontSize: 11,

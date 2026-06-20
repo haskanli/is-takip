@@ -111,9 +111,9 @@ const WEATHER_SCENES = [
     ids: [0],
     scene: {
       image:
-        "radial-gradient(circle at 20% 16%, rgba(243, 226, 170, 0.42) 0 24%, transparent 45%), radial-gradient(circle at 78% 16%, rgba(94, 165, 255, 0.28) 0 20%, transparent 44%), radial-gradient(circle at 42% 76%, rgba(30, 58, 138, 0.22) 0 16%, transparent 46%), linear-gradient(150deg, #fef3c7 0%, #e0f2fe 30%, #dbeafe 56%, #dbeafe 100%)",
+        "radial-gradient(circle at 18% 10%, rgb(222 245 248 / 52%) 0 20%, transparent 42%), radial-gradient(circle at 86% 12%, rgb(191 122 18 / 10%) 0 18%, transparent 42%), linear-gradient(150deg, #fbfcfc 0%, #f6fafb 48%, #eef4f5 100%)",
       overlay:
-        "radial-gradient(circle at 10% 15%, rgba(250, 204, 21, 0.16), transparent 40%), radial-gradient(circle at 82% 14%, rgba(37, 99, 235, 0.14), transparent 32%), linear-gradient(to right, rgba(250, 204, 21, 0.06), rgba(59, 130, 246, 0.1))",
+        "radial-gradient(circle at 10% 15%, rgb(11 138 148 / 8%), transparent 40%), linear-gradient(to right, rgb(255 255 255 / 18%), rgb(246 250 251 / 28%))",
       blur: "132px",
     },
   },
@@ -121,9 +121,9 @@ const WEATHER_SCENES = [
     ids: [1, 2, 3],
     scene: {
       image:
-        "radial-gradient(circle at 18% 14%, rgba(56, 189, 248, 0.26) 0 18%, transparent 38%), radial-gradient(circle at 76% 18%, rgba(167, 139, 250, 0.2) 0 18%, transparent 44%), radial-gradient(circle at 40% 80%, rgba(14, 165, 233, 0.18) 0 16%, transparent 44%), linear-gradient(150deg, #f8fafc 0%, #e2e8f0 34%, #e0e7ff 62%, #c7d2fe 100%)",
+        "radial-gradient(circle at 18% 14%, rgb(222 245 248 / 42%) 0 18%, transparent 40%), radial-gradient(circle at 76% 18%, rgb(207 224 227 / 36%) 0 18%, transparent 44%), linear-gradient(150deg, #fbfcfc 0%, #f6fafb 42%, #edf3f4 100%)",
       overlay:
-        "radial-gradient(circle at 12% 12%, rgba(56, 189, 248, 0.14), transparent 36%), radial-gradient(circle at 88% 15%, rgba(129, 140, 248, 0.12), transparent 34%), linear-gradient(to right, rgba(241, 245, 249, 0.12), rgba(219, 234, 254, 0.26))",
+        "radial-gradient(circle at 12% 12%, rgb(11 138 148 / 8%), transparent 36%), linear-gradient(to right, rgb(246 250 251 / 16%), rgb(222 245 248 / 18%))",
       blur: "132px",
     },
   },
@@ -131,9 +131,9 @@ const WEATHER_SCENES = [
     ids: [45, 48, 51, 53, 55, 56, 57],
     scene: {
       image:
-        "radial-gradient(circle at 20% 12%, rgba(148, 163, 184, 0.28) 0 16%, transparent 38%), radial-gradient(circle at 70% 78%, rgba(71, 85, 105, 0.26) 0 24%, transparent 40%), linear-gradient(150deg, #e2e8f0 0%, #cbd5e1 36%, #94a3b8 68%, #64748b 100%)",
+        "radial-gradient(circle at 20% 12%, rgb(207 224 227 / 44%) 0 16%, transparent 38%), radial-gradient(circle at 70% 78%, rgb(91 111 116 / 14%) 0 24%, transparent 42%), linear-gradient(150deg, #f5f7f7 0%, #edf3f4 48%, #e5ecee 100%)",
       overlay:
-        "linear-gradient(to right, rgba(148, 163, 184, 0.2), rgba(100, 116, 139, 0.3)), radial-gradient(circle at 16% 78%, rgba(203, 213, 225, 0.18), transparent 44%)",
+        "linear-gradient(to right, rgb(207 224 227 / 18%), rgb(91 111 116 / 10%)), radial-gradient(circle at 16% 78%, rgb(255 255 255 / 16%), transparent 44%)",
       blur: "136px",
     },
   },
@@ -141,9 +141,9 @@ const WEATHER_SCENES = [
     ids: [61, 63, 65, 66, 67, 80, 81, 82],
     scene: {
       image:
-        "radial-gradient(circle at 20% 14%, rgba(56, 189, 248, 0.28) 0 20%, transparent 40%), radial-gradient(circle at 76% 18%, rgba(6, 95, 70, 0.2) 0 18%, transparent 42%), radial-gradient(circle at 36% 82%, rgba(8, 47, 73, 0.24) 0 18%, transparent 48%), linear-gradient(150deg, #ecfeff 0%, #e0f2fe 34%, #cffafe 56%, #67e8f9 100%)",
+        "radial-gradient(circle at 20% 14%, rgb(222 245 248 / 46%) 0 20%, transparent 42%), radial-gradient(circle at 76% 18%, rgb(25 131 92 / 12%) 0 18%, transparent 42%), linear-gradient(150deg, #f8fbfb 0%, #edf6f7 48%, #e3eff1 100%)",
       overlay:
-        "radial-gradient(circle at 12% 14%, rgba(14, 116, 144, 0.16), transparent 34%), radial-gradient(circle at 84% 84%, rgba(8, 145, 178, 0.14), transparent 40%)",
+        "radial-gradient(circle at 12% 14%, rgb(11 138 148 / 10%), transparent 34%), radial-gradient(circle at 84% 84%, rgb(25 131 92 / 8%), transparent 40%)",
       blur: "138px",
     },
   },
@@ -151,9 +151,9 @@ const WEATHER_SCENES = [
     ids: [71, 73, 75, 77, 85, 86],
     scene: {
       image:
-        "radial-gradient(circle at 16% 14%, rgba(240, 253, 244, 0.4) 0 20%, transparent 38%), radial-gradient(circle at 74% 18%, rgba(186, 230, 253, 0.24) 0 18%, transparent 44%), radial-gradient(circle at 42% 82%, rgba(148, 163, 184, 0.2) 0 20%, transparent 46%), linear-gradient(150deg, #f8fafc 0%, #e2e8f0 32%, #bfdbfe 62%, #7dd3fc 100%)",
+        "radial-gradient(circle at 16% 14%, rgb(246 250 251 / 72%) 0 20%, transparent 38%), radial-gradient(circle at 74% 18%, rgb(222 245 248 / 30%) 0 18%, transparent 44%), linear-gradient(150deg, #fbfcfc 0%, #f3f8f9 44%, #e8f1f2 100%)",
       overlay:
-        "radial-gradient(circle at 12% 18%, rgba(186, 230, 253, 0.22), transparent 40%), radial-gradient(circle at 82% 78%, rgba(56, 189, 248, 0.14), transparent 42%)",
+        "radial-gradient(circle at 12% 18%, rgb(222 245 248 / 22%), transparent 40%), radial-gradient(circle at 82% 78%, rgb(207 224 227 / 18%), transparent 42%)",
       blur: "140px",
     },
   },
@@ -161,9 +161,9 @@ const WEATHER_SCENES = [
     ids: [95, 96, 99],
     scene: {
       image:
-        "radial-gradient(circle at 20% 16%, rgba(147, 197, 253, 0.26) 0 18%, transparent 40%), radial-gradient(circle at 74% 20%, rgba(248, 113, 113, 0.2) 0 16%, transparent 40%), radial-gradient(circle at 48% 78%, rgba(55, 48, 163, 0.22) 0 16%, transparent 46%), linear-gradient(150deg, #f1f5f9 0%, #e0f2fe 34%, #c7d2fe 62%, #a78bfa 100%)",
+        "radial-gradient(circle at 20% 16%, rgb(207 224 227 / 46%) 0 18%, transparent 40%), radial-gradient(circle at 74% 20%, rgb(185 63 51 / 10%) 0 16%, transparent 40%), linear-gradient(150deg, #f7f9f9 0%, #edf3f4 46%, #e4ecee 100%)",
       overlay:
-        "linear-gradient(to right, rgba(79, 70, 229, 0.09), rgba(14, 116, 144, 0.12)), radial-gradient(circle at 18% 78%, rgba(248, 113, 113, 0.14), transparent 44%)",
+        "linear-gradient(to right, rgb(11 138 148 / 8%), rgb(185 63 51 / 7%)), radial-gradient(circle at 18% 78%, rgb(191 122 18 / 9%), transparent 44%)",
       blur: "142px",
     },
   },
@@ -725,15 +725,15 @@ export default function App() {
   if(REQUIRE_AUTH&&!authReady)return <AppLoadingScreen progress={loadProgress} status="Oturum kontrol ediliyor" logoSrc={corjectLogo}/>;
   if(REQUIRE_AUTH&&!authSession)return <AuthLoginScreen appVersion={APP_VERSION}/>;
   if(REQUIRE_AUTH&&passwordRecovery)return <PasswordRecoveryScreen onDone={()=>setPasswordRecovery(false)}/>;
-  if(loadError)return <div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#F8FAFC",padding:20,fontFamily:"Inter,Segoe UI,sans-serif"}}>
+  if(loadError)return <div style={{height:"100vh",display:"grid",placeItems:"center",background:"var(--text)",color:"var(--surface-soft)",padding:20,fontFamily:"Inter,Segoe UI,sans-serif"}}>
     <div style={{maxWidth:520,textAlign:"center"}}>
       <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>Veriler yüklenemedi</div>
-      <div style={{fontSize:12,color:"#FCA5A5",lineHeight:1.6,marginBottom:16}}>{loadError}</div>
-      <button onClick={()=>window.location.reload()} style={{border:0,borderRadius:10,padding:"10px 16px",background:"#4A6CF7",color:"#fff",fontWeight:800,cursor:"pointer"}}>Tekrar Dene</button>
+      <div style={{fontSize:12,color:"var(--danger)",lineHeight:1.6,marginBottom:16}}>{loadError}</div>
+      <button onClick={()=>window.location.reload()} style={{border:0,borderRadius:10,padding:"10px 16px",background:"var(--accent)",color:"#fff",fontWeight:800,cursor:"pointer"}}>Tekrar Dene</button>
     </div>
   </div>;
   if(!dataLoaded||(REQUIRE_AUTH&&loadedAuthUserId!==authSession?.user?.id)) return <AppLoadingScreen progress={loadProgress} status={loadProgress<45?"Güvenli bağlantı kuruluyor":loadProgress<82?"Projeler ve görevler yükleniyor":"Arayüz hazırlanıyor"} logoSrc={corjectLogo}/>;
-  if(!currentUser)return REQUIRE_AUTH?<div style={{height:"100vh",display:"grid",placeItems:"center",background:"#0F172A",color:"#FCA5A5",padding:20,textAlign:"center"}}>Bu e-posta için aktif Corject profili bulunamadı.</div>:<LoginScreen people={state.people} onLogin={login} appVersion={APP_VERSION} />;
+  if(!currentUser)return REQUIRE_AUTH?<div style={{height:"100vh",display:"grid",placeItems:"center",background:"var(--text)",color:"var(--danger)",padding:20,textAlign:"center"}}>Bu e-posta için aktif Corject profili bulunamadı.</div>:<LoginScreen people={state.people} onLogin={login} appVersion={APP_VERSION} />;
 
   // Project visibility filter
   const visibleProjects=customerView
@@ -1067,7 +1067,7 @@ export default function App() {
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:10 }}>
         <button className="mobile-icon-button" onClick={()=>navigateTo("notifications")} style={{ background:"var(--surface-soft, #f6fafb)", border:"1px solid var(--border, #cfe0e3)", borderRadius:12, cursor:"pointer", position:"relative", padding:8, color:"var(--muted, #5b6f74)", display:"grid", placeItems:"center" }}>
           <Icon name="bell" size={17}/>
-          {(state.notifications||[]).filter(n=>isNotificationForUser(n,currentUser)&&!n.read).length>0&&<span style={{ position:"absolute", top:5, right:5, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
+          {(state.notifications||[]).filter(n=>isNotificationForUser(n,currentUser)&&!n.read).length>0&&<span style={{ position:"absolute", top:5, right:5, width:8, height:8, background:"var(--danger)", borderRadius:"50%" }} />}
         </button>
         <button className="mobile-icon-button" title="Tüm özellikler" onClick={()=>navigateTo("mobilemenu")} style={{background:"var(--surface-soft, #f6fafb)",border:"1px solid var(--border, #cfe0e3)",borderRadius:12,cursor:"pointer",padding:"7px 9px",color:"var(--muted, #5b6f74)",display:"grid",placeItems:"center",fontSize:18,fontWeight:900,lineHeight:1}}>☰</button>
         <button className="mobile-profile-button" title="Profilim" onClick={()=>setModal({type:"editProfile"})} style={{background:"none",border:"none",padding:0,cursor:"pointer"}}><Avatar initials={currentUser.avatar} imageUrl={currentUser.avatarUrl} size={34} color={isAdmin?"var(--danger, #b93f33)":"var(--accent, #0b8a94)"} /></button>
@@ -1081,7 +1081,7 @@ export default function App() {
             <button onClick={()=>navigateTo("dashboard")} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",minWidth:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:42,height:42,objectFit:"contain",filter:"drop-shadow(0 7px 14px rgb(11 138 148 / 28%))"}}/><span style={{fontFamily:"var(--font-display, 'Plus Jakarta Sans', Manrope, sans-serif)",fontSize:20,fontWeight:800,color:"var(--text, #112327)",letterSpacing:"-.025em",lineHeight:1,maxWidth:135,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
             <button onClick={()=>navigateTo("notifications")} style={{ background:"none", border:"none", cursor:"pointer", position:"relative", padding:4 }}>
               <span style={{ color:"var(--muted, #5b6f74)", display:"flex" }}><Icon name="bell" size={17} /></span>
-              {(state.notifications||[]).filter(n=>isNotificationForUser(n,currentUser)&&!n.read).length>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"#E11D48", borderRadius:"50%" }} />}
+              {(state.notifications||[]).filter(n=>isNotificationForUser(n,currentUser)&&!n.read).length>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, background:"var(--danger)", borderRadius:"50%" }} />}
             </button>
           </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
@@ -1102,9 +1102,9 @@ export default function App() {
 
     {/* Main */}
     <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:isMobile?82:0 }}>
-      {customerPreviewProject&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,background:"#EEF2FF",color:"#3730A3",borderBottom:"1px solid #C7D2FE",padding:"9px 14px",fontSize:12,fontWeight:850}}>
+      {customerPreviewProject&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,background:"var(--accent-ink)",color:"var(--accent)",borderBottom:"1px solid color-mix(in srgb, var(--accent) 22%, var(--border))",padding:"9px 14px",fontSize:12,fontWeight:850}}>
         <span>Müşteri görünümü: {customerPreviewProject.customerProfile?.name||customerPreviewProject.customerName||customerPreviewProject.name}</span>
-        <button onClick={()=>{setPreviewCustomerProjectId("");navigateTo("customers");}} style={{border:0,borderRadius:8,background:"#fff",color:"#4338CA",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>Yöneticiye Dön</button>
+        <button onClick={()=>{setPreviewCustomerProjectId("");navigateTo("customers");}} style={{border:0,borderRadius:8,background:"#fff",color:"var(--accent)",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>Yöneticiye Dön</button>
       </div>}
       {(view==="dashboard"||(view==="admin"&&!isAdmin))&&!selProject&&!useAdminHome&&(customerView?<SharedCustomerDashboardPage state={state} currentUser={currentUser} projects={visibleProjects} onNavigate={v=>navigateTo(v,{ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>:isMobile?<SharedMobileHomePage state={state} setState={setState} currentUser={currentUser} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>:<SharedDashboardPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} myProjects={myProjects} deadlineWarnings={deadlineWarnings} onNavigate={v=>navigateTo(v,{projectScope:v==="projects"?"all":undefined,ticketMineOnly:v==="tickets"})} onOpenProject={id=>openProject(id,"setup")}/>)}
       {((view==="admin"&&isAdmin)||(view==="dashboard"&&useAdminHome))&&!selProject&&<SharedManagementWorkspace state={state} setState={setState} currentUser={currentUser} initialSection={adminSection} onNavigate={v=>navigateTo(v)} onOpenProject={id=>openProject(id,"setup")} onEditPerson={person=>setModal({type:"editPerson",data:person})} onAddPerson={()=>setModal({type:"addPerson"})} onAssignTask={saveAdminAssignedTask}/>}
@@ -1122,30 +1122,30 @@ export default function App() {
             {projectTabs.map(([id,icon,label])=><button key={id} className={`project-tab ${projectTab===id?"is-active":""}`} onClick={()=>openProjectTab(id)}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
         </div>
-        {false&&<div style={{ background:"#fff", borderBottom:"1px solid #E2E8F0", padding:"13px 20px" }}>
+        {false&&<div style={{ background:"#fff", borderBottom:"1px solid var(--border)", padding:"13px 20px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:5, flexWrap:"wrap" }}>
             <span style={{ width:11, height:11, borderRadius:"50%", background:project.color }} />
-            <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"#1E293B", background:"#fff", borderRadius:6, padding:"2px 4px" }}>{project.name}</h2>
+            <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:"var(--text)", background:"#fff", borderRadius:6, padding:"2px 4px" }}>{project.name}</h2>
             <Badge label={project.status} />
-            <button onClick={()=>openProjectTab("setup")} style={{border:0,background:readinessScore(project)>=Number(project.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(project)>=Number(project.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800,cursor:"pointer"}}>Başlangıç: {readinessScore(project)}/100</button>
-            {project.commissioningTracking&&<span style={{background:"#ECFDF5",color:"#047857",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800}}>Devreye Alma: %{projectCommissioningPercent}</span>}
-            {overdueC>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Gecikmiş: {overdueC}</span>}
-            {criticalC>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Kritik: {criticalC}</span>}
+            <button onClick={()=>openProjectTab("setup")} style={{border:0,background:readinessScore(project)>=Number(project.readinessThreshold||80)?"color-mix(in srgb, var(--success) 10%, white 90%)":"color-mix(in srgb, var(--danger) 9%, white 91%)",color:readinessScore(project)>=Number(project.readinessThreshold||80)?"var(--success)":"var(--danger)",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800,cursor:"pointer"}}>Başlangıç: {readinessScore(project)}/100</button>
+            {project.commissioningTracking&&<span style={{background:"color-mix(in srgb, var(--success) 10%, white 90%)",color:"var(--success)",borderRadius:12,padding:"3px 9px",fontSize:11,fontWeight:800}}>Devreye Alma: %{projectCommissioningPercent}</span>}
+            {overdueC>0&&<span style={{ background:"color-mix(in srgb, var(--warning) 10%, white 90%)", color:"var(--warning)", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Gecikmiş: {overdueC}</span>}
+            {criticalC>0&&<span style={{ background:"color-mix(in srgb, var(--danger) 9%, white 91%)", color:"var(--danger)", borderRadius:12, padding:"2px 9px", fontSize:11, fontWeight:700 }}>Kritik: {criticalC}</span>}
           </div>
-          <div style={{ display:"flex", gap:16, fontSize:12, color:"#64748B", flexWrap:"wrap", alignItems:"center" }}>
+          <div style={{ display:"flex", gap:16, fontSize:12, color:"var(--muted)", flexWrap:"wrap", alignItems:"center" }}>
             {activePMs.length>0&&<span>{project.uatAccepted?"Customer Success":"PM"}: <b>{activePMs.map(p=>p.name).join(", ")}</b></span>}
-            {activeStakeholders.map(item=><span key={item.id} style={{background:"#F8FAFC",borderRadius:7,padding:"2px 7px"}}>{item.role}: <b>{item.person.name}</b></span>)}
-            {(project.customerContacts||[]).map(contact=><span key={contact.id} style={{background:"#F0F9FF",color:"#0369A1",borderRadius:7,padding:"3px 7px"}}><b>{contact.name}</b>{contact.title?` · ${contact.title}`:""}{contact.email?` · ${contact.email}`:""}{contact.phone?` · ${contact.phone}`:""}</span>)}
+            {activeStakeholders.map(item=><span key={item.id} style={{background:"var(--surface-soft)",borderRadius:7,padding:"2px 7px"}}>{item.role}: <b>{item.person.name}</b></span>)}
+            {(project.customerContacts||[]).map(contact=><span key={contact.id} style={{background:"var(--accent-ink)",color:"var(--accent)",borderRadius:7,padding:"3px 7px"}}><b>{contact.name}</b>{contact.title?` · ${contact.title}`:""}{contact.email?` · ${contact.email}`:""}{contact.phone?` · ${contact.phone}`:""}</span>)}
             <span>{fmt(project.startDate)} - {fmt(project.endDate)}</span>
             <span>{doneT}/{totalT} görev</span>
-            {currentMs&&<span style={{ background:"#F1F5FF", color:"#4A6CF7", borderRadius:8, padding:"2px 9px", fontWeight:600 }}>Aktif: {currentMs.name} ({fmt(currentMs.dueDate)})</span>}
+            {currentMs&&<span style={{ background:"var(--accent-ink)", color:"var(--accent)", borderRadius:8, padding:"2px 9px", fontWeight:600 }}>Aktif: {currentMs.name} ({fmt(currentMs.dueDate)})</span>}
           </div>
           {totalT>0&&<div style={{ display:"flex", alignItems:"center", gap:9, marginTop:7 }}>
-            <div style={{ flex:1, height:5, background:"#E2E8F0", borderRadius:10 }}><div style={{ width:`${progress}%`, height:"100%", background:project.color, borderRadius:10 }} /></div>
+            <div style={{ flex:1, height:5, background:"var(--border)", borderRadius:10 }}><div style={{ width:`${progress}%`, height:"100%", background:project.color, borderRadius:10 }} /></div>
             <span style={{ fontSize:12, fontWeight:700, color:project.color }}>{progress}%</span>
           </div>}
           <div style={{ display:"flex", gap:5, marginTop:10, overflowX:"auto", paddingBottom:3, scrollbarWidth:"thin" }}>
-            {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje Planı"],["tasks","tasks","Görevler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>openProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"#F1F5FF", color:projectTab===id?"#fff":"#64748B", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
+            {[["setup","projects","Proje Bilgileri"],["gantt","gantt","Proje Planı"],["tasks","tasks","Görevler"],["tickets","ticket","Ticketlar"],["actions","activity","Aksiyon"],["risks","risk","Riskler"],["notlar","notes","Notlar"],["projlogs","activity","Log"]].map(([id,icon,label])=><button key={id} onClick={()=>openProjectTab(id)} style={{ padding:"7px 11px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:projectTab===id?project.color:"var(--accent-ink)", color:projectTab===id?"#fff":"var(--muted)", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap", flexShrink:0 }}><Icon name={icon} size={14}/>{label}</button>)}
           </div>
         </div>}
 
@@ -1175,7 +1175,7 @@ export default function App() {
           {/* Plan listesi - expandable */}
           <SharedPlanListTable project={project} people={state.people} />
           <div style={{ display:"flex", gap:12, marginTop:16, flexWrap:"wrap" }}>
-            {[[project.color,"Devam Ediyor"],["#059669","Tamamlandı"],["#EA6C00","Gecikmiş"],["#E11D48","Kritik"]].map(([c,l])=><div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:12, height:8, borderRadius:3, background:c }} /><span style={{ fontSize:11, color:"#64748B" }}>{l}</span></div>)}
+            {[[project.color,"Devam Ediyor"],["var(--success)","Tamamlandı"],["var(--warning)","Gecikmiş"],["var(--danger)","Kritik"]].map(([c,l])=><div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:12, height:8, borderRadius:3, background:c }} /><span style={{ fontSize:11, color:"var(--muted)" }}>{l}</span></div>)}
           </div>
         </div>}
 
@@ -1233,26 +1233,26 @@ export default function App() {
             const stakeholders=projectStakeholders(p).map(item=>({...item,person:state.people.find(pe=>pe.id===item.userId)})).filter(item=>item.person);
             const aMs=p.milestones.find(m=>m.status!=="Tamamland\u0131");
             return <div key={p.id} onClick={()=>openProject(p.id,"setup")}
-              style={{ background:"#fff", borderRadius:13, padding:"17px", border:"1.5px solid #E2E8F0", cursor:"pointer", boxShadow:"0 2px 6px rgba(0,0,0,0.04)", borderTop:`4px solid ${p.color}` }}
+              style={{ background:"#fff", borderRadius:13, padding:"17px", border:"1.5px solid var(--border)", cursor:"pointer", boxShadow:"0 2px 6px rgba(0,0,0,0.04)", borderTop:`4px solid ${p.color}` }}
               onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 16px rgba(0,0,0,0.1)";e.currentTarget.style.transform="translateY(-2px)";}}
               onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 2px 6px rgba(0,0,0,0.04)";e.currentTarget.style.transform="none";}}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:5 }}>
                 <h3 style={{ margin:0, fontSize:14, fontWeight:800, lineHeight:1.35, wordBreak:"break-word", overflowWrap:"anywhere" }}>{p.name}</h3><Badge label={p.status} />
               </div>
-              {p.description&&<p style={{ margin:"0 0 7px", fontSize:12, color:"#64748B", lineHeight:1.45, wordBreak:"break-word", overflowWrap:"anywhere" }}>{p.description}</p>}
-              {pms.length>0&&<div style={{ fontSize:11, color:"#64748B", marginBottom:3 }}>PM: <b>{pms.map(pm=>pm.name).join(", ")}</b></div>}
-              {stakeholders.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:5}}>{stakeholders.slice(0,3).map(item=><span key={item.id} style={{fontSize:9,background:"#F1F5F9",color:"#64748B",borderRadius:6,padding:"2px 6px"}}>{item.role}: {item.person.name}</span>)}</div>}
-              {aMs&&<div style={{ fontSize:11, color:"#4A6CF7", marginBottom:5, fontWeight:600 }}>Aktif: {aMs.name} — {fmt(aMs.dueDate)}</div>}
+              {p.description&&<p style={{ margin:"0 0 7px", fontSize:12, color:"var(--muted)", lineHeight:1.45, wordBreak:"break-word", overflowWrap:"anywhere" }}>{p.description}</p>}
+              {pms.length>0&&<div style={{ fontSize:11, color:"var(--muted)", marginBottom:3 }}>PM: <b>{pms.map(pm=>pm.name).join(", ")}</b></div>}
+              {stakeholders.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:5}}>{stakeholders.slice(0,3).map(item=><span key={item.id} style={{fontSize:9,background:"var(--surface-soft)",color:"var(--muted)",borderRadius:6,padding:"2px 6px"}}>{item.role}: {item.person.name}</span>)}</div>}
+              {aMs&&<div style={{ fontSize:11, color:"var(--accent)", marginBottom:5, fontWeight:600 }}>Aktif: {aMs.name} — {fmt(aMs.dueDate)}</div>}
               <div style={{ display:"flex", gap:6, marginBottom:7, flexWrap:"wrap" }}>
-                <span style={{background:readinessScore(p)>=Number(p.readinessThreshold||80)?"#ECFDF5":"#FFF1F2",color:readinessScore(p)>=Number(p.readinessThreshold||80)?"#047857":"#BE123C",borderRadius:10,padding:"2px 7px",fontSize:10,fontWeight:800}}>Başlangıç {readinessScore(p)}/100</span>
-                {overdue>0&&<span style={{ background:"#FFF7ED", color:"#EA6C00", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Gecikmiş: {overdue}</span>}
-                {crit>0&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Kritik: {crit}</span>}
+                <span style={{background:readinessScore(p)>=Number(p.readinessThreshold||80)?"color-mix(in srgb, var(--success) 10%, white 90%)":"color-mix(in srgb, var(--danger) 9%, white 91%)",color:readinessScore(p)>=Number(p.readinessThreshold||80)?"var(--success)":"var(--danger)",borderRadius:10,padding:"2px 7px",fontSize:10,fontWeight:800}}>Başlangıç {readinessScore(p)}/100</span>
+                {overdue>0&&<span style={{ background:"color-mix(in srgb, var(--warning) 10%, white 90%)", color:"var(--warning)", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Gecikmiş: {overdue}</span>}
+                {crit>0&&<span style={{ background:"color-mix(in srgb, var(--danger) 9%, white 91%)", color:"var(--danger)", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Kritik: {crit}</span>}
               </div>
-              <div style={{ height:4, background:"#F1F5FF", borderRadius:10 }}><div style={{ width:`${prog}%`, height:"100%", background:p.color, borderRadius:10 }} /></div>
+              <div style={{ height:4, background:"var(--accent-ink)", borderRadius:10 }}><div style={{ width:`${prog}%`, height:"100%", background:p.color, borderRadius:10 }} /></div>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginTop:7}}>
-                <div style={{ fontSize:11, color:"#64748B" }}>{done}/{total} görev · {prog}%</div>
+                <div style={{ fontSize:11, color:"var(--muted)" }}>{done}/{total} görev · {prog}%</div>
                 {isAdmin&&<div style={{display:"flex",gap:4}}>
-                  {[["edit","#EEF2FF","#4A6CF7",()=>setModal({type:"editProject",data:p}),"Düzenle"],["download","#ECFDF5","#059669",()=>generateHTMLReport(p,state.people,state.logs),"HTML rapor"],["trash","#FFF1F2","#E11D48",()=>confirm("Projeyi sil?")&&deleteProject(p.id),"Sil"]].map(([icon,bg,color,action,title])=><button key={icon} title={title} aria-label={title} onClick={e=>{e.stopPropagation();action();}} style={{width:28,height:28,border:0,borderRadius:7,background:bg,color,display:"grid",placeItems:"center",cursor:"pointer"}}><Icon name={icon} size={13}/></button>)}
+                  {[["edit","var(--accent-ink)","var(--accent)",()=>setModal({type:"editProject",data:p}),"Düzenle"],["download","color-mix(in srgb, var(--success) 10%, white 90%)","var(--success)",()=>generateHTMLReport(p,state.people,state.logs),"HTML rapor"],["trash","color-mix(in srgb, var(--danger) 9%, white 91%)","var(--danger)",()=>confirm("Projeyi sil?")&&deleteProject(p.id),"Sil"]].map(([icon,bg,color,action,title])=><button key={icon} title={title} aria-label={title} onClick={e=>{e.stopPropagation();action();}} style={{width:28,height:28,border:0,borderRadius:7,background:bg,color,display:"grid",placeItems:"center",cursor:"pointer"}}><Icon name={icon} size={13}/></button>)}
                 </div>}
               </div>
             </div>;
@@ -1275,7 +1275,7 @@ export default function App() {
           <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="people" size={20}/>Ekip</h2></div>
           {isAdmin&&<Btn onClick={()=>setModal({type:"addPerson"})}>+ Kişi Ekle</Btn>}
         </div>
-        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:15,padding:14,marginBottom:16}}>
+        <div style={{background:"#fff",border:"1px solid var(--border)",borderRadius:15,padding:14,marginBottom:16}}>
           <div style={{fontSize:13,fontWeight:850,marginBottom:10}}>Organizasyonel Yapı</div>
           <SharedOrganizationPanel people={internalPeople} roles={organizationRoles(state)} onEdit={isAdmin?person=>setModal({type:"editPerson",data:person}):null}/>
         </div>
@@ -1288,16 +1288,16 @@ export default function App() {
             const crit=allT.filter(t=>delayLvl(t.dueDate,t.status)==="critical").length;
             const comp=allT.filter(t=>t.status==="Tamamlandı").length;
             const projC=[...new Set(state.projects.filter(proj=>proj.milestones.some(ms=>ms.tasks.some(t=>t.assignee===p.id))).map(pr=>pr.id))].length;
-            const stats=[["Aktif",active,"#4A6CF7"],["Bekl.",waiting,"#94A3B8"],["Gec.",delayed,"#EA6C00"],["Krit.",crit,"#E11D48"],["Bitti",comp,"#059669"]].filter(([,c])=>c>0);
+            const stats=[["Aktif",active,"var(--accent)"],["Bekl.",waiting,"var(--muted)"],["Gec.",delayed,"var(--warning)"],["Krit.",crit,"var(--danger)"],["Bitti",comp,"var(--success)"]].filter(([,c])=>c>0);
             return (
-              <div key={p.id} style={{ background:"#fff", borderRadius:12, padding:"11px 14px", border:"1.5px solid #E2E8F0", display:"flex", alignItems:"center", gap:12 }}>
-                <Avatar initials={p.avatar} imageUrl={p.avatarUrl} size={36} color={p.isAdmin?"#E11D48":"#4A6CF7"} />
+              <div key={p.id} style={{ background:"#fff", borderRadius:12, padding:"11px 14px", border:"1.5px solid var(--border)", display:"flex", alignItems:"center", gap:12 }}>
+                <Avatar initials={p.avatar} imageUrl={p.avatarUrl} size={36} color={p.isAdmin?"var(--danger)":"var(--accent)"} />
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
                     <span style={{ fontWeight:700, fontSize:13 }}>{p.name}</span>
-                    {p.isAdmin&&<span style={{ background:"#FFF1F2", color:"#E11D48", borderRadius:6, padding:"1px 6px", fontSize:9, fontWeight:700 }}>YÖN</span>}
+                    {p.isAdmin&&<span style={{ background:"color-mix(in srgb, var(--danger) 9%, white 91%)", color:"var(--danger)", borderRadius:6, padding:"1px 6px", fontSize:9, fontWeight:700 }}>YÖN</span>}
                   </div>
-                  <div style={{ color:"#94A3B8", fontSize:11, marginTop:1 }}>{orgLevelLabel(p.orgLevel)}{p.email?` · ${p.email}`:""}{projC>0?` · ${projC} proje`:""}</div>
+                  <div style={{ color:"var(--muted)", fontSize:11, marginTop:1 }}>{orgLevelLabel(p.orgLevel)}{p.email?` · ${p.email}`:""}{projC>0?` · ${projC} proje`:""}</div>
                   {stats.length>0&&<div style={{ display:"flex", gap:8, marginTop:4, flexWrap:"wrap" }}>
                     {stats.map(([l,c,col])=><span key={l} style={{ fontSize:11, fontWeight:700, color:col }}>{l} {c}</span>)}
                   </div>}
