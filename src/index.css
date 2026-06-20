@@ -5077,13 +5077,108 @@ body::before,
   }
 
   .tickets-theme-page .theme-ticket-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
     flex-wrap: wrap !important;
+    gap: 8px !important;
     overflow: visible !important;
+    padding: 10px !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > input {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter,
+  .tickets-theme-page .theme-ticket-toolbar > .view-switch {
+    min-width: 0 !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter {
+    position: static !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter > button {
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
   .multi-choice-menu {
-    left: 0 !important;
-    max-width: calc(100vw - 40px) !important;
-    min-width: min(260px, calc(100vw - 40px)) !important;
+    left: 10px !important;
+    max-height: 52dvh !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    right: 10px !important;
+    top: calc(100% + 8px) !important;
+    width: auto !important;
+  }
+
+  .multi-choice-menu label {
+    align-items: center !important;
+    display: grid !important;
+    gap: 10px !important;
+    grid-template-columns: 22px minmax(0, 1fr) !important;
+    min-height: 42px !important;
+  }
+
+  .multi-choice-menu input[type="checkbox"] {
+    box-shadow: none !important;
+    flex: 0 0 18px !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    min-width: 18px !important;
+    width: 18px !important;
+  }
+
+  .multi-choice-menu span {
+    color: var(--text) !important;
+    font-size: 12px !important;
+    font-weight: 760 !important;
+    line-height: 1.25 !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+    text-align: left !important;
+  }
+
+  .tickets-theme-page .ticket-card {
+    padding: 13px 14px !important;
+  }
+
+  .tickets-theme-page .ticket-card-meta-row {
+    align-items: center !important;
+    display: grid !important;
+    gap: 8px !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+
+  .tickets-theme-page .ticket-card-meta-row::before {
+    grid-column: 1 / -1;
+  }
+
+  .tickets-theme-page .ticket-card-title {
+    grid-column: 1 / -1 !important;
+    order: 5 !important;
+    width: 100% !important;
+  }
+
+  .tickets-theme-page .ticket-status-select {
+    max-width: 168px !important;
+    min-height: 30px !important;
+    width: auto !important;
+  }
+
+  .tickets-theme-page .ticket-project-chip {
+    justify-self: start !important;
+    max-width: 150px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .tickets-theme-page .ticket-age-chip {
+    justify-self: end !important;
+    margin-left: 0 !important;
+    white-space: nowrap !important;
   }
 }
