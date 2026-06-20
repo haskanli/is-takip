@@ -1850,6 +1850,7 @@ code,
 
 .fieldops-shell {
   background: #f6f7f7 !important;
+  padding: 0 !important;
 }
 
 .fieldops-tab-shell {
@@ -4995,7 +4996,58 @@ body::before,
 }
 
 .customer-report-hero {
-  margin-bottom: 18px !important;
+  margin-bottom: 14px !important;
+}
+
+.customer-dashboard-theme-page > div,
+.fieldops-theme-page {
+  box-sizing: border-box !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: min(1180px, 100%) !important;
+  width: 100% !important;
+}
+
+.customer-portal-actions,
+.fieldops-action-row {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.customer-portal-actions button,
+.fieldops-action-row button {
+  min-height: 38px !important;
+}
+
+.customer-portal-actions button {
+  background: var(--surface-raised) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, var(--accent) 18%) !important;
+  border-radius: 13px !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+  padding: 9px 12px !important;
+}
+
+.customer-portal-actions button:first-child {
+  background: color-mix(in srgb, var(--accent) 12%, white 88%) !important;
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border)) !important;
+  color: var(--accent) !important;
+}
+
+.fieldops-theme-page.field-plan-page,
+.fieldops-theme-page.field-visits-page {
+  padding: var(--page-gutter) !important;
+}
+
+.fieldops-theme-page .fieldops-page-header {
+  width: 100% !important;
+}
+
+.fieldops-theme-page .fieldops-filter-row,
+.fieldops-theme-page .fieldops-action-row {
+  width: 100% !important;
 }
 
 .customer-project-report-card {
@@ -5004,7 +5056,16 @@ body::before,
 
 .customer-project-report-head {
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent) 82%, var(--text) 18%) 0%, var(--text) 124%) !important;
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, white 86%) 0%, color-mix(in srgb, var(--surface) 92%, var(--accent-ink) 8%) 100%) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 22%) !important;
+  color: var(--text) !important;
+}
+
+.customer-project-report-head h2,
+.customer-project-report-head a,
+.customer-project-report-head span,
+.customer-project-report-head div {
+  color: var(--text) !important;
 }
 
 .customer-metric-card {

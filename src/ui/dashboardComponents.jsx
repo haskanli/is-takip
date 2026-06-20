@@ -79,16 +79,15 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
     </div>;
   }
 
-  return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(16px,4vw,34px)", background: "linear-gradient(180deg,var(--surface-soft) 0%,var(--accent-ink) 100%)" }}>
+  return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(16px,4vw,34px)", background: "var(--app-bg)" }}>
     <div style={{ maxWidth: 1160, margin: "0 auto" }}>
       <div className="customer-report-hero unified-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid color-mix(in srgb, var(--accent) 22%, var(--border))", background: "var(--accent-ink)", color: "var(--accent)", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 900, marginBottom: 10 }}>
-            <Icon name="reports" size={14} /> Müşteri Proje Özeti
-          </div>
           <h1 style={{ margin: 0, fontSize: "clamp(24px,4vw,38px)", letterSpacing: "-.04em", color: "var(--text)" }}>Proje durum raporu</h1>
           <p style={{ margin: "8px 0 0", color: "var(--muted)", fontSize: 14, lineHeight: 1.55, maxWidth: 680 }}>Bu ekranda size ait proje planı, sağlık skoru, eğitim/RACI, makineler ve görünür ticketların güncel özeti yer alır.</p>
         </div>
+      </div>
+      <div className="customer-portal-actions unified-filter-row" style={{display:"flex",gap:9,flexWrap:"wrap",justifyContent:"flex-start",marginBottom:14}}>
         <div style={{display:"flex",gap:9,flexWrap:"wrap",justifyContent:"flex-end"}}>
           <button onClick={() => onNavigate?.("tickets")} style={{ border: 0, borderRadius: 14, background: "linear-gradient(135deg,var(--accent),var(--accent))", color: "#fff", padding: "12px 15px", fontWeight: 900, cursor: "pointer", boxShadow: "0 14px 30px rgba(79,70,229,.22)" }}>+ Yeni Ticket Aç</button>
           <button onClick={() => onNavigate?.("tickets")} style={{ border: "1px solid var(--border)", borderRadius: 14, background: "#fff", color: "var(--text)", padding: "12px 15px", fontWeight: 900, cursor: "pointer" }}>Ticketları Gör</button>
