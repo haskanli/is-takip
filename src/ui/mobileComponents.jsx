@@ -167,7 +167,7 @@ export function MobileBottomNav({ view, onNavigate, onQuick, onProfile, deadline
               {id === "quick" ? "+" : <Icon name={icon} size={17} />}
             </span>
             <span style={{ marginTop: id === "quick" ? -8 : 0 }}>{label}</span>
-            {badge > 0 && <b style={{ position: "absolute", top: 2, right: "24%", minWidth: 16, height: 16, borderRadius: 8, display: "grid", placeItems: "center", background: "#E11D48", color: "#fff", fontSize: 8, border: "2px solid #fff" }}>{badge}</b>}
+            {badge > 0 && <b className="mobile-bottom-badge" style={{ position: "absolute", top: 2, right: "24%", minWidth: 16, height: 16, borderRadius: 8, display: "grid", placeItems: "center", background: "#E11D48", color: "#fff", fontSize: 8, border: "2px solid #fff" }}>{badge}</b>}
           </button>
         );
       })}

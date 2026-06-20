@@ -266,11 +266,11 @@ export function MobileHomePage({state,setState,currentUser,myProjects,deadlineWa
     {id:"ai",label:"AI",value:"",color:"var(--accent, #0b8a94)",icon:"activity",action:()=>onNavigate("ai")},
     {id:"modules",label:"Modüller",value:"",color:"var(--chart-5, #5b6f74)",icon:"reports",action:()=>onNavigate("reports")},
   ];
-  return <div className="theme-work-page mobile-dashboard-theme-page" style={{minHeight:"100%",background:"radial-gradient(circle at 14% -12%, rgb(11 138 148 / 14%), transparent 34%), radial-gradient(circle at 96% -6%, rgb(191 122 18 / 10%), transparent 30%), var(--bg, #f1f5f6)",padding:"12px 13px 92px",overflow:"auto"}}>
+  return <div className="theme-work-page mobile-dashboard-theme-page" style={{minHeight:"100%",background:"var(--scene-overlay, linear-gradient(150deg, rgba(255,255,255,.62), rgba(245,245,244,.2))), var(--scene-image, linear-gradient(156deg, #fbfbfa 0%, #f3f4f4 46%, #eeeeec 100%))",padding:"12px 13px 92px",overflow:"auto"}}>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:9,padding:"4px 0 14px"}}>
       {storyItems.map(item=><button className="liquid-card" key={item.id} onClick={item.action} style={{borderRadius:18,padding:"10px 7px",cursor:"pointer",textAlign:"center",minWidth:0}}>
         <span style={{width:46,height:42,borderRadius:14,display:"grid",placeItems:"center",margin:"0 auto 7px",background:"var(--surface-soft, #f6fafb)",border:"1px solid var(--border, #cfe0e3)",color:item.color,position:"relative"}}>
-          <Icon name={item.icon} size={22}/>{item.value!==""&&<b style={{position:"absolute",right:5,top:5,minWidth:18,height:18,borderRadius:9,display:"grid",placeItems:"center",background:item.color,color:"#fff",fontSize:9,border:"2px solid var(--surface, #ffffff)"}}>{item.value}</b>}
+          <Icon name={item.icon} size={22}/>{item.value!==""&&<b className="mobile-story-badge" style={{position:"absolute",right:5,top:5,minWidth:18,height:18,borderRadius:9,display:"grid",placeItems:"center",background:item.color,color:"#fff",fontSize:9,border:"2px solid var(--surface, #ffffff)"}}>{item.value}</b>}
         </span>
         <span style={{fontSize:10,fontWeight:900,color:"var(--text, #112327)",whiteSpace:"nowrap"}}>{item.label}</span>
       </button>)}

@@ -1476,6 +1476,27 @@ body::before {
   border-radius: 18px !important;
 }
 
+.mobile-dashboard-theme-page {
+  background:
+    var(--scene-overlay),
+    var(--scene-image) !important;
+}
+
+.mobile-dashboard-theme-page .mobile-story-badge,
+.mobile-dashboard-theme-page b.mobile-story-badge,
+.mobile-bottom-badge,
+b.mobile-bottom-badge {
+  color: #fff !important;
+  font-weight: 950 !important;
+  text-shadow: 0 1px 2px rgb(17 35 39 / 28%) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-dashboard-theme-page .liquid-card {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 76%), rgb(246 250 251 / 58%)) !important;
+}
+
 @media (max-width: 760px) {
   .projects-theme-page .projects-page-header {
     margin: 0 0 9px !important;
