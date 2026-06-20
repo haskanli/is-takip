@@ -1208,16 +1208,15 @@ export default function App() {
         </div>
         <div className="unified-filter-row projects-filter-row" style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:14}}>
           <input value={projectSearch} onChange={event=>setProjectSearch(event.target.value)} placeholder="Projelerde ara..." style={{...iStyle,width:220,maxWidth:"100%"}}/>
-          <Btn className="compact-tool-button" variant="secondary" title="XLSX indir" onClick={exportListedProjects}>XLSX</Btn>
-          <div className="segmented-control">
-            {isAdmin&&<button onClick={()=>setProjectScope("all")} className={projectScope==="all"?"is-active":""}>Tüm Projeler</button>}
-            <button onClick={()=>setProjectScope("mine")} className={projectScope==="mine"||!isAdmin?"is-active":""}>Projelerim</button>
+          <div className="segmented-control icon-filter-segment project-scope-switch" role="group" aria-label="Proje kapsamı">
+            {isAdmin&&<button title="Tüm projeler" aria-label="Tüm projeler" onClick={()=>setProjectScope("all")} className={projectScope==="all"?"is-active":""}><Icon name="projects" size={15}/><span className="sr-only">Tüm projeler</span></button>}
+            <button title="Benim projelerim" aria-label="Benim projelerim" onClick={()=>setProjectScope("mine")} className={projectScope==="mine"||!isAdmin?"is-active":""}><Icon name="user" size={15}/><span className="sr-only">Benim projelerim</span></button>
           </div>
-          <div className="segmented-control">
-            {[["all","Tüm"],["connected","Connected Supplier"],["uat","UAT Alınanlar"],["standard","Standart"]].map(([id,label])=><button key={id} onClick={()=>setProjectSegment(id)} className={projectSegment===id?"is-active":""}>{label}</button>)}
+          <div className="segmented-control compact-filter-segment project-segment-switch" role="group" aria-label="Proje tipi">
+            {[["all","Tüm"],["connected","CS"],["uat","UAT"],["standard","Std"]].map(([id,label])=><button key={id} title={id==="connected"?"Connected Supplier":id==="uat"?"UAT alınanlar":label} onClick={()=>setProjectSegment(id)} className={projectSegment===id?"is-active":""}>{label}</button>)}
           </div>
-          <div className="segmented-control">
-            {[["cards","Kart"],["list","Liste"]].map(([id,label])=><button key={id} onClick={()=>setProjectViewMode(id)} className={projectViewMode===id?"is-active":""}>{label}</button>)}
+          <div className="view-switch icon-view-switch" role="group" aria-label="Proje görünümü">
+            {[["cards","grid","Kart görünümü"],["list","list","Liste görünümü"]].map(([id,icon,label])=><button key={id} type="button" title={label} aria-label={label} onClick={()=>setProjectViewMode(id)} className={projectViewMode===id?"is-active":""}><Icon name={icon} size={15}/><span className="sr-only">{label}</span></button>)}
           </div>
         </div>
         {listedProjects.length===0&&<div className="liquid-card" style={{ textAlign:"center", padding:"50px", borderRadius:16, borderStyle:"dashed" }}>

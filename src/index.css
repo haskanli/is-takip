@@ -3180,6 +3180,18 @@ body::before,
   margin-left: auto !important;
 }
 
+.sr-only {
+  border: 0 !important;
+  clip: rect(0 0 0 0) !important;
+  height: 1px !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: absolute !important;
+  white-space: nowrap !important;
+  width: 1px !important;
+}
+
 .unified-filter-row,
 .theme-ticket-toolbar,
 .theme-filter-strip,
@@ -3222,6 +3234,36 @@ body::before,
   flex: 0 0 auto !important;
   margin: 0 !important;
   width: auto !important;
+}
+
+.icon-filter-segment,
+.icon-view-switch {
+  border-radius: 15px !important;
+  gap: 4px !important;
+  padding: 4px !important;
+}
+
+.icon-filter-segment button,
+.icon-view-switch button {
+  aspect-ratio: 1 / 1 !important;
+  justify-content: center !important;
+  min-height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  width: 36px !important;
+}
+
+.compact-filter-segment button {
+  justify-content: center !important;
+  min-width: 44px !important;
+  padding-inline: 10px !important;
+}
+
+.icon-filter-segment svg,
+.icon-view-switch svg,
+.compact-filter-segment svg {
+  flex: 0 0 auto !important;
+  stroke-width: 1.9 !important;
 }
 
 .project-tab-scroll {
@@ -4888,6 +4930,32 @@ body::before,
     justify-content: center !important;
     min-height: 28px !important;
     padding: 5px 9px !important;
+  }
+
+  .projects-theme-page .projects-filter-row > .icon-filter-segment,
+  .projects-theme-page .projects-filter-row > .icon-view-switch,
+  .tickets-theme-page .theme-ticket-toolbar > .icon-view-switch {
+    align-content: center !important;
+    display: flex !important;
+    justify-content: center !important;
+    min-height: 38px !important;
+    width: 100% !important;
+  }
+
+  .projects-theme-page .projects-filter-row > .icon-filter-segment button,
+  .projects-theme-page .projects-filter-row > .icon-view-switch button,
+  .tickets-theme-page .theme-ticket-toolbar > .icon-view-switch button {
+    flex: 0 0 34px !important;
+    min-height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 !important;
+    width: 34px !important;
+  }
+
+  .projects-theme-page .projects-filter-row > .compact-filter-segment button {
+    flex: 1 1 0 !important;
+    min-width: 38px !important;
+    padding-inline: 7px !important;
   }
 
   .multi-choice-menu {

@@ -236,9 +236,9 @@ export function TicketsPage({
       {!customerMode&&<button onClick={()=>setMineOnly(v=>!v)} className={mineOnly?"ui-chip ui-chip-accent":"ui-chip ui-chip-muted"} style={{borderRadius:10,padding:"8px 12px",cursor:"pointer",fontSize:11}}>{"Ticketlar\u0131m"}</button>}
       {!customerMode&&<MultiChoiceFilter label="Projeler" options={state.projects.map(project=>({value:project.id,label:project.name}))} value={projectFilters} onChange={setProjectFilters}/>}
       {!customerMode&&<MultiChoiceFilter label="Durumlar" options={TICKET_STATUSES.map(status=>({value:status,label:status}))} value={statusFilters} onChange={setStatusFilters}/>}
-      <div className="view-switch" role="group" aria-label="Ticket g\u00f6r\u00fcn\u00fcm\u00fc">
-        <button type="button" className={ticketView==="cards"?"is-active":""} onClick={()=>setTicketView("cards")}>Kart</button>
-        <button type="button" className={ticketView==="list"?"is-active":""} onClick={()=>setTicketView("list")}>Liste</button>
+      <div className="view-switch icon-view-switch" role="group" aria-label="Ticket g\u00f6r\u00fcn\u00fcm\u00fc">
+        <button type="button" title="Kart görünümü" aria-label="Kart görünümü" className={ticketView==="cards"?"is-active":""} onClick={()=>setTicketView("cards")}><Icon name="grid" size={15}/><span className="sr-only">Kart görünümü</span></button>
+        <button type="button" title="Liste görünümü" aria-label="Liste görünümü" className={ticketView==="list"?"is-active":""} onClick={()=>setTicketView("list")}><Icon name="list" size={15}/><span className="sr-only">Liste görünümü</span></button>
       </div>
     </div>
     {mailNotice&&<div style={{background:mailNotice.includes("gönderildi")?"color-mix(in srgb, var(--success) 10%, white 90%)":"color-mix(in srgb, var(--warning) 10%, white 90%)",color:mailNotice.includes("gönderildi")?"var(--success)":"var(--warning)",borderRadius:10,padding:"10px 13px",fontSize:11,fontWeight:700,marginBottom:12}}>{mailNotice}</div>}
@@ -295,9 +295,9 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin, c
     <div className="theme-page-heading unified-page-header tickets-page-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, gap:10, flexWrap:"wrap" }}>
       <div><h3 style={{ margin:0, fontSize:15, fontWeight:800, color:"var(--text, #112327)" }}>Ticketlar ({tickets.length})</h3><p style={{margin:"4px 0 0",fontSize:12,color:"var(--muted)"}}>Bu projeye bağlı operasyon ve müşteri talepleri.</p></div>
       <div className="page-header-actions" style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-        <div className="view-switch" role="group" aria-label="Ticket g\u00f6r\u00fcn\u00fcm\u00fc">
-          <button type="button" className={ticketView==="cards"?"is-active":""} onClick={()=>setTicketView("cards")}>Kart</button>
-          <button type="button" className={ticketView==="list"?"is-active":""} onClick={()=>setTicketView("list")}>Liste</button>
+        <div className="view-switch icon-view-switch" role="group" aria-label="Ticket g\u00f6r\u00fcn\u00fcm\u00fc">
+          <button type="button" title="Kart görünümü" aria-label="Kart görünümü" className={ticketView==="cards"?"is-active":""} onClick={()=>setTicketView("cards")}><Icon name="grid" size={15}/><span className="sr-only">Kart görünümü</span></button>
+          <button type="button" title="Liste görünümü" aria-label="Liste görünümü" className={ticketView==="list"?"is-active":""} onClick={()=>setTicketView("list")}><Icon name="list" size={15}/><span className="sr-only">Liste görünümü</span></button>
         </div>
         <Btn className="icon-only-action" title="Ticket aç" aria-label="Ticket aç" onClick={()=>setModal({type:"add"})}>+</Btn>
       </div>

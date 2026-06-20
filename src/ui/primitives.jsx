@@ -61,6 +61,26 @@ export function Icon({ name, size = 16 }) {
         <path d="M3 20c0-4 2-7 6-7s6 3 6 7M15 14c3 0 5 2 5 6" />
       </>
     ),
+    user: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c0-5 3-8 8-8s8 3 8 8" />
+      </>
+    ),
+    grid: (
+      <>
+        <rect x="4" y="4" width="6" height="6" rx="1.5" />
+        <rect x="14" y="4" width="6" height="6" rx="1.5" />
+        <rect x="4" y="14" width="6" height="6" rx="1.5" />
+        <rect x="14" y="14" width="6" height="6" rx="1.5" />
+      </>
+    ),
+    list: (
+      <>
+        <path d="M8 6h13M8 12h13M8 18h13" />
+        <path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
+      </>
+    ),
     activity: (
       <>
         <path d="M3 12h4l2-6 4 12 2-6h6" />

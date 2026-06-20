@@ -397,27 +397,22 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
         onChange={(event) => setSearch(event.target.value)}
         placeholder="Makine adı, kodu, IP veya OS/model ara..."
       />
-      <div style={{ display: "flex", background: "color-mix(in srgb, var(--surface-soft) 52%, transparent)", padding: 3, borderRadius: 10 }}>
+      <div className="view-switch icon-view-switch" role="group" aria-label="Makine görünümü">
         {[
-          ["cards", "Kutucuk"],
-          ["list", "Liste"],
-          ["control", "Kontrol"],
-        ].map(([id, label]) => (
+          ["cards", "grid", "Kutucuk görünümü"],
+          ["list", "list", "Liste görünümü"],
+          ["control", "machines", "Kontrol görünümü"],
+        ].map(([id, icon, label]) => (
           <button
             key={id}
+            type="button"
+            title={label}
+            aria-label={label}
             onClick={() => setViewMode(id)}
-            style={{
-              border: 0,
-              borderRadius: 8,
-              padding: "7px 11px",
-              cursor: "pointer",
-              fontWeight: 800,
-              fontSize: 11,
-              background: viewMode === id ? "var(--surface)" : "transparent",
-              color: viewMode === id ? "var(--accent)" : "var(--muted)",
-            }}
+            className={viewMode === id ? "is-active" : ""}
           >
-            {label}
+            <Icon name={icon} size={15} />
+            <span className="sr-only">{label}</span>
           </button>
         ))}
       </div>
