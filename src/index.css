@@ -1812,6 +1812,29 @@ code,
   -webkit-backdrop-filter: blur(18px) saturate(1.12);
 }
 
+.fieldops-shell {
+  background: #f6f7f7 !important;
+}
+
+.fieldops-tab-shell {
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft) 12%) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent) !important;
+  border-radius: var(--page-filter-radius, 18px) !important;
+  box-shadow: 0 14px 38px -34px rgb(17 35 39 / 34%) !important;
+  margin: var(--page-gutter, 24px) var(--page-gutter, 24px) 0 !important;
+  padding: 6px !important;
+  position: static !important;
+  top: auto !important;
+  width: fit-content !important;
+  z-index: auto !important;
+}
+
+.fieldops-tab-shell .project-tab {
+  border-radius: 13px !important;
+  min-height: 36px !important;
+  padding: 8px 12px !important;
+}
+
 .project-tab-scroll {
   display: flex;
   gap: 8px;
@@ -2730,12 +2753,14 @@ textarea:focus {
 
   .task-minimal-actions {
     grid-column: 2;
-    justify-content: flex-start;
+    justify-content: space-between;
     flex-wrap: wrap;
+    gap: 7px;
   }
 
   .task-minimal-actions select {
-    width: min(220px, 100%);
+    flex: 1 1 150px;
+    width: min(190px, 100%);
   }
 }
 
@@ -3488,11 +3513,21 @@ body::before,
 
 .ticket-filter-row {
   align-items: center !important;
-  background: color-mix(in srgb, var(--surface) 78%, white 22%) !important;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 22%) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 18px 46px -36px rgb(17 35 39 / 50%) !important;
-  padding: 10px !important;
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft) 12%) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent) !important;
+  border-radius: var(--page-filter-radius, 18px) !important;
+  box-shadow: 0 14px 38px -34px rgb(17 35 39 / 34%) !important;
+  padding: 6px !important;
+}
+
+.ticket-filter-row .ui-chip,
+.ticket-filter-row > button {
+  min-height: 36px !important;
+}
+
+.ticket-filter-row .view-switch {
+  background: color-mix(in srgb, var(--surface) 92%, white 8%) !important;
+  padding: 4px !important;
 }
 
 .project-chip {
@@ -4606,6 +4641,21 @@ body::before,
     padding: var(--page-gutter-mobile) var(--page-gutter-mobile) 92px !important;
   }
 
+  .fieldops-shell {
+    padding: 0 0 92px !important;
+  }
+
+  .fieldops-tab-shell {
+    margin: var(--page-gutter-mobile) var(--page-gutter-mobile) 0 !important;
+    overflow-x: auto !important;
+    width: auto !important;
+  }
+
+  .field-plan-page,
+  .field-visits-page {
+    padding: var(--page-gutter-mobile) !important;
+  }
+
   .theme-work-page > .unified-page-header,
   .theme-work-page > .theme-page-heading,
   .project-workspace > .unified-page-header,
@@ -4676,11 +4726,22 @@ body::before,
   .theme-ticket-toolbar select,
   .projects-filter-row input,
   .projects-filter-row select,
+  .fieldops-filter-row input,
+  .fieldops-filter-row select,
   .modal-panel input,
   .modal-panel select,
   .modal-panel textarea {
     max-width: 100% !important;
     min-width: 0 !important;
+  }
+
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
   .ticket-card-grid {
@@ -4694,11 +4755,11 @@ body::before,
 
   .tickets-theme-page .theme-ticket-toolbar {
     display: grid !important;
-    gap: 8px !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 7px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     overflow-x: visible !important;
     overflow-y: visible !important;
-    padding: 10px !important;
+    padding: 7px !important;
     scrollbar-width: none;
   }
 
@@ -4722,6 +4783,11 @@ body::before,
     width: 100% !important;
   }
 
+  .tickets-theme-page .theme-ticket-toolbar > button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
   .tickets-theme-page .theme-ticket-toolbar > .multi-choice-filter {
     position: relative !important;
   }
@@ -4732,8 +4798,8 @@ body::before,
   }
 
   .tickets-theme-page .theme-ticket-toolbar > .view-switch {
-    justify-self: end !important;
-    width: auto !important;
+    justify-self: stretch !important;
+    width: 100% !important;
   }
 
   .multi-choice-menu {
