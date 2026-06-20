@@ -3613,6 +3613,32 @@ body::before,
   padding: 4px !important;
 }
 
+.ticket-filter-segment {
+  gap: 4px !important;
+  padding: 4px !important;
+}
+
+.ticket-filter-segment > button {
+  aspect-ratio: 1 / 1 !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  width: 36px !important;
+}
+
+.ticket-filter-segment .multi-choice-filter {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+}
+
+.ticket-filter-segment .multi-choice-filter > button {
+  border-radius: 12px !important;
+  min-height: 36px !important;
+  min-width: 74px !important;
+  padding: 7px 10px !important;
+  text-align: center !important;
+  width: auto !important;
+}
+
 .project-chip {
   --project-chip-color: var(--accent);
   --chip-tone: var(--project-chip-color) !important;
@@ -4892,6 +4918,30 @@ body::before,
 
   .tickets-theme-page .theme-ticket-toolbar > .view-switch {
     justify-self: stretch !important;
+    width: 100% !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .ticket-filter-segment {
+    align-items: center !important;
+    display: flex !important;
+    justify-content: center !important;
+    min-height: 38px !important;
+    width: 100% !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .ticket-filter-segment > button {
+    flex: 0 0 34px !important;
+    min-height: 34px !important;
+    min-width: 34px !important;
+    width: 34px !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .ticket-filter-segment .multi-choice-filter {
+    flex: 1 1 0 !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .ticket-filter-segment .multi-choice-filter > button {
+    min-width: 0 !important;
     width: 100% !important;
   }
 

@@ -231,11 +231,13 @@ export function TicketsPage({
     {!customerMode&&<div className="segmented-control unified-tab-row" style={{display:"inline-flex",marginBottom:14}}>
       {[["tickets","Ticket Takibi"],["recurring","Tekrar Eden Problemler"]].map(([id,label])=><button key={id} className={activeTab===id?"is-active":""} onClick={()=>setActiveTab(id)}>{label}</button>)}
     </div>}
-    {(customerMode||activeTab==="tickets")&&<><div className="theme-ticket-toolbar unified-filter-row ticket-filter-row" style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
+    {(customerMode||activeTab==="tickets")&&<><div className="theme-ticket-toolbar unified-filter-row ticket-filter-row compact-ticket-filter-row" style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
       <input style={{...iStyle,width:"auto",minWidth:220,flex:"1 1 220px"}} value={search} onChange={e=>setSearch(e.target.value)} placeholder={customerMode?"Talep ara...":"Ticket, proje veya sorumlu ara..."}/>
-      {!customerMode&&<button onClick={()=>setMineOnly(v=>!v)} className={mineOnly?"ui-chip ui-chip-accent":"ui-chip ui-chip-muted"} style={{borderRadius:10,padding:"8px 12px",cursor:"pointer",fontSize:11}}>{"Ticketlar\u0131m"}</button>}
-      {!customerMode&&<MultiChoiceFilter label="Projeler" options={state.projects.map(project=>({value:project.id,label:project.name}))} value={projectFilters} onChange={setProjectFilters}/>}
-      {!customerMode&&<MultiChoiceFilter label="Durumlar" options={TICKET_STATUSES.map(status=>({value:status,label:status}))} value={statusFilters} onChange={setStatusFilters}/>}
+      {!customerMode&&<div className="segmented-control compact-filter-segment ticket-filter-segment" role="group" aria-label="Ticket filtreleri">
+        <button type="button" title={mineOnly?"Tüm ticketlar":"Ticketlarım"} aria-label={mineOnly?"Tüm ticketlar":"Ticketlarım"} onClick={()=>setMineOnly(v=>!v)} className={mineOnly?"is-active":""}><Icon name="user" size={15}/><span className="sr-only">Ticketlarım</span></button>
+        <MultiChoiceFilter label={projectFilters.length?`Proje ${projectFilters.length}`:"Proje"} options={state.projects.map(project=>({value:project.id,label:project.name}))} value={projectFilters} onChange={setProjectFilters}/>
+        <MultiChoiceFilter label={statusFilters.length?`Durum ${statusFilters.length}`:"Durum"} options={TICKET_STATUSES.map(status=>({value:status,label:status}))} value={statusFilters} onChange={setStatusFilters}/>
+      </div>}
       <div className="view-switch icon-view-switch" role="group" aria-label="Ticket g\u00f6r\u00fcn\u00fcm\u00fc">
         <button type="button" title="Kart görünümü" aria-label="Kart görünümü" className={ticketView==="cards"?"is-active":""} onClick={()=>setTicketView("cards")}><Icon name="grid" size={15}/><span className="sr-only">Kart görünümü</span></button>
         <button type="button" title="Liste görünümü" aria-label="Liste görünümü" className={ticketView==="list"?"is-active":""} onClick={()=>setTicketView("list")}><Icon name="list" size={15}/><span className="sr-only">Liste görünümü</span></button>
