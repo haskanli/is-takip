@@ -248,7 +248,7 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
     base: "var(--muted)",
   };
   const header = (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+    <div className="machine-panel-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
       <div>
         <h3 style={{ margin: 0, fontSize: 16, display: "flex", alignItems: "center", gap: 7 }}>
           <Icon name="machines" size={18} />
@@ -278,7 +278,7 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
   );
 
   const formSection = showForm && (
-    <div className="liquid-card" style={{ borderRadius: 13, padding: 16, marginBottom: 16 }}>
+    <div className="liquid-card machine-form-card" style={{ borderRadius: 13, padding: 16, marginBottom: 16 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10 }}>
         <Field label="Makine Adı *">
           <input style={iStyle} value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
@@ -391,7 +391,7 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
   );
 
   const filterBar = (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+    <div className="machine-toolbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
       <button type="button" className={`toolbar-search-toggle ${searchOpen || search ? "is-active" : ""}`} title="Makinelerde ara" aria-label="Makinelerde ara" onClick={() => setSearchOpen((value) => !value)}><Icon name="search" size={15} /></button>
       <input
         style={{ ...iStyle, width: 260, maxWidth: "100%", display: searchOpen || search ? "block" : "none" }}
@@ -422,7 +422,7 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
   );
 
   const progressBar = (
-    <div style={{ height: 8, background: "color-mix(in srgb, var(--border) 70%, transparent)", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
+    <div className="machine-progress" style={{ height: 8, background: "color-mix(in srgb, var(--border) 70%, transparent)", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
       <div
         style={{
           height: "100%",
@@ -435,9 +435,9 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
   );
 
   const cardsView = (
-    <div style={{ display: viewMode === "cards" ? "grid" : "none", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: 10 }}>
+    <div className="machine-card-grid" style={{ display: viewMode === "cards" ? "grid" : "none", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: 10 }}>
       {visibleMachines.map((machine) => (
-        <div key={machine.id} className="soft-panel" style={{ padding: 14, borderLeft: `3px solid ${machine.commissioned ? statusColors.done : statusColors.pending}` }}>
+        <div key={machine.id} className="soft-panel machine-card" style={{ padding: 14, borderLeft: `3px solid ${machine.commissioned ? statusColors.done : statusColors.pending}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 13 }}>{machine.name}</div>
@@ -511,7 +511,7 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
   );
 
   const listView = viewMode === "list" && (
-    <div className="liquid-card" style={{ overflowX: "auto", borderRadius: 13, marginBottom: 12, padding: 0 }}>
+    <div className="liquid-card machine-list-card" style={{ overflowX: "auto", borderRadius: 13, marginBottom: 12, padding: 0 }}>
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1100 }}>
         <thead>
           <tr>
@@ -589,6 +589,7 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
   const controlView = viewMode === "control" && (
     <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
       <div
+        className="machine-control-note"
         style={{
           background: "var(--surface-soft)",
           border: "1px solid var(--border)",
@@ -607,7 +608,7 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
         const setDraft = (data) =>
           setControlDrafts((current) => ({ ...current, [machine.id]: { ...draft, ...data } }));
         return (
-          <div key={machine.id} className="liquid-card" style={{ borderRadius: 14, padding: 13 }}>
+          <div key={machine.id} className="liquid-card machine-control-card" style={{ borderRadius: 14, padding: 13 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 900, wordBreak: "break-word" }}>{machine.name}</div>

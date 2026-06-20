@@ -141,8 +141,7 @@ a:hover {
   background-clip: content-box;
 }
 
-code,
-.counter {
+code {
   font-family: var(--mono);
 }
 
@@ -964,14 +963,6 @@ code,
   color: var(--text);
 }
 
-.reminders-hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
 .reminders-layout {
   display: grid;
   grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
@@ -1142,11 +1133,11 @@ code,
     padding: 14px 12px var(--mobile-nav-clearance);
   }
 
-  .reminders-hero {
+  .reminders-page-header {
     align-items: stretch;
   }
 
-  .reminders-hero > * {
+  .reminders-page-header > * {
     min-width: 0;
   }
 
@@ -2153,39 +2144,6 @@ textarea:focus {
   background: transparent !important;
 }
 
-.management-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 18px;
-  margin: 0 0 16px;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--accent-ink) 48%, transparent), transparent 34%),
-    var(--surface);
-  box-shadow: var(--shadow-soft);
-}
-
-.management-heading {
-  min-width: 0;
-  text-align: left !important;
-  max-width: none !important;
-  margin: 0 !important;
-}
-
-.management-eyebrow {
-  display: inline-flex;
-  margin-bottom: 6px;
-  color: var(--accent) !important;
-  font-size: 11px;
-  font-weight: 850;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  vertical-align: top;
-}
-
 .table-sort-button {
   align-items: center;
   background: transparent;
@@ -2273,57 +2231,6 @@ textarea:focus {
   font-weight: 750;
   padding: 20px 12px 10px;
   text-align: center;
-}
-
-.management-heading h2 {
-  margin: 0 !important;
-  color: var(--text) !important;
-  font-family: var(--font-display) !important;
-  font-size: clamp(22px, 3vw, 30px) !important;
-  font-weight: 850 !important;
-  letter-spacing: -0.035em !important;
-  line-height: 1.08 !important;
-}
-
-.management-heading p {
-  max-width: 650px !important;
-  margin: 7px 0 0 !important;
-  color: var(--muted) !important;
-  font-size: 12px !important;
-  line-height: 1.55 !important;
-}
-
-.management-tabs {
-  display: inline-flex !important;
-  align-items: center;
-  gap: 5px;
-  width: auto !important;
-  max-width: 100%;
-  margin: 0 !important;
-  padding: 5px !important;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface-soft) !important;
-  box-shadow: none !important;
-}
-
-.management-tabs button {
-  min-height: 38px !important;
-  padding: 9px 13px !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-  background: transparent !important;
-  color: var(--muted) !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.management-tabs button.is-active,
-.management-tabs button[aria-selected="true"] {
-  background: var(--accent-ink) !important;
-  color: var(--accent) !important;
 }
 
 .management-dashboard-shell {
@@ -2688,13 +2595,6 @@ textarea:focus {
 @media (max-width: 760px) {
   .management-theme-page.management-workspace {
     padding: 12px 10px var(--mobile-nav-clearance) !important;
-  }
-
-  .management-hero {
-    grid-template-columns: 1fr;
-    align-items: start;
-    padding: 14px;
-    border-radius: 20px;
   }
 
   .management-tabs {
@@ -3263,7 +3163,7 @@ body::before,
 .theme-work-page > .theme-page-heading,
 .project-workspace > .unified-page-header,
 .project-workspace > .theme-page-heading,
-.tasks-minimal-header,
+.tasks-minimal-header > .unified-page-header,
 .customers-page-header,
 .mail-center-page-header,
 .fieldops-page-header,
@@ -3273,8 +3173,7 @@ body::before,
 .reports-page-header,
 .logs-page-header,
 .mobile-feature-header,
-.reminders-hero,
-.management-hero {
+.reminders-page-header {
   align-items: center !important;
   background: var(--surface-raised-strong) !important;
   border: 1px solid var(--card-border-strong) !important;
@@ -3289,8 +3188,7 @@ body::before,
   width: 100% !important;
 }
 
-.tasks-minimal-header,
-.management-hero {
+.tasks-minimal-header > .unified-page-header {
   flex-wrap: wrap !important;
 }
 
@@ -3324,7 +3222,6 @@ body::before,
 .deadlines-page-header h2,
 .notifications-page-header h2,
 .tasks-minimal-header h2,
-.management-heading h2,
 .logs-page-header h2 {
   color: var(--text) !important;
   font-family: var(--font-display, var(--font-ui)) !important;
@@ -3345,7 +3242,6 @@ body::before,
 .deadlines-page-header p,
 .notifications-page-header p,
 .tasks-minimal-header p,
-.management-heading p,
 .logs-page-header p {
   color: var(--muted) !important;
   font-size: 12px !important;
@@ -5638,7 +5534,7 @@ body::before,
   .theme-work-page > .theme-page-heading,
   .project-workspace > .unified-page-header,
   .project-workspace > .theme-page-heading,
-  .tasks-minimal-header,
+  .tasks-minimal-header > .unified-page-header,
   .customers-page-header,
   .fieldops-page-header,
   .todos-page-header,
@@ -5647,8 +5543,7 @@ body::before,
   .logs-page-header,
   .notifications-page-header,
   .mobile-feature-header,
-  .reminders-hero,
-  .management-hero {
+  .reminders-page-header {
     border-radius: 18px !important;
     min-height: 64px !important;
     padding: 12px 13px !important;
@@ -5662,8 +5557,7 @@ body::before,
   .project-workspace h3,
   .unified-page-header h2,
   .theme-page-heading h2,
-  .tasks-minimal-header h2,
-  .management-heading h2 {
+  .tasks-minimal-header h2 {
     font-size: 20px !important;
   }
 
@@ -6201,8 +6095,7 @@ body::before,
 .import-page-header,
 .reports-page-header,
 .people-page-header,
-.fieldops-page-header,
-.management-hero {
+.fieldops-page-header {
   align-items: center !important;
   background: var(--surface-raised-strong) !important;
   border: 1px solid var(--card-border-strong) !important;
@@ -6223,8 +6116,7 @@ body::before,
 .import-page-header h2,
 .reports-page-header h2,
 .people-page-header h2,
-.fieldops-page-header h2,
-.management-heading h2 {
+.fieldops-page-header h2 {
   color: var(--text) !important;
   font-family: var(--font-display, var(--font-ui)) !important;
   font-size: clamp(19px, 1.8vw, 22px) !important;
@@ -6239,8 +6131,7 @@ body::before,
 .import-page-header p,
 .reports-page-header p,
 .people-page-header p,
-.fieldops-page-header p,
-.management-heading p {
+.fieldops-page-header p {
   color: var(--muted) !important;
   font-size: 12px !important;
   line-height: 1.45 !important;
@@ -6275,8 +6166,7 @@ body::before,
   width: 100% !important;
 }
 
-.fieldops-tab-shell .project-tab,
-.management-tabs button {
+.fieldops-tab-shell .project-tab {
   background: var(--surface-raised) !important;
   border: 1px solid var(--card-border-strong) !important;
   border-radius: 14px !important;
@@ -6289,9 +6179,7 @@ body::before,
 .fieldops-scope-switch button.is-active,
 .fieldops-filter-row .is-active,
 .deadlines-filter-row .is-active,
-.reports-filter-row .is-active,
-.management-tabs button.is-active,
-.management-tabs button[aria-selected="true"] {
+.reports-filter-row .is-active {
   background: var(--accent-ink) !important;
   border-color: color-mix(in srgb, var(--accent) 28%, var(--border)) !important;
   color: var(--accent) !important;
@@ -6379,24 +6267,6 @@ body::before,
   box-shadow: var(--shadow-card) !important;
 }
 
-.management-hero {
-  align-items: stretch !important;
-  flex-direction: column !important;
-}
-
-.management-eyebrow {
-  display: none !important;
-}
-
-.management-tabs {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  justify-content: center !important;
-  margin-top: 4px !important;
-  padding: 0 !important;
-}
-
 @media (max-width: 768px) {
   .customers-theme-page,
   .deadlines-theme-page,
@@ -6418,8 +6288,7 @@ body::before,
   .import-page-header,
   .reports-page-header,
   .people-page-header,
-  .fieldops-page-header,
-  .management-hero {
+  .fieldops-page-header {
     border-radius: 18px !important;
     min-height: 64px !important;
     padding: 12px 13px !important;
@@ -6471,5 +6340,2917 @@ body::before,
     min-height: 38px !important;
     min-width: 38px !important;
     width: 38px !important;
+  }
+}
+
+/* Standard page polish: keep late-stage screens on the same compact language. */
+.management-tabs-row {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  justify-content: center !important;
+  margin: 0 0 14px !important;
+  padding: 0 !important;
+}
+
+.management-tabs-row .management-tabs {
+  margin: 0 !important;
+}
+
+.management-overview-filter-row,
+.reports-project-filter-row,
+.customers-filter-row {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.management-overview-filter-row select,
+.reports-project-filter-row select,
+.customers-filter-row input {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-card) !important;
+  min-height: 42px !important;
+}
+
+.fieldops-compact-select span {
+  color: var(--accent) !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+.fieldops-compact-select select {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--text) !important;
+  flex: 1 1 auto !important;
+  font-size: 11px !important;
+  font-weight: 760 !important;
+  min-width: 0 !important;
+  outline: 0 !important;
+}
+
+.fieldops-compact-select.is-all-filter {
+  flex: 1 1 150px !important;
+  min-width: 130px !important;
+  overflow: visible !important;
+}
+
+.fieldops-compact-select.is-all-filter select {
+  opacity: 1 !important;
+  width: auto !important;
+}
+
+.todos-theme-page .todo-columns,
+.todos-theme-page .todo-columns > div,
+.todo-list-card,
+.todo-list-card > div {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.todos-theme-page .todo-columns > div,
+.todo-list-card {
+  overflow: hidden !important;
+}
+
+.todo-list-card * {
+  overflow-wrap: anywhere;
+}
+
+.tickets-theme-page .theme-ticket-toolbar,
+.ticket-filter-row,
+.ticket-filter-segment,
+.ticket-filter-segment .multi-choice-filter {
+  overflow: visible !important;
+}
+
+.ticket-filter-row {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.ticket-filter-segment {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-card) !important;
+  padding: 5px !important;
+}
+
+.ticket-filter-segment .multi-choice-filter > button {
+  align-items: center !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  min-height: 34px !important;
+}
+
+.multi-choice-menu {
+  z-index: 2600 !important;
+}
+
+@media (max-width: 768px) {
+  .management-tabs-row {
+    margin-bottom: 12px !important;
+  }
+
+  .management-tabs-row .management-tabs {
+    overflow-x: auto !important;
+    width: 100% !important;
+  }
+
+  .management-overview-filter-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+
+  .management-overview-filter-row > div:first-child {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .management-overview-filter-row select {
+    width: 100% !important;
+  }
+
+  .reports-project-filter-row,
+  .customers-filter-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .reports-project-filter-row > div,
+  .customers-filter-row input {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .fieldops-tab-shell {
+    margin-bottom: 10px !important;
+  }
+
+  .fieldops-plan-filter-row,
+  .fieldops-visits-filter-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .fieldops-scope-switch {
+    grid-column: 1 / -1 !important;
+    justify-self: stretch !important;
+  }
+
+  .fieldops-combined-selects {
+    grid-column: 1 / 2 !important;
+  }
+
+  .fieldops-week-switch,
+  .fieldops-add-button {
+    grid-column: 2 / 3 !important;
+    justify-self: end !important;
+  }
+
+  .fieldops-visits-filter-row .fieldops-combined-selects {
+    grid-column: 1 / -1 !important;
+  }
+
+  .fieldops-visits-filter-row .fieldops-scope-switch {
+    grid-column: 1 / -1 !important;
+  }
+
+  .fieldops-compact-select {
+    flex: 1 1 0 !important;
+    padding: 0 8px !important;
+  }
+
+  .fieldops-compact-select span {
+    font-size: 10px !important;
+  }
+
+  .fieldops-compact-select select {
+    font-size: 10px !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > input {
+    grid-column: 1 / -1 !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .ticket-filter-segment {
+    grid-column: 1 / -1 !important;
+    justify-content: stretch !important;
+  }
+
+  .ticket-filter-segment .multi-choice-filter {
+    min-width: 0 !important;
+  }
+
+  .ticket-filter-segment .multi-choice-filter > button {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .ticket-filter-segment .multi-choice-menu {
+    background: var(--surface-raised) !important;
+    border: 1px solid var(--card-border-strong) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 24px 70px -30px rgb(17 35 39 / 55%) !important;
+    left: 12px !important;
+    max-height: min(420px, 58vh) !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    overflow: auto !important;
+    position: fixed !important;
+    right: 12px !important;
+    top: 148px !important;
+    width: auto !important;
+  }
+
+  .todo-columns {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Corject UI Contract - canonical page rhythm after CSS cleanup pass. */
+:root {
+  --ui-page-max: 1180px;
+  --ui-page-pad: clamp(16px, 3.2vw, 28px);
+  --ui-gap-xs: 6px;
+  --ui-gap-sm: 8px;
+  --ui-gap-md: 14px;
+  --ui-gap-lg: 20px;
+  --ui-control-h: 42px;
+  --ui-radius-card: 18px;
+  --ui-radius-control: 14px;
+  --ui-border: 1px solid var(--card-border-strong, var(--border));
+  --ui-surface: var(--surface-raised, #fff);
+  --ui-shadow: var(--shadow-card, 0 20px 48px -34px rgb(17 35 39 / 42%));
+}
+
+.theme-work-page:not(.mobile-dashboard-theme-page),
+.project-workspace:not(.mobile-dashboard-theme-page) {
+  padding: var(--ui-page-pad) !important;
+}
+
+.theme-work-page > .unified-page-header,
+.theme-work-page > .theme-page-heading,
+.project-workspace > .unified-page-header,
+.project-workspace > .theme-page-heading,
+.tasks-minimal-header > .unified-page-header,
+.reminders-page-header,
+.commissioning-header {
+  align-items: center !important;
+  border-radius: var(--ui-radius-card) !important;
+  margin-bottom: var(--ui-gap-md) !important;
+  min-height: 72px !important;
+  padding: 14px 16px !important;
+}
+
+.unified-page-header > div:first-child,
+.theme-page-heading > div:first-child {
+  min-width: 0 !important;
+}
+
+.unified-page-header h1,
+.unified-page-header h2,
+.theme-page-heading h1,
+.theme-page-heading h2,
+.reminders-page-header h2,
+.commissioning-header h2 {
+  font-size: clamp(21px, 2vw, 24px) !important;
+  font-weight: 820 !important;
+  line-height: 1.12 !important;
+  margin: 0 !important;
+}
+
+.unified-page-header p,
+.theme-page-heading p,
+.reminders-page-header p,
+.commissioning-header p {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.38 !important;
+  margin: 4px 0 0 !important;
+}
+
+.unified-filter-row,
+.theme-filter-strip,
+.theme-ticket-toolbar,
+.projects-filter-row,
+.customers-filter-row,
+.fieldops-filter-row,
+.deadlines-filter-row,
+.ai-filter-row,
+.logs-filter-row,
+.notifications-filter-row,
+.todos-filter-row,
+.reports-project-filter-row,
+.management-tabs-row,
+.management-overview-filter-row {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  gap: var(--ui-gap-sm) !important;
+  margin: 0 0 var(--ui-gap-md) !important;
+  padding: 0 !important;
+}
+
+.unified-filter-row input,
+.unified-filter-row select,
+.theme-filter-strip button,
+.theme-ticket-toolbar input,
+.theme-ticket-toolbar select,
+.segmented-control,
+.view-switch,
+.multi-choice-filter > button,
+.fieldops-compact-select,
+.management-command-bar select,
+.logs-filter-row select,
+.reports-project-filter-row select,
+.customers-filter-row input {
+  background: var(--ui-surface) !important;
+  border: var(--ui-border) !important;
+  border-radius: var(--ui-radius-control) !important;
+  box-shadow: var(--ui-shadow) !important;
+  min-height: var(--ui-control-h) !important;
+}
+
+.segmented-control,
+.view-switch {
+  padding: 4px !important;
+}
+
+.segmented-control button,
+.view-switch button,
+.theme-filter-strip button {
+  border-radius: calc(var(--ui-radius-control) - 4px) !important;
+  min-height: 34px !important;
+}
+
+.theme-filter-strip button.is-active,
+.segmented-control button.is-active,
+.view-switch button.is-active,
+.management-tabs button.is-active,
+.management-tabs button[aria-selected="true"] {
+  background: var(--accent-ink) !important;
+  color: var(--accent) !important;
+}
+
+.soft-panel,
+.compact-list-card,
+.liquid-card,
+.ui-section-card,
+.data-list-shell,
+.reminders-form,
+.reminder-card,
+.notification-card,
+.log-entry-card,
+.customer-management-card,
+.management-dashboard-card,
+.manager-assigned-row,
+.admin-summary-card,
+.admin-ai-summary,
+.admin-board-card {
+  background: var(--ui-surface) !important;
+  border: var(--ui-border) !important;
+  border-radius: var(--ui-radius-card) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.theme-work-page table {
+  border-collapse: collapse !important;
+}
+
+.theme-work-page th,
+.theme-work-page td {
+  vertical-align: middle !important;
+}
+
+.theme-work-page,
+.theme-work-page *,
+.project-workspace,
+.project-workspace * {
+  min-width: 0;
+}
+
+.theme-work-page p,
+.theme-work-page span,
+.theme-work-page b,
+.theme-work-page small,
+.theme-work-page td,
+.project-workspace p,
+.project-workspace span,
+.project-workspace b,
+.project-workspace small,
+.project-workspace td {
+  overflow-wrap: anywhere;
+}
+
+.people-theme-page,
+.customers-theme-page,
+.deadlines-theme-page,
+.ai-theme-page,
+.import-theme-page,
+.reports-theme-page,
+.fieldops-shell,
+.management-workspace,
+.mobile-feature-menu-page {
+  max-width: none !important;
+}
+
+.people-theme-page > div:not(.people-page-header),
+.customers-theme-page > div:not(.customers-page-header):not(.customers-filter-row),
+.deadlines-theme-page > div:not(.deadlines-page-header):not(.deadlines-filter-row),
+.ai-main-card,
+.import-theme-page .soft-panel,
+.reports-theme-page .soft-panel {
+  border-radius: var(--ui-radius-card) !important;
+}
+
+.people-theme-page > div[style*="background"],
+.customer-card-section,
+.ai-answer-card,
+.ui-muted-note,
+.ticket-detail-card,
+.ui-mini-stat {
+  background: color-mix(in srgb, var(--surface) 84%, var(--surface-soft) 16%) !important;
+  border: var(--ui-border) !important;
+  border-radius: 14px !important;
+}
+
+.management-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.management-tabs-row {
+  justify-content: center !important;
+}
+
+.management-tabs {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.management-overview-filter-row {
+  justify-content: center !important;
+}
+
+.management-command-bar {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.admin-summary-grid {
+  gap: 10px !important;
+  margin-bottom: 14px !important;
+}
+
+.admin-summary-card {
+  border-top-width: 3px !important;
+}
+
+.admin-board-grid {
+  gap: 12px !important;
+}
+
+.fieldops-shell {
+  padding: var(--ui-page-pad) !important;
+}
+
+.fieldops-shell > .fieldops-theme-page {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+.fieldops-tab-shell {
+  justify-content: flex-start !important;
+}
+
+.fieldops-combined-selects {
+  flex-wrap: wrap !important;
+}
+
+.fieldops-compact-select {
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.ticket-filter-segment {
+  flex-wrap: wrap !important;
+}
+
+.ticket-card-meta-row {
+  align-items: center !important;
+}
+
+.ticket-status-select {
+  min-height: 32px !important;
+  max-width: 180px !important;
+}
+
+.todo-columns > div,
+.todo-list-card,
+.todo-list-card > div {
+  min-width: 0 !important;
+}
+
+.todo-list-card {
+  align-items: flex-start !important;
+}
+
+.todo-list-card .icon-soft-action {
+  flex: 0 0 36px !important;
+}
+
+.reminders-page {
+  padding: var(--ui-page-pad) !important;
+}
+
+.reminders-page-header {
+  justify-content: space-between !important;
+}
+
+.reminders-layout {
+  align-items: start !important;
+  gap: 14px !important;
+}
+
+.reminder-task-list,
+.people-multi-select {
+  border: var(--ui-border) !important;
+  border-radius: 14px !important;
+}
+
+.reports-filter-row button {
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.import-security-chip {
+  margin-bottom: var(--ui-gap-md) !important;
+}
+
+.mobile-feature-menu-page .unified-page-header,
+.customer-dashboard-theme-page .unified-page-header {
+  border-radius: var(--ui-radius-card) !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --ui-page-pad: 12px 12px var(--mobile-nav-clearance, 118px);
+    --ui-control-h: 40px;
+  }
+
+  .theme-work-page:not(.mobile-dashboard-theme-page),
+  .project-workspace:not(.mobile-dashboard-theme-page),
+  .fieldops-shell,
+  .reminders-page {
+    padding: var(--ui-page-pad) !important;
+  }
+
+  .theme-work-page > .unified-page-header,
+  .theme-work-page > .theme-page-heading,
+  .project-workspace > .unified-page-header,
+  .project-workspace > .theme-page-heading,
+  .tasks-minimal-header > .unified-page-header,
+  .reminders-page-header,
+  .commissioning-header {
+    min-height: 64px !important;
+    padding: 12px 13px !important;
+  }
+
+  .unified-filter-row,
+  .theme-ticket-toolbar,
+  .theme-filter-strip,
+  .projects-filter-row,
+  .customers-filter-row,
+  .fieldops-filter-row,
+  .deadlines-filter-row,
+  .ai-filter-row,
+  .logs-filter-row,
+  .notifications-filter-row,
+  .todos-filter-row,
+  .reports-project-filter-row,
+  .management-overview-filter-row {
+    width: 100% !important;
+  }
+
+  .ai-filter-row,
+  .reports-project-filter-row,
+  .customers-filter-row,
+  .logs-filter-row,
+  .todos-filter-row,
+  .notifications-filter-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .ticket-filter-segment {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .ticket-filter-segment > button,
+  .ticket-filter-segment .multi-choice-filter,
+  .ticket-filter-segment .multi-choice-filter > button {
+    width: 100% !important;
+  }
+
+  .management-overview-filter-row,
+  .management-command-bar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .management-command-bar > div {
+    min-width: 0 !important;
+  }
+
+  .management-command-bar select {
+    width: 100% !important;
+  }
+
+  .reminders-layout,
+  .todo-columns {
+    grid-template-columns: 1fr !important;
+  }
+
+  .people-theme-page > div[style*="display: flex"] {
+    align-items: flex-start !important;
+  }
+}
+
+/* Corject UI Contract v2 - card/chip refinement layer. */
+:root {
+  --tone-accent: #0b8a94;
+  --tone-success: #19835c;
+  --tone-warning: #bf7a12;
+  --tone-danger: #b93f33;
+  --tone-info: #256f9c;
+  --tone-muted: #5b6f74;
+  --card-wash: linear-gradient(145deg, rgb(255 255 255 / 94%), color-mix(in srgb, var(--surface-soft) 64%, white 36%));
+  --card-wash-accent: linear-gradient(145deg, rgb(255 255 255 / 94%), color-mix(in srgb, var(--accent) 6%, white 94%));
+}
+
+.ui-chip {
+  --chip-tone: var(--tone-muted);
+  --chip-bg: color-mix(in srgb, var(--chip-tone) 10%, white 90%);
+  --chip-border: color-mix(in srgb, var(--chip-tone) 30%, var(--border) 70%);
+  align-items: center !important;
+  background: var(--chip-bg) !important;
+  border: 1px solid var(--chip-border) !important;
+  border-radius: 999px !important;
+  color: color-mix(in srgb, var(--chip-tone) 78%, var(--text) 22%) !important;
+  display: inline-flex !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  gap: 5px !important;
+  line-height: 1.1 !important;
+  min-height: 24px !important;
+  max-width: 100% !important;
+  padding: 4px 9px !important;
+  white-space: nowrap !important;
+}
+
+.ui-chip-accent,
+.ui-chip-info {
+  --chip-tone: var(--tone-accent);
+}
+
+.ui-chip-success {
+  --chip-tone: var(--tone-success);
+}
+
+.ui-chip-warning {
+  --chip-tone: var(--tone-warning);
+}
+
+.ui-chip-danger {
+  --chip-tone: var(--tone-danger);
+}
+
+.ui-chip-muted {
+  --chip-tone: var(--tone-muted);
+}
+
+.status-badge,
+.delay-badge,
+.ticket-age-chip,
+.ticket-number-chip,
+.action-tag-chip,
+.work-type-chip {
+  min-height: 26px !important;
+}
+
+.soft-panel,
+.compact-list-card,
+.liquid-card,
+.ui-section-card,
+.customer-summary-card,
+.customer-project-report-card,
+.management-dashboard-card,
+.admin-summary-card,
+.ticket-card,
+.ticket-mobile-card,
+.task-minimal-row,
+.todo-list-card,
+.deadline-card,
+.field-plan-card,
+.reminder-card,
+.notification-card,
+.log-entry-card,
+.training-card,
+.lesson-card {
+  background: var(--card-wash) !important;
+  border-color: color-mix(in srgb, var(--border) 76%, var(--accent) 24%) !important;
+  box-shadow: 0 20px 54px -38px rgb(17 35 39 / 42%) !important;
+}
+
+.compact-list-card,
+.ticket-card,
+.ticket-mobile-card,
+.task-minimal-row,
+.todo-list-card,
+.deadline-card,
+.field-plan-card,
+.reminder-card,
+.notification-card {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.compact-list-card::after,
+.ticket-card::after,
+.ticket-mobile-card::after,
+.task-minimal-row::after,
+.todo-list-card::after,
+.deadline-card::after,
+.field-plan-card::after,
+.reminder-card::after,
+.notification-card::after {
+  background: radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--card-tone, var(--accent)) 12%, transparent) 0 34%, transparent 56%);
+  content: "" !important;
+  inset: 0 !important;
+  opacity: .8 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  z-index: 0 !important;
+}
+
+.compact-list-card > *,
+.ticket-card > *,
+.ticket-mobile-card > *,
+.task-minimal-row > *,
+.todo-list-card > *,
+.deadline-card > *,
+.field-plan-card > *,
+.reminder-card > *,
+.notification-card > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.compact-list-card:has(.ui-chip-success),
+.ticket-card:has(.ui-chip-success),
+.ticket-mobile-card:has(.ui-chip-success),
+.task-minimal-row:has(.ui-chip-success),
+.todo-list-card:not(.is-danger):has(.ui-chip-success),
+.field-plan-card.is-field,
+.reminder-card:has(.ui-chip-success) {
+  --card-tone: var(--tone-success);
+  border-color: color-mix(in srgb, var(--tone-success) 30%, var(--border) 70%) !important;
+}
+
+.compact-list-card:has(.ui-chip-warning),
+.ticket-card:has(.ui-chip-warning),
+.ticket-mobile-card:has(.ui-chip-warning),
+.task-minimal-row:has(.ui-chip-warning),
+.field-plan-card.is-remote,
+.reminder-card:has(.ui-chip-warning) {
+  --card-tone: var(--tone-warning);
+  border-color: color-mix(in srgb, var(--tone-warning) 28%, var(--border) 72%) !important;
+}
+
+.compact-list-card:has(.ui-chip-danger),
+.ticket-card:has(.ui-chip-danger),
+.ticket-mobile-card:has(.ui-chip-danger),
+.task-minimal-row:has(.ui-chip-danger),
+.todo-list-card.is-danger,
+.deadline-card.is-danger,
+.reminder-card:has(.ui-chip-danger) {
+  --card-tone: var(--tone-danger);
+  border-color: color-mix(in srgb, var(--tone-danger) 34%, var(--border) 66%) !important;
+}
+
+.ticket-card-meta-row,
+.mobile-ticket-card-inner > div:first-child,
+.task-minimal-row > div:first-child {
+  gap: 7px !important;
+}
+
+.ticket-card-title,
+.text-wrap-safe {
+  overflow-wrap: anywhere !important;
+  white-space: normal !important;
+}
+
+.ticket-status-select {
+  background: color-mix(in srgb, var(--surface) 90%, white 10%) !important;
+  border-radius: 12px !important;
+  min-height: 34px !important;
+  padding: 5px 28px 5px 9px !important;
+}
+
+.ticket-age-chip {
+  font-variant-numeric: tabular-nums !important;
+  margin-left: 0 !important;
+}
+
+.project-chip {
+  --chip-tone: var(--project-chip-color, var(--accent));
+}
+
+.management-dashboard-card,
+.admin-summary-card {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 94%), color-mix(in srgb, var(--accent) 5%, white 95%)) !important;
+}
+
+.management-dashboard-card::before,
+.admin-summary-card::before {
+  background: color-mix(in srgb, var(--accent) 62%, transparent) !important;
+  border-radius: 999px !important;
+  content: "" !important;
+  display: block !important;
+  height: 3px !important;
+  margin-bottom: 10px !important;
+  width: 44px !important;
+}
+
+.fieldops-filter-row,
+.ticket-filter-row,
+.projects-filter-row {
+  align-items: center !important;
+}
+
+.fieldops-filter-row select,
+.ticket-filter-row input,
+.ticket-filter-row select,
+.projects-filter-row input {
+  font-size: 14px !important;
+}
+
+@media (max-width: 768px) {
+  .ui-chip {
+    font-size: 10px !important;
+    min-height: 24px !important;
+    padding: 4px 8px !important;
+  }
+
+  .ticket-card-meta-row {
+    align-items: flex-start !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+
+  .ticket-card-meta-row .ticket-card-title {
+    grid-column: 1 / -1 !important;
+    order: 4 !important;
+  }
+
+  .ticket-card-meta-row .ticket-status-select,
+  .ticket-card-meta-row .ticket-status-chip {
+    grid-column: 1 / -1 !important;
+    justify-self: start !important;
+    max-width: 100% !important;
+    width: min(220px, 100%) !important;
+  }
+
+  .ticket-card-meta-row .ticket-age-chip {
+    justify-self: end !important;
+  }
+
+  .management-dashboard-card::before,
+  .admin-summary-card::before {
+    margin-bottom: 8px !important;
+  }
+}
+
+/* Report/customer portal polish pass. */
+.reports-theme-page .soft-panel {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 96%), color-mix(in srgb, var(--accent) 4%, white 96%)) !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.reports-theme-page .soft-panel::before,
+.customer-summary-card::before {
+  background: color-mix(in srgb, var(--accent) 58%, transparent) !important;
+  border-radius: 999px !important;
+  content: "" !important;
+  display: block !important;
+  height: 3px !important;
+  margin-bottom: 11px !important;
+  width: 42px !important;
+}
+
+.reports-theme-page .soft-panel .btn-base,
+.reports-theme-page .soft-panel button {
+  min-height: 40px !important;
+}
+
+.reports-filter-row button,
+.reports-theme-page .theme-filter-strip button {
+  min-height: 40px !important;
+}
+
+.customer-dashboard-theme-page {
+  background: #f6f7f7 !important;
+}
+
+.customer-report-shell,
+.customer-project-report-card {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 96%), color-mix(in srgb, var(--surface-soft) 72%, white 28%)) !important;
+  border: var(--ui-border) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.customer-summary-card {
+  min-height: 132px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.customer-summary-card > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.customer-summary-card::after {
+  background: radial-gradient(circle at 90% 12%, color-mix(in srgb, var(--accent) 10%, transparent) 0 36%, transparent 58%) !important;
+  content: "" !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+}
+
+.customer-project-report-head {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 88%, #112327 12%), color-mix(in srgb, var(--accent) 55%, white 45%)) !important;
+}
+
+.customer-project-report-card h2,
+.customer-dashboard-theme-page h2 {
+  letter-spacing: -.03em !important;
+}
+
+.customer-dashboard-theme-page .customer-summary-card div[style*="font-size: 28"] {
+  font-variant-numeric: tabular-nums !important;
+}
+
+.fieldops-theme-page .compact-list-card,
+.fieldops-theme-page .soft-panel {
+  border-radius: 18px !important;
+}
+
+.fieldops-theme-page .field-plan-card {
+  min-height: 132px !important;
+}
+
+.fieldops-theme-page .field-plan-card .inline-text-action {
+  min-height: 30px !important;
+}
+
+.fieldops-theme-page .compact-list-card button:not(.inline-text-action):not(.project-icon-action),
+.fieldops-theme-page .field-plan-card {
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease !important;
+}
+
+.fieldops-theme-page .compact-list-card button:not(.inline-text-action):not(.project-icon-action):active,
+.fieldops-theme-page .field-plan-card:active {
+  transform: scale(.992) !important;
+}
+
+@media (max-width: 768px) {
+  .reports-theme-page .soft-panel {
+    min-height: 150px !important;
+  }
+
+  .customer-summary-card {
+    min-height: 116px !important;
+  }
+
+  .customer-project-report-head {
+    align-items: flex-start !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .customer-project-report-head > div:last-child {
+    grid-column: 1 / -1 !important;
+    text-align: left !important;
+  }
+
+  .fieldops-theme-page .field-plan-card {
+    min-height: auto !important;
+  }
+}
+
+/* Corject UI Contract v3 - consolidation layer.
+   This is intentionally late in the cascade: old page-specific CSS remains in
+   the file during the gradual cleanup, but these rules define the product-wide
+   visual contract for headers, filter rows, cards, chips and mobile chrome. */
+:root {
+  --ui-page-max: min(1180px, 100%);
+  --ui-page-gap: 14px;
+  --ui-header-min-h: 74px;
+  --ui-header-pad: 14px 16px;
+  --ui-radius-page: 20px;
+  --ui-radius-card: 18px;
+  --ui-radius-control: 14px;
+  --ui-control-h: 42px;
+  --ui-card-bg:
+    linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(246 250 251 / 74%));
+  --ui-card-bg-accent:
+    radial-gradient(circle at 9% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 38%),
+    linear-gradient(145deg, rgb(255 255 255 / 96%), color-mix(in srgb, var(--accent) 4%, rgb(246 250 251 / 80%)));
+  --ui-border-line: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  --ui-shadow-clean: 0 18px 48px -38px rgb(17 35 39 / 42%);
+}
+
+.theme-work-page,
+.project-detail-workspace,
+.fieldops-shell {
+  background: transparent !important;
+}
+
+.theme-work-page > .unified-page-header,
+.project-detail-workspace .unified-page-header,
+.fieldops-page-header,
+.customers-page-header,
+.deadlines-page-header,
+.ai-page-header,
+.import-page-header,
+.reports-page-header,
+.people-page-header,
+.tickets-page-header,
+.todos-page-header,
+.logs-page-header,
+.notifications-page-header {
+  align-items: center !important;
+  background: var(--ui-card-bg) !important;
+  border: var(--ui-border-line) !important;
+  border-radius: var(--ui-radius-page) !important;
+  box-shadow: var(--ui-shadow-clean) !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin: 0 auto var(--ui-page-gap) !important;
+  min-height: var(--ui-header-min-h) !important;
+  padding: var(--ui-header-pad) !important;
+  width: 100% !important;
+}
+
+.unified-page-header > div:first-child {
+  min-width: 0 !important;
+}
+
+.unified-page-header h2,
+.fieldops-page-header h2 {
+  align-items: center !important;
+  color: var(--text) !important;
+  display: flex !important;
+  font-family: var(--font-display, var(--font-ui)) !important;
+  font-size: clamp(20px, 2vw, 24px) !important;
+  font-weight: 780 !important;
+  gap: 9px !important;
+  letter-spacing: -.035em !important;
+  line-height: 1.12 !important;
+  margin: 0 !important;
+}
+
+.unified-page-header p,
+.fieldops-page-header p {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.42 !important;
+  margin: 4px 0 0 !important;
+}
+
+.page-header-actions {
+  align-items: center !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  gap: 8px !important;
+}
+
+.icon-only-action,
+.page-header-actions .icon-only-action {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  color: var(--accent) !important;
+  display: inline-grid !important;
+  font-size: 26px !important;
+  font-weight: 900 !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  min-width: 44px !important;
+  padding: 0 !important;
+  place-items: center !important;
+  width: 44px !important;
+}
+
+.unified-filter-row,
+.projects-filter-row,
+.ticket-filter-row,
+.fieldops-filter-row,
+.customers-filter-row,
+.reports-filter-row,
+.todos-filter-row,
+.deadlines-filter-row,
+.ai-filter-row,
+.logs-filter-row,
+.notifications-filter-row,
+.management-overview-filter-row {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display: flex !important;
+  gap: 8px !important;
+  margin: 0 auto var(--ui-page-gap) !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.unified-filter-row input,
+.unified-filter-row select,
+.fieldops-compact-select,
+.ticket-status-select,
+.ticket-filter-segment,
+.icon-view-switch,
+.view-switch,
+.segmented-control {
+  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+  border: var(--ui-border-line) !important;
+  border-radius: var(--ui-radius-control) !important;
+  box-shadow: 0 12px 34px -31px rgb(17 35 39 / 34%) !important;
+}
+
+.icon-view-switch,
+.view-switch {
+  align-items: center !important;
+  display: inline-flex !important;
+  gap: 4px !important;
+  min-height: var(--ui-control-h) !important;
+  padding: 4px !important;
+}
+
+.icon-view-switch button,
+.view-switch button,
+.segmented-control button,
+.ticket-filter-segment button {
+  align-items: center !important;
+  border-radius: 11px !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  min-height: 34px !important;
+  min-width: 34px !important;
+}
+
+.icon-view-switch button.is-active,
+.view-switch button.is-active,
+.segmented-control button.is-active,
+.ticket-filter-segment button.is-active,
+.unified-filter-row button.is-active {
+  background: var(--accent-ink) !important;
+  color: var(--accent) !important;
+}
+
+.ui-chip,
+.ticket-age-chip,
+.ticket-number-chip,
+.ticket-project-chip,
+.work-type-chip {
+  align-items: center !important;
+  background: color-mix(in srgb, var(--chip-tone, var(--accent)) 13%, white 87%) !important;
+  border: 1px solid color-mix(in srgb, var(--chip-tone, var(--accent)) 34%, var(--border) 66%) !important;
+  border-radius: 999px !important;
+  color: color-mix(in srgb, var(--chip-tone, var(--accent)) 76%, var(--text) 24%) !important;
+  display: inline-flex !important;
+  font-size: 11px !important;
+  font-weight: 820 !important;
+  gap: 5px !important;
+  line-height: 1.1 !important;
+  min-height: 25px !important;
+  padding: 5px 9px !important;
+  white-space: nowrap !important;
+}
+
+.ui-chip-success { --chip-tone: var(--success) !important; }
+.ui-chip-warning { --chip-tone: var(--warning) !important; }
+.ui-chip-danger { --chip-tone: var(--danger) !important; }
+.ui-chip-info,
+.ui-chip-accent { --chip-tone: var(--accent) !important; }
+.ui-chip-muted { --chip-tone: var(--muted) !important; }
+
+.compact-list-card,
+.ticket-card,
+.task-minimal-row,
+.project-list-card,
+.soft-panel,
+.ui-section-card,
+.field-plan-card,
+.reminder-card,
+.notification-card,
+.log-entry-card,
+.deadline-card,
+.todo-list-card {
+  background: var(--ui-card-bg-accent) !important;
+  border: var(--ui-border-line) !important;
+  border-radius: var(--ui-radius-card) !important;
+  box-shadow: var(--ui-shadow-clean) !important;
+  color: var(--text) !important;
+  min-width: 0 !important;
+}
+
+.ticket-card:has(.ui-chip-danger),
+.task-minimal-row:has(.ui-chip-danger),
+.compact-list-card:has(.ui-chip-danger) {
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--danger) 10%, transparent), transparent 38%),
+    var(--ui-card-bg) !important;
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border) 70%) !important;
+}
+
+.ticket-card:has(.ui-chip-warning),
+.task-minimal-row:has(.ui-chip-warning),
+.compact-list-card:has(.ui-chip-warning) {
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--warning) 10%, transparent), transparent 38%),
+    var(--ui-card-bg) !important;
+  border-color: color-mix(in srgb, var(--warning) 28%, var(--border) 72%) !important;
+}
+
+.ticket-card:has(.ui-chip-success),
+.task-minimal-row:has(.ui-chip-success),
+.compact-list-card:has(.ui-chip-success) {
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--success) 9%, transparent), transparent 38%),
+    var(--ui-card-bg) !important;
+  border-color: color-mix(in srgb, var(--success) 26%, var(--border) 74%) !important;
+}
+
+.task-minimal-row {
+  padding: 14px 16px !important;
+}
+
+.task-minimal-row::before,
+.task-minimal-row::after {
+  display: none !important;
+}
+
+.ticket-card-meta-row {
+  align-items: center !important;
+}
+
+.ticket-status-select {
+  color: var(--text) !important;
+  font-size: 11px !important;
+  font-weight: 760 !important;
+  min-height: 32px !important;
+  padding: 4px 28px 4px 9px !important;
+}
+
+.fieldops-shell,
+.fieldops-theme-page {
+  max-width: var(--ui-page-max) !important;
+}
+
+.fieldops-shell {
+  margin: 0 auto !important;
+  padding: var(--page-gutter, clamp(18px, 4vw, 28px)) !important;
+  width: 100% !important;
+}
+
+.fieldops-theme-page {
+  padding: 0 !important;
+}
+
+.fieldops-tab-shell {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin: 0 0 var(--ui-page-gap) !important;
+  padding: 0 !important;
+}
+
+.fieldops-plan-filter-row,
+.fieldops-visits-filter-row {
+  align-items: center !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto auto !important;
+  gap: 8px !important;
+}
+
+.fieldops-visits-filter-row {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+}
+
+.fieldops-combined-selects {
+  display: flex !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.fieldops-compact-select {
+  align-items: center !important;
+  display: inline-flex !important;
+  flex: 1 1 0 !important;
+  gap: 6px !important;
+  min-height: var(--ui-control-h) !important;
+  min-width: 0 !important;
+  padding: 0 10px !important;
+}
+
+.fieldops-compact-select span {
+  color: var(--accent) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+.fieldops-compact-select select {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+  flex: 1 1 auto !important;
+  font-size: 11px !important;
+  font-weight: 760 !important;
+  min-width: 0 !important;
+  outline: 0 !important;
+}
+
+.fieldops-week-switch {
+  align-items: center !important;
+  display: inline-flex !important;
+  gap: 5px !important;
+  justify-self: end !important;
+  margin: 0 !important;
+}
+
+.fieldops-week-label {
+  min-height: 38px !important;
+  padding: 0 10px !important;
+}
+
+.tickets-theme-page .theme-ticket-toolbar {
+  align-items: center !important;
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1fr) auto auto !important;
+  gap: 8px !important;
+}
+
+.ticket-filter-segment {
+  align-items: center !important;
+  display: inline-flex !important;
+  gap: 4px !important;
+  min-height: var(--ui-control-h) !important;
+  padding: 4px !important;
+}
+
+.multi-choice-menu {
+  background: var(--surface) !important;
+  border: var(--ui-border-line) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 22px 60px -30px rgb(17 35 39 / 54%) !important;
+  overflow: auto !important;
+  z-index: 2800 !important;
+}
+
+.project-list-card {
+  overflow: hidden !important;
+}
+
+.project-card-title-row > b,
+.project-list-card b,
+.project-list-card strong {
+  font-weight: 760 !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --mobile-nav-clearance: 92px;
+    --mobile-nav-scroll-clearance: 92px;
+    --ui-header-min-h: 66px;
+    --ui-header-pad: 12px 13px;
+    --ui-page-gap: 12px;
+  }
+
+  .theme-work-page {
+    padding-bottom: var(--mobile-nav-clearance) !important;
+    scroll-padding-bottom: var(--mobile-nav-scroll-clearance) !important;
+  }
+
+  .theme-work-page > .unified-page-header,
+  .fieldops-page-header,
+  .customers-page-header,
+  .deadlines-page-header,
+  .ai-page-header,
+  .import-page-header,
+  .reports-page-header,
+  .people-page-header,
+  .tickets-page-header,
+  .todos-page-header,
+  .logs-page-header,
+  .notifications-page-header {
+    border-radius: 18px !important;
+  }
+
+  .unified-page-header h2,
+  .fieldops-page-header h2 {
+    font-size: 22px !important;
+  }
+
+  .icon-only-action,
+  .page-header-actions .icon-only-action {
+    font-size: 27px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    min-width: 42px !important;
+    width: 42px !important;
+  }
+
+  .mobile-bottom-nav {
+    background: rgb(255 255 255 / 70%) !important;
+    border: 1px solid rgb(207 224 227 / 42%) !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    box-shadow: 0 18px 46px -34px rgb(17 35 39 / 48%) !important;
+    min-height: 66px !important;
+  }
+
+  .mobile-bottom-nav-icon.is-quick {
+    height: 58px !important;
+    transform: translateY(-17px) !important;
+    width: 58px !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > input,
+  .tickets-theme-page .theme-ticket-toolbar > .ticket-filter-segment {
+    grid-column: 1 / -1 !important;
+  }
+
+  .tickets-theme-page .theme-ticket-toolbar > .icon-view-switch {
+    justify-self: end !important;
+  }
+
+  .ticket-filter-segment {
+    width: 100% !important;
+  }
+
+  .ticket-filter-segment > * {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+
+  .ticket-filter-segment .multi-choice-menu {
+    left: 12px !important;
+    max-height: min(420px, 58vh) !important;
+    right: 12px !important;
+    top: 150px !important;
+    width: auto !important;
+  }
+
+  .ticket-card-meta-row {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    gap: 7px !important;
+  }
+
+  .ticket-card-title {
+    grid-column: 1 / -1 !important;
+  }
+
+  .ticket-status-select {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .fieldops-shell {
+    padding: var(--page-gutter-mobile, 12px) var(--page-gutter-mobile, 12px) var(--mobile-nav-clearance) !important;
+  }
+
+  .fieldops-plan-filter-row,
+  .fieldops-visits-filter-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .fieldops-scope-switch {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  .fieldops-combined-selects {
+    grid-column: 1 / -1 !important;
+    overflow: hidden !important;
+  }
+
+  .fieldops-week-switch {
+    grid-column: 1 / 2 !important;
+    justify-self: start !important;
+  }
+
+  .fieldops-add-button {
+    grid-column: 2 / 3 !important;
+    justify-self: end !important;
+  }
+
+  .fieldops-week-label {
+    max-width: 132px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Corject UI Contract v4 - page parity for the remaining legacy screens. */
+:root {
+  --ui-page-pad-desktop: clamp(18px, 4vw, 30px);
+  --ui-page-pad-mobile: 12px;
+}
+
+.customers-theme-page,
+.deadlines-theme-page,
+.ai-theme-page,
+.import-theme-page,
+.reports-theme-page,
+.mail-center-theme-page,
+.people-theme-page,
+.logs-theme-page,
+.notifications-theme-page,
+.todos-theme-page,
+.management-theme-page {
+  background: transparent !important;
+  box-sizing: border-box !important;
+  padding: var(--ui-page-pad-desktop) !important;
+  width: 100% !important;
+}
+
+.customers-theme-page > *,
+.deadlines-theme-page > *,
+.import-theme-page > *,
+.reports-theme-page > *,
+.mail-center-theme-page > *,
+.people-theme-page > *,
+.logs-theme-page > *,
+.notifications-theme-page > *,
+.todos-theme-page > *,
+.management-theme-page > *,
+.ai-page-inner {
+  box-sizing: border-box !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: var(--ui-page-max) !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.mail-center-page-header,
+.management-page-header {
+  align-items: center !important;
+  background: var(--ui-card-bg) !important;
+  border: var(--ui-border-line) !important;
+  border-radius: var(--ui-radius-page) !important;
+  box-shadow: var(--ui-shadow-clean) !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin: 0 auto var(--ui-page-gap) !important;
+  min-height: var(--ui-header-min-h) !important;
+  padding: var(--ui-header-pad) !important;
+  width: 100% !important;
+}
+
+.management-page-header {
+  flex-direction: row !important;
+}
+
+.management-command-bar,
+.management-org-toolbar,
+.manager-assigned-toolbar,
+.reports-project-filter-row,
+.reports-filter-row,
+.customers-filter-row,
+.logs-filter-row,
+.notifications-filter-row,
+.todos-filter-row,
+.deadlines-filter-row,
+.ai-filter-row {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin: 0 auto var(--ui-page-gap) !important;
+  padding: 0 !important;
+}
+
+.reports-filter-row,
+.deadlines-filter-row,
+.management-tabs,
+.management-tabs-row {
+  justify-content: flex-start !important;
+}
+
+.management-tabs {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  gap: 5px !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  width: auto !important;
+}
+
+.reports-filter-row button,
+.deadlines-filter-row button,
+.management-tabs button,
+.management-tabs-row button {
+  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+  border: var(--ui-border-line) !important;
+  border-radius: 13px !important;
+  box-shadow: 0 12px 34px -31px rgb(17 35 39 / 34%) !important;
+  color: var(--muted) !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+}
+
+.reports-filter-row button.is-active,
+.deadlines-filter-row button.is-active,
+.management-tabs button.is-active,
+.management-tabs button[aria-selected="true"] {
+  background: var(--accent-ink) !important;
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border)) !important;
+  color: var(--accent) !important;
+}
+
+.import-theme-page .soft-panel,
+.reports-theme-page .soft-panel,
+.mail-center-theme-page .liquid-card,
+.mail-center-theme-page .soft-panel,
+.mail-center-theme-page [class*="card"],
+.customers-theme-page .customer-management-card,
+.management-dashboard-card,
+.admin-summary-card,
+.manager-stat-card,
+.manager-assigned-row,
+.admin-ai-summary,
+.todo-form-card,
+.todo-list-card,
+.deadline-card,
+.log-entry-card,
+.notification-card {
+  background: var(--ui-card-bg-accent) !important;
+  border: var(--ui-border-line) !important;
+  border-radius: var(--ui-radius-card) !important;
+  box-shadow: var(--ui-shadow-clean) !important;
+}
+
+.import-theme-page .soft-panel,
+.reports-theme-page .soft-panel {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.import-theme-page .soft-panel button,
+.reports-theme-page .soft-panel button,
+.management-report-tile,
+.management-health-row,
+.management-deadline-row {
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease !important;
+}
+
+.import-theme-page .soft-panel button:active,
+.reports-theme-page .soft-panel button:active,
+.management-report-tile:active,
+.management-health-row:active,
+.management-deadline-row:active {
+  transform: scale(.992) !important;
+}
+
+.import-security-chip {
+  margin-bottom: var(--ui-page-gap) !important;
+}
+
+.reports-theme-page .soft-panel {
+  min-height: 176px !important;
+}
+
+.reports-theme-page .soft-panel .btn-base {
+  border-radius: 13px !important;
+  min-height: 40px !important;
+}
+
+.admin-summary-grid,
+.admin-board-grid,
+.manager-assigned-stats,
+.todo-columns,
+.customer-management-card,
+.customers-theme-page .soft-panel,
+.reports-theme-page .soft-panel,
+.import-theme-page .soft-panel {
+  min-width: 0 !important;
+}
+
+.admin-summary-card,
+.manager-stat-card {
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.admin-summary-card::after,
+.manager-stat-card::after,
+.management-dashboard-card::after {
+  background: radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--stat-color, var(--accent)) 10%, transparent), transparent 42%) !important;
+  content: "" !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+}
+
+.admin-summary-card > *,
+.manager-stat-card > *,
+.management-dashboard-card > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.management-dashboard-card {
+  overflow: hidden !important;
+}
+
+.management-dashboard-card:not(.management-ai-card) {
+  color: var(--text) !important;
+}
+
+.management-ai-card {
+  background:
+    radial-gradient(circle at 12% 0%, rgb(255 255 255 / 18%), transparent 42%),
+    linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 74%, var(--text) 26%)) !important;
+}
+
+.customer-management-card {
+  border-color: color-mix(in srgb, var(--customer-accent, var(--accent)) 22%, var(--border)) !important;
+  padding: 16px !important;
+}
+
+.customer-card-section,
+.customer-management-card [style*="background: var(--surface-soft)"] {
+  background: color-mix(in srgb, var(--surface) 82%, transparent) !important;
+  border-color: color-mix(in srgb, var(--border) 74%, transparent) !important;
+}
+
+.todos-theme-page .todo-columns {
+  align-items: start !important;
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, .9fr) !important;
+}
+
+.todo-list-card {
+  align-items: flex-start !important;
+  overflow: hidden !important;
+}
+
+.todo-list-card > div {
+  min-width: 0 !important;
+}
+
+.todo-list-card .ui-chip {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.deadline-card,
+.notification-card,
+.log-entry-card {
+  overflow: hidden !important;
+}
+
+.logs-theme-page .log-entry-card,
+.notifications-theme-page .notification-card,
+.deadlines-theme-page .deadline-card {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+}
+
+.mail-center-theme-page .admin-main-grid {
+  align-items: start !important;
+  display: grid !important;
+  gap: 16px !important;
+  grid-template-columns: minmax(280px, .8fr) minmax(380px, 1.25fr) !important;
+  max-width: var(--ui-page-max) !important;
+}
+
+@media (max-width: 768px) {
+  .customers-theme-page,
+  .deadlines-theme-page,
+  .ai-theme-page,
+  .import-theme-page,
+  .reports-theme-page,
+  .mail-center-theme-page,
+  .people-theme-page,
+  .logs-theme-page,
+  .notifications-theme-page,
+  .todos-theme-page,
+  .management-theme-page {
+    padding: var(--ui-page-pad-mobile) var(--ui-page-pad-mobile) var(--mobile-nav-clearance) !important;
+  }
+
+  .mail-center-page-header,
+  .management-page-header {
+    border-radius: 18px !important;
+    min-height: var(--ui-header-min-h) !important;
+    padding: var(--ui-header-pad) !important;
+  }
+
+  .management-page-header {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .reports-project-filter-row,
+  .management-command-bar,
+  .customers-filter-row,
+  .logs-filter-row,
+  .todos-filter-row,
+  .deadlines-filter-row,
+  .ai-filter-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .reports-project-filter-row > *,
+  .management-command-bar > *,
+  .customers-filter-row > *,
+  .logs-filter-row > *,
+  .todos-filter-row > *,
+  .deadlines-filter-row > *,
+  .ai-filter-row > * {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .reports-filter-row,
+  .management-tabs,
+  .management-tabs-row,
+  .deadlines-filter-row {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+    scrollbar-width: none !important;
+  }
+
+  .reports-filter-row::-webkit-scrollbar,
+  .management-tabs::-webkit-scrollbar,
+  .management-tabs-row::-webkit-scrollbar,
+  .deadlines-filter-row::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .reports-filter-row button,
+  .management-tabs button,
+  .deadlines-filter-row button {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+
+  .mail-center-theme-page .admin-main-grid,
+  .todos-theme-page .todo-columns {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-summary-grid,
+  .manager-assigned-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-board-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-board-small,
+  .admin-board-medium,
+  .admin-board-large,
+  .admin-board-full {
+    grid-column: auto !important;
+  }
+
+  .manager-assigned-row {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .manager-assigned-row .manager-assigned-status {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+}
+
+/* Corject UI Contract v5 - field operations parity cleanup. */
+.fieldops-shell {
+  background: transparent !important;
+  box-sizing: border-box !important;
+  padding: var(--ui-page-pad-desktop, clamp(18px, 4vw, 30px)) !important;
+  width: 100% !important;
+}
+
+.fieldops-shell > .fieldops-tab-shell,
+.fieldops-shell > .fieldops-theme-page {
+  box-sizing: border-box !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: var(--ui-page-max, 1180px) !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.fieldops-theme-page {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.fieldops-page-header {
+  margin-bottom: var(--ui-page-gap, 14px) !important;
+}
+
+.fieldops-tab-shell {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display: flex !important;
+  gap: 7px !important;
+  margin-bottom: var(--ui-page-gap, 14px) !important;
+  overflow-x: auto !important;
+  padding: 0 !important;
+  scrollbar-width: none !important;
+}
+
+.fieldops-tab-shell::-webkit-scrollbar {
+  display: none !important;
+}
+
+.fieldops-tab-shell .project-tab {
+  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+  border: var(--ui-border-line, 1px solid var(--border)) !important;
+  border-radius: 13px !important;
+  box-shadow: 0 12px 34px -31px rgb(17 35 39 / 34%) !important;
+  color: var(--muted) !important;
+  flex: 0 0 auto !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+}
+
+.fieldops-tab-shell .project-tab.is-active {
+  background: var(--accent-ink) !important;
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border)) !important;
+  color: var(--accent) !important;
+}
+
+.fieldops-plan-filter-row,
+.fieldops-visits-filter-row {
+  align-items: center !important;
+  display: grid !important;
+  gap: 8px !important;
+  grid-template-columns: auto minmax(0, 1fr) auto auto !important;
+  margin: 0 0 var(--ui-page-gap, 14px) !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.fieldops-visits-filter-row {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+}
+
+.fieldops-scope-switch,
+.fieldops-combined-selects,
+.fieldops-week-switch {
+  min-width: 0 !important;
+}
+
+.fieldops-scope-switch {
+  width: auto !important;
+}
+
+.fieldops-scope-switch button {
+  min-width: 42px !important;
+}
+
+.fieldops-combined-selects {
+  align-items: center !important;
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: flex-start !important;
+  overflow: visible !important;
+}
+
+.fieldops-compact-select {
+  align-items: center !important;
+  background: var(--ui-surface, var(--surface-raised)) !important;
+  border: var(--ui-border, 1px solid var(--border)) !important;
+  border-radius: var(--ui-radius-control, 14px) !important;
+  box-shadow: var(--ui-shadow, var(--shadow-card)) !important;
+  display: inline-flex !important;
+  flex: 1 1 150px !important;
+  gap: 6px !important;
+  height: 40px !important;
+  max-width: 220px !important;
+  min-width: 128px !important;
+  overflow: hidden !important;
+  padding: 0 10px !important;
+}
+
+.fieldops-compact-select span {
+  color: var(--accent) !important;
+  flex: 0 0 auto !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: .02em !important;
+  white-space: nowrap !important;
+}
+
+.fieldops-compact-select select {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+  flex: 1 1 auto !important;
+  font-size: 11px !important;
+  font-weight: 760 !important;
+  min-height: 38px !important;
+  min-width: 0 !important;
+  outline: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  text-overflow: ellipsis !important;
+}
+
+.fieldops-week-switch {
+  align-items: center !important;
+  display: inline-flex !important;
+  gap: 5px !important;
+  justify-content: flex-end !important;
+}
+
+.fieldops-week-label {
+  max-width: 154px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.fieldops-add-button.icon-only-action {
+  color: var(--accent) !important;
+  font-size: 26px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  min-width: 42px !important;
+  width: 42px !important;
+}
+
+.fieldops-theme-page .compact-list-card,
+.fieldops-theme-page .soft-panel,
+.fieldops-theme-page .field-plan-card {
+  background: var(--ui-card-bg-accent, var(--surface-raised)) !important;
+  border: var(--ui-border-line, 1px solid var(--border)) !important;
+  border-radius: var(--ui-radius-card, 18px) !important;
+  box-shadow: var(--ui-shadow-clean, var(--shadow-card)) !important;
+}
+
+@media (max-width: 768px) {
+  .fieldops-shell {
+    padding: var(--ui-page-pad-mobile, 12px) var(--ui-page-pad-mobile, 12px) var(--mobile-nav-clearance, 118px) !important;
+  }
+
+  .fieldops-plan-filter-row,
+  .fieldops-visits-filter-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .fieldops-scope-switch,
+  .fieldops-combined-selects {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  .fieldops-combined-selects {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .fieldops-visits-filter-row .fieldops-combined-selects {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .fieldops-compact-select {
+    max-width: none !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .fieldops-compact-select span {
+    font-size: 0 !important;
+  }
+
+  .fieldops-week-switch {
+    grid-column: 1 / 2 !important;
+    justify-self: start !important;
+  }
+
+  .fieldops-add-button {
+    grid-column: 2 / 3 !important;
+    justify-self: end !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .fieldops-visits-filter-row .fieldops-combined-selects,
+  .fieldops-combined-selects {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Corject UI Contract v6 - project setup inner panels. */
+.project-detail-workspace .project-setup-shell {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+
+.project-detail-workspace .project-subtab-shell {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin: 0 auto var(--ui-page-gap, 14px) !important;
+  max-width: var(--project-detail-max, 1180px) !important;
+  padding: 0 !important;
+}
+
+.project-detail-workspace .project-subtab-shell .project-tab-scroll {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  gap: 7px !important;
+  padding: 0 !important;
+}
+
+.project-detail-workspace .project-subtab-shell .project-tab {
+  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+  border: var(--ui-border-line, 1px solid var(--border)) !important;
+  border-radius: 13px !important;
+  box-shadow: 0 12px 34px -31px rgb(17 35 39 / 34%) !important;
+  color: var(--muted) !important;
+  flex: 0 0 auto !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+}
+
+.project-detail-workspace .project-subtab-shell .project-tab.is-active {
+  background: var(--accent-ink) !important;
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border)) !important;
+  color: var(--accent) !important;
+}
+
+.project-detail-workspace .project-setup-shell > .project-panel-page {
+  background: transparent !important;
+  display: grid !important;
+  gap: 14px !important;
+  max-width: var(--project-detail-max, 1180px) !important;
+  padding: 0 !important;
+}
+
+.project-detail-workspace .project-panel-header {
+  align-items: center !important;
+  background: var(--ui-card-bg, var(--surface-raised)) !important;
+  border: var(--ui-border-line, 1px solid var(--border)) !important;
+  border-radius: var(--ui-radius-card, 18px) !important;
+  box-shadow: var(--ui-shadow-clean, var(--shadow-card)) !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin: 0 !important;
+  min-height: 62px !important;
+  padding: 13px 15px !important;
+}
+
+.project-detail-workspace .project-panel-header h3 {
+  font-size: clamp(18px, 1.8vw, 21px) !important;
+  font-weight: 820 !important;
+  letter-spacing: -.03em !important;
+  margin: 0 !important;
+}
+
+.project-detail-workspace .project-panel-header p {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  margin: 4px 0 0 !important;
+}
+
+.project-detail-workspace .project-inline-form,
+.project-detail-workspace .training-form-card,
+.project-detail-workspace .project-cost-form,
+.project-detail-workspace .lesson-form-card,
+.project-detail-workspace .reminders-form,
+.project-detail-workspace .remote-access-panel > div[style*="background"],
+.project-detail-workspace .raci-panel > div[style*="overflow"],
+.project-detail-workspace .documents-panel > div,
+.project-detail-workspace .communication-panel > div,
+.project-detail-workspace .invoice-panel > div {
+  background: var(--ui-card-bg-accent, var(--surface-raised)) !important;
+  border: var(--ui-border-line, 1px solid var(--border)) !important;
+  border-radius: var(--ui-radius-card, 18px) !important;
+  box-shadow: var(--ui-shadow-clean, var(--shadow-card)) !important;
+}
+
+.project-detail-workspace .project-inline-form,
+.project-detail-workspace .training-form-card,
+.project-detail-workspace .project-cost-form,
+.project-detail-workspace .lesson-form-card {
+  padding: 14px !important;
+}
+
+.project-detail-workspace .raci-panel table {
+  background: transparent !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.project-detail-workspace .raci-panel th {
+  background: color-mix(in srgb, var(--surface-soft) 82%, white 18%) !important;
+  color: var(--muted) !important;
+  font-size: 10px !important;
+  font-weight: 850 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+}
+
+.project-detail-workspace .raci-panel td,
+.project-detail-workspace .raci-panel th {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent) !important;
+}
+
+.project-detail-workspace .documents-panel > div > div,
+.project-detail-workspace .communication-panel > div:last-child > div,
+.project-detail-workspace .invoice-panel > div:last-child > div,
+.project-detail-workspace .training-card,
+.project-detail-workspace .lesson-card,
+.project-detail-workspace .project-cost-row,
+.project-detail-workspace .project-effort-row {
+  background: var(--ui-card-bg-accent, var(--surface-raised)) !important;
+  border: var(--ui-border-line, 1px solid var(--border)) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 16px 42px -36px rgb(17 35 39 / 36%) !important;
+}
+
+.project-detail-workspace .documents-panel [style*="background:\"var(--accent-ink)"],
+.project-detail-workspace .documents-panel [style*="background:var(--accent-ink)"] {
+  background: var(--accent-ink) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
+  color: var(--accent) !important;
+}
+
+@media (max-width: 768px) {
+  .project-detail-workspace .project-panel-header {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+  }
+
+  .project-detail-workspace .project-subtab-shell .project-tab {
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+  }
+}
+
+/* Corject UI Contract v7 - machine and project plan detail panels. */
+.project-detail-workspace .machine-panel-page,
+.project-detail-workspace > .project-plan-scroll-panel {
+  background: transparent !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  gap: var(--ui-page-gap, 14px) !important;
+  margin: 0 auto !important;
+  max-width: var(--project-detail-max, 1180px) !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .machine-panel-header,
+.project-detail-workspace .project-plan-scroll-panel > div:first-child {
+  align-items: center !important;
+  background: var(--ui-card-bg, var(--surface-raised)) !important;
+  border: var(--ui-border-line, 1px solid var(--border)) !important;
+  border-radius: var(--ui-radius-card, 18px) !important;
+  box-shadow: var(--ui-shadow-clean, var(--shadow-card)) !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin: 0 !important;
+  min-height: 62px !important;
+  padding: 13px 15px !important;
+}
+
+.project-detail-workspace .machine-panel-header h3,
+.project-detail-workspace .project-plan-scroll-panel h3 {
+  color: var(--text) !important;
+  font-family: var(--font-display, var(--font-ui)) !important;
+  font-size: clamp(18px, 1.8vw, 21px) !important;
+  font-weight: 820 !important;
+  letter-spacing: -.03em !important;
+  line-height: 1.14 !important;
+  margin: 0 !important;
+}
+
+.project-detail-workspace .machine-panel-header h3 + div,
+.project-detail-workspace .project-plan-scroll-panel h3 + div {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  margin-top: 4px !important;
+}
+
+.project-detail-workspace .machine-progress {
+  background: color-mix(in srgb, var(--border) 64%, transparent) !important;
+  border-radius: 999px !important;
+  height: 7px !important;
+  margin: 0 !important;
+}
+
+.project-detail-workspace .machine-toolbar {
+  align-items: center !important;
+  background: transparent !important;
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: space-between !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+
+.project-detail-workspace .machine-toolbar > input {
+  flex: 1 1 260px !important;
+  min-width: min(260px, 100%) !important;
+}
+
+.project-detail-workspace .machine-form-card,
+.project-detail-workspace .machine-list-card,
+.project-detail-workspace .machine-control-card,
+.project-detail-workspace .machine-control-note,
+.project-detail-workspace .machine-card,
+.project-detail-workspace .project-gantt-panel,
+.project-detail-workspace .project-plan-list-card,
+.project-detail-workspace .template-picker-panel {
+  background: var(--ui-card-bg-accent, var(--surface-raised)) !important;
+  border: var(--ui-border-line, 1px solid var(--border)) !important;
+  border-radius: var(--ui-radius-card, 18px) !important;
+  box-shadow: var(--ui-shadow-clean, var(--shadow-card)) !important;
+}
+
+.project-detail-workspace .machine-form-card {
+  margin: 0 !important;
+  padding: 14px !important;
+}
+
+.project-detail-workspace .machine-card-grid {
+  gap: 12px !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)) !important;
+}
+
+.project-detail-workspace .machine-card {
+  overflow: hidden !important;
+  padding: 14px !important;
+}
+
+.project-detail-workspace .machine-control-note {
+  color: var(--text) !important;
+  line-height: 1.5 !important;
+  padding: 12px 13px !important;
+}
+
+.project-detail-workspace .machine-list-card {
+  margin: 0 !important;
+  overflow: auto !important;
+  padding: 0 !important;
+}
+
+.project-detail-workspace .machine-list-card table,
+.project-detail-workspace .project-plan-list-card table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.project-detail-workspace .machine-list-card th,
+.project-detail-workspace .project-plan-list-card th {
+  background: color-mix(in srgb, var(--surface-soft) 82%, white 18%) !important;
+  color: var(--muted) !important;
+  font-size: 10px !important;
+  font-weight: 850 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+}
+
+.project-detail-workspace .machine-list-card td,
+.project-detail-workspace .machine-list-card th,
+.project-detail-workspace .project-plan-list-card td,
+.project-detail-workspace .project-plan-list-card th {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent) !important;
+}
+
+.project-detail-workspace .project-gantt-panel {
+  overflow-x: auto !important;
+  padding: 14px !important;
+}
+
+.project-detail-workspace .project-plan-list-card {
+  margin-top: 14px !important;
+  overflow: hidden !important;
+}
+
+.project-detail-workspace .template-picker-panel {
+  padding: 14px !important;
+}
+
+.project-detail-workspace .machine-panel-page input,
+.project-detail-workspace .machine-panel-page select,
+.project-detail-workspace .machine-panel-page textarea {
+  min-height: 40px !important;
+}
+
+.project-detail-workspace .machine-panel-page .btn-base,
+.project-detail-workspace .project-plan-scroll-panel .btn-base {
+  min-height: 38px !important;
+}
+
+@media (max-width: 768px) {
+  .project-detail-workspace .machine-panel-header,
+  .project-detail-workspace .project-plan-scroll-panel > div:first-child {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    min-height: 0 !important;
+    padding: 13px !important;
+  }
+
+  .project-detail-workspace .machine-panel-header > div:last-child,
+  .project-detail-workspace .project-plan-scroll-panel > div:first-child > div:last-child {
+    width: 100% !important;
+  }
+
+  .project-detail-workspace .machine-toolbar {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+
+  .project-detail-workspace .machine-toolbar > input {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .project-detail-workspace .machine-list-card table {
+    min-width: 780px !important;
+  }
+}
+
+/* Corject UI Contract v8 - final cross-screen consistency pass. */
+:root {
+  --ui-header-min: 68px;
+  --ui-mobile-header-min: 62px;
+  --ui-page-max-final: 1180px;
+  --ui-touch: 44px;
+  --ui-chip-radius: 999px;
+}
+
+.theme-work-page:not(.mobile-dashboard-theme-page),
+.project-workspace,
+.management-workspace,
+.fieldops-shell {
+  background: transparent !important;
+  min-width: 0 !important;
+}
+
+.theme-work-page > .unified-page-header,
+.theme-work-page > .theme-page-heading,
+.project-workspace > .unified-page-header,
+.project-workspace > .theme-page-heading,
+.tasks-minimal-header > .unified-page-header,
+.customers-page-header,
+.mail-center-page-header,
+.fieldops-page-header,
+.todos-page-header,
+.deadlines-page-header,
+.notifications-page-header,
+.import-page-header,
+.reports-page-header,
+.people-page-header,
+.logs-page-header,
+.ai-page-header,
+.mobile-feature-header,
+.reminders-page-header {
+  align-items: center !important;
+  background: var(--surface-raised-strong) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: var(--ui-radius-card, 18px) !important;
+  box-shadow: var(--ui-shadow-clean, var(--shadow-card)) !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin: 0 auto var(--ui-page-gap, 14px) !important;
+  max-width: var(--ui-page-max-final) !important;
+  min-height: var(--ui-header-min) !important;
+  padding: 13px 15px !important;
+  width: 100% !important;
+}
+
+.theme-work-page > .unified-page-header h1,
+.theme-work-page > .unified-page-header h2,
+.theme-work-page > .theme-page-heading h1,
+.theme-work-page > .theme-page-heading h2,
+.project-workspace > .unified-page-header h1,
+.project-workspace > .unified-page-header h2,
+.tasks-minimal-header h2,
+.customers-page-header h2,
+.mail-center-page-header h2,
+.fieldops-page-header h2,
+.todos-page-header h2,
+.deadlines-page-header h2,
+.notifications-page-header h2,
+.import-page-header h2,
+.reports-page-header h2,
+.people-page-header h2,
+.logs-page-header h2,
+.ai-page-header h2,
+.reminders-page-header h2 {
+  color: var(--text) !important;
+  font-family: var(--font-display, var(--font-ui)) !important;
+  font-size: clamp(20px, 2vw, 24px) !important;
+  font-weight: 820 !important;
+  letter-spacing: -.035em !important;
+  line-height: 1.12 !important;
+  margin: 0 !important;
+}
+
+.theme-work-page > .unified-page-header p,
+.theme-work-page > .theme-page-heading p,
+.project-workspace > .unified-page-header p,
+.tasks-minimal-header p,
+.customers-page-header p,
+.mail-center-page-header p,
+.fieldops-page-header p,
+.todos-page-header p,
+.deadlines-page-header p,
+.notifications-page-header p,
+.import-page-header p,
+.reports-page-header p,
+.people-page-header p,
+.logs-page-header p,
+.ai-page-header p,
+.reminders-page-header p {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  margin: 4px 0 0 !important;
+}
+
+.unified-filter-row,
+.theme-filter-strip,
+.theme-ticket-toolbar,
+.projects-filter-row,
+.customers-filter-row,
+.fieldops-filter-row,
+.deadlines-filter-row,
+.ai-filter-row,
+.logs-filter-row,
+.notifications-filter-row,
+.todos-filter-row,
+.reports-project-filter-row,
+.management-tabs-row,
+.management-overview-filter-row,
+.customer-portal-actions {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  gap: 8px !important;
+  margin: 0 auto var(--ui-page-gap, 14px) !important;
+  max-width: var(--ui-page-max-final) !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.unified-filter-row input,
+.unified-filter-row select,
+.theme-filter-strip button,
+.theme-ticket-toolbar input,
+.theme-ticket-toolbar select,
+.projects-filter-row input,
+.customers-filter-row input,
+.fieldops-compact-select,
+.reports-project-filter-row select,
+.management-overview-filter-row select,
+.segmented-control,
+.view-switch,
+.multi-choice-filter > button {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: var(--ui-radius-control, 14px) !important;
+  box-shadow: var(--ui-shadow-clean, var(--shadow-card)) !important;
+  min-height: var(--ui-touch) !important;
+}
+
+.segmented-control,
+.view-switch,
+.compact-filter-segment {
+  align-items: center !important;
+  display: inline-flex !important;
+  gap: 4px !important;
+  padding: 4px !important;
+}
+
+.segmented-control button,
+.view-switch button,
+.compact-filter-segment button {
+  border-radius: 11px !important;
+  min-height: 36px !important;
+  min-width: 38px !important;
+  padding: 7px 10px !important;
+}
+
+.segmented-control button.is-active,
+.view-switch button.is-active,
+.compact-filter-segment button.is-active,
+.theme-filter-strip button.is-active,
+.project-tab.is-active {
+  background: var(--accent-ink) !important;
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border)) !important;
+  color: var(--accent) !important;
+}
+
+.ui-chip,
+.project-chip,
+.work-type-chip,
+.status-chip,
+.priority-chip {
+  border-radius: var(--ui-chip-radius) !important;
+  border: 1px solid currentColor !important;
+  font-size: 10.5px !important;
+  font-weight: 850 !important;
+  line-height: 1.1 !important;
+  padding: 4px 8px !important;
+  white-space: nowrap !important;
+}
+
+.ui-chip-success,
+.work-type-chip-field {
+  background: color-mix(in srgb, var(--success) 11%, white 89%) !important;
+  color: var(--success) !important;
+}
+
+.ui-chip-warning,
+.work-type-chip-remote {
+  background: color-mix(in srgb, var(--warning) 12%, white 88%) !important;
+  color: var(--warning) !important;
+}
+
+.ui-chip-danger,
+.is-danger {
+  background: color-mix(in srgb, var(--danger) 10%, white 90%) !important;
+  color: var(--danger) !important;
+}
+
+.ui-chip-accent,
+.project-chip {
+  background: color-mix(in srgb, var(--accent) 10%, white 90%) !important;
+  color: var(--accent) !important;
+}
+
+.project-chip {
+  background: color-mix(in srgb, var(--project-chip-color, var(--accent)) 12%, white 88%) !important;
+  color: var(--project-chip-color, var(--accent)) !important;
+}
+
+.soft-panel,
+.compact-list-card,
+.liquid-card,
+.ui-section-card,
+.data-list-shell,
+.customer-report-shell,
+.customer-summary-card,
+.customer-project-report-card,
+.customer-metric-card,
+.field-plan-card,
+.reminder-card,
+.notification-card,
+.log-entry-card,
+.report-card,
+.ticket-card,
+.task-card,
+.project-card {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: var(--ui-radius-card, 18px) !important;
+  box-shadow: var(--ui-shadow-clean, var(--shadow-card)) !important;
+}
+
+.theme-work-page table,
+.project-workspace table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.theme-work-page th,
+.project-workspace th {
+  color: var(--muted) !important;
+  font-size: 10px !important;
+  font-weight: 850 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+}
+
+.theme-work-page td,
+.theme-work-page th,
+.project-workspace td,
+.project-workspace th {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.table-filter-control {
+  z-index: 2600 !important;
+}
+
+.multi-choice-menu {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 70px -30px rgb(17 35 39 / 55%) !important;
+  z-index: 2700 !important;
+}
+
+.app-main-content,
+.theme-work-page,
+.project-workspace,
+.fieldops-shell {
+  padding-bottom: max(var(--mobile-nav-clearance, 118px), env(safe-area-inset-bottom)) !important;
+}
+
+.mobile-bottom-nav,
+.bottom-nav,
+.mobile-nav {
+  background: color-mix(in srgb, var(--surface) 82%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent) !important;
+  box-shadow: 0 22px 58px -30px rgb(17 35 39 / 52%) !important;
+  backdrop-filter: blur(22px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.08) !important;
+}
+
+@media (max-width: 768px) {
+  .theme-work-page:not(.mobile-dashboard-theme-page),
+  .project-workspace,
+  .fieldops-shell {
+    padding: var(--ui-page-pad-mobile, 12px) var(--ui-page-pad-mobile, 12px) var(--mobile-nav-clearance, 118px) !important;
+  }
+
+  .theme-work-page > .unified-page-header,
+  .theme-work-page > .theme-page-heading,
+  .project-workspace > .unified-page-header,
+  .project-workspace > .theme-page-heading,
+  .tasks-minimal-header > .unified-page-header,
+  .customers-page-header,
+  .mail-center-page-header,
+  .fieldops-page-header,
+  .todos-page-header,
+  .deadlines-page-header,
+  .notifications-page-header,
+  .import-page-header,
+  .reports-page-header,
+  .people-page-header,
+  .logs-page-header,
+  .ai-page-header,
+  .mobile-feature-header,
+  .reminders-page-header {
+    align-items: flex-start !important;
+    border-radius: 18px !important;
+    min-height: var(--ui-mobile-header-min) !important;
+    padding: 12px 13px !important;
+  }
+
+  .unified-filter-row,
+  .theme-filter-strip,
+  .theme-ticket-toolbar,
+  .projects-filter-row,
+  .customers-filter-row,
+  .fieldops-filter-row,
+  .deadlines-filter-row,
+  .ai-filter-row,
+  .logs-filter-row,
+  .notifications-filter-row,
+  .todos-filter-row,
+  .reports-project-filter-row,
+  .management-overview-filter-row,
+  .customer-portal-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    width: 100% !important;
+  }
+
+  .unified-filter-row input,
+  .theme-ticket-toolbar input,
+  .projects-filter-row input,
+  .customers-filter-row input {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  .fieldops-combined-selects {
+    display: grid !important;
+    gap: 8px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  .fieldops-compact-select {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .fieldops-compact-select select {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .theme-work-page select,
+  .theme-work-page input,
+  .theme-work-page textarea,
+  .project-workspace select,
+  .project-workspace input,
+  .project-workspace textarea {
+    font-size: 16px !important;
+    max-width: 100% !important;
+  }
+
+  .multi-choice-menu {
+    left: 12px !important;
+    max-height: min(430px, 60vh) !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    overflow: auto !important;
+    position: fixed !important;
+    right: 12px !important;
+    top: 148px !important;
+    width: auto !important;
+  }
+
+  .ui-chip,
+  .project-chip,
+  .work-type-chip {
+    font-size: 10px !important;
+    padding: 4px 7px !important;
   }
 }

@@ -94,7 +94,7 @@ export function MilestoneTaskPanel({
 
 export function TemplatePicker({ templates = [], onSelect, onSkip }) {
   const [sel, setSel] = useState(null);
-  return <div>
+  return <div className="template-picker-panel">
     <div style={{ marginBottom:16, fontSize:13, color:"var(--muted)" }}>Başlangıç şablonu seçin veya boş devam edin:</div>
     <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
       {templates.map(t => <div key={t.id} onClick={() => setSel(t.id)}
@@ -170,7 +170,7 @@ export function GanttChart({ project, compact }) {
   };
 
   return (
-    <div style={{ overflowX:"auto" }}>
+    <div className="project-gantt-panel" style={{ overflowX:"auto" }}>
       <div style={{ minWidth: 520 }}>
         <div style={{ fontSize:10, color:"var(--muted)", marginBottom:8 }}>
           Milestone tıklayın → hedeflenen/gerçekleşen + görev satırları
@@ -431,7 +431,7 @@ export function PlanListTable({ project, people }) {
   });
 
   return (
-    <div className="ui-section-card" style={{ marginTop:24, overflow:"hidden" }}>
+    <div className="ui-section-card project-plan-list-card" style={{ marginTop:24, overflow:"hidden" }}>
       <div style={{ padding:"12px 16px", borderBottom:"1px solid var(--border)", fontWeight:800, fontSize:13 }}>Plan Listesi</div>
       <div style={{ overflowX:"auto" }}>
         <table style={{ width:"100%", borderCollapse:"collapse", minWidth:600 }}>
