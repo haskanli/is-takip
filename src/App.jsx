@@ -1244,7 +1244,6 @@ export default function App() {
               {stakeholders.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:5}}>{stakeholders.slice(0,3).map(item=><span key={item.id} style={{fontSize:9,background:"var(--surface-soft)",color:"var(--muted)",borderRadius:6,padding:"2px 6px"}}>{item.role}: {item.person.name}</span>)}</div>}
               {aMs&&<div style={{ fontSize:11, color:"var(--accent)", marginBottom:5, fontWeight:600 }}>Aktif: {aMs.name} — {fmt(aMs.dueDate)}</div>}
               <div style={{ display:"flex", gap:6, marginBottom:7, flexWrap:"wrap" }}>
-                <span style={{background:readinessScore(p)>=Number(p.readinessThreshold||80)?"color-mix(in srgb, var(--success) 10%, white 90%)":"color-mix(in srgb, var(--danger) 9%, white 91%)",color:readinessScore(p)>=Number(p.readinessThreshold||80)?"var(--success)":"var(--danger)",borderRadius:10,padding:"2px 7px",fontSize:10,fontWeight:800}}>Başlangıç {readinessScore(p)}/100</span>
                 {overdue>0&&<span style={{ background:"color-mix(in srgb, var(--warning) 10%, white 90%)", color:"var(--warning)", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Gecikmiş: {overdue}</span>}
                 {crit>0&&<span style={{ background:"color-mix(in srgb, var(--danger) 9%, white 91%)", color:"var(--danger)", borderRadius:10, padding:"2px 7px", fontSize:10, fontWeight:700 }}>Kritik: {crit}</span>}
               </div>

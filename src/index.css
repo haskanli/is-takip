@@ -6273,3 +6273,257 @@ body::before,
 .delay-badge {
   font-weight: 760 !important;
 }
+
+/* Final page-system normalization: one header, one filter rhythm, one chip language. */
+.theme-work-page > .unified-page-header,
+.theme-work-page > .theme-page-heading,
+.project-workspace > .unified-page-header,
+.project-workspace > .theme-page-heading,
+.tasks-minimal-header,
+.customers-page-header,
+.fieldops-page-header,
+.todos-page-header,
+.deadlines-page-header,
+.reports-page-header,
+.mobile-feature-header,
+.management-hero {
+  align-items: center !important;
+  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 18px 46px -38px rgb(17 35 39 / 44%) !important;
+  display: flex !important;
+  gap: 14px !important;
+  justify-content: space-between !important;
+  margin: 0 0 14px !important;
+  min-height: 76px !important;
+  padding: 14px 16px !important;
+  width: 100% !important;
+}
+
+.tasks-minimal-header .unified-title-row {
+  align-items: center !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  min-height: 48px !important;
+}
+
+.theme-work-page > .unified-page-header h2,
+.theme-work-page > .theme-page-heading h2,
+.project-workspace > .unified-page-header h2,
+.project-workspace > .theme-page-heading h2,
+.tasks-minimal-header h2,
+.customers-page-header h2,
+.fieldops-page-header h2,
+.todos-page-header h2,
+.deadlines-page-header h2 {
+  color: var(--text) !important;
+  font-size: clamp(21px, 2.1vw, 25px) !important;
+  font-weight: 820 !important;
+  letter-spacing: -.035em !important;
+  line-height: 1.12 !important;
+}
+
+.theme-work-page > .unified-page-header p,
+.theme-work-page > .theme-page-heading p,
+.project-workspace > .unified-page-header p,
+.project-workspace > .theme-page-heading p,
+.tasks-minimal-header p,
+.customers-page-header p,
+.fieldops-page-header p,
+.todos-page-header p,
+.deadlines-page-header p {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  margin-top: 4px !important;
+}
+
+.unified-filter-row,
+.theme-ticket-toolbar,
+.theme-filter-strip,
+.projects-filter-row,
+.customers-filter-row,
+.fieldops-filter-row,
+.tasks-minimal-tabs,
+.management-command-bar,
+.admin-control-row,
+.segmented-control,
+.view-switch {
+  align-items: center !important;
+  background: color-mix(in srgb, var(--surface) 80%, var(--surface-soft) 20%) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent) !important;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+  gap: 7px !important;
+  padding: 6px !important;
+}
+
+.unified-filter-row input,
+.unified-filter-row select,
+.theme-ticket-toolbar input,
+.theme-ticket-toolbar select,
+.projects-filter-row input,
+.projects-filter-row select,
+.customers-filter-row input,
+.customers-filter-row select,
+.fieldops-filter-row input,
+.fieldops-filter-row select {
+  min-width: 0 !important;
+}
+
+.project-tab-scroll {
+  background: color-mix(in srgb, var(--surface) 78%, var(--surface-soft) 22%) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent) !important;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+  margin: 10px 0 12px !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  padding: 6px !important;
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+
+.project-tab {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 13px !important;
+  color: var(--muted) !important;
+  min-height: 38px !important;
+  padding: 8px 12px !important;
+}
+
+.project-tab.is-active {
+  background: var(--surface) !important;
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent) !important;
+  color: var(--accent) !important;
+}
+
+.ui-chip,
+.status-badge,
+.delay-badge,
+.tickets-theme-page .ui-chip,
+.project-workspace .ui-chip {
+  font-size: 10.5px !important;
+  font-weight: 820 !important;
+  min-height: 24px !important;
+  padding: 3px 8px !important;
+}
+
+.ui-chip-accent {
+  --chip-bg: color-mix(in srgb, var(--accent) 18%, white 82%);
+  --chip-border: color-mix(in srgb, var(--accent) 42%, var(--border));
+}
+
+.ui-chip-success {
+  --chip-bg: color-mix(in srgb, var(--success) 18%, white 82%);
+  --chip-border: color-mix(in srgb, var(--success) 42%, var(--border));
+}
+
+.ui-chip-warning {
+  --chip-bg: color-mix(in srgb, var(--warning) 20%, white 80%);
+  --chip-border: color-mix(in srgb, var(--warning) 46%, var(--border));
+}
+
+.ui-chip-danger {
+  --chip-bg: color-mix(in srgb, var(--danger) 18%, white 82%);
+  --chip-border: color-mix(in srgb, var(--danger) 42%, var(--border));
+}
+
+.management-theme-page .admin-summary-card::before,
+.management-theme-page .admin-kpi-card::before,
+.management-theme-page .management-dashboard-card::before {
+  display: none !important;
+}
+
+.management-theme-page .admin-summary-card,
+.management-theme-page .admin-kpi-card,
+.management-theme-page .management-dashboard-card {
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft) 12%) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent) !important;
+  box-shadow: 0 18px 42px -34px rgb(17 35 39 / 42%) !important;
+}
+
+.management-theme-page .admin-summary-card,
+.management-theme-page .admin-kpi-card {
+  border-top-width: 4px !important;
+}
+
+.dashboard-theme-page > div:nth-child(2) .liquid-card,
+.dashboard-theme-page > div:nth-child(4) .liquid-card,
+.mobile-dashboard-theme-page .liquid-card {
+  background: color-mix(in srgb, var(--surface) 84%, var(--surface-soft) 16%) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent) !important;
+  box-shadow: 0 16px 42px -36px rgb(17 35 39 / 48%) !important;
+}
+
+.dashboard-theme-page > div:nth-child(2) .liquid-card:nth-child(1) {
+  border-left: 4px solid var(--accent) !important;
+}
+
+.dashboard-theme-page > div:nth-child(2) .liquid-card:nth-child(2) {
+  border-left: 4px solid var(--warning) !important;
+}
+
+.project-logo-tile {
+  min-width: 52px !important;
+  min-height: 52px !important;
+}
+
+@media (max-width: 720px) {
+  .theme-work-page > .unified-page-header,
+  .theme-work-page > .theme-page-heading,
+  .project-workspace > .unified-page-header,
+  .project-workspace > .theme-page-heading,
+  .tasks-minimal-header,
+  .customers-page-header,
+  .fieldops-page-header,
+  .todos-page-header,
+  .deadlines-page-header {
+    border-radius: 18px !important;
+    min-height: 68px !important;
+    padding: 12px 13px !important;
+  }
+
+  .theme-work-page > .unified-page-header h2,
+  .theme-work-page > .theme-page-heading h2,
+  .project-workspace > .unified-page-header h2,
+  .project-workspace > .theme-page-heading h2,
+  .tasks-minimal-header h2 {
+    font-size: 20px !important;
+  }
+
+  .theme-work-page input,
+  .theme-work-page select,
+  .theme-work-page textarea,
+  .project-workspace input,
+  .project-workspace select,
+  .project-workspace textarea,
+  .modal-panel input,
+  .modal-panel select,
+  .modal-panel textarea {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .modal-panel [style*="grid-template-columns"],
+  .visit-time-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .unified-filter-row,
+  .theme-ticket-toolbar,
+  .projects-filter-row,
+  .fieldops-filter-row,
+  .customers-filter-row,
+  .tasks-minimal-tabs {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}

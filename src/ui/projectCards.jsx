@@ -36,7 +36,7 @@ const textClamp = {
   whiteSpace: "nowrap",
 };
 
-function LogoTile({ customer, customerName, canEdit = false, onClick = noop, size = 44 }) {
+function LogoTile({ customer, customerName, canEdit = false, onClick = noop, size = 52 }) {
   return (
     <button
       type="button"
@@ -238,10 +238,8 @@ export function ProjectListCard({
   const pms = projectResponsibleIds(project).map((id) => people.find((person) => person.id === id)).filter(Boolean);
   const customer = project.customerProfile || {};
   const customerName = customer.name || project.customerName || project.name;
-  const readiness = readinessScoreForProject(project);
   const responsibleLabel = project.uatAccepted ? "CS" : "PM";
   const responsibleNames = pms.map((pm) => pm.name).join(", ");
-  const healthOk = readiness >= Number(project.readinessThreshold || 80);
   const alertText = critical > 0 ? `${critical} kritik` : overdue > 0 ? `${overdue} gecikme` : "";
   const alertColor = critical > 0 ? "var(--danger)" : overdue > 0 ? "var(--warning)" : "var(--muted)";
 
@@ -264,7 +262,7 @@ export function ProjectListCard({
         </div>
       )}
       <div className="project-list-card-header">
-        <LogoTile customer={customer} customerName={customerName} size={48} />
+        <LogoTile customer={customer} customerName={customerName} size={58} />
         <span style={{ minWidth: 0 }}>
           <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, lineHeight: 1.22, color: "var(--text)", letterSpacing: "-.015em", ...textClamp }}>{customerName}</h3>
           <span style={{ display: "block", marginTop: 3, fontSize: 10.5, color: "var(--muted)", fontWeight: 600, ...textClamp }}>
@@ -273,8 +271,7 @@ export function ProjectListCard({
         </span>
       </div>
       <div style={{ padding: "10px 14px 13px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: alertText ? "auto 1fr auto" : "auto 1fr", gap: 8, alignItems: "center", marginBottom: 8, fontSize: 10.5, color: "var(--muted)", fontWeight: 650 }}>
-          <span>Sağlık <b style={{ color: healthOk ? "var(--success)" : "var(--danger)", fontWeight: 750 }}>%{readiness}</b></span>
+        <div style={{ display: "grid", gridTemplateColumns: alertText ? "1fr auto" : "1fr", gap: 8, alignItems: "center", marginBottom: 8, fontSize: 10.5, color: "var(--muted)", fontWeight: 650 }}>
           <span style={{ minWidth: 0, height: 1, background: "var(--border)", opacity: .75 }} />
           {alertText && <span style={{ color: alertColor, fontWeight: 750 }}>{project.uatAccepted ? "UAT · " : ""}{alertText}</span>}
         </div>
