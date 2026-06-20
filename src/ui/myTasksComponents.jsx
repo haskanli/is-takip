@@ -4,7 +4,6 @@ import { Btn, Icon } from "./primitives.jsx";
 import { daysDiff, delayLvl } from "./status.jsx";
 import {
   PersonalTaskModal as SharedPersonalTaskModal,
-  TaskCard as SharedTaskCard,
   TaskDetailModal as SharedTaskDetailModal,
   TimeLogModal as SharedTimeLogModal,
 } from "./taskComponents.jsx";
@@ -14,36 +13,39 @@ const now = () => new Date().toISOString();
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const currentTimeStr = () => new Date().toTimeString().slice(0, 5);
 const fmt = (d) => d ? new Date(d).toLocaleDateString("tr-TR") : "-";
-const fmtFull = (d) => d ? new Date(d).toLocaleDateString("tr-TR", { day:"2-digit", month:"short", year:"numeric" }) : "-";
 const WAIT = ["PM","M\u00fc\u015fteri","ERP","Tedarik\u00e7i","Teknik","\u00dcr\u00fcn-Teknoloji","Y\u00f6netim","Di\u011fer"];
 
-function CompactTaskCard({task,people=[],projectName="",projectColor="#4A6CF7",formatDate=fmt,onOpen,onStatusChange,onCheck}) {
+function MinimalTaskRow({task,people=[],projectName="",formatDate=fmt,onOpen,onStatusChange,onCheck,onEdit,onDelete,onTime}) {
   const assignee=people.find(person=>person.id===task.assignee);
   const delayed=delayLvl(task.dueDate,task.status);
   const done=task.status==="Tamamlandı";
   const role=task.assignmentRole||task.responsibilityGroup||task.sourceLabel||"Görev";
-  return <div className="compact-list-card task-mobile-card" onClick={onOpen} style={{background:"var(--surface)",border:`1px solid ${delayed?"var(--warning)":"var(--glass-border)"}`,borderLeft:`4px solid ${delayed?"var(--warning)":projectColor||"var(--accent)"}`,borderRadius:16,padding:"12px 13px",boxShadow:"var(--shadow-soft)",cursor:onOpen?"pointer":"default",opacity:done?0.72:1,overflow:"hidden"}}>
-    <div style={{display:"flex",alignItems:"flex-start",gap:10,minWidth:0}}>
-      <button type="button" onClick={event=>{event.stopPropagation();onCheck?.(!done);}} style={{width:24,height:24,borderRadius:9,border:`1.5px solid ${done?"#10B981":"#CBD5E1"}`,background:done?"#ECFDF5":"#F8FAFC",color:done?"#059669":"#94A3B8",display:"grid",placeItems:"center",fontWeight:900,flexShrink:0,cursor:"pointer"}}>{done?"✓":" "}</button>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:7,minWidth:0}}>
-          <b style={{fontSize:13,lineHeight:1.32,color:done?"#94A3B8":"#172033",textDecoration:done?"line-through":"none",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",overflowWrap:"anywhere"}}>{task.title}</b>
-        </div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
-          {projectName&&<span className="task-mobile-chip-soft" style={{maxWidth:"100%",color:"var(--accent)",background:"var(--accent-ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{projectName}</span>}
-          <span className="task-mobile-chip-soft" style={{color:delayed?"var(--warning)":"var(--muted)"}}>{task.dueDate?`${formatDate(task.dueDate)}${task.dueTime?` ${task.dueTime}`:""}`:"Terminsiz"}</span>
-          <span className="task-mobile-chip-soft" style={{color:"var(--success)"}}>{role}</span>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:7,marginTop:9,minWidth:0}}>
-          {assignee&&<span style={{fontSize:10,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{assignee.name}</span>}
-          {delayed&&<span style={{fontSize:10,color:"#E11D48",fontWeight:900,flexShrink:0}}>{daysDiff(task.dueDate)} gün gecikti</span>}
-        </div>
+  return <div className="task-minimal-row" onClick={onOpen}>
+    <button type="button" className="task-minimal-check" onClick={event=>{event.stopPropagation();onCheck?.(!done);}} aria-label={done?"Görevi aç":"Görevi tamamla"}>{done?"✓":""}</button>
+    <div className="task-minimal-main">
+      <div className="task-minimal-titleline">
+        <b className={done?"is-done":""}>{task.title}</b>
+        {projectName&&<span>{projectName}</span>}
+        <span>{role}</span>
+        {task.priority&&task.priority!=="Orta"&&<span>{task.priority}</span>}
+        {delayed&&<span className="is-warning">{daysDiff(task.dueDate)}g gecikti</span>}
+      </div>
+      <div className="task-minimal-meta">
+        {assignee&&<span>{assignee.name}</span>}
+        {task.startDate&&<span>Başl: {formatDate(task.startDate)}{task.startTime?` ${task.startTime}`:""}</span>}
+        {task.dueDate&&<span>Bit: {formatDate(task.dueDate)}{task.dueTime?` ${task.dueTime}`:""}</span>}
+        {task.notes&&<span>"{task.notes}"</span>}
       </div>
     </div>
-    {onStatusChange&&<select onClick={event=>event.stopPropagation()} value={task.status||"Bekliyor"} onChange={event=>onStatusChange(event.target.value)} style={{width:"100%",marginTop:11,fontSize:11,borderRadius:10,background:"#F8FAFC",padding:"8px 10px",border:"1px solid #CBD5E1",outline:"none",fontFamily:"inherit",color:"#334155"}}>
-      {["Bekliyor","Devam Ediyor","Engellendi","Tamamlandı"].map(status=><option key={status}>{status}</option>)}
-      {!["Bekliyor","Devam Ediyor","Engellendi","Tamamlandı"].includes(task.status)&&task.status&&<option>{task.status}</option>}
-    </select>}
+    <div className="task-minimal-actions" onClick={event=>event.stopPropagation()}>
+      {onStatusChange&&<select value={task.status||"Bekliyor"} onChange={event=>onStatusChange(event.target.value)}>
+        {["Bekliyor","Devam Ediyor","Engellendi","Tamamlandı"].map(status=><option key={status}>{status}</option>)}
+        {!["Bekliyor","Devam Ediyor","Engellendi","Tamamlandı"].includes(task.status)&&task.status&&<option>{task.status}</option>}
+      </select>}
+      {onTime&&<button type="button" onClick={onTime}>Efor</button>}
+      {onEdit&&<button type="button" onClick={onEdit} aria-label="Düzenle"><Icon name="edit" size={15}/></button>}
+      {onDelete&&<button type="button" className="is-danger" onClick={onDelete} aria-label="Sil">×</button>}
+    </div>
   </div>;
 }
 
@@ -54,14 +56,7 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
   const [modal,setModal]=useState(null);
   const [assignmentNotice,setAssignmentNotice]=useState("");
   const [noteText,setNoteText]=useState((state.userNotes||{})[currentUser.id]?.notes||"");
-  const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<760);
   const todos=((state.userNotes||{})[currentUser.id]?.todos)||[];
-
-  useEffect(()=>{
-    const onResize=()=>setIsMobile(window.innerWidth<760);
-    window.addEventListener("resize",onResize);
-    return()=>window.removeEventListener("resize",onResize);
-  },[]);
 
   const updateNotes=(v)=>{ setNoteText(v); setState(s=>({...s,userNotes:{...(s.userNotes||{}),[currentUser.id]:{...(s.userNotes||{})[currentUser.id],notes:v}}})); };
   const toggleTodo=(id)=>setState(s=>({...s,userNotes:{...(s.userNotes||{}),[currentUser.id]:{...(s.userNotes||{})[currentUser.id],todos:todos.map(t=>t.id===id?{...t,done:!t.done}:t)}}}));
@@ -137,8 +132,8 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
   };
   const deletePersonal=(id)=>{const t=(state.personalTasks||[]).find(x=>x.id===id);setState(s=>({...s,personalTasks:(s.personalTasks||[]).filter(x=>x.id!==id)}));addLog(currentUser.name,"task_delete",t?.title||"");};
 
-  return <div className="theme-work-page tasks-theme-page" style={{ padding:"0 0 24px", flex:1, overflow:"auto" }}>
-    <div className="unified-page-header tasks-page-header">
+  return <div className="theme-work-page tasks-theme-page tasks-minimal-page" style={{ padding:"0 0 24px", flex:1, overflow:"auto" }}>
+    <div className="tasks-minimal-header">
       <div className="unified-title-row">
         <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="tasks" size={20}/>Görevlerim</h2><p style={{ margin:"3px 0 0", color:"#64748B", fontSize:13 }}>{active.length} aktif · {completed.length} tamamlandı</p></div>
         <Btn className="icon-only-action" title="Gorev ekle" aria-label="Gorev ekle" onClick={()=>setModal({type:"addPersonal"})}>+</Btn>
@@ -149,7 +144,7 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
         <span style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}><span style={{width:24,height:24,borderRadius:9,background:onlyOverdue?"#E11D48":"#F59E0B",color:"#fff",display:"grid",placeItems:"center",fontSize:12,fontWeight:950,flexShrink:0}}>!</span><span style={{minWidth:0}}><b style={{display:"block",fontSize:12,color:onlyOverdue?"#BE123C":"#92400E"}}>{overdue.length} geciken görev</b><span style={{display:"block",fontSize:10,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overdue[0]?.title}{overdue.length>1?` +${overdue.length-1} diğer`:""}</span></span></span>
         <span style={{fontSize:10,fontWeight:850,color:onlyOverdue?"#BE123C":"#92400E",background:"#fff",borderRadius:999,padding:"4px 8px",flexShrink:0}}>{onlyOverdue?"Tümünü göster":"Filtrele"}</span>
       </button>}
-      <div className="theme-filter-strip unified-filter-row tasks-filter-row" style={{display:"flex",gap:6,overflowX:"auto",margin:"14px 0 4px"}}>
+      <div className="tasks-minimal-tabs" style={{display:"flex",gap:6,overflowX:"auto",margin:"14px 0 4px"}}>
         {[["all","tasks","Tümü"],["assigned","tasks","Yöneticinin Atadıkları"],["project","projects","Projeden Gelenler"],["todos","ticket","Kendi To-Do'larım"],["notes","notes","Notlarım"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 13px",background:section===id?"#4A6CF7":"#F1F5FF",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
       </div>
 
@@ -159,7 +154,7 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
         {sectionActive.length>0&&<div style={{ marginBottom:16 }}>
           <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{section==="all"?"Tüm Görevler":section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {sectionActive.map(t=>isMobile?<CompactTaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} projectName={t.projectName||"Genel Görev"} formatDate={fmt} onOpen={()=>openTaskDetail(t)} onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamlandı":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamlandı":"Bekliyor"}); }} onStatusChange={(status)=>{ if(t.source==="personal")updatePersonal(t.id,{status}); else updateProjTask(t.projId,t.msId,t.id,{status}); }}/>:<SharedTaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel Görev"} canEdit formatDate={fmt} formatFullDate={fmtFull}
+            {sectionActive.map(t=><MinimalTaskRow key={t.id} task={t} people={state.people} projectName={t.projectName||"Genel Görev"} formatDate={fmt}
                onOpen={()=>openTaskDetail(t)}
                onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
                onStatusChange={(status)=>{ if(t.source==="personal")updatePersonal(t.id,{status}); else updateProjTask(t.projId,t.msId,t.id,{status}); }}
@@ -172,7 +167,7 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
         {sectionCompleted.length>0&&<div>
           <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({sectionCompleted.length})</button>
           {showDone&&<div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {sectionCompleted.map(t=>isMobile?<CompactTaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} projectName={t.projectName||"Genel"} formatDate={fmt} onOpen={()=>openTaskDetail(t)} onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamlandı":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamlandı":"Bekliyor"}); }} onStatusChange={(status)=>{ if(t.source==="personal")updatePersonal(t.id,{status}); else updateProjTask(t.projId,t.msId,t.id,{status}); }}/>:<SharedTaskCard key={t.id} task={t} people={state.people} projectColor={t.projectColor} showProject projectName={t.projectName||"Genel"} canEdit formatDate={fmt} formatFullDate={fmtFull}
+            {sectionCompleted.map(t=><MinimalTaskRow key={t.id} task={t} people={state.people} projectName={t.projectName||"Genel"} formatDate={fmt}
                onOpen={()=>openTaskDetail(t)}
                onCheck={(c)=>{ if(t.source==="personal")updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); else updateProjTask(t.projId,t.msId,t.id,{status:c?"Tamamland\u0131":"Bekliyor"}); }}
                onStatusChange={(status)=>{ if(t.source==="personal")updatePersonal(t.id,{status}); else updateProjTask(t.projId,t.msId,t.id,{status}); }}
@@ -186,7 +181,7 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
           <div style={{ fontWeight:700, fontSize:13, marginBottom:10 }}>Tüm Genel Görevler (Yönetici)</div>
           {(state.personalTasks||[]).length===0&&<div style={{ color:"#94A3B8", fontSize:12 }}>Genel görev yok.</div>}
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {(state.personalTasks||[]).map(t=>isMobile?<CompactTaskCard key={t.id} task={{...t,source:"personal"}} people={state.people} projectColor={state.projects.find(project=>project.id===t.projectId)?.color||"#4A6CF7"} projectName={state.projects.find(project=>project.id===t.projectId)?.name||"Genel Görev"} formatDate={fmt} onOpen={()=>openTaskDetail({...t,source:"personal"})} onCheck={(c)=>updatePersonal(t.id,{status:c?"Tamamlandı":"Bekliyor"})} onStatusChange={(status)=>updatePersonal(t.id,{status})}/>:<SharedTaskCard key={t.id} task={t} people={state.people} projectColor={null} showProject canEdit formatDate={fmt} formatFullDate={fmtFull}
+            {(state.personalTasks||[]).map(t=><MinimalTaskRow key={t.id} task={{...t,source:"personal"}} people={state.people} projectName={state.projects.find(project=>project.id===t.projectId)?.name||"Genel Görev"} formatDate={fmt}
                onOpen={()=>openTaskDetail({...t,source:"personal"})}
                onCheck={(c)=>updatePersonal(t.id,{status:c?"Tamamland\u0131":"Bekliyor"})}
                onStatusChange={(status)=>updatePersonal(t.id,{status})}

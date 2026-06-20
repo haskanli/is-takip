@@ -4015,3 +4015,254 @@ body::before,
   background: var(--surface-soft) !important;
   color: var(--muted) !important;
 }
+
+/* My Tasks redesigned surface: compact, calm, table-like. */
+.tasks-minimal-page {
+  padding: 18px clamp(18px, 3vw, 30px) 28px !important;
+}
+
+.tasks-minimal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 58px;
+  margin: 0 0 10px;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.tasks-minimal-header .unified-title-row {
+  width: 100%;
+}
+
+.tasks-minimal-header h2 {
+  font-size: 21px !important;
+  font-weight: 850 !important;
+}
+
+.tasks-minimal-header p {
+  font-size: 12px !important;
+  color: var(--muted) !important;
+}
+
+.tasks-minimal-tabs {
+  display: inline-flex !important;
+  width: auto !important;
+  max-width: 100%;
+  margin: 0 0 16px !important;
+  padding: 4px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--surface) 82%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.tasks-minimal-tabs button {
+  min-height: 34px !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  border: 0 !important;
+  font-size: 12px !important;
+  font-weight: 760 !important;
+}
+
+.tasks-minimal-tabs button[style*="#4A6CF7"],
+.tasks-minimal-tabs button[style*="rgb(74, 108, 247)"] {
+  background: var(--accent-ink) !important;
+  color: var(--accent) !important;
+}
+
+.tasks-minimal-page .tasks-content-area > div {
+  max-width: none !important;
+  padding: 0 !important;
+}
+
+.tasks-minimal-page .tasks-content-area > div > div:first-child > div:first-child {
+  margin: 4px 0 10px !important;
+  color: var(--muted) !important;
+  letter-spacing: .08em !important;
+}
+
+.task-minimal-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 62px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 14px 28px -26px rgb(17 35 39 / 34%);
+  cursor: pointer;
+}
+
+.task-minimal-row + .task-minimal-row {
+  margin-top: 8px;
+}
+
+.task-minimal-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  transform: translateY(-1px);
+}
+
+.task-minimal-check {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  padding: 0 !important;
+  border-radius: 7px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--surface-soft) !important;
+  color: var(--accent) !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+.task-minimal-main {
+  min-width: 0;
+}
+
+.task-minimal-titleline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.task-minimal-titleline b {
+  min-width: 180px;
+  max-width: min(520px, 100%);
+  color: var(--text) !important;
+  font-size: 14px;
+  font-weight: 760;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-minimal-titleline b.is-done {
+  color: var(--muted) !important;
+  text-decoration: line-through;
+}
+
+.task-minimal-titleline span {
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: var(--surface-soft);
+  color: var(--muted) !important;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.task-minimal-titleline span.is-warning {
+  color: var(--warning) !important;
+  background: color-mix(in srgb, var(--warning) 8%, white 92%);
+  border-color: color-mix(in srgb, var(--warning) 22%, var(--border));
+}
+
+.task-minimal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.task-minimal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-minimal-actions select {
+  width: 168px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.task-minimal-actions button {
+  min-width: 36px !important;
+  min-height: 36px !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--surface) !important;
+  color: var(--accent) !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 780 !important;
+}
+
+.task-minimal-actions button.is-danger {
+  color: var(--danger) !important;
+  background: color-mix(in srgb, var(--danger) 7%, white 93%) !important;
+}
+
+@media (max-width: 900px) {
+  .task-minimal-row {
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+
+  .task-minimal-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .task-minimal-actions select {
+    width: min(220px, 100%);
+  }
+}
+
+@media (max-width: 760px) {
+  .tasks-minimal-page {
+    padding: 12px 10px 92px !important;
+  }
+
+  .tasks-minimal-header {
+    min-height: 50px;
+  }
+
+  .tasks-minimal-header h2 {
+    font-size: 18px !important;
+  }
+
+  .tasks-minimal-tabs {
+    display: flex !important;
+    width: 100% !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tasks-minimal-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .task-minimal-titleline b {
+    min-width: 0;
+    width: 100%;
+    white-space: normal;
+  }
+}
