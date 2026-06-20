@@ -196,14 +196,14 @@ export function MobileFeatureMenuPage({ isAdmin, onNavigate }) {
   ];
 
   return (
-    <div style={{ minHeight: "100%", background: "#F8FAFC", padding: "18px 14px 92px", overflow: "auto" }}>
-      <div style={{ marginBottom: 14 }}>
+    <div className="theme-work-page mobile-feature-menu-page" style={{ minHeight: "100%", background: "#F8FAFC", padding: "18px 14px 92px", overflow: "auto" }}>
+      <div className="unified-page-header mobile-feature-header" style={{ marginBottom: 14 }}>
         <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Tüm Özellikler</h2>
         <div style={{ fontSize: 12, color: "#64748B" }}>Web tarafındaki ana alanlara mobilde de buradan erişebilirsiniz.</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
         {items.map(([targetView, icon, title, desc, color]) => (
-          <button key={targetView} onClick={() => onNavigate(targetView)} style={{ border: "1px solid #E2E8F0", background: "#fff", borderRadius: 18, padding: 14, textAlign: "left", cursor: "pointer", minHeight: 122, boxShadow: "0 8px 22px rgba(15,23,42,.04)" }}>
+          <button className="mobile-feature-card" key={targetView} onClick={() => onNavigate(targetView)} style={{ border: "1px solid #E2E8F0", background: "#fff", borderRadius: 18, padding: 14, textAlign: "left", cursor: "pointer", minHeight: 122, boxShadow: "0 8px 22px rgba(15,23,42,.04)" }}>
             <span style={{ width: 38, height: 38, borderRadius: 13, background: color + "16", color, display: "grid", placeItems: "center", marginBottom: 10 }}>
               <Icon name={icon} size={18} />
             </span>

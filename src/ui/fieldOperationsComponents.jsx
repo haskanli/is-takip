@@ -70,8 +70,8 @@ function FieldPlanPage({
   };
   const remove=id=>setState(s=>({...s,fieldPlans:(s.fieldPlans||[]).filter(p=>p.id!==id)}));
   const monthLabel=`${monday.toLocaleDateString("tr-TR",{day:"numeric",month:"short"})} - ${weekEnd.toLocaleDateString("tr-TR",{day:"numeric",month:"short",year:"numeric"})}`;
-  return <div style={{padding:"22px clamp(14px,4vw,28px)",flex:1,overflow:"auto"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:18}}>
+  return <div className="theme-work-page fieldops-theme-page field-plan-page" style={{padding:"22px clamp(14px,4vw,28px)",flex:1,overflow:"auto"}}>
+    <div className="unified-page-header fieldops-page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:18}}>
       <div><h2 style={{margin:0,fontSize:20,fontWeight:800,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>Haftalık Çalışma Planım</h2><p style={{margin:"4px 0 0",fontSize:12,color:"#64748B"}}>Saha ziyaretlerini ve proje bazlı uzaktan çalışmaları haftalık planlayın.</p></div>
       <Btn onClick={()=>showForm?(setShowForm(false),setEditingId(null)):openForm()}>{showForm?"Kapat":"+ Plan Ekle"}</Btn>
     </div>
@@ -87,7 +87,7 @@ function FieldPlanPage({
       {form.workType==="field"&&<div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginTop:8}}><label style={{display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:800,color:"#334155"}}><input type="checkbox" checked={Boolean(form.accommodationRequired)} onChange={e=>setForm({...form,accommodationRequired:e.target.checked})}/> Konaklama maliyeti var</label>{form.accommodationRequired&&<Field label="Konaklama Gün Sayısı"><input type="number" min="1" step="1" style={{...iStyle,width:120}} value={form.accommodationDays||1} onChange={e=>setForm({...form,accommodationDays:e.target.value})}/></Field>}</div>}      <Field label="Plan Notu"><textarea style={{...iStyle,minHeight:70,resize:"vertical"}} value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder={form.workType==="remote"?"Uzaktan yapılacak çalışma, hedef ve beklenen çıktı...":"Ziyaret amacı, görüşülecek kişiler veya hazırlık notu..."}/></Field>
       <div style={{display:"flex",justifyContent:"flex-end"}}><Btn disabled={!form.projectId||!form.date} onClick={save}>{editingId?"Değişiklikleri Kaydet":"Planı Kaydet"}</Btn></div>
     </div>}
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
+    <div className="unified-filter-row fieldops-filter-row" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
       {isAdmin?<div style={{display:"flex",gap:7,flexWrap:"wrap"}}><div className="segmented-control">{[["mine","Benim Planım"],["team","Tüm Ekip"]].map(([id,label])=><button key={id} onClick={()=>setScope(id)} className={scope===id?"is-active":""}>{label}</button>)}</div>{scope==="team"&&<select style={{...iStyle,width:190}} value={personFilter} onChange={e=>setPersonFilter(e.target.value)}><option value="">Tüm kişiler</option>{state.people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>}<select style={{...iStyle,width:210}} value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="all">Tüm projeler</option>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>:<span className="ui-chip ui-chip-accent">Benim Planım</span>}
       <div style={{display:"flex",alignItems:"center",gap:6}}><button className="project-icon-action" onClick={()=>setWeekOffset(v=>v-1)}>‹</button><button className="project-metric-pill" onClick={()=>setWeekOffset(0)} style={{cursor:"pointer",fontWeight:800}}>{monthLabel}</button><button className="project-icon-action" onClick={()=>setWeekOffset(v=>v+1)}>›</button></div>
     </div>
@@ -179,13 +179,13 @@ function FieldVisitsPage({
   }).sort((a,b)=>`${b.date} ${b.actualStartTime||b.startTime||""}`.localeCompare(`${a.date} ${a.actualStartTime||a.startTime||""}`));
   const hours=visible.reduce((total,plan)=>total+fieldPlanHours(plan),0);
   const projects=state.projects.filter(project=>scope==="mine"?(state.fieldPlans||[]).some(plan=>plan.userId===currentUser.id&&plan.projectId===project.id):responsibleIds.has(project.id));
-  return <div style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:18}}>
+  return <div className="theme-work-page fieldops-theme-page field-visits-page" style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
+    <div className="unified-page-header fieldops-page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:18}}>
       <div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>Gerçekleşen Çalışmalar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"var(--muted)"}}>Saha ziyaretleri ve uzaktan çalışmaların notları ile proje eforları.</p></div>
       <div className="segmented-control">{[["mine","Benim Ziyaretlerim"],["responsible",isAdmin?"Tüm Ekip":"Sorumlu Projeler"]].map(([id,label])=><button key={id} onClick={()=>{setScope(id);setProjectFilter("all");setPersonFilter("");}} className={scope===id?"is-active":""}>{label}</button>)}</div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(145px,1fr))",gap:9,marginBottom:14}}>{[["Saha Ziyareti",visible.filter(plan=>(plan.workType||"field")==="field").length,"var(--success)"],["Uzaktan Çalışma",visible.filter(plan=>plan.workType==="remote").length,"var(--warning)"],["Toplam Efor",`${hours} sa`,"var(--accent)"],["Çalışılan Proje",new Set(visible.map(plan=>plan.projectId)).size,"var(--text)"]].map(([label,value,color])=><div key={label} className="soft-panel" style={{borderTop:`3px solid ${color}`,padding:13}}><div style={{fontSize:10,color:"var(--muted)",fontWeight:800}}>{label}</div><div style={{fontSize:23,fontWeight:900,color,marginTop:3}}>{value}</div></div>)}</div>
-    <div style={{display:"flex",gap:9,flexWrap:"wrap",marginBottom:14}}>
+    <div className="unified-filter-row fieldops-filter-row" style={{display:"flex",gap:9,flexWrap:"wrap",marginBottom:14}}>
       <select style={{...iStyle,width:"auto",minWidth:180}} value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option value="all">Tüm Çalışma Türleri</option><option value="field">Saha Ziyaretleri</option><option value="remote">Uzaktan Çalışmalar</option></select>
       <select style={{...iStyle,width:"auto",minWidth:220}} value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="all">Tüm Projeler</option>{projects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select>
       {(isAdmin||scope==="responsible")&&<select style={{...iStyle,width:"auto",minWidth:190}} value={personFilter} onChange={e=>setPersonFilter(e.target.value)}><option value="">Tüm Kişiler</option>{state.people.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}</select>}
@@ -225,8 +225,8 @@ export function FieldOperationsPage({
   const [localSection,setLocalSection]=useState("plan");
   const section=controlledSection||localSection;
   const setSection=onSectionChange||setLocalSection;
-  return <div className="project-workspace" style={{flex:1,overflow:"auto"}}>
-    <div className="project-tab-shell" style={{position:"sticky",top:0,zIndex:5,display:"flex",gap:7,padding:"12px clamp(16px,4vw,28px)"}}>
+  return <div className="project-workspace theme-work-page fieldops-shell" style={{flex:1,overflow:"auto"}}>
+    <div className="project-tab-shell fieldops-tab-shell" style={{position:"sticky",top:0,zIndex:5,display:"flex",gap:7,padding:"12px clamp(16px,4vw,28px)"}}>
       {[["plan","calendar","Haftalık Plan"],["visits","activity","Gerçekleşen Çalışmalar"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} className={`project-tab ${section===id?"is-active":""}`}><Icon name={icon} size={14}/>{label}</button>)}
     </div>
     {section==="plan"?<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} scope={scope} onScopeChange={onScopeChange} projectFilter={projectFilter} onProjectFilterChange={onProjectFilterChange} personFilter={personFilter} onPersonFilterChange={onPersonFilterChange} weekOffset={weekOffset} onWeekOffsetChange={onWeekOffsetChange}/>:<FieldVisitsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} scope={scope} onScopeChange={onScopeChange} projectFilter={projectFilter} onProjectFilterChange={onProjectFilterChange} personFilter={personFilter} onPersonFilterChange={onPersonFilterChange} typeFilter={typeFilter} onTypeFilterChange={onTypeFilterChange} onOpenProject={onOpenProject}/>}
