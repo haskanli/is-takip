@@ -182,12 +182,17 @@ const normalizeWeatherCode = (code) => {
 
 const WEATHER_CACHE_KEY = "corject:weatherScene";
 const DEFAULT_WEATHER_CACHE_MS = 45 * 60 * 1000;
+const FLAT_SCENE = {
+  image: "linear-gradient(#f6f7f7, #f6f7f7)",
+  overlay: "none",
+  blur: "0px",
+};
 
 const safeSetWeatherTheme = (scene) => {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   if (!root?.style) return;
-  const { image, overlay, blur } = scene || {};
+  const { image, overlay, blur } = FLAT_SCENE;
   if (image) root.style.setProperty("--scene-image", image);
   if (overlay) root.style.setProperty("--scene-overlay", overlay);
   if (blur) root.style.setProperty("--scene-blur", blur);
@@ -236,9 +241,9 @@ const applyWeatherThemeFromGeo = async () => {
 const restoreDefaultWeatherTheme = () => {
   const root = typeof document !== "undefined" ? document.documentElement : null;
   if (!root) return;
-  root.style.removeProperty("--scene-image");
-  root.style.removeProperty("--scene-overlay");
-  root.style.removeProperty("--scene-blur");
+  root.style.setProperty("--scene-image", FLAT_SCENE.image);
+  root.style.setProperty("--scene-overlay", FLAT_SCENE.overlay);
+  root.style.setProperty("--scene-blur", FLAT_SCENE.blur);
 };
 
 const isNotificationForUser = (notification, user) => {

@@ -1,16 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 
 :root {
-  --bg: #f1f5f6;
-  --scene-image:
-    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.86) 0 16%, transparent 36%),
-    radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.66) 0 14%, transparent 34%),
-    radial-gradient(circle at 42% 82%, rgba(235, 238, 240, 0.72) 0 18%, transparent 44%),
-    linear-gradient(156deg, #fbfbfa 0%, #f3f4f4 46%, #eeeeec 100%);
-  --scene-overlay:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.62), rgba(245, 245, 244, 0.2)),
-    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.48), transparent 36%);
-  --scene-blur: 68px;
+  --bg: #f6f7f7;
+  --scene-image: linear-gradient(#f6f7f7, #f6f7f7);
+  --scene-overlay: none;
+  --scene-blur: 0px;
   --surface: #ffffff;
   --surface-soft: #f6fafb;
   --text: #112327;
@@ -66,9 +60,7 @@ body,
 body {
   min-height: 100svh;
   color: var(--text);
-  background:
-    var(--scene-overlay),
-    var(--scene-image);
+  background: var(--bg);
   position: relative;
   background-size: cover;
   background-position: center;
@@ -79,18 +71,7 @@ body {
 }
 
 body::before {
-  content: "";
-  position: fixed;
-  inset: -6%;
-  background: var(--scene-image);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  filter: blur(var(--scene-blur)) saturate(1.02);
-  transform: scale(1.06);
-  opacity: 0.86;
-  z-index: -1;
-  pointer-events: none;
+  display: none;
 }
 
 #root {
@@ -3152,4 +3133,63 @@ textarea:focus {
   .deadlines-theme-page .unified-filter-row::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* Flat shell lock: remove the blue/purple ambient scene everywhere. */
+html,
+body,
+#root {
+  background: #f6f7f7 !important;
+  background-image: none !important;
+}
+
+body::before,
+.app-loading-shell::before,
+.mobile-glass-topbar::after {
+  display: none !important;
+}
+
+.project-workspace,
+.mobile-dashboard-theme-page,
+.dashboard-theme-page,
+.customer-dashboard-theme-page,
+.auth-screen,
+.app-loading-shell,
+.mobile-feature-menu-page,
+.fieldops-shell,
+.fieldops-theme-page,
+.reports-theme-page,
+.todos-theme-page,
+.deadlines-theme-page,
+.projects-theme-page,
+.tasks-theme-page,
+.tickets-theme-page,
+.management-theme-page,
+.theme-work-page {
+  background: #f6f7f7 !important;
+  background-image: none !important;
+}
+
+.mobile-glass-topbar {
+  background: rgb(246 247 247 / 88%) !important;
+  background-image: none !important;
+}
+
+.glass-surface,
+.liquid-card,
+.mobile-dashboard-theme-page .liquid-card,
+.dashboard-theme-page .liquid-card,
+.customer-dashboard-theme-page .liquid-card {
+  background: rgb(255 255 255 / 82%) !important;
+}
+
+.mobile-story-badge,
+b.mobile-story-badge,
+.mobile-bottom-badge,
+b.mobile-bottom-badge {
+  color: #ffffff !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  text-shadow: 0 1px 2px rgb(17 35 39 / 34%) !important;
+  font-variant-numeric: tabular-nums;
 }
