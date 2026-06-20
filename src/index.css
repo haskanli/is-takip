@@ -1204,6 +1204,8 @@ code,
   letter-spacing: .05em;
   text-align: left;
   text-transform: uppercase;
+  position: relative;
+  vertical-align: top;
 }
 
 .data-list-table td {
@@ -2197,7 +2199,7 @@ textarea:focus {
   padding: 0 0 5px;
   text-align: left;
   text-transform: inherit;
-  width: 100%;
+  width: auto;
 }
 
 .table-sort-button.is-active {
@@ -2219,9 +2221,33 @@ textarea:focus {
   color: var(--muted);
   display: flex;
   gap: 5px;
+  margin-top: 6px;
   min-height: 27px;
   padding: 0 8px;
   text-transform: none;
+}
+
+.table-filter-toggle {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 0;
+  vertical-align: middle;
+  width: 24px;
+}
+
+.table-filter-toggle.is-active,
+.table-filter-toggle.has-value {
+  background: color-mix(in srgb, var(--accent) 12%, white 88%);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  color: var(--accent);
 }
 
 .table-filter-control input {
@@ -3418,7 +3444,7 @@ body::before,
 .icon-view-switch {
   background: color-mix(in srgb, var(--surface) 56%, transparent) !important;
   border: 1px solid color-mix(in srgb, var(--border) 42%, transparent) !important;
-  border-radius: 999px !important;
+  border-radius: 14px !important;
   box-shadow: 0 12px 30px -28px rgb(17 35 39 / 34%) !important;
   gap: 3px !important;
   min-height: 0 !important;
@@ -3432,7 +3458,7 @@ body::before,
   aspect-ratio: 1 / 1 !important;
   background: transparent !important;
   border: 1px solid transparent !important;
-  border-radius: 999px !important;
+  border-radius: 11px !important;
   box-shadow: none !important;
   justify-content: center !important;
   min-height: 36px !important;
@@ -3458,6 +3484,61 @@ body::before,
 .compact-filter-segment svg {
   flex: 0 0 auto !important;
   stroke-width: 1.9 !important;
+}
+
+.fieldops-scope-switch button {
+  min-width: 38px !important;
+  padding-inline: 10px !important;
+}
+
+.fieldops-compact-select.is-all-filter {
+  width: 42px !important;
+  min-width: 42px !important;
+  justify-content: center !important;
+  padding-inline: 0 !important;
+}
+
+.fieldops-compact-select.is-all-filter select {
+  color: transparent !important;
+  flex: 0 0 20px !important;
+  min-width: 20px !important;
+  padding: 0 !important;
+  width: 20px !important;
+}
+
+.fieldops-compact-select.is-all-filter select option {
+  color: var(--text) !important;
+}
+
+.project-panel-tools {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.toolbar-search-toggle {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
+.toolbar-search-toggle.is-active {
+  background: color-mix(in srgb, var(--accent) 12%, white 88%);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  color: var(--accent);
+}
+
+.toolbar-search-input {
+  width: min(260px, 100%) !important;
 }
 
 .project-tab-scroll {

@@ -58,6 +58,7 @@ const applyTicketWorkflow=(data)=>{
 function TicketListTable({ rows, people = [], customerMode = false, showProject = true, onOpen, onStatusChange, onDelete, canDelete = () => false }) {
   const [sortConfig, setSortConfig] = useState({ key: "updatedAt", direction: "desc" });
   const [columnFilters, setColumnFilters] = useState({});
+  const [activeFilterKey, setActiveFilterKey] = useState("");
   const normalize = (value) => String(value ?? "").toLocaleLowerCase("tr-TR");
   const getAssignee = (ticket) => people.find((person) => person.id === ticket.assignedTo)?.name || "Atanmamış";
   const columns = [
@@ -114,16 +115,29 @@ function TicketListTable({ rows, people = [], customerMode = false, showProject 
                   <span>{column.label}</span>
                   <span className="table-sort-indicator">{sortConfig.key === column.key ? (sortConfig.direction === "asc" ? "↑" : "↓") : "↕"}</span>
                 </button>
-                <label className="table-filter-control">
+                <button
+                  type="button"
+                  className={`table-filter-toggle ${columnFilters[column.key] ? "has-value" : ""} ${activeFilterKey === column.key ? "is-active" : ""}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActiveFilterKey((current) => (current === column.key ? "" : column.key));
+                  }}
+                  aria-label={`${column.label} filtresini aÃ§`}
+                >
                   <Icon name="search" size={12} />
-                  <input
-                    value={columnFilters[column.key] || ""}
-                    onChange={(event) => setColumnFilters((current) => ({ ...current, [column.key]: event.target.value }))}
-                    onClick={(event) => event.stopPropagation()}
-                    placeholder="Filtre"
-                    aria-label={`${column.label} filtresi`}
-                  />
-                </label>
+                </button>
+                {activeFilterKey === column.key && (
+                  <label className="table-filter-control">
+                    <input
+                      autoFocus
+                      value={columnFilters[column.key] || ""}
+                      onChange={(event) => setColumnFilters((current) => ({ ...current, [column.key]: event.target.value }))}
+                      onClick={(event) => event.stopPropagation()}
+                      placeholder={column.label}
+                      aria-label={`${column.label} filtresi`}
+                    />
+                  </label>
+                )}
               </th>
             ))}
             {!customerMode && <th />}

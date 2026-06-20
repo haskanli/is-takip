@@ -43,6 +43,7 @@ export function ProjectActionsPanel({ project, currentUser, state, setState, isA
   const [actionAt, setActionAt] = useState(() => new Date().toISOString().slice(0, 16));
   const [editingId, setEditingId] = useState(null);
   const [filter, setFilter] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [tagFilter, setTagFilter] = useState("all");
   const [selectedTag, setSelectedTag] = useState(actionTags[0] || "Diğer");
   const [newTag, setNewTag] = useState("");
@@ -172,7 +173,8 @@ export function ProjectActionsPanel({ project, currentUser, state, setState, isA
             <option value="all">Tüm aksiyon türleri</option>
             {actionTags.map((tag) => <option key={tag}>{tag}</option>)}
           </select>
-          <input style={iStyle} value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Aksiyonlarda ara..." />
+          <button type="button" className={`toolbar-search-toggle ${searchOpen || filter ? "is-active" : ""}`} title="Aksiyonlarda ara" aria-label="Aksiyonlarda ara" onClick={() => setSearchOpen((value) => !value)}><Icon name="search" size={15} /></button>
+          {(searchOpen || filter) && <input className="toolbar-search-input" style={iStyle} value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Aksiyonlarda ara..." autoFocus />}
           {canManage && (
             <Btn
               className="compact-tool-button"

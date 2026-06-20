@@ -33,6 +33,7 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
   const [editingId, setEditingId] = useState("");
   const [viewMode, setViewMode] = useState("cards");
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [controlDrafts, setControlDrafts] = useState({});
   const blankMachineForm = {
     name: "",
@@ -391,8 +392,9 @@ export function MachinePanel({ project, canEdit, currentUser, onChange }) {
 
   const filterBar = (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+      <button type="button" className={`toolbar-search-toggle ${searchOpen || search ? "is-active" : ""}`} title="Makinelerde ara" aria-label="Makinelerde ara" onClick={() => setSearchOpen((value) => !value)}><Icon name="search" size={15} /></button>
       <input
-        style={{ ...iStyle, width: 260, maxWidth: "100%" }}
+        style={{ ...iStyle, width: 260, maxWidth: "100%", display: searchOpen || search ? "block" : "none" }}
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         placeholder="Makine adı, kodu, IP veya OS/model ara..."
