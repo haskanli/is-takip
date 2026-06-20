@@ -6109,3 +6109,131 @@ body::before,
   color: var(--text) !important;
   border-color: color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
 }
+
+/* Final polish: semantic chips keep the liquid theme, but important tags stay visible. */
+.ui-chip,
+.task-mobile-chip-soft,
+.ticket-mobile-chip-soft,
+.task-minimal-titleline span,
+.theme-work-page [class*="chip"] {
+  --chip-tone: var(--muted);
+  --chip-bg: color-mix(in srgb, var(--muted) 8%, white 92%);
+  --chip-border: color-mix(in srgb, var(--muted) 18%, var(--border));
+  align-items: center;
+  background: var(--chip-bg) !important;
+  border: 1px solid var(--chip-border) !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%), 0 9px 22px -18px color-mix(in srgb, var(--chip-tone) 46%, transparent) !important;
+  color: var(--chip-tone) !important;
+  display: inline-flex;
+  gap: 5px;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+
+.ui-chip-accent,
+.ui-chip-info,
+.ticket-mobile-chip-main,
+.ticket-mobile-chip-link {
+  --chip-tone: var(--accent);
+  --chip-bg: color-mix(in srgb, var(--accent) 12%, white 88%);
+  --chip-border: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+.ui-chip-success,
+.work-type-chip-field {
+  --chip-tone: var(--success);
+  --chip-bg: color-mix(in srgb, var(--success) 13%, white 87%);
+  --chip-border: color-mix(in srgb, var(--success) 31%, var(--border));
+}
+
+.ui-chip-warning,
+.work-type-chip-remote {
+  --chip-tone: var(--warning);
+  --chip-bg: color-mix(in srgb, var(--warning) 15%, white 85%);
+  --chip-border: color-mix(in srgb, var(--warning) 34%, var(--border));
+}
+
+.ui-chip-danger {
+  --chip-tone: var(--danger);
+  --chip-bg: color-mix(in srgb, var(--danger) 12%, white 88%);
+  --chip-border: color-mix(in srgb, var(--danger) 30%, var(--border));
+}
+
+.theme-work-page span[style*="background: rgb(238, 242, 255)"],
+.theme-work-page span[style*="background:#EEF2FF"],
+.theme-work-page span[style*="background: #EEF2FF"],
+.project-workspace span[style*="background: rgb(238, 242, 255)"],
+.project-workspace span[style*="background:#EEF2FF"],
+.project-workspace span[style*="background: #EEF2FF"] {
+  background: color-mix(in srgb, var(--accent) 12%, white 88%) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)) !important;
+  color: var(--accent) !important;
+}
+
+.theme-work-page span[style*="background: rgb(236, 253, 245)"],
+.theme-work-page span[style*="background:#ECFDF5"],
+.theme-work-page span[style*="background: #ECFDF5"],
+.project-workspace span[style*="background: rgb(236, 253, 245)"],
+.project-workspace span[style*="background:#ECFDF5"],
+.project-workspace span[style*="background: #ECFDF5"] {
+  background: color-mix(in srgb, var(--success) 13%, white 87%) !important;
+  border: 1px solid color-mix(in srgb, var(--success) 31%, var(--border)) !important;
+  color: var(--success) !important;
+}
+
+.theme-work-page span[style*="background: rgb(255, 247, 237)"],
+.theme-work-page span[style*="background:#FFF7ED"],
+.theme-work-page span[style*="background: #FFF7ED"],
+.project-workspace span[style*="background: rgb(255, 247, 237)"],
+.project-workspace span[style*="background:#FFF7ED"],
+.project-workspace span[style*="background: #FFF7ED"] {
+  background: color-mix(in srgb, var(--warning) 15%, white 85%) !important;
+  border: 1px solid color-mix(in srgb, var(--warning) 34%, var(--border)) !important;
+  color: var(--warning) !important;
+}
+
+.theme-work-page span[style*="background: rgb(254, 242, 242)"],
+.theme-work-page span[style*="background:#FEF2F2"],
+.theme-work-page span[style*="background: #FEF2F2"],
+.project-workspace span[style*="background: rgb(254, 242, 242)"],
+.project-workspace span[style*="background:#FEF2F2"],
+.project-workspace span[style*="background: #FEF2F2"] {
+  background: color-mix(in srgb, var(--danger) 12%, white 88%) !important;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)) !important;
+  color: var(--danger) !important;
+}
+
+.btn-base.icon-only-action,
+.icon-only-action {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  color: var(--accent) !important;
+  display: inline-grid !important;
+  flex: 0 0 44px !important;
+  font-size: 32px !important;
+  font-weight: 850 !important;
+  height: 44px !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  min-height: 44px !important;
+  min-width: 44px !important;
+  padding: 0 !important;
+  place-items: center !important;
+  width: 44px !important;
+}
+
+.btn-base.icon-only-action:hover,
+.icon-only-action:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+  transform: translateY(-1px);
+}
+
+.btn-base.icon-only-action:focus-visible,
+.icon-only-action:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  outline-offset: 2px;
+}

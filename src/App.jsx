@@ -1273,7 +1273,7 @@ export default function App() {
       {view==="people"&&<div style={{ padding:"22px 26px", flex:1, overflow:"auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
           <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="people" size={20}/>Ekip</h2></div>
-          {isAdmin&&<Btn onClick={()=>setModal({type:"addPerson"})}>+ Kişi Ekle</Btn>}
+          {isAdmin&&<Btn className="icon-only-action" title="Kişi ekle" aria-label="Kişi ekle" onClick={()=>setModal({type:"addPerson"})}>+</Btn>}
         </div>
         <div style={{background:"#fff",border:"1px solid var(--border)",borderRadius:15,padding:14,marginBottom:16}}>
           <div style={{fontSize:13,fontWeight:850,marginBottom:10}}>Organizasyonel Yapı</div>
