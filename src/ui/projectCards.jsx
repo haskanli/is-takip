@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { projectResponsibleIds } from "../domain/projectHelpers.js";
 import { Field, Icon, iStyle } from "./primitives.jsx";
-import { Badge, delayLvl } from "./status.jsx";
+import { delayLvl } from "./status.jsx";
 
 const noop = () => {};
 const defaultFormatDate = (value) => value || "-";
@@ -273,9 +273,6 @@ export function ProjectListCard({
         </span>
       </div>
       <div style={{ padding: "10px 14px 13px" }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, alignItems: "center", marginBottom: 9 }}>
-          <Badge label={project.status} />
-        </div>
         <div style={{ display: "grid", gridTemplateColumns: alertText ? "auto 1fr auto" : "auto 1fr", gap: 8, alignItems: "center", marginBottom: 8, fontSize: 10.5, color: "var(--muted)", fontWeight: 650 }}>
           <span>Sağlık <b style={{ color: healthOk ? "var(--success)" : "var(--danger)", fontWeight: 750 }}>%{readiness}</b></span>
           <span style={{ minWidth: 0, height: 1, background: "var(--border)", opacity: .75 }} />
