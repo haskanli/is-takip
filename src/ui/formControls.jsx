@@ -4,20 +4,21 @@ import { Btn, iStyle } from "./primitives.jsx";
 export function PeopleMultiSelect({ people, value, onChange }) {
   return (
     <div
+      className="people-multi-select"
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))",
         gap: 6,
         padding: 9,
-        border: "1.5px solid #E2E8F0",
+        border: "1.5px solid var(--border)",
         borderRadius: 9,
-        background: "#FAFBFC",
+        background: "var(--surface-soft)",
       }}
     >
       {people.map((person) => (
         <label
           key={person.id}
-          style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 600, color: "#475569", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}
         >
           <input
             type="checkbox"
@@ -45,8 +46,8 @@ export function MultiChoiceFilter({ label, options, value, onChange }) {
           ...iStyle,
           width: "auto",
           minWidth: 170,
-          background: value.length ? "#EEF2FF" : "#fff",
-          color: value.length ? "#4338CA" : "#475569",
+          background: value.length ? "var(--accent-ink)" : "var(--surface)",
+          color: value.length ? "var(--accent)" : "var(--muted)",
           cursor: "pointer",
           fontWeight: 750,
           textAlign: "left",
@@ -66,15 +67,15 @@ export function MultiChoiceFilter({ label, options, value, onChange }) {
             minWidth: 230,
             maxHeight: 280,
             overflow: "auto",
-            background: "#fff",
-            border: "1px solid var(--muted)",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
             borderRadius: 11,
             padding: 8,
             boxShadow: "0 16px 35px rgba(15,23,42,.16)",
           }}
         >
           {options.map((option) => (
-            <label key={option.value} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", fontSize: 11, cursor: "pointer", borderRadius: 7 }}>
+            <label key={option.value} className="multi-choice-option" style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", fontSize: 11, cursor: "pointer", borderRadius: 7 }}>
               <input
                 type="checkbox"
                 checked={value.includes(option.value)}
@@ -92,9 +93,9 @@ export function MultiChoiceFilter({ label, options, value, onChange }) {
               style={{
                 width: "100%",
                 border: 0,
-                borderTop: "1px solid #E2E8F0",
+                borderTop: "1px solid var(--border)",
                 background: "transparent",
-                color: "#E11D48",
+                color: "var(--danger)",
                 padding: "8px 4px 2px",
                 fontSize: 10,
                 fontWeight: 800,
@@ -138,7 +139,8 @@ export function StakeholderEditor({ people, roles = [], value, onChange, createI
             <button
               type="button"
               onClick={() => onChange(value.filter((entry) => entry.id !== item.id))}
-              style={{ border: 0, borderRadius: 8, background: "#FFF1F2", color: "#E11D48", padding: "0 10px", cursor: "pointer" }}
+              className="inline-danger-button"
+              style={{ border: 0, borderRadius: 8, background: "color-mix(in srgb, var(--danger) 10%, white 90%)", color: "var(--danger)", padding: "0 10px", cursor: "pointer" }}
             >
               x
             </button>
@@ -179,7 +181,8 @@ export function CustomerContactEditor({ value = [], onChange, createId }) {
             <button
               type="button"
               onClick={() => onChange(value.filter((entry) => entry.id !== item.id))}
-              style={{ border: 0, borderRadius: 8, background: "#FFF1F2", color: "#E11D48", padding: "0 10px", cursor: "pointer" }}
+              className="inline-danger-button"
+              style={{ border: 0, borderRadius: 8, background: "color-mix(in srgb, var(--danger) 10%, white 90%)", color: "var(--danger)", padding: "0 10px", cursor: "pointer" }}
             >
               x
             </button>

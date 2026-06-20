@@ -27,10 +27,10 @@ function MinimalTaskRow({task,people=[],projectName="",formatDate=fmt,onOpen,onS
     <div className="task-minimal-main">
       <div className="task-minimal-titleline">
         <b className={done?"is-done":""}>{task.title}</b>
-        {projectName&&<span>{projectName}</span>}
-        <span>{role}</span>
-        {task.priority&&task.priority!=="Orta"&&<span>{task.priority}</span>}
-        {delayed&&<span className="is-warning">{daysDiff(task.dueDate)}g gecikti</span>}
+        {projectName&&<span className="ui-chip ui-chip-accent">{projectName}</span>}
+        <span className="ui-chip ui-chip-muted">{role}</span>
+        {task.priority&&task.priority!=="Orta"&&<span className={task.priority==="Yüksek"?"ui-chip ui-chip-danger":"ui-chip ui-chip-warning"}>{task.priority}</span>}
+        {delayed&&<span className="ui-chip ui-chip-danger">{daysDiff(task.dueDate)}g gecikti</span>}
       </div>
       <div className="task-minimal-meta">
         {assignee&&<span>{assignee.name}</span>}
@@ -45,7 +45,7 @@ function MinimalTaskRow({task,people=[],projectName="",formatDate=fmt,onOpen,onS
         {!["Bekliyor","Devam Ediyor","Engellendi","Tamamlandı"].includes(task.status)&&task.status&&<option>{task.status}</option>}
       </select>}
       {hasMoreActions&&<div className="task-more-menu">
-        <button type="button" className="task-more-trigger" onClick={()=>setMenuOpen(value=>!value)} aria-label="Gorev aksiyonlari">{"\u22EE"}</button>
+        <button type="button" className="task-more-trigger" onClick={()=>setMenuOpen(value=>!value)} aria-label="Görev aksiyonları">{"\u22EE"}</button>
         {menuOpen&&<div className="task-more-popover">
           {onTime&&<button type="button" onClick={()=>{setMenuOpen(false);onTime();}}>Efor gir</button>}
           {onEdit&&<button type="button" onClick={()=>{setMenuOpen(false);onEdit();}}>{"D\u00fczenle"}</button>}
@@ -138,22 +138,22 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
   const deletePersonal=(id)=>{const t=(state.personalTasks||[]).find(x=>x.id===id);setState(s=>({...s,personalTasks:(s.personalTasks||[]).filter(x=>x.id!==id)}));addLog(currentUser.name,"task_delete",t?.title||"");};
 
   return <div className="theme-work-page tasks-theme-page tasks-minimal-page" style={{ padding:"0 0 24px", flex:1, overflow:"auto" }}>
-    <div className="tasks-minimal-header">
+    <div className="tasks-minimal-header unified-page-header">
       <div className="unified-title-row">
-        <div><h2 style={{ margin:0, fontSize:20, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}><Icon name="tasks" size={20}/>Görevlerim</h2><p style={{ margin:"3px 0 0", color:"#64748B", fontSize:13 }}>{active.length} aktif · {completed.length} tamamlandı</p></div>
-        <Btn className="icon-only-action" title="Gorev ekle" aria-label="Gorev ekle" onClick={()=>setModal({type:"addPersonal"})}>+</Btn>
+        <div><h2 style={{ margin:0, display:"flex", alignItems:"center", gap:8 }}><Icon name="tasks" size={20}/>Görevlerim</h2><p>{active.length} aktif · {completed.length} tamamlandı</p></div>
+        <Btn className="icon-only-action" title="Görev ekle" aria-label="Görev ekle" onClick={()=>setModal({type:"addPersonal"})}>+</Btn>
       </div>
-      {assignmentNotice&&<div style={{margin:"10px 0",padding:"10px 13px",borderRadius:9,background:"#ECFDF5",color:"var(--success)",fontSize:12,fontWeight:700}}>{assignmentNotice}</div>}
+      {assignmentNotice&&<div className="ui-feedback-message is-success">{assignmentNotice}</div>}
     </div>
       <div className="tasks-minimal-tabs" style={{display:"flex",gap:6,overflowX:"auto",margin:"14px 0 4px"}}>
-        {[["all","tasks","Tümü"],["assigned","tasks","Yöneticinin Atadıkları"],["project","projects","Projeden Gelenler"],["todos","ticket","Kendi To-Do'larım"],["notes","notes","Notlarım"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} style={{border:"none",borderRadius:9,padding:"8px 13px",background:section===id?"#4A6CF7":"var(--accent-ink)",color:section===id?"#fff":"#64748B",fontWeight:700,fontSize:12,display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap",cursor:"pointer"}}><Icon name={icon} size={14}/>{label}</button>)}
+        {[["all","tasks","Tümü"],["assigned","tasks","Yöneticinin Atadıkları"],["project","projects","Projeden Gelenler"],["todos","ticket","Kendi To-Do'larım"],["notes","notes","Notlarım"]].map(([id,icon,label])=><button key={id} className={section===id?"is-active":""} onClick={()=>setSection(id)}><Icon name={icon} size={14}/>{label}</button>)}
       </div>
 
     <div className="tasks-content-area">
       {/* Tasks column */}
       {(section==="all"||section==="assigned"||section==="project")&&<div style={{ padding:"12px clamp(14px, 4vw, 28px)",maxWidth:1100,width:"100%" }}>
         {sectionActive.length>0&&<div style={{ marginBottom:16 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{section==="all"?"Tüm Görevler":section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
+          <div className="task-section-title">{section==="all"?"Tüm Görevler":section==="project"?"Proje Görevleri":"Atanan Görevler"} ({sectionActive.length})</div>
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {sectionActive.map(t=><MinimalTaskRow key={t.id} task={t} people={state.people} projectName={t.projectName||"Genel Görev"} formatDate={fmt}
                onOpen={()=>openTaskDetail(t)}
@@ -166,7 +166,7 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
           </div>
         </div>}
         {sectionCompleted.length>0&&<div>
-          <button onClick={()=>setShowDone(v=>!v)} style={{ background:"none", border:"none", cursor:"pointer", fontWeight:700, fontSize:11, color:"#64748B", textTransform:"uppercase", letterSpacing:1, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:5 }}>{showDone?"v":">"} Tamamlananlar ({sectionCompleted.length})</button>
+          <button className="inline-text-action task-completed-toggle" onClick={()=>setShowDone(v=>!v)}>{showDone?"v":">"} Tamamlananlar ({sectionCompleted.length})</button>
           {showDone&&<div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {sectionCompleted.map(t=><MinimalTaskRow key={t.id} task={t} people={state.people} projectName={t.projectName||"Genel"} formatDate={fmt}
                onOpen={()=>openTaskDetail(t)}
@@ -178,9 +178,9 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
             />)}
           </div>}
         </div>}
-        {section==="assigned"&&isAdmin&&<div style={{ marginTop:24, borderTop:"1.5px solid #E2E8F0", paddingTop:20 }}>
-          <div style={{ fontWeight:700, fontSize:13, marginBottom:10 }}>Tüm Genel Görevler (Yönetici)</div>
-          {(state.personalTasks||[]).length===0&&<div style={{ color:"#94A3B8", fontSize:12 }}>Genel görev yok.</div>}
+        {section==="assigned"&&isAdmin&&<div className="ui-section-card task-admin-all-card">
+          <div className="task-section-title">Tüm Genel Görevler (Yönetici)</div>
+          {(state.personalTasks||[]).length===0&&<div className="ui-muted-note">Genel görev yok.</div>}
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {(state.personalTasks||[]).map(t=><MinimalTaskRow key={t.id} task={{...t,source:"personal"}} people={state.people} projectName={state.projects.find(project=>project.id===t.projectId)?.name||"Genel Görev"} formatDate={fmt}
                onOpen={()=>openTaskDetail({...t,source:"personal"})}
@@ -195,8 +195,8 @@ export function MyTasksPage({ currentUser, state, setState, addLog, isAdmin, ini
       </div>}
 
       {/* Notes & Todo sidebar */}
-      {section==="notes"&&<div style={{padding:"16px clamp(14px, 4vw, 28px)"}}><div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:16}}><div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Notlarım</div><textarea value={noteText} onChange={e=>updateNotes(e.target.value)} placeholder="Serbest notlar, hatırlatmalar..." style={{width:"100%",minHeight:260,padding:12,borderRadius:9,border:"1.5px solid #E2E8F0",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",lineHeight:1.6}}/></div></div>}
-      {section==="todos"&&<div style={{padding:"16px clamp(14px, 4vw, 28px)",maxWidth:1000}}><div style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:16}}><div style={{fontWeight:800,fontSize:14,marginBottom:12}}>Kendi To-Do'larım</div>{todos.filter(t=>!t.done).map(t=>{const p=state.projects.find(x=>x.id===t.projectId);const late=t.dueDate&&daysDiff(t.dueDate)>0;return <div key={t.id} style={{display:"flex",alignItems:"center",gap:9,padding:"10px 0",borderBottom:"1px solid var(--surface-soft)"}}><input type="checkbox" checked={false} onChange={()=>toggleTodo(t.id)}/><div style={{flex:1}}><div style={{fontSize:12,fontWeight:700}}>{t.action||t.text}</div><div style={{fontSize:10,color:late?"#E11D48":"#94A3B8",marginTop:2}}>{t.customer||p?.name||"Genel"}{t.dueDate?` · ${fmt(t.dueDate)}`:""}</div></div></div>})}{!todos.filter(t=>!t.done).length&&<div style={{fontSize:12,color:"#94A3B8"}}>Açık To-Do yok.</div>}</div></div>}
+      {section==="notes"&&<div className="task-panel-wrap"><div className="ui-section-card task-notes-card"><div className="task-section-title">Notlarım</div><textarea value={noteText} onChange={e=>updateNotes(e.target.value)} placeholder="Serbest notlar, hatırlatmalar..." /></div></div>}
+      {section==="todos"&&<div className="task-panel-wrap"><div className="ui-section-card task-todos-card"><div className="task-section-title">Kendi To-Do'larım</div>{todos.filter(t=>!t.done).map(t=>{const p=state.projects.find(x=>x.id===t.projectId);const late=t.dueDate&&daysDiff(t.dueDate)>0;return <div key={t.id} className="task-todo-row"><input type="checkbox" checked={false} onChange={()=>toggleTodo(t.id)}/><div><div>{t.action||t.text}</div><span className={late?"is-danger":""}>{t.customer||p?.name||"Genel"}{t.dueDate?` · ${fmt(t.dueDate)}`:""}</span></div></div>})}{!todos.filter(t=>!t.done).length&&<div className="ui-muted-note">Açık To-Do yok.</div>}</div></div>}
     </div>
 
     {modal?.type==="addPersonal"&&<SharedPersonalTaskModal title="Genel Görev Ekle" people={state.people} projects={state.projects} isAdmin={isAdmin} currentUser={currentUser} waitOptions={WAIT} todayString={todayStr} currentTimeString={currentTimeStr} onClose={()=>setModal(null)} onSave={addPersonal} />}

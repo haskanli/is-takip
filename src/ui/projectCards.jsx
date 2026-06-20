@@ -96,7 +96,20 @@ export function ProjectBusinessCard({
 
   return (
     <div className="project-business-shell">
-      <div className="project-business-card" onClick={() => setExpanded((value) => !value)} style={{ padding: "10px 12px" }}>
+      <div
+        className="project-business-card"
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        onClick={() => setExpanded((value) => !value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setExpanded((value) => !value);
+          }
+        }}
+        style={{ padding: "10px 12px" }}
+      >
         <div style={{ position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 11, alignItems: "center" }}>
           <LogoTile
             customer={customer}
@@ -167,14 +180,14 @@ export function ProjectBusinessCard({
           </div>
         )}
       </div>
-      <button
+      {false && <button
         onClick={() => setExpanded((value) => !value)}
         title={expanded ? "Daralt" : "Detayları aç"}
         className="btn-base"
         style={{ display: "grid", placeItems: "center", width: 30, height: 20, margin: "-1px auto 0", border: "1px solid var(--glass-border)", borderTop: 0, borderRadius: "0 0 10px 10px", background: "rgb(255 255 255 / 72%)", color: "var(--accent)", cursor: "pointer", fontSize: 13, fontWeight: 950, lineHeight: 1 }}
       >
         {expanded ? "⌃" : "⌄"}
-      </button>
+      </button>}
       {expanded && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 7 }}>
           <button onClick={onOpenSetup} className={`project-metric-pill ${healthy ? "is-good" : "is-danger"}`} style={{ cursor: "pointer" }}>
@@ -264,7 +277,7 @@ export function ProjectListCard({
       <div className="project-list-card-header">
         <LogoTile customer={customer} customerName={customerName} size={58} />
         <span style={{ minWidth: 0 }}>
-          <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, lineHeight: 1.22, color: "var(--text)", letterSpacing: "-.015em", ...textClamp }}>{customerName}</h3>
+          <h3 style={{ margin: 0, fontSize: 13.25, fontWeight: 640, lineHeight: 1.24, color: "var(--text)", letterSpacing: "-.006em", ...textClamp }}>{customerName}</h3>
           <span style={{ display: "block", marginTop: 3, fontSize: 10.5, color: "var(--muted)", fontWeight: 600, ...textClamp }}>
             {responsibleNames ? `${responsibleLabel}: ${responsibleNames}` : project.name}
           </span>

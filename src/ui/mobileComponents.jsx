@@ -158,16 +158,17 @@ export function MobileBottomNav({ view, onNavigate, onQuick, onProfile, deadline
   ];
 
   return (
-    <div className="glass-surface" style={{ position: "fixed", left: 10, right: 10, bottom: 10, zIndex: 920, borderRadius: 24, padding: "8px 9px", display: "grid", gridTemplateColumns: "repeat(5,1fr)", boxShadow: "0 22px 56px -34px rgb(17 35 39 / 54%)" }}>
+    <div className="glass-surface mobile-bottom-nav">
       {items.map(([id, icon, label, badge]) => {
         const active = view === id;
+        const quick = id === "quick";
         return (
-          <button key={id} onClick={() => (id === "quick" ? onQuick() : onNavigate(id))} style={{ border: 0, background: "transparent", display: "grid", placeItems: "center", gap: 3, color: active ? "var(--accent, #0b8a94)" : "var(--muted, #5b6f74)", fontSize: 9, fontWeight: 900, cursor: "pointer", position: "relative", padding: 0 }}>
-            <span style={{ width: id === "quick" ? 58 : 34, height: id === "quick" ? 58 : 34, borderRadius: id === "quick" ? 20 : 14, display: "grid", placeItems: "center", background: id === "quick" ? "linear-gradient(135deg,var(--accent, #0b8a94),#08727a)" : active ? "var(--accent-ink, #def5f8)" : "transparent", color: id === "quick" ? "#fff" : active ? "var(--accent, #0b8a94)" : "var(--muted, #5b6f74)", transform: id === "quick" ? "translateY(-16px)" : "none", boxShadow: id === "quick" ? "0 16px 34px -23px rgb(11 138 148 / 84%)" : "none", fontSize: id === "quick" ? 28 : undefined, fontWeight: 900 }}>
-              {id === "quick" ? "+" : <Icon name={icon} size={17} />}
+          <button key={id} className={`mobile-bottom-nav-button ${active ? "is-active" : ""} ${quick ? "is-quick" : ""}`} onClick={() => (quick ? onQuick() : onNavigate(id))}>
+            <span className={`mobile-bottom-nav-icon ${active ? "is-active" : ""} ${quick ? "is-quick" : ""}`}>
+              {quick ? "+" : <Icon name={icon} size={16} />}
             </span>
-            <span style={{ marginTop: id === "quick" ? -8 : 0 }}>{label}</span>
-            {badge > 0 && <b className="mobile-bottom-badge" style={{ position: "absolute", top: 2, right: "24%", minWidth: 16, height: 16, borderRadius: 8, display: "grid", placeItems: "center", background: "var(--danger)", color: "#fff", fontSize: 8, border: "2px solid #fff" }}>{badge}</b>}
+            <span className="mobile-bottom-nav-label">{label}</span>
+            {badge > 0 && <b className="mobile-bottom-badge">{badge}</b>}
           </button>
         );
       })}

@@ -71,7 +71,7 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
 
   if (!projectSummaries.length) {
     return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(18px,4vw,34px)", background: "var(--surface-soft)" }}>
-      <div style={{ maxWidth: 920, margin: "0 auto", background: "#fff", border: "1px solid var(--border)", borderRadius: 24, padding: 26, boxShadow: "0 18px 45px rgba(15,23,42,.06)" }}>
+      <div className="customer-report-shell ui-section-card" style={{ maxWidth: 920, margin: "0 auto", background: "#fff", border: "1px solid var(--border)", borderRadius: 24, padding: 26, boxShadow: "0 18px 45px rgba(15,23,42,.06)" }}>
         <div style={{ width: 54, height: 54, borderRadius: 18, background: "var(--accent-ink)", color: "var(--accent)", display: "grid", placeItems: "center", marginBottom: 14 }}><Icon name="projects" size={25} /></div>
         <h2 style={{ margin: 0, fontSize: 24 }}>Proje özeti hazırlanıyor</h2>
         <p style={{ margin: "8px 0 0", color: "var(--muted)", lineHeight: 1.55 }}>Hesabınıza bağlı görüntülenebilir proje bulunamadı. Proje erişimi tanımlandığında burada yalnızca size ait proje raporu görünecek.</p>
@@ -81,7 +81,7 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
 
   return <div className="theme-work-page customer-dashboard-theme-page" style={{ flex: 1, overflow: "auto", padding: "clamp(16px,4vw,34px)", background: "linear-gradient(180deg,var(--surface-soft) 0%,var(--accent-ink) 100%)" }}>
     <div style={{ maxWidth: 1160, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
+      <div className="customer-report-hero unified-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid color-mix(in srgb, var(--accent) 22%, var(--border))", background: "var(--accent-ink)", color: "var(--accent)", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 900, marginBottom: 10 }}>
             <Icon name="reports" size={14} /> Müşteri Proje Özeti
@@ -101,7 +101,7 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
           ["Proje Sağlığı", averageReadiness ? `%${averageReadiness}` : "-", "Hazırlık skoru", "var(--success)"],
           ["Açık Ticket", openTickets, `${totalTickets} görünür ticket`, "var(--warning)"],
           ["Geciken İş", totalOverdue, "Müşteri görünür plan", "var(--danger)"],
-        ].map(([label, value, desc, color]) => <div key={label} style={{ background: "#fff", border: "1px solid var(--border)", borderTop: `4px solid ${color}`, borderRadius: 18, padding: 16, boxShadow: "0 10px 26px rgba(15,23,42,.05)", minWidth: 0 }}>
+        ].map(([label, value, desc, color]) => <div className="customer-summary-card ui-section-card" key={label} style={{ background: "#fff", border: "1px solid var(--border)", borderTop: `4px solid ${color}`, borderRadius: 18, padding: 16, boxShadow: "0 10px 26px rgba(15,23,42,.05)", minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 950, color: "var(--muted)", letterSpacing: ".08em", textTransform: "uppercase" }}>{label}</div>
           <div style={{ fontSize: 28, lineHeight: 1.1, fontWeight: 950, color, marginTop: 7 }}>{value}</div>
           <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, overflowWrap: "anywhere" }}>{desc}</div>
@@ -109,8 +109,8 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
       </div>
 
       <div style={{ display: "grid", gap: 16 }}>
-        {projectSummaries.map((item) => <section key={item.project.id} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 24, overflow: "hidden", boxShadow: "0 18px 45px rgba(15,23,42,.07)" }}>
-          <div style={{ background: `linear-gradient(135deg,${item.accent} 0%,var(--text) 120%)`, color: "#fff", padding: "18px clamp(16px,3vw,24px)", display: "flex", gap: 15, alignItems: "center", minWidth: 0 }}>
+        {projectSummaries.map((item) => <section className="customer-project-report-card ui-section-card" key={item.project.id} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 24, overflow: "hidden", boxShadow: "0 18px 45px rgba(15,23,42,.07)" }}>
+          <div className="customer-project-report-head" style={{ background: `linear-gradient(135deg,${item.accent} 0%,var(--text) 120%)`, color: "#fff", padding: "18px clamp(16px,3vw,24px)", display: "flex", gap: 15, alignItems: "center", minWidth: 0 }}>
             <div style={{ width: 58, height: 58, borderRadius: 18, background: "rgba(255,255,255,.95)", display: "grid", placeItems: "center", overflow: "hidden", flexShrink: 0 }}>
               {item.logo ? <img src={item.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 8 }} /> : <b style={{ color: item.accent, fontSize: 22 }}>{item.customerName.slice(0, 1)}</b>}
             </div>
@@ -152,7 +152,7 @@ export function CustomerDashboardPage({ state, currentUser, projects = [], onNav
 }
 
 function CustomerMetric({ title, value, desc, icon, color }) {
-  return <div style={{ border: "1px solid var(--border)", background: "var(--surface-soft)", borderRadius: 16, padding: 14, minWidth: 0 }}>
+  return <div className="customer-metric-card" style={{ border: "1px solid var(--border)", background: "var(--surface-soft)", borderRadius: 16, padding: 14, minWidth: 0 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
       <span style={{ width: 34, height: 34, borderRadius: 12, background: `${color}16`, color, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name={icon} size={17} /></span>
       <div style={{ minWidth: 0 }}>
