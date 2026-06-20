@@ -5358,6 +5358,119 @@ body::before,
   min-height: 24px !important;
 }
 
+.project-detail-workspace .project-setup-shell > .project-panel-page {
+  align-content: start !important;
+  gap: 14px !important;
+  grid-auto-rows: max-content !important;
+  margin: 0 auto !important;
+  max-width: var(--project-detail-max) !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .project-setup-shell > .project-panel-page > * {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="display:\"grid\""],
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="display: grid"],
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="display:\"flex\""],
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="display: flex"] {
+  box-sizing: border-box !important;
+}
+
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="background:\"var(--accent-ink)"],
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="background:var(--accent-ink)"],
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="background:\"#F0F9FF\""],
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="background:#F0F9FF"],
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="background:\"color-mix"],
+.project-detail-workspace .project-setup-shell .project-panel-page > [style*="background:color-mix"] {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 62%),
+    color-mix(in srgb, var(--surface-soft) 80%, white 20%) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border)) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 14px 32px -30px rgb(17 35 39 / 34%) !important;
+  color: var(--text) !important;
+}
+
+.project-detail-workspace .raci-panel > div[style*="overflow-x"],
+.project-detail-workspace .documents-panel > div[style*="gridTemplateColumns"],
+.project-detail-workspace .automation-panel > div[style*="display:\"grid\""],
+.project-detail-workspace .automation-panel > div[style*="display: grid"] {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--shadow-card) !important;
+  padding: 12px !important;
+}
+
+.project-detail-workspace .documents-panel > div[style*="gridTemplateColumns"]:empty,
+.project-detail-workspace .automation-panel > div[style*="display:\"grid\""]:empty {
+  display: none !important;
+}
+
+.project-detail-workspace .raci-panel table,
+.project-detail-workspace .raci-panel thead,
+.project-detail-workspace .raci-panel tbody {
+  width: 100% !important;
+}
+
+.project-detail-workspace .raci-panel .project-inline-form,
+.project-detail-workspace .documents-panel .project-inline-form,
+.project-detail-workspace .automation-panel > div[style*="gridTemplateColumns"],
+.project-detail-workspace .communication-panel .project-inline-form,
+.project-detail-workspace .invoice-panel .project-inline-form {
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)) !important;
+  margin-top: 0 !important;
+}
+
+.project-detail-workspace .documents-panel a,
+.project-detail-workspace .automation-panel a,
+.project-detail-workspace .raci-panel a {
+  color: var(--accent) !important;
+  font-weight: 820 !important;
+}
+
+.project-detail-workspace .documents-panel > div > div,
+.project-detail-workspace .communication-panel > div:last-child > div,
+.project-detail-workspace .invoice-panel > div:last-child > div,
+.project-detail-workspace .automation-panel details {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 5%, transparent), transparent 40%),
+    var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.project-detail-workspace .automation-panel details {
+  padding: 14px !important;
+}
+
+.project-detail-workspace .automation-panel summary {
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.project-detail-workspace .project-overview-panel,
+.project-detail-workspace .readiness-panel,
+.project-detail-workspace .training-panel,
+.project-detail-workspace .project-cost-panel,
+.project-detail-workspace .invoice-panel,
+.project-detail-workspace .raci-panel,
+.project-detail-workspace .communication-panel,
+.project-detail-workspace .remote-access-panel,
+.project-detail-workspace .machine-panel-page,
+.project-detail-workspace .lessons-panel,
+.project-detail-workspace .documents-panel,
+.project-detail-workspace .automation-panel {
+  display: grid !important;
+  gap: 14px !important;
+}
+
 @media (max-width: 760px) {
   .app-main-scroll {
     padding-bottom: 0 !important;

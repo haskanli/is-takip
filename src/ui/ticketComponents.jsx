@@ -377,7 +377,6 @@ export function TicketsPanel({ project, currentUser, state, setState, isAdmin, c
       </div>
     </div>
     {mailNotice&&<div className={mailNotice.includes("gönderildi")?"ui-chip ui-chip-success":"ui-chip ui-chip-warning"} style={{borderRadius:12,padding:"10px 13px",fontSize:11,marginBottom:12,display:"flex"}}>{mailNotice}</div>}
-    {!customerMode&&<RecurringProblemsPanel entries={tickets.map(ticket=>({ticket,project}))}/>}
     {tickets.length===0&&<div className="soft-panel empty-panel">Henüz ticket yok.</div>}
     {ticketView==="list"?<TicketListTable rows={sortedTickets.map(ticket=>({ticket,project,projectId:project.id}))} people={state.people} customerMode={customerMode} showProject={false} onOpen={({ticket})=>setModal({type:"detail",data:ticket})} onStatusChange={(_,id,status)=>updateTicket(id,{status})} onDelete={(_,id)=>deleteTicket(id)} canDelete={(ticket)=>isAdmin||ticket.author===currentUser.name}/>:<div className="mobile-ticket-list" style={{ display:"flex", flexDirection:"column", gap:8 }}>
       {sortedTickets.map(t=><div className="compact-list-card ticket-mobile-card mobile-ticket-card-inner" key={t.id} onClick={()=>setModal({type:"detail",data:t})} style={{ padding:"14px 18px", display:"flex", gap:12, alignItems:"flex-start", cursor:"pointer" }}>
