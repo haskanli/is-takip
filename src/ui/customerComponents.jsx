@@ -150,15 +150,15 @@ export function CustomersPage({ state, setState, onInviteUser, onPreviewCustomer
   };
 
   return (
-    <div style={{ padding: "22px clamp(14px,4vw,30px)", flex: 1, overflow: "auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 18 }}>
+    <div className="theme-work-page customers-theme-page" style={{ padding: "22px clamp(14px,4vw,30px)", flex: 1, overflow: "auto" }}>
+      <div className="unified-page-header customers-page-header" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 18 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 22 }}>Müşteriler</h2>
           <p style={{ margin: "5px 0 0", fontSize: 12, color: "#64748B", lineHeight: 1.55 }}>
             Her proje bir müşteri alanıdır. Tüm müşteriler burada listelenir; bilgiler ve RACI kontakları kart içinden açılır.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="unified-filter-row customers-filter-row" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <input
             style={{ ...iStyle, width: 240, background: "#fff" }}
             value={search}

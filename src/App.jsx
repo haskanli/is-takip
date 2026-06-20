@@ -183,7 +183,8 @@ const normalizeWeatherCode = (code) => {
 const WEATHER_CACHE_KEY = "corject:weatherScene";
 const DEFAULT_WEATHER_CACHE_MS = 45 * 60 * 1000;
 const FLAT_SCENE = {
-  image: "linear-gradient(#f6f7f7, #f6f7f7)",
+  image:
+    "radial-gradient(circle at 14% -12%, rgb(11 138 148 / 14%), transparent 34%), radial-gradient(circle at 96% -6%, rgb(191 122 18 / 10%), transparent 30%), var(--bg)",
   overlay: "none",
   blur: "0px",
 };
