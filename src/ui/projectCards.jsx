@@ -36,7 +36,23 @@ const textClamp = {
   whiteSpace: "nowrap",
 };
 
+const websiteDomain = (website = "") => {
+  if (!website) return "";
+  try {
+    return new URL(website.startsWith("http") ? website : `https://${website}`).hostname.replace(/^www\./, "");
+  } catch {
+    return String(website).replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  }
+};
+
+const logoFallbackUrl = (customer = {}) => {
+  if (customer.logoUrl) return customer.logoUrl;
+  const domain = websiteDomain(customer.website || "");
+  return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128` : "";
+};
+
 function LogoTile({ customer, customerName, canEdit = false, onClick = noop, size = 52 }) {
+  const logoUrl = logoFallbackUrl(customer);
   return (
     <button
       type="button"
@@ -45,8 +61,8 @@ function LogoTile({ customer, customerName, canEdit = false, onClick = noop, siz
       className="project-logo-tile"
       style={{ width: size, height: size, cursor: canEdit ? "pointer" : "default" }}
     >
-      {customer.logoUrl ? (
-        <img src={customer.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", background: "#fff", padding: 6 }} />
+      {logoUrl ? (
+        <img src={logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", background: "#fff", padding: 6 }} />
       ) : (
         <b style={{ fontSize: size > 42 ? 18 : 15, color: "var(--accent)" }}>{customerName.slice(0, 2).toUpperCase()}</b>
       )}
@@ -257,7 +273,7 @@ export function ProjectListCard({
   const alertColor = critical > 0 ? "var(--danger)" : overdue > 0 ? "var(--warning)" : "var(--muted)";
 
   return (
-    <div className="project-list-card" onClick={onOpen}>
+    <div className="project-list-card" onClick={onOpen} style={{ "--project-card-color": customer.accentColor || project.color || "var(--accent)" }}>
       {isAdmin && (
         <div className="project-card-menu" onClick={(event) => event.stopPropagation()}>
           <button type="button" className="project-card-menu-trigger" title="Proje aksiyonları" aria-label="Proje aksiyonları"><span /></button>

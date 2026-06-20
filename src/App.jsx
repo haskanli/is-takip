@@ -551,6 +551,13 @@ export default function App() {
   },[customerView,projectTab]);
 
   useEffect(()=>{
+    if(!selProject||typeof document==="undefined")return;
+    requestAnimationFrame(()=>{
+      document.querySelector(".project-tab-scroll .project-tab.is-active")?.scrollIntoView({block:"nearest",inline:"center"});
+    });
+  },[selProject,projectTab]);
+
+  useEffect(()=>{
     if(!dataLoaded||!currentUser||!selProject)return;
     const routeProject=state.projects.find(item=>item.id===selProject);
     const allowedProject=routeProject&&(
