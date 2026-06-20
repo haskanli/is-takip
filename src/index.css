@@ -3598,6 +3598,520 @@ body::before,
   }
 }
 
+/* Management dashboard: professional control-room layout in the shared minimal language. */
+.management-theme-page.management-workspace {
+  padding: clamp(16px, 3vw, 28px) !important;
+  flex: 1;
+  overflow: auto;
+  background: transparent !important;
+}
+
+.management-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 18px;
+  margin: 0 0 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--accent-ink) 48%, transparent), transparent 34%),
+    var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.management-heading {
+  min-width: 0;
+  text-align: left !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.management-eyebrow {
+  display: inline-flex;
+  margin-bottom: 6px;
+  color: var(--accent) !important;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.management-heading h2 {
+  margin: 0 !important;
+  color: var(--text) !important;
+  font-family: var(--font-display) !important;
+  font-size: clamp(22px, 3vw, 30px) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.08 !important;
+}
+
+.management-heading p {
+  max-width: 650px !important;
+  margin: 7px 0 0 !important;
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.55 !important;
+}
+
+.management-tabs {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  width: auto !important;
+  max-width: 100%;
+  margin: 0 !important;
+  padding: 5px !important;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-soft) !important;
+  box-shadow: none !important;
+}
+
+.management-tabs button {
+  min-height: 38px !important;
+  padding: 9px 13px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.management-tabs button.is-active,
+.management-tabs button[aria-selected="true"] {
+  background: var(--accent-ink) !important;
+  color: var(--accent) !important;
+}
+
+.management-dashboard-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.management-command-bar {
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.management-command-bar label {
+  color: var(--muted) !important;
+}
+
+.management-command-bar select {
+  height: 40px !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--surface-soft) !important;
+  color: var(--text) !important;
+}
+
+.management-theme-page .admin-report-button,
+.management-theme-page .management-command-bar button,
+.management-theme-page .management-org-toolbar .btn-base {
+  min-height: 40px !important;
+  border-radius: 13px !important;
+  background: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 14px 28px -22px rgb(11 138 148 / 72%) !important;
+}
+
+.management-theme-page .admin-summary-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)) !important;
+  gap: 10px !important;
+  margin: 0 !important;
+}
+
+.management-theme-page .admin-summary-card {
+  min-height: 112px !important;
+  padding: 14px !important;
+  border: 1px solid var(--border) !important;
+  border-top: 3px solid var(--accent) !important;
+  border-radius: 18px !important;
+  background: var(--surface) !important;
+  box-shadow: 0 16px 34px -30px rgb(17 35 39 / 36%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.management-theme-page .admin-summary-card:hover {
+  transform: translateY(-1px) !important;
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
+}
+
+.management-theme-page .admin-summary-label,
+.management-theme-page .admin-summary-detail {
+  color: var(--muted) !important;
+}
+
+.management-theme-page .admin-summary-value {
+  color: var(--text) !important;
+  font-size: 25px !important;
+  font-weight: 850 !important;
+}
+
+.management-theme-page .admin-ai-summary {
+  margin: 0 !important;
+  padding: 16px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 22px !important;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-ink) 35%, white 65%), var(--surface)) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.management-theme-page .admin-ai-icon {
+  background: var(--accent-ink) !important;
+  color: var(--accent) !important;
+  box-shadow: none !important;
+}
+
+.management-theme-page .admin-ai-summary button {
+  min-height: 36px !important;
+  border-radius: 12px !important;
+  background: var(--surface) !important;
+  color: var(--accent) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border)) !important;
+}
+
+.management-theme-page .admin-ai-summary > div:last-child > div {
+  background: color-mix(in srgb, var(--surface) 82%, var(--accent-ink) 18%) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+.admin-section-heading {
+  margin: 2px 0 0 !important;
+}
+
+.admin-section-heading > div:first-child > div:first-child {
+  color: var(--text) !important;
+  font-size: 15px !important;
+}
+
+.admin-section-heading > div:first-child > div:last-child {
+  color: var(--muted) !important;
+}
+
+.management-theme-page .admin-board-grid {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  grid-auto-flow: dense;
+  gap: 12px !important;
+}
+
+.management-theme-page .admin-board-card {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.management-theme-page .admin-board-small { grid-column: span 3; }
+.management-theme-page .admin-board-medium { grid-column: span 4; }
+.management-theme-page .admin-board-large { grid-column: span 6; }
+.management-theme-page .admin-board-full { grid-column: span 12; }
+
+.management-theme-page .admin-board-tools {
+  top: 9px !important;
+  right: 9px !important;
+  opacity: .45 !important;
+}
+
+.management-theme-page .admin-board-card:hover .admin-board-tools,
+.management-theme-page .admin-board-tools:focus-within {
+  opacity: 1 !important;
+}
+
+.management-theme-page .admin-card-size-select {
+  border-color: var(--border) !important;
+  background: var(--surface) !important;
+  color: var(--muted) !important;
+  border-radius: 10px !important;
+}
+
+.management-theme-page .admin-kpi-card,
+.management-theme-page .management-dashboard-card {
+  height: 100%;
+  border: 1px solid var(--border) !important;
+  border-top-color: var(--border) !important;
+  border-left-color: var(--border) !important;
+  border-radius: 20px !important;
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  box-shadow: 0 16px 34px -30px rgb(17 35 39 / 36%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.management-theme-page .admin-kpi-card {
+  border-top: 3px solid var(--accent) !important;
+}
+
+.management-theme-page .admin-kpi-card [style*="color"],
+.management-theme-page .management-dashboard-card [style*="color"] {
+  color: inherit;
+}
+
+.management-theme-page .admin-kpi-info {
+  width: 22px !important;
+  height: 22px !important;
+  border-color: var(--border) !important;
+  background: var(--surface-soft) !important;
+  color: var(--muted) !important;
+}
+
+.management-theme-page .management-portfolio-card,
+.management-theme-page .management-ai-card {
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent-ink) 42%, transparent), transparent 36%),
+    var(--surface) !important;
+  color: var(--text) !important;
+}
+
+.management-theme-page .management-portfolio-card *,
+.management-theme-page .management-ai-card * {
+  color: var(--text) !important;
+}
+
+.management-theme-page .management-portfolio-card .management-donut > div {
+  background: var(--surface) !important;
+  border: 1px solid var(--border);
+}
+
+.management-theme-page .management-legend-row span:nth-child(2),
+.management-theme-page .management-ai-card > span:nth-of-type(2) {
+  color: var(--muted) !important;
+}
+
+.management-theme-page .management-ai-card > span:first-child {
+  background: var(--accent-ink) !important;
+  color: var(--accent) !important;
+}
+
+.management-theme-page .management-ai-card > span:last-child,
+.management-theme-page .management-dashboard-card button,
+.management-theme-page .management-report-tile {
+  background: var(--surface-soft) !important;
+  color: var(--accent) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border)) !important;
+}
+
+.management-theme-page .management-health-row,
+.management-theme-page .management-deadline-row,
+.management-theme-page .management-report-tile {
+  border-radius: 14px !important;
+  background: var(--surface-soft) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.management-theme-page .management-radar-tile,
+.management-theme-page .management-ok-note {
+  background: var(--surface-soft) !important;
+  border: 1px solid var(--border);
+}
+
+.manager-assigned-dashboard {
+  display: grid;
+  gap: 12px;
+}
+
+.manager-assigned-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+
+.manager-stat-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.manager-stat-card::before {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 3px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: var(--stat-color, var(--accent));
+}
+
+.manager-stat-card div {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.manager-stat-card b {
+  display: block;
+  margin-top: 4px;
+  color: var(--text) !important;
+  font-size: 25px;
+  font-weight: 860;
+}
+
+.manager-assigned-toolbar,
+.management-org-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.manager-assigned-toolbar > div:first-child {
+  min-width: 0;
+}
+
+.manager-assigned-toolbar b {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.manager-assigned-toolbar span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.manager-assigned-toolbar > div:last-child,
+.management-org-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manager-assigned-toolbar select,
+.management-org-toolbar input {
+  height: 40px !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--surface-soft) !important;
+}
+
+.management-theme-page .manager-assigned-row {
+  border: 1px solid var(--border) !important;
+  background: var(--surface) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 16px 34px -30px rgb(17 35 39 / 36%) !important;
+}
+
+.management-theme-page .manager-assigned-row > button b {
+  color: var(--text) !important;
+}
+
+.management-theme-page .manager-assigned-status {
+  border: 1px solid var(--border) !important;
+  background: var(--surface-soft) !important;
+  color: var(--text) !important;
+}
+
+.management-theme-page .org-person-card,
+.management-theme-page .org-level-badge,
+.management-theme-page .org-level-people {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 16px 34px -30px rgb(17 35 39 / 36%) !important;
+}
+
+@media (max-width: 1100px) {
+  .management-theme-page .admin-board-small {
+    grid-column: span 4;
+  }
+
+  .management-theme-page .admin-board-medium {
+    grid-column: span 6;
+  }
+
+  .management-theme-page .admin-board-large,
+  .management-theme-page .admin-board-full {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 760px) {
+  .management-theme-page.management-workspace {
+    padding: 12px 10px 92px !important;
+  }
+
+  .management-hero {
+    grid-template-columns: 1fr;
+    align-items: start;
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .management-tabs {
+    width: 100% !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .management-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .management-tabs button {
+    flex: 1 0 auto;
+    min-width: 110px;
+  }
+
+  .management-command-bar,
+  .manager-assigned-toolbar,
+  .management-org-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    align-items: stretch !important;
+  }
+
+  .manager-assigned-toolbar > div:last-child,
+  .management-org-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .manager-assigned-toolbar select,
+  .management-org-toolbar input,
+  .management-command-bar select {
+    width: 100% !important;
+  }
+
+  .management-theme-page .admin-summary-grid,
+  .manager-assigned-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .management-theme-page .admin-board-small,
+  .management-theme-page .admin-board-medium,
+  .management-theme-page .admin-board-large,
+  .management-theme-page .admin-board-full {
+    grid-column: span 12 !important;
+  }
+
+  .management-theme-page .admin-board-tools {
+    opacity: 1 !important;
+  }
+}
+
 /* Corrections after visual pass: keep the previous modern sans heading style and compact headers. */
 :root {
   --font-display: "Plus Jakarta Sans", var(--font-ui);
