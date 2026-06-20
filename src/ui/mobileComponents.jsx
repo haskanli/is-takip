@@ -197,7 +197,7 @@ export function MobileFeatureMenuPage({ isAdmin, onNavigate }) {
   ];
 
   return (
-    <div className="theme-work-page mobile-feature-menu-page" style={{ minHeight: "100%", background: "var(--surface-soft)", padding: "18px 14px 92px", overflow: "auto" }}>
+    <div className="theme-work-page mobile-feature-menu-page" style={{ minHeight: "100%", background: "var(--surface-soft)", padding: "18px 14px var(--mobile-nav-clearance)", overflow: "auto" }}>
       <div className="unified-page-header mobile-feature-header" style={{ marginBottom: 14 }}>
         <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Tüm Özellikler</h2>
         <div style={{ fontSize: 12, color: "var(--muted)" }}>Web tarafındaki ana alanlara mobilde de buradan erişebilirsiniz.</div>

@@ -34,6 +34,7 @@
   --font-ui: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: "Plus Jakarta Sans", var(--font-ui);
   --mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --mobile-nav-clearance: calc(108px + env(safe-area-inset-bottom));
 
   font: 15px/1.5 var(--font-ui);
   color: var(--text);
@@ -727,15 +728,7 @@ code,
 }
 
 .mobile-bottom-nav::after {
-  content: "";
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  top: calc(100% - 2px);
-  height: calc(var(--nav-bottom-gap) + 14px);
-  border-radius: 0 0 22px 22px;
-  background: linear-gradient(180deg, rgb(246 247 247 / 58%), rgb(246 247 247 / 0));
-  pointer-events: none;
+  display: none !important;
 }
 
 .mobile-bottom-nav-button {
@@ -1143,7 +1136,7 @@ code,
   }
 
   .reminders-page {
-    padding: 14px 12px calc(92px + env(safe-area-inset-bottom));
+    padding: 14px 12px var(--mobile-nav-clearance);
   }
 
   .reminders-hero {
@@ -2528,7 +2521,7 @@ textarea:focus {
 
 @media (max-width: 760px) {
   .management-theme-page.management-workspace {
-    padding: 12px 10px 92px !important;
+    padding: 12px 10px var(--mobile-nav-clearance) !important;
   }
 
   .management-hero {
@@ -4798,16 +4791,20 @@ body::before,
 }
 
 @media (max-width: 760px) {
+  .app-main-scroll {
+    padding-bottom: var(--mobile-nav-clearance) !important;
+  }
+
   .theme-work-page:not(.mobile-dashboard-theme-page),
   .project-workspace:not(.mobile-dashboard-theme-page),
   .tasks-theme-page,
   .reminders-page,
   .management-theme-page.management-workspace {
-    padding: var(--page-gutter-mobile) var(--page-gutter-mobile) 92px !important;
+    padding: var(--page-gutter-mobile) var(--page-gutter-mobile) var(--mobile-nav-clearance) !important;
   }
 
   .fieldops-shell {
-    padding: 0 0 92px !important;
+    padding: 0 0 var(--mobile-nav-clearance) !important;
   }
 
   .fieldops-tab-shell {
@@ -4935,8 +4932,8 @@ body::before,
     flex: 1 1 auto !important;
     min-height: 0 !important;
     overflow: auto !important;
-    padding-bottom: calc(148px + env(safe-area-inset-bottom)) !important;
-    scroll-padding-bottom: calc(148px + env(safe-area-inset-bottom));
+    padding-bottom: var(--mobile-nav-clearance) !important;
+    scroll-padding-bottom: var(--mobile-nav-clearance);
   }
 
   .tickets-theme-page .theme-ticket-toolbar {

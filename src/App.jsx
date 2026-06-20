@@ -1067,7 +1067,7 @@ export default function App() {
     ? fullNav.filter(item=>["dashboard","tickets"].includes(item.id)).map(item=>item.id==="dashboard"?{...item,label:"Özet"}:item)
     : currentUser.ticketOnly?fullNav.filter(item=>["tickets"].includes(item.id)):fullNav;
 
-  return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100vh", width:"100vw", fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)", background:"transparent", color:"var(--text, #112327)", overflow:"hidden", position:"relative" }}>
+  return <><GlobalStyle /><div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ display:"flex", height:"100dvh", width:"100vw", fontFamily:"var(--font-ui, Manrope, Segoe UI, sans-serif)", background:"transparent", color:"var(--text, #112327)", overflow:"hidden", position:"relative" }}>
     {/* Mobil ust bar */}
     {isMobile&&<div className="glass-surface mobile-glass-topbar" style={{ position:"fixed", top:0, left:0, right:0, height:58, borderTop:0, borderLeft:0, borderRight:0, display:"flex", alignItems:"center", padding:"0 14px", zIndex:900, gap:10 }}>
       <button className="mobile-brand-button" onClick={()=>navigateTo("dashboard")} style={{border:0,background:"transparent",display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:0}}><img src={tenantProfile.logoUrl||corjectLogo} alt="" style={{width:34,height:34,objectFit:"contain"}}/><span style={{fontFamily:"var(--font-display, 'Plus Jakarta Sans', Manrope, sans-serif)",fontSize:20,fontWeight:800,color:"var(--text, #112327)",letterSpacing:"-.035em",maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tenantProfile.name}</span></button>
@@ -1108,7 +1108,7 @@ export default function App() {
     </div>}
 
     {/* Main */}
-    <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:isMobile?82:0 }}>
+    <div className="app-main-scroll" style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", paddingTop:isMobile?58:0, paddingBottom:0 }}>
       {customerPreviewProject&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,background:"var(--accent-ink)",color:"var(--accent)",borderBottom:"1px solid color-mix(in srgb, var(--accent) 22%, var(--border))",padding:"9px 14px",fontSize:12,fontWeight:850}}>
         <span>Müşteri görünümü: {customerPreviewProject.customerProfile?.name||customerPreviewProject.customerName||customerPreviewProject.name}</span>
         <button onClick={()=>{setPreviewCustomerProjectId("");navigateTo("customers");}} style={{border:0,borderRadius:8,background:"#fff",color:"var(--accent)",fontWeight:900,padding:"6px 10px",cursor:"pointer"}}>Yöneticiye Dön</button>
