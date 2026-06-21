@@ -5463,3 +5463,131 @@ textarea:focus {
 .project-detail-workspace > .project-tab-shell > .project-tab-scroll::-webkit-scrollbar {
   display: none !important;
 }
+
+/* Urgent mobile plan layout: keep Gantt readable and turn the plan table into cards. */
+@media (max-width: 768px) {
+  .project-detail-workspace .project-plan-scroll-panel {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    padding: 12px 12px max(var(--mobile-nav-clearance, 118px), 132px) !important;
+  }
+
+  .project-detail-workspace .project-plan-scroll-panel > div:first-child {
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .project-detail-workspace .project-plan-scroll-panel > div:first-child > div:last-child {
+    display: grid !important;
+    gap: 8px !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+
+  .project-detail-workspace .project-gantt-panel {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 12px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .project-detail-workspace .project-gantt-panel > div {
+    min-width: 540px !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card {
+    margin-top: 12px !important;
+    overflow: visible !important;
+    scroll-margin-top: 74px !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card > div:last-child {
+    overflow: visible !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card table,
+  .project-detail-workspace .project-plan-list-card thead,
+  .project-detail-workspace .project-plan-list-card tbody,
+  .project-detail-workspace .project-plan-list-card tr,
+  .project-detail-workspace .project-plan-list-card td {
+    display: block !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card thead {
+    display: none !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card tbody {
+    box-sizing: border-box !important;
+    display: grid !important;
+    gap: 10px !important;
+    padding: 10px !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card tr {
+    background: var(--surface-raised) !important;
+    border: 1px solid var(--card-border-strong) !important;
+    border-radius: 15px !important;
+    box-shadow: 0 16px 42px -36px rgb(17 35 39 / 36%) !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    padding: 11px 12px !important;
+    position: relative !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card td {
+    border: 0 !important;
+    box-sizing: border-box !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    padding: 4px 0 !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card td:first-child {
+    color: var(--accent) !important;
+    font-weight: 900 !important;
+    padding: 0 !important;
+    position: absolute !important;
+    right: 12px !important;
+    top: 11px !important;
+    width: auto !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card td:nth-child(2) {
+    font-size: 13px !important;
+    font-weight: 850 !important;
+    max-width: calc(100% - 34px) !important;
+    overflow-wrap: anywhere !important;
+    padding-right: 34px !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card td:nth-child(n+3) {
+    align-items: center !important;
+    display: flex !important;
+    gap: 10px !important;
+    justify-content: space-between !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card td:nth-child(n+3)::before {
+    color: var(--muted) !important;
+    flex: 0 0 auto !important;
+    font-size: 10px !important;
+    font-weight: 820 !important;
+    letter-spacing: .02em !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card td:nth-child(3)::before { content: "Hedef başlangıç"; }
+  .project-detail-workspace .project-plan-list-card td:nth-child(4)::before { content: "Hedef bitiş"; }
+  .project-detail-workspace .project-plan-list-card td:nth-child(5)::before { content: "Gerç. başlangıç"; }
+  .project-detail-workspace .project-plan-list-card td:nth-child(6)::before { content: "Gerç. bitiş"; }
+  .project-detail-workspace .project-plan-list-card td:nth-child(7)::before { content: "Durum"; }
+  .project-detail-workspace .project-plan-list-card td:nth-child(8)::before { content: "İlerleme"; }
+
+  .project-detail-workspace .project-plan-list-card td:nth-child(8) > div {
+    justify-content: flex-end !important;
+  }
+}
