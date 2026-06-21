@@ -127,14 +127,14 @@ export function ManagementWorkspace({state,setState,currentUser,onOpenProject,on
   };
   const tabs=<div className="management-tabs" role="tablist">{[["overview","Genel Bakış"],["assigned","Atadığım İşler"],["organization","Organizasyon"]].map(([id,label])=><button key={id} type="button" role="tab" aria-selected={section===id} onClick={()=>setSection(id)} className={section===id?"is-active":""}>{label}</button>)}</div>;
   return <div className="theme-work-page management-theme-page management-workspace">
-    <div className="management-hero">
+    <div className="management-hero unified-page-header">
       <div className="management-heading">
         <span className="management-eyebrow">Yönetim Paneli</span>
         <h2>Operasyon Kontrol Merkezi</h2>
         <p>Projeler, terminler, riskler, ekip yükü ve ticketlar için tek bakışta karar ekranı.</p>
       </div>
-      {tabs}
     </div>
+    <div className="unified-filter-row management-tabs-row">{tabs}</div>
     {section==="overview"&&<AdminDashboard state={state} setState={setState} currentUser={currentUser} onOpenProject={onOpenProject} onNavigate={onNavigate} showHeader={false}/>}
     {section==="assigned"&&<ManagerAssignedTasksV2 state={state} setState={setState} currentUser={currentUser} onAssignTask={onAssignTask}/>}
     {section==="organization"&&<><div className="management-org-toolbar"><input style={{...iStyle,width:220}} value={newRole} onChange={event=>setNewRole(event.target.value)} onKeyDown={event=>event.key==="Enter"&&addRole()} placeholder="Yeni organizasyon rolü"/><Btn small onClick={addRole}>Rol Ekle</Btn><Btn small variant="secondary" onClick={onAddPerson}>Kişi Ekle</Btn></div><SharedOrganizationPanel people={state.people} roles={roles} onEdit={onEditPerson}/></>}

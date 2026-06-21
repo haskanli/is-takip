@@ -28,6 +28,7 @@ function FieldPlanPage({
   onPersonFilterChange,
   weekOffset: controlledWeekOffset,
   onWeekOffsetChange,
+  hideHeader = false,
 }) {
   const [localScope,setLocalScope]=useState(isAdmin?"team":"mine");
   const [localPersonFilter,setLocalPersonFilter]=useState("");
@@ -76,9 +77,9 @@ function FieldPlanPage({
   const selectedPersonName=personFilter?state.people.find(person=>person.id===personFilter)?.name:"Tüm kişiler";
   const selectedProjectName=projectFilter==="all"?"Tüm projeler":state.projects.find(project=>project.id===projectFilter)?.name;
   return <div className="theme-work-page fieldops-theme-page field-plan-page" style={{padding:"22px clamp(14px,4vw,28px)",flex:1,overflow:"auto"}}>
-    <div className="unified-page-header fieldops-page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:14}}>
+    {!hideHeader&&<div className="unified-page-header fieldops-page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:14}}>
       <div><h2 style={{margin:0,fontSize:20,fontWeight:800,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>Haftalık Çalışma Planım</h2><p style={{margin:"4px 0 0",fontSize:12,color:"var(--muted)"}}>Saha ziyaretlerini ve proje bazlı uzaktan çalışmaları haftalık planlayın.</p></div>
-    </div>
+    </div>}
     {showForm&&<div className="soft-panel" style={{padding:16,marginBottom:16}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,alignItems:"end"}}>
         {isAdmin&&<Field label="Personel"><select style={iStyle} value={form.userId} onChange={e=>setForm({...form,userId:e.target.value})}>{state.people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>}
@@ -168,6 +169,7 @@ function FieldVisitsPage({
   typeFilter: controlledTypeFilter,
   onTypeFilterChange,
   onOpenProject,
+  hideHeader = false,
 }) {
   const responsibleIds=new Set(state.projects.filter(project=>isAdmin||projectPmIds(project).includes(currentUser.id)).map(project=>project.id));
   const [localScope,setLocalScope]=useState("mine");
@@ -194,9 +196,9 @@ function FieldVisitsPage({
   const selectedPersonName=personFilter?state.people.find(person=>person.id===personFilter)?.name:"Tüm kişiler";
   const selectedTypeLabel=typeFilter==="field"?"Saha":typeFilter==="remote"?"Uzaktan":"Tüm türler";
   return <div className="theme-work-page fieldops-theme-page field-visits-page" style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
-    <div className="unified-page-header fieldops-page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:14}}>
+    {!hideHeader&&<div className="unified-page-header fieldops-page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap",marginBottom:14}}>
       <div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>Gerçekleşen Çalışmalar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"var(--muted)"}}>Saha ziyaretleri ve uzaktan çalışmaların notları ile proje eforları.</p></div>
-    </div>
+    </div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(145px,1fr))",gap:9,marginBottom:14}}>{[["Saha Ziyareti",visible.filter(plan=>(plan.workType||"field")==="field").length,"var(--success)"],["Uzaktan Çalışma",visible.filter(plan=>plan.workType==="remote").length,"var(--warning)"],["Toplam Efor",`${hours} sa`,"var(--accent)"],["Çalışılan Proje",new Set(visible.map(plan=>plan.projectId)).size,"var(--text)"]].map(([label,value,color])=><div key={label} className="soft-panel" style={{borderTop:`3px solid ${color}`,padding:13}}><div style={{fontSize:10,color:"var(--muted)",fontWeight:800}}>{label}</div><div style={{fontSize:23,fontWeight:900,color,marginTop:3}}>{value}</div></div>)}</div>
     <div className="unified-filter-row fieldops-filter-row fieldops-visits-filter-row" style={{display:"flex",gap:9,flexWrap:"wrap",marginBottom:14}}>
       <div className="segmented-control compact-filter-segment fieldops-scope-switch" role="group" aria-label="Çalışma kapsamı">{[["mine","user","Benim Ziyaretlerim"],["responsible",isAdmin?"people":"projects",isAdmin?"Tüm Ekip":"Sorumlu Projeler"]].map(([id,icon,label])=><button key={id} title={label} aria-label={label} onClick={()=>{setScope(id);setProjectFilter("all");setPersonFilter("");}} className={scope===id?"is-active":""}><Icon name={icon} size={15}/><span className="sr-only">{label}</span></button>)}</div>
@@ -242,9 +244,15 @@ export function FieldOperationsPage({
   const section=controlledSection||localSection;
   const setSection=onSectionChange||setLocalSection;
   return <div className="theme-work-page fieldops-shell" style={{flex:1,overflow:"auto"}}>
+    <div className="unified-page-header fieldops-page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:14}}>
+      <div>
+        <h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="calendar" size={21}/>{section==="plan"?"Haftalık Çalışma Planım":"Gerçekleşen Çalışmalar"}</h2>
+        <p style={{margin:"4px 0 0",fontSize:12,color:"var(--muted)"}}>{section==="plan"?"Saha ziyaretlerini ve proje bazlı uzaktan çalışmaları haftalık planlayın.":"Saha ziyaretleri ve uzaktan çalışmaların notları ile proje eforları."}</p>
+      </div>
+    </div>
     <div className="project-tab-shell fieldops-tab-shell" style={{display:"flex",gap:7}}>
       {[["plan","calendar","Haftalık Plan"],["visits","activity","Gerçekleşen Çalışmalar"]].map(([id,icon,label])=><button key={id} onClick={()=>setSection(id)} className={`project-tab ${section===id?"is-active":""}`}><Icon name={icon} size={14}/>{label}</button>)}
     </div>
-    {section==="plan"?<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} scope={scope} onScopeChange={onScopeChange} projectFilter={projectFilter} onProjectFilterChange={onProjectFilterChange} personFilter={personFilter} onPersonFilterChange={onPersonFilterChange} weekOffset={weekOffset} onWeekOffsetChange={onWeekOffsetChange}/>:<FieldVisitsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} scope={scope} onScopeChange={onScopeChange} projectFilter={projectFilter} onProjectFilterChange={onProjectFilterChange} personFilter={personFilter} onPersonFilterChange={onPersonFilterChange} typeFilter={typeFilter} onTypeFilterChange={onTypeFilterChange} onOpenProject={onOpenProject}/>}
+    {section==="plan"?<FieldPlanPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} scope={scope} onScopeChange={onScopeChange} projectFilter={projectFilter} onProjectFilterChange={onProjectFilterChange} personFilter={personFilter} onPersonFilterChange={onPersonFilterChange} weekOffset={weekOffset} onWeekOffsetChange={onWeekOffsetChange} hideHeader/>:<FieldVisitsPage state={state} setState={setState} currentUser={currentUser} isAdmin={isAdmin} scope={scope} onScopeChange={onScopeChange} projectFilter={projectFilter} onProjectFilterChange={onProjectFilterChange} personFilter={personFilter} onPersonFilterChange={onPersonFilterChange} typeFilter={typeFilter} onTypeFilterChange={onTypeFilterChange} onOpenProject={onOpenProject} hideHeader/>}
   </div>;
 }

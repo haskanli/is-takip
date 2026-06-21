@@ -3747,11 +3747,331 @@ textarea:focus {
   -webkit-backdrop-filter: blur(22px) saturate(1.08) !important;
 }
 
+/* Corject UI consolidation layer
+   Keeps page shells consistent across mobile and web while older inline styles are cleaned gradually. */
+.theme-work-page,
+.project-workspace,
+.management-workspace,
+.fieldops-shell {
+  --page-inline: clamp(16px, 3.2vw, 28px);
+  --page-top: clamp(14px, 2.4vw, 24px);
+}
+
+.theme-work-page:not(.mobile-dashboard-theme-page),
+.project-workspace,
+.management-workspace,
+.fieldops-shell {
+  padding: var(--page-top) var(--page-inline) max(34px, env(safe-area-inset-bottom)) !important;
+}
+
+.management-theme-page .management-hero,
+.theme-work-page > .unified-page-header,
+.theme-work-page > .theme-page-heading,
+.project-workspace > .unified-page-header,
+.project-workspace > .theme-page-heading,
+.customers-page-header,
+.mail-center-page-header,
+.fieldops-page-header,
+.todos-page-header,
+.deadlines-page-header,
+.notifications-page-header,
+.import-page-header,
+.reports-page-header,
+.people-page-header,
+.logs-page-header,
+.ai-page-header,
+.reminders-page-header {
+  align-items: center !important;
+  background: color-mix(in srgb, var(--surface-raised) 94%, white 6%) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 18px 46px -38px rgb(17 35 39 / 46%) !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin: 0 auto 14px !important;
+  max-width: var(--ui-page-max-final) !important;
+  min-height: 74px !important;
+  padding: 14px 16px !important;
+  width: 100% !important;
+}
+
+.management-theme-page .management-eyebrow {
+  display: none !important;
+}
+
+.management-theme-page .management-heading h2,
+.theme-work-page > .unified-page-header h1,
+.theme-work-page > .unified-page-header h2,
+.theme-work-page > .theme-page-heading h1,
+.theme-work-page > .theme-page-heading h2,
+.project-workspace > .unified-page-header h1,
+.project-workspace > .unified-page-header h2,
+.customers-page-header h2,
+.mail-center-page-header h2,
+.fieldops-page-header h2,
+.todos-page-header h2,
+.deadlines-page-header h2,
+.notifications-page-header h2,
+.import-page-header h2,
+.reports-page-header h2,
+.people-page-header h2,
+.logs-page-header h2,
+.ai-page-header h2,
+.reminders-page-header h2 {
+  font-size: clamp(20px, 2vw, 24px) !important;
+  font-weight: 820 !important;
+  letter-spacing: -.035em !important;
+  line-height: 1.12 !important;
+}
+
+.management-theme-page .management-heading p,
+.theme-work-page > .unified-page-header p,
+.theme-work-page > .theme-page-heading p,
+.project-workspace > .unified-page-header p,
+.customers-page-header p,
+.mail-center-page-header p,
+.fieldops-page-header p,
+.todos-page-header p,
+.deadlines-page-header p,
+.notifications-page-header p,
+.import-page-header p,
+.reports-page-header p,
+.people-page-header p,
+.logs-page-header p,
+.ai-page-header p,
+.reminders-page-header p {
+  color: var(--muted) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  margin: 4px 0 0 !important;
+}
+
+.unified-filter-row,
+.theme-filter-strip,
+.theme-ticket-toolbar,
+.projects-filter-row,
+.customers-filter-row,
+.fieldops-filter-row,
+.reports-filter-row,
+.reports-project-filter-row,
+.management-tabs-row,
+.management-overview-filter-row,
+.fieldops-tab-shell {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin: 0 auto 14px !important;
+  max-width: var(--ui-page-max-final) !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.fieldops-shell {
+  align-content: start !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+.fieldops-tab-shell {
+  order: 2 !important;
+}
+
+.fieldops-shell .field-plan-page,
+.fieldops-shell .field-visits-page {
+  order: 1 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.fieldops-shell .fieldops-page-header {
+  order: 0 !important;
+}
+
+.fieldops-shell .fieldops-filter-row,
+.fieldops-shell .fieldops-plan-filter-row,
+.fieldops-shell .fieldops-visits-filter-row {
+  order: 3 !important;
+}
+
+.fieldops-shell .field-plan-page > .fieldops-filter-row + div,
+.fieldops-shell .field-visits-page > .fieldops-filter-row + div {
+  margin-top: 0 !important;
+}
+
+.management-tabs,
+.reports-filter-row,
+.fieldops-tab-shell,
+.ticket-filter-segment,
+.segmented-control,
+.view-switch {
+  border-radius: 14px !important;
+}
+
+.management-tabs button,
+.reports-filter-row button,
+.fieldops-tab-shell .project-tab,
+.segmented-control button,
+.view-switch button,
+.compact-filter-segment button {
+  min-height: 40px !important;
+  border-radius: 12px !important;
+}
+
+.soft-panel,
+.compact-list-card,
+.ui-section-card,
+.admin-summary-card,
+.management-dashboard-card,
+.ticket-card,
+.task-minimal-row,
+.field-plan-card,
+.report-card,
+.project-card {
+  background: color-mix(in srgb, var(--surface-raised) 96%, white 4%) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  box-shadow: 0 18px 48px -40px rgb(17 35 39 / 48%) !important;
+}
+
+.reports-theme-page .soft-panel,
+.management-theme-page .admin-summary-card,
+.management-theme-page .management-dashboard-card {
+  min-width: 0 !important;
+}
+
+.reports-theme-page .reports-page-header > div:last-child {
+  flex: 1 1 280px !important;
+  max-width: 360px !important;
+}
+
+.reports-theme-page .reports-filter-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+}
+
+.reports-theme-page .reports-filter-row button {
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.ticket-card select,
+.manager-assigned-status,
+.task-minimal-actions select {
+  max-width: 100% !important;
+}
+
+.fieldops-combined-selects {
+  align-items: center !important;
+  display: flex !important;
+  flex: 1 1 320px !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.fieldops-compact-select {
+  flex: 1 1 150px !important;
+  min-width: 0 !important;
+}
+
+.fieldops-compact-select select {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
 @media (max-width: 768px) {
   .theme-work-page:not(.mobile-dashboard-theme-page),
   .project-workspace,
   .fieldops-shell {
     padding: var(--ui-page-pad-mobile, 12px) var(--ui-page-pad-mobile, 12px) var(--mobile-nav-clearance, 118px) !important;
+  }
+
+  .management-theme-page .management-hero,
+  .theme-work-page > .unified-page-header,
+  .theme-work-page > .theme-page-heading,
+  .project-workspace > .unified-page-header,
+  .project-workspace > .theme-page-heading,
+  .customers-page-header,
+  .mail-center-page-header,
+  .fieldops-page-header,
+  .todos-page-header,
+  .deadlines-page-header,
+  .notifications-page-header,
+  .import-page-header,
+  .reports-page-header,
+  .people-page-header,
+  .logs-page-header,
+  .ai-page-header,
+  .reminders-page-header {
+    min-height: 70px !important;
+    padding: 13px 14px !important;
+  }
+
+  .management-theme-page .management-heading h2,
+  .theme-work-page > .unified-page-header h1,
+  .theme-work-page > .unified-page-header h2,
+  .theme-work-page > .theme-page-heading h1,
+  .theme-work-page > .theme-page-heading h2,
+  .project-workspace > .unified-page-header h1,
+  .project-workspace > .unified-page-header h2,
+  .fieldops-page-header h2,
+  .reports-page-header h2 {
+    font-size: 22px !important;
+  }
+
+  .reports-theme-page .reports-page-header {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .reports-theme-page .reports-page-header > div:last-child {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .reports-theme-page .reports-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .management-tabs-row,
+  .fieldops-tab-shell {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none !important;
+  }
+
+  .management-tabs-row::-webkit-scrollbar,
+  .fieldops-tab-shell::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .management-tabs,
+  .fieldops-tab-shell .project-tab {
+    flex: 0 0 auto !important;
+  }
+
+  .fieldops-filter-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  .fieldops-combined-selects {
+    display: grid !important;
+    flex-basis: 100% !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .fieldops-combined-selects .fieldops-compact-select:last-child:nth-child(3) {
+    grid-column: 1 / -1 !important;
+  }
+
+  .mobile-bottom-nav {
+    pointer-events: auto !important;
   }
 
   .theme-work-page > .unified-page-header,
@@ -4517,5 +4837,296 @@ textarea:focus {
     margin-left: -2px !important;
     padding-left: 0 !important;
     width: calc(100% + 4px) !important;
+  }
+}
+
+/* Final UI consistency guardrail: keep high-traffic pages aligned after legacy overrides. */
+.management-theme-page.management-workspace,
+.reports-theme-page,
+.fieldops-shell,
+.tickets-theme-page,
+.tasks-theme-page,
+.project-detail-workspace {
+  --page-inline: clamp(16px, 3vw, 28px);
+  --page-top: clamp(14px, 2.4vw, 24px);
+}
+
+.management-theme-page.management-workspace,
+.reports-theme-page,
+.fieldops-shell {
+  padding: var(--page-top) var(--page-inline) max(34px, env(safe-area-inset-bottom)) !important;
+}
+
+.management-theme-page .management-hero,
+.reports-theme-page .reports-page-header,
+.fieldops-theme-page .fieldops-page-header,
+.tickets-theme-page .tickets-page-header,
+.tasks-theme-page .tasks-minimal-header {
+  min-height: 74px !important;
+  padding: 14px 16px !important;
+}
+
+.management-theme-page .management-tabs-row,
+.fieldops-shell .fieldops-tab-shell,
+.fieldops-theme-page .fieldops-filter-row,
+.reports-theme-page .reports-filter-row,
+.tickets-theme-page .theme-ticket-toolbar,
+.tasks-theme-page .tasks-minimal-tabs {
+  max-width: var(--ui-page-max-final) !important;
+}
+
+.management-theme-page .management-tabs {
+  background: transparent !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  gap: 8px !important;
+}
+
+.management-theme-page .management-tabs button,
+.fieldops-shell .project-tab,
+.reports-theme-page .reports-filter-row button {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 13px !important;
+  color: var(--muted) !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+}
+
+.management-theme-page .management-tabs button.is-active,
+.fieldops-shell .project-tab.is-active,
+.reports-theme-page .reports-filter-row button.is-active {
+  background: var(--accent-ink) !important;
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border)) !important;
+  color: var(--accent) !important;
+  box-shadow: none !important;
+}
+
+.management-theme-page .admin-summary-grid,
+.reports-theme-page > div[style*="repeat(auto-fit,minmax(170px"],
+.field-visits-page > div[style*="repeat(auto-fit,minmax(145px"] {
+  max-width: var(--ui-page-max-final) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+}
+
+.fieldops-shell .fieldops-tab-shell {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display: flex !important;
+  gap: 8px !important;
+  margin: 0 auto 14px !important;
+  min-height: 44px !important;
+  order: 1 !important;
+  overflow-x: auto !important;
+  padding-bottom: 2px !important;
+  position: static !important;
+  scrollbar-width: none !important;
+  top: auto !important;
+  width: 100% !important;
+  z-index: auto !important;
+}
+
+.fieldops-shell .fieldops-tab-shell::-webkit-scrollbar {
+  display: none !important;
+}
+
+.fieldops-shell .field-plan-page,
+.fieldops-shell .field-visits-page {
+  display: block !important;
+}
+
+.fieldops-theme-page .fieldops-page-header {
+  order: 0 !important;
+}
+
+.fieldops-theme-page > div[style*="repeat(auto-fit,minmax(145px"],
+.fieldops-theme-page > div[style*="repeat(auto-fit,minmax(170px"] {
+  order: 2 !important;
+}
+
+.fieldops-theme-page .fieldops-filter-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  order: 3 !important;
+}
+
+.fieldops-theme-page > div[style*="repeat(auto-fit,minmax(165px"],
+.fieldops-theme-page > div[style*="repeat(auto-fit,minmax(min(320px"] {
+  order: 4 !important;
+}
+
+.fieldops-theme-page .fieldops-combined-selects {
+  display: flex !important;
+  flex: 1 1 360px !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.fieldops-theme-page .fieldops-compact-select {
+  flex: 1 1 150px !important;
+  min-width: 0 !important;
+}
+
+.fieldops-theme-page .fieldops-week-switch {
+  flex: 0 0 auto !important;
+}
+
+.reports-theme-page .reports-page-header > div:first-child {
+  flex: 1 1 260px !important;
+}
+
+.reports-theme-page .reports-page-header > div:last-child {
+  flex: 0 1 320px !important;
+  max-width: 360px !important;
+  min-width: min(260px, 100%) !important;
+}
+
+.reports-theme-page .reports-filter-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+}
+
+.reports-theme-page .reports-filter-row button {
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.reports-theme-page .soft-panel,
+.reports-theme-page > div[style*="repeat(auto-fit,minmax(170px"] > div,
+.reports-theme-page > div[style*="repeat(auto-fit,minmax(260px"] > div {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  box-shadow: 0 18px 48px -38px rgb(17 35 39 / 48%) !important;
+}
+
+.reports-theme-page > div[style*="repeat(auto-fit,minmax(260px"] > div {
+  min-height: 168px !important;
+}
+
+.reports-theme-page .btn-base:disabled {
+  background: color-mix(in srgb, var(--surface) 86%, var(--border) 14%) !important;
+  border-color: var(--card-border-strong) !important;
+  color: var(--muted) !important;
+  opacity: .86 !important;
+}
+
+.project-detail-workspace .project-tab-shell,
+.project-detail-workspace .project-subtab-shell,
+.project-detail-workspace .project-subtab-shell .project-tab-scroll {
+  max-width: var(--ui-page-max-final) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .project-tab-shell,
+.project-detail-workspace .project-subtab-shell .project-tab-scroll {
+  align-items: center !important;
+  display: flex !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  padding: 0 0 8px !important;
+  scrollbar-width: none !important;
+}
+
+.project-detail-workspace .project-tab-shell::-webkit-scrollbar,
+.project-detail-workspace .project-subtab-shell .project-tab-scroll::-webkit-scrollbar {
+  display: none !important;
+}
+
+.project-detail-workspace .project-tab-shell .project-tab,
+.project-detail-workspace .project-subtab-shell .project-tab {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--card-border-strong) !important;
+  border-radius: 13px !important;
+  color: var(--muted) !important;
+  flex: 0 0 auto !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+}
+
+.project-detail-workspace .project-tab-shell .project-tab.is-active,
+.project-detail-workspace .project-subtab-shell .project-tab.is-active {
+  background: var(--accent-ink) !important;
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border)) !important;
+  color: var(--accent) !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 768px) {
+  .management-theme-page.management-workspace,
+  .reports-theme-page,
+  .fieldops-shell {
+    padding: 12px 12px var(--mobile-nav-clearance, 118px) !important;
+  }
+
+  .management-theme-page .management-hero,
+  .reports-theme-page .reports-page-header,
+  .fieldops-theme-page .fieldops-page-header,
+  .tickets-theme-page .tickets-page-header,
+  .tasks-theme-page .tasks-minimal-header {
+    min-height: 70px !important;
+    padding: 13px 14px !important;
+  }
+
+  .management-theme-page .management-heading h2,
+  .reports-theme-page .reports-page-header h2,
+  .fieldops-theme-page .fieldops-page-header h2,
+  .tickets-theme-page .tickets-page-header h2,
+  .tasks-theme-page .tasks-minimal-header h2 {
+    font-size: 22px !important;
+  }
+
+  .management-theme-page .management-tabs-row,
+  .fieldops-shell .fieldops-tab-shell {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+  }
+
+  .management-theme-page .management-tabs,
+  .fieldops-shell .project-tab {
+    flex: 0 0 auto !important;
+  }
+
+  .reports-theme-page .reports-page-header {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .reports-theme-page .reports-page-header > div:last-child {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .reports-theme-page .reports-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .fieldops-theme-page .fieldops-filter-row {
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .fieldops-theme-page .fieldops-combined-selects {
+    display: grid !important;
+    flex-basis: 100% !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .fieldops-theme-page .fieldops-combined-selects .fieldops-compact-select:nth-child(3) {
+    grid-column: 1 / -1 !important;
+  }
+
+  .management-theme-page .admin-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .mobile-bottom-nav {
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
   }
 }
