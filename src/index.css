@@ -5591,3 +5591,71 @@ textarea:focus {
     justify-content: flex-end !important;
   }
 }
+
+/* Delivery polish: make card-like surfaces readable without changing layout size. */
+:root {
+  --delivery-card-outline-soft: color-mix(in srgb, var(--accent) 12%, var(--border) 88%);
+  --delivery-card-outline-strong: color-mix(in srgb, var(--accent) 20%, var(--border) 80%);
+}
+
+:is(
+  .liquid-card,
+  .soft-panel,
+  .ui-section-card,
+  .compact-list-card,
+  .project-business-card,
+  .project-list-card,
+  .project-card,
+  .ticket-card,
+  .ticket-detail-card,
+  .task-minimal-row,
+  .task-todos-card,
+  .task-admin-all-card,
+  .task-notes-card,
+  .field-plan-card,
+  .field-visit-card,
+  .management-dashboard-card,
+  .admin-summary-card,
+  .admin-board-card,
+  .manager-assigned-row,
+  .customer-management-card,
+  .customer-report-shell,
+  .customer-summary-card,
+  .customer-project-report-card,
+  .customer-metric-card,
+  .report-card,
+  .mail-template-card,
+  .reminder-card,
+  .todo-card,
+  .machine-card,
+  .machine-list-card,
+  .training-card,
+  .lesson-form-card,
+  .project-stat-card,
+  .project-effort-row,
+  .project-cost-row,
+  .project-gantt-panel,
+  .project-plan-list-card,
+  .template-picker-panel,
+  .commissioning-stat,
+  .commissioning-form,
+  .commissioning-table-shell
+) {
+  outline: 1px solid var(--delivery-card-outline-soft) !important;
+  outline-offset: -1px !important;
+}
+
+:is(
+  .project-business-card,
+  .project-list-card,
+  .ticket-card,
+  .task-minimal-row,
+  .field-plan-card,
+  .field-visit-card,
+  .management-dashboard-card,
+  .customer-management-card,
+  .reminder-card,
+  .todo-card
+):hover {
+  outline-color: var(--delivery-card-outline-strong) !important;
+}
