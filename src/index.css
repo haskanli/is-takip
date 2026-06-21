@@ -5399,3 +5399,36 @@ textarea:focus {
     line-height: 1.35 !important;
   }
 }
+
+/* Project plan must use the main page scroll, not a nested card scroll. */
+.project-detail-workspace {
+  overflow: visible !important;
+}
+
+.project-detail-workspace .project-plan-scroll-panel {
+  align-content: start !important;
+  display: grid !important;
+  flex: 0 0 auto !important;
+  gap: 16px !important;
+  max-width: var(--project-detail-max, 1180px) !important;
+  overflow: visible !important;
+}
+
+.project-detail-workspace .project-gantt-panel,
+.project-detail-workspace .project-plan-list-card {
+  max-height: none !important;
+}
+
+.project-detail-workspace .project-gantt-panel {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+.project-detail-workspace .project-plan-list-card {
+  overflow: visible !important;
+}
+
+.project-detail-workspace .project-plan-list-card > div:last-child {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}

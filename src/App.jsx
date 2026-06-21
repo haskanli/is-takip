@@ -1045,9 +1045,11 @@ export default function App() {
     openProject(data.projectId,"actions");
   };
 
+  const homeNavItem=isAdmin&&useAdminHome
+    ? {id:"dashboard",icon:"admin",label:"Yönetim"}
+    : {id:"dashboard",icon:"home",label:"Dashboard"};
   const fullNav=[
-    {id:"dashboard",icon:"home",label:"Dashboard"},
-    ...(isAdmin?[{id:"admin",icon:"admin",label:"Yönetim"}]:[]),
+    homeNavItem,
     ...(isAdmin?[{id:"customers",icon:"people",label:"Müşteriler"}]:[]),
     {id:"todos",icon:"ticket",label:"To-Do"},
     {id:"projects",icon:"projects",label:"Projeler"},
@@ -1122,7 +1124,7 @@ export default function App() {
       {view==="mailcenter"&&isAdmin&&!selProject&&<SharedMailCenterPage state={state} setState={setState}/>}
 
       {/* PROJECT DETAIL */}
-      {selProject&&project&&<div className="project-workspace project-detail-workspace" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      {selProject&&project&&<div className="project-workspace project-detail-workspace" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"visible" }}>
         <SharedProjectBusinessCard project={project} activePMs={activePMs} activeStakeholders={activeStakeholders} contacts={(project.raciContacts||[]).filter(contact=>contact.side==="Müşteri")} progress={progress} doneT={doneT} totalT={totalT} currentMs={currentMs} readiness={readinessScore(project)} commissioningPercent={project.commissioningTracking?projectCommissioningPercent:null} overdueC={overdueC} criticalC={criticalC} canEdit={canManageProjectActions} onChange={data=>mutProject(item=>({...item,...data}))} onOpenSetup={()=>openProjectTab("setup")} formatDate={fmt} mapsUrlForLocation={mapsUrl} moduleOptions={DEFAULT_ACTIVE_MODULES}/>
         <div className="project-tab-shell" style={{padding:isMobile?"9px clamp(12px,2.2vw,22px) 11px":"0 clamp(12px,2.2vw,22px) 12px"}}>
           <div className="project-tab-scroll">
@@ -1169,7 +1171,7 @@ export default function App() {
           {!project.milestones.length&&<div className="liquid-card" style={{padding:40,textAlign:"center",color:"var(--muted, #5b6f74)",borderRadius:18}}>Milestone yok.</div>}
         </div>}
 
-        {projectTab==="gantt"&&<div className="project-plan-scroll-panel" style={{ flex:1, overflow:"auto", padding:"20px 24px" }}>
+        {projectTab==="gantt"&&<div className="project-plan-scroll-panel" style={{ padding:"20px 24px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
             <h3 style={{ margin:"0 0 3px", fontSize:14, fontWeight:800 }}>Proje Planı (Gantt)</h3>
             {!customerView&&<div style={{ display:"flex", gap:7, alignItems:"center" }}>

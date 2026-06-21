@@ -373,7 +373,7 @@ export function GanttChart({ project, compact }) {
 }
 
 export function PlanListTable({ project, people }) {
-  const [expandedMs, setExpandedMs] = useState({});
+  const [expandedMs, setExpandedMs] = useState(() => Object.fromEntries((project.milestones || []).map((milestone) => [milestone.id, true])));
   const toggle = (id) => setExpandedMs(s => ({ ...s, [id]: !s[id] }));
   const findName = (id) => people.find(p => p.id === id)?.name || "—";
   const thStyle = { padding:"8px 12px", textAlign:"left", fontWeight:700, color:"var(--muted)", borderBottom:"1px solid var(--border)", fontSize:11 };

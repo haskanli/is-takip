@@ -315,17 +315,6 @@ function AdminDashboard({state,setState,currentUser,onOpenProject,onNavigate,sho
       </div>
     </div>
 
-    <div className="admin-summary-grid">
-      {summaryCards.map(card=>{
-        const kpi=kpiById[card.id];
-        return <button key={card.id} onClick={()=>kpi&&setDetailModal({mode:"detail",...kpi})} className="admin-summary-card" style={{borderTopColor:card.color}}>
-          <div className="admin-summary-label" style={{fontSize:10,fontWeight:850,color:"var(--muted)",letterSpacing:.4,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.label}</div>
-          <div className="admin-summary-value" style={{fontSize:27,fontWeight:950,color:card.color,lineHeight:1.05,marginTop:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.value}</div>
-          <div className="admin-summary-detail" style={{fontSize:10,color:"var(--muted)",lineHeight:1.35,marginTop:6,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{card.detail}</div>
-        </button>;
-      })}
-    </div>
-
     <div className="admin-ai-summary">
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:12,alignItems:"flex-start",minWidth:0,flex:1}}>
