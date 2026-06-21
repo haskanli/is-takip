@@ -4400,7 +4400,7 @@ textarea:focus {
 }
 
 .project-detail-workspace .project-plan-list-card table {
-  min-width: 760px !important;
+  min-width: 720px !important;
 }
 
 .project-detail-workspace .project-plan-list-card td,
@@ -4418,6 +4418,16 @@ textarea:focus {
   justify-content: space-between !important;
 }
 
+.tasks-minimal-header .unified-title-row {
+  align-items: center !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin-left: 0 !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
 .tasks-minimal-header.unified-page-header > div:last-child,
 .tasks-minimal-header > .unified-page-header > div:last-child,
 .tasks-minimal-header .page-header-actions {
@@ -4426,6 +4436,11 @@ textarea:focus {
   flex: 0 0 auto !important;
   justify-content: flex-end !important;
   margin-left: auto !important;
+}
+
+.tasks-minimal-header.unified-page-header > .unified-title-row:last-child,
+.tasks-minimal-header > .unified-page-header > .unified-title-row:last-child {
+  margin-left: 0 !important;
 }
 
 .tasks-minimal-header .icon-only-action,
@@ -5058,6 +5073,136 @@ textarea:focus {
   box-shadow: none !important;
 }
 
+/* Delivery hardening: project detail tabs must stay readable and functional on web/mobile. */
+.project-detail-workspace .project-actions-header.unified-page-header,
+.project-detail-workspace .project-actions-header {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin: 0 auto 12px !important;
+  max-width: var(--ui-page-max-final) !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .project-actions-header > div:first-child:not(.project-actions-toolbar) {
+  display: none !important;
+}
+
+.project-detail-workspace .project-actions-toolbar {
+  margin: 0 !important;
+}
+
+.project-detail-workspace .project-plan-scroll-panel {
+  max-width: var(--ui-page-max-final) !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .project-plan-list-card {
+  display: block !important;
+  margin-top: 16px !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.project-detail-workspace .project-plan-list-card > div:last-child {
+  display: block !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.project-detail-workspace .project-plan-list-card table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  min-width: 720px !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .project-plan-list-card th,
+.project-detail-workspace .project-plan-list-card td {
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  padding: 9px 10px !important;
+  vertical-align: middle !important;
+}
+
+.project-detail-workspace .project-cost-panel,
+.project-detail-workspace .project-effort-panel {
+  display: grid !important;
+  gap: 14px !important;
+  max-width: var(--ui-page-max-final) !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .project-cost-form,
+.project-detail-workspace .project-cost-list,
+.project-detail-workspace .project-effort-list,
+.project-detail-workspace .project-effort-distribution {
+  display: grid !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+
+.project-detail-workspace .project-cost-settings,
+.project-detail-workspace .project-cost-entry {
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)) !important;
+  align-items: end !important;
+}
+
+.project-detail-workspace .project-cost-row,
+.project-detail-workspace .project-effort-row {
+  align-items: center !important;
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto !important;
+  padding: 12px 13px !important;
+  min-width: 0 !important;
+}
+
+.project-detail-workspace .project-row-main {
+  min-width: 0 !important;
+}
+
+.project-detail-workspace .project-row-main b,
+.project-detail-workspace .project-row-main div {
+  overflow-wrap: anywhere !important;
+}
+
+@media (max-width: 768px) {
+  .project-detail-workspace .project-plan-scroll-panel {
+    padding: 12px !important;
+  }
+
+  .project-detail-workspace .project-plan-list-card table {
+    min-width: 620px !important;
+  }
+
+  .project-detail-workspace .project-cost-row,
+  .project-detail-workspace .project-effort-row {
+    grid-template-columns: 1fr auto !important;
+  }
+
+  .project-detail-workspace .project-cost-row > .project-row-main,
+  .project-detail-workspace .project-effort-row > .project-row-main {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+  }
+
+  .project-detail-workspace .project-cost-row > span,
+  .project-detail-workspace .project-effort-row > span,
+  .project-detail-workspace .project-cost-row > b,
+  .project-detail-workspace .project-effort-row > b {
+    font-size: 11px !important;
+  }
+}
+
 @media (max-width: 768px) {
   .management-theme-page.management-workspace,
   .reports-theme-page,
@@ -5128,5 +5273,129 @@ textarea:focus {
 
   .mobile-bottom-nav {
     bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Delivery pass: remove legacy layout drift on critical handoff screens. */
+.tasks-theme-page.tasks-minimal-page {
+  align-content: flex-start !important;
+  align-items: stretch !important;
+  display: block !important;
+}
+
+.tasks-theme-page .tasks-minimal-header.unified-page-header {
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.tasks-theme-page .tasks-minimal-header.unified-page-header > .unified-title-row,
+.tasks-theme-page .tasks-minimal-header.unified-page-header > .unified-title-row:last-child {
+  flex: 1 1 auto !important;
+  justify-content: space-between !important;
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace .project-panel-stats {
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+  margin: 0 !important;
+}
+
+.project-detail-workspace .project-stat-card {
+  align-items: flex-start !important;
+  background: var(--ui-card-bg-accent, var(--surface-raised)) !important;
+  border: var(--ui-border-line, 1px solid var(--border)) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 16px 42px -36px rgb(17 35 39 / 36%) !important;
+  display: grid !important;
+  gap: 5px !important;
+  min-height: 72px !important;
+  padding: 13px 14px !important;
+}
+
+.project-detail-workspace .project-stat-card span {
+  color: var(--muted) !important;
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 760 !important;
+  letter-spacing: .01em !important;
+  line-height: 1.25 !important;
+}
+
+.project-detail-workspace .project-stat-card b {
+  color: var(--text) !important;
+  display: block !important;
+  font-size: 20px !important;
+  font-weight: 830 !important;
+  letter-spacing: -.03em !important;
+  line-height: 1.05 !important;
+}
+
+.project-detail-workspace .project-stat-card.is-danger b {
+  color: var(--danger) !important;
+}
+
+.project-detail-workspace .project-stat-card.is-success b {
+  color: var(--success) !important;
+}
+
+.project-detail-workspace .project-stat-card.is-info b,
+.project-detail-workspace .project-stat-card.is-accent b {
+  color: var(--accent) !important;
+}
+
+.project-detail-workspace .project-effort-row,
+.project-detail-workspace .project-cost-row {
+  overflow: hidden !important;
+}
+
+.project-detail-workspace .project-effort-row .ui-chip,
+.project-detail-workspace .project-cost-row .ui-chip {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  .project-detail-workspace .project-panel-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .project-detail-workspace .project-stat-card {
+    min-height: 62px !important;
+    padding: 11px 12px !important;
+  }
+
+  .project-detail-workspace .project-stat-card b {
+    font-size: 18px !important;
+  }
+
+  .project-detail-workspace .project-effort-row,
+  .project-detail-workspace .project-cost-row {
+    align-items: start !important;
+    gap: 7px !important;
+    grid-template-columns: 1fr auto !important;
+    padding: 11px 12px !important;
+  }
+
+  .project-detail-workspace .project-effort-row > .ui-chip,
+  .project-detail-workspace .project-cost-row > .ui-chip {
+    grid-column: 1 / -1 !important;
+    justify-self: start !important;
+  }
+
+  .project-detail-workspace .project-effort-row > .project-row-main,
+  .project-detail-workspace .project-cost-row > .project-row-main {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+  }
+
+  .project-detail-workspace .project-effort-row > span:not(.ui-chip),
+  .project-detail-workspace .project-cost-row > span:not(.ui-chip),
+  .project-detail-workspace .project-effort-row > b,
+  .project-detail-workspace .project-cost-row > b {
+    align-self: center !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
   }
 }
