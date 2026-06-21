@@ -5432,3 +5432,34 @@ textarea:focus {
   overflow-x: auto !important;
   overflow-y: visible !important;
 }
+
+/* Urgent fix: project main tabs must not collapse under the project header/card. */
+.project-detail-workspace > .project-tab-shell {
+  box-sizing: border-box !important;
+  display: block !important;
+  flex: 0 0 auto !important;
+  margin: 0 auto !important;
+  max-width: var(--ui-page-max-final) !important;
+  min-height: 54px !important;
+  overflow: visible !important;
+  padding: 9px clamp(12px, 2.2vw, 22px) 11px !important;
+  position: relative !important;
+  width: 100% !important;
+  z-index: 4 !important;
+}
+
+.project-detail-workspace > .project-tab-shell > .project-tab-scroll {
+  align-items: center !important;
+  display: flex !important;
+  gap: 8px !important;
+  min-height: 40px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 0 0 8px !important;
+  scrollbar-width: none !important;
+  width: 100% !important;
+}
+
+.project-detail-workspace > .project-tab-shell > .project-tab-scroll::-webkit-scrollbar {
+  display: none !important;
+}

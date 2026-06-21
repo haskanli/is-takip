@@ -553,7 +553,11 @@ export default function App() {
   useEffect(()=>{
     if(!selProject||typeof document==="undefined")return;
     requestAnimationFrame(()=>{
-      document.querySelector(".project-tab-scroll .project-tab.is-active")?.scrollIntoView({block:"nearest",inline:"center"});
+      const activeTab=document.querySelector(".project-tab-scroll .project-tab.is-active");
+      const tabScroller=activeTab?.closest(".project-tab-scroll");
+      if(!activeTab||!tabScroller)return;
+      const targetLeft=activeTab.offsetLeft-(tabScroller.clientWidth-activeTab.clientWidth)/2;
+      tabScroller.scrollTo({left:Math.max(0,targetLeft),behavior:"smooth"});
     });
   },[selProject,projectTab]);
 
