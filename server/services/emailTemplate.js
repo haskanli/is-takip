@@ -125,7 +125,7 @@ export const templateBodyHtml = (value, variables = {}) =>
     .split(/\n{2,}/)
     .map(
       (paragraph) =>
-        `<p style="margin:0 0 14px;font-size:14px;line-height:23px;color:#475569">${escapeHtml(paragraph).replaceAll("\n", "<br>")}</p>`,
+        `<p style="margin:0 0 15px;font-size:14px;line-height:24px;color:#334155">${escapeHtml(paragraph).replaceAll("\n", "<br>")}</p>`,
     )
     .join("");
 
@@ -162,7 +162,7 @@ export const emailButton = (label, href, accent = "#5b4df7") =>
   href && label
     ? `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top:24px">
         <tr><td bgcolor="${safeColor(accent)}" style="border-radius:12px">
-          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 22px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:800">${escapeHtml(label)}</a>
+          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 22px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;letter-spacing:-.1px">${escapeHtml(label)}</a>
         </td></tr>
       </table>`
     : "";
@@ -191,33 +191,37 @@ export const emailFrame = ({
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>${escapeHtml(title)}</title>
   </head>
-  <body style="margin:0;padding:0;background-color:#f1f5f9;color:#172033;font-family:Arial,'Helvetica Neue',sans-serif">
+  <body style="margin:0;padding:0;background-color:#eef6f7;color:#172033;font-family:Arial,'Helvetica Neue',sans-serif">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(intro || title)}</div>
-    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#f1f5f9">
-      <tr><td align="center" style="padding:28px 12px">
-        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:720px;background:#ffffff;border-radius:22px;overflow:hidden;box-shadow:0 16px 40px rgba(15,23,42,.12)">
-          <tr><td bgcolor="#ffffff" style="padding:26px 32px;border-bottom:5px solid ${accentColor}">
-            <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
-              <tr>
-                <td width="72" valign="middle">
-                  <table role="presentation" width="62" height="62" border="0" cellpadding="0" cellspacing="0" bgcolor="#f8fafc" style="border:1px solid #e2e8f0;border-radius:16px">
-                    <tr><td align="center" valign="middle">${logo}</td></tr>
-                  </table>
-                </td>
-                <td valign="middle" style="padding-left:14px">
-                  <div style="font-size:26px;line-height:31px;font-weight:900;letter-spacing:-.3px;color:#172033">${escapeHtml(tenant.name)}</div>
-                  <div style="margin-top:4px;font-size:10px;line-height:15px;font-weight:800;letter-spacing:1.5px;color:${accentColor}">${escapeHtml(eyebrow)}</div>
-                </td>
-              </tr>
+    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#eef6f7" style="background:linear-gradient(145deg,#eef6f7 0%,#f8fbfc 55%,#eef4f2 100%)">
+      <tr><td align="center" style="padding:30px 12px">
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:720px;background:#ffffff;border:1px solid #cfe0e3;border-radius:24px;overflow:hidden;box-shadow:0 22px 58px rgba(17,35,39,.13)">
+          <tr><td bgcolor="#ffffff" style="padding:0">
+            <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,${accentColor} 0%,#0b8a94 58%,#dff6f8 100%)">
+              <tr><td style="padding:24px 32px;color:#ffffff">
+                <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td width="72" valign="middle">
+                      <table role="presentation" width="62" height="62" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="border:1px solid rgba(255,255,255,.72);border-radius:18px">
+                        <tr><td align="center" valign="middle">${logo}</td></tr>
+                      </table>
+                    </td>
+                    <td valign="middle" style="padding-left:14px">
+                      <div style="font-size:25px;line-height:30px;font-weight:900;letter-spacing:-.35px;color:#ffffff">${escapeHtml(tenant.name)}</div>
+                      <div style="margin-top:5px;font-size:10px;line-height:15px;font-weight:900;letter-spacing:1.7px;color:#dffbff;text-transform:uppercase">${escapeHtml(eyebrow)}</div>
+                    </td>
+                  </tr>
+                </table>
+                <h1 style="margin:26px 0 0;font-size:30px;line-height:38px;font-weight:900;letter-spacing:-.5px;color:#ffffff">${escapeHtml(title)}</h1>
+                ${intro ? `<p style="margin:11px 0 0;font-size:15px;line-height:24px;color:#e7fbff">${escapeHtml(intro)}</p>` : ""}
+              </td></tr>
             </table>
-            <h1 style="margin:24px 0 0;font-size:29px;line-height:37px;font-weight:900;letter-spacing:-.4px;color:#172033">${escapeHtml(title)}</h1>
-            ${intro ? `<p style="margin:10px 0 0;font-size:15px;line-height:24px;color:#64748b">${escapeHtml(intro)}</p>` : ""}
           </td></tr>
-          <tr><td style="padding:30px 32px">${content}</td></tr>
-          <tr><td bgcolor="#f8fafc" style="padding:16px 32px;border-top:1px solid #e2e8f0">
+          <tr><td style="padding:28px 32px 30px">${content}</td></tr>
+          <tr><td bgcolor="#f8fbfc" style="padding:16px 32px;border-top:1px solid #d7e6e8">
             <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="font-size:10px;line-height:16px;color:#94a3b8">${attribution}</td>
+                <td style="font-size:10px;line-height:16px;color:#7f9298">${attribution}</td>
                 <td align="right"><img src="https://www.corject.com/corject-logo.png" width="22" height="22" alt="Corject" style="display:block;width:22px;height:22px;border:0;opacity:.72"></td>
               </tr>
             </table>

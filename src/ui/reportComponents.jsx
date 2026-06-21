@@ -793,7 +793,7 @@ export function MailCenterPage({state,setState}) {
   };
   return <div className="project-workspace theme-work-page mail-center-theme-page" style={{padding:"clamp(16px,4vw,28px)",flex:1,overflow:"auto"}}>
     <div className="unified-page-header mail-center-page-header" style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:18}}>
-      <div><h1 style={{margin:0,fontSize:22}}>Mail Merkezi</h1><p style={{margin:"5px 0 0",fontSize:12,color:"var(--muted)"}}>Firma markası, dinamik şablonlar, önizleme ve manuel gönderim.</p></div>
+      <div><h1 style={{margin:0,fontSize:22,display:"flex",alignItems:"center",gap:8}}><Icon name="mail" size={22}/>Mail Merkezi</h1><p style={{margin:"5px 0 0",fontSize:12,color:"var(--muted)"}}>Firma markası, dinamik şablonlar, önizleme ve manuel gönderim.</p></div>
       <Btn onClick={addTemplate}>+ Yeni Şablon</Btn>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"minmax(280px,.8fr) minmax(380px,1.25fr)",gap:16,alignItems:"start"}} className="admin-main-grid">
@@ -815,12 +815,12 @@ export function MailCenterPage({state,setState}) {
         </Card>
         <Card>
           <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Şablonlar</div>
-          <div style={{display:"grid",gap:7}}>{templates.map(item=><button key={item.id} onClick={()=>selectTemplate(item)} style={{border:`1px solid ${selectedId===item.id?item.accentColor:"var(--border)"}`,borderLeft:`5px solid ${item.accentColor}`,borderRadius:10,background:selectedId===item.id?item.accentColor+"0D":"#fff",padding:"10px 11px",textAlign:"left",cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",gap:8}}><b style={{fontSize:11}}>{item.name}</b><span style={{fontSize:8,color:item.enabled===false?"var(--danger)":"var(--success)",fontWeight:850}}>{item.enabled===false?"PASİF":"AKTİF"}</span></div><div style={{fontSize:9,color:"var(--muted)",marginTop:3}}>{item.category}</div></button>)}</div>
+          <div className="mail-template-list">{templates.map(item=><button key={item.id} className={`mail-template-card ${selectedId===item.id?"is-selected":""}`} onClick={()=>selectTemplate(item)} style={{"--template-accent":item.accentColor}}><span className="mail-template-mark"/><span><b>{item.name}</b><small>{item.category}</small></span><em className={item.enabled===false?"is-passive":"is-active"}>{item.enabled===false?"PASİF":"AKTİF"}</em></button>)}</div>
         </Card>
       </div>
       <div style={{display:"grid",gap:14}}>
         <Card>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:12}}><b style={{fontSize:14}}>Şablon Düzenleyici</b><label style={{fontSize:10,fontWeight:800,color:"var(--muted)"}}><input type="checkbox" checked={draft?.enabled!==false} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/> Aktif</label></div>
+          <div className="mail-editor-heading"><b>Şablon Düzenleyici</b><label><input type="checkbox" checked={draft?.enabled!==false} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/> Aktif</label></div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}><Field label="Şablon Adı"><input style={iStyle} value={draft?.name||""} onChange={e=>setDraft({...draft,name:e.target.value})}/></Field><Field label="Kategori"><input style={iStyle} value={draft?.category||""} onChange={e=>setDraft({...draft,category:e.target.value})}/></Field></div>
           <Field label="Konu"><input style={iStyle} value={draft?.subject||""} onChange={e=>setDraft({...draft,subject:e.target.value})}/></Field>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}><Field label="Üst Etiket"><input style={iStyle} value={draft?.eyebrow||""} onChange={e=>setDraft({...draft,eyebrow:e.target.value})}/></Field><Field label="Vurgu Rengi"><input type="color" style={{...iStyle,padding:4,height:39}} value={draft?.accentColor||tenant.accentColor} onChange={e=>setDraft({...draft,accentColor:e.target.value})}/></Field></div>
@@ -832,11 +832,11 @@ export function MailCenterPage({state,setState}) {
           <div style={{display:"flex",gap:8,marginTop:12}}><Btn onClick={saveTemplate}>Şablonu Kaydet</Btn><Btn variant="secondary" onClick={removeTemplate}>Sil</Btn></div>
         </Card>
         <Card>
-          <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Canlı Önizleme</div>
+          <div className="mail-editor-heading"><b>Canlı Önizleme</b><span>{preview.subject}</span></div>
           <iframe title="Mail önizleme" srcDoc={preview.html} style={{width:"100%",height:560,border:"1px solid var(--border)",borderRadius:12,background:"var(--surface-soft)"}}/>
         </Card>
         <Card>
-          <div style={{fontWeight:850,fontSize:14,marginBottom:10}}>Manuel Gönderim</div>
+          <div className="mail-editor-heading"><b>Manuel Gönderim</b><span>Seçili şablonu test adresine gönder</span></div>
           <Field label="Alıcı"><input type="email" style={iStyle} value={recipient} onChange={e=>setRecipient(e.target.value)} placeholder="alici@firma.com"/></Field>
           <Field label="Önizleme ve test verileri"><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:7}}>{EMAIL_VARIABLE_CATALOG.map(([key,label])=><label key={key} style={{fontSize:9,color:"var(--muted)"}}>{label}<input style={{...iStyle,marginTop:3}} value={variables[key]||""} onChange={event=>setVariablesText(JSON.stringify({...variables,[key]:event.target.value},null,2))}/></label>)}</div><details style={{marginTop:8}}><summary style={{fontSize:9,color:"var(--muted)",cursor:"pointer"}}>Gelişmiş JSON görünümü</summary><textarea style={{...iStyle,minHeight:150,marginTop:6,fontFamily:"Consolas,monospace",fontSize:10}} value={variablesText} onChange={e=>setVariablesText(e.target.value)}/></details></Field>
           <Btn onClick={send} disabled={sendStatus.loading}>Gönder</Btn>
@@ -850,6 +850,7 @@ export function MailCenterPage({state,setState}) {
 export function ReportsPage({ state, people, isAdmin, projectId: controlledProjectId, onProjectIdChange, group: controlledGroup, onGroupChange }) {
   const [localProjectId,setLocalProjectId]=useState(state.projects[0]?.id||"");
   const [localGroup,setLocalGroup]=useState("operations");
+  const [reportView,setReportView]=useState("cards");
   const projectId=controlledProjectId||localProjectId;
   const setProjectId=onProjectIdChange||setLocalProjectId;
   const group=controlledGroup??localGroup;
@@ -877,11 +878,18 @@ export function ReportsPage({ state, people, isAdmin, projectId: controlledProje
     ...(isAdmin?[{group:"management",title:"Ekip Kapasite Raporu",desc:"Kişi bazlı aktif iş ve efor odaklı kapasite görünümü.",color:"var(--chart-2)",action:()=>generateTeamCapacityReport(state,people),label:"HTML / PDF"}]:[]),
     ...(isAdmin?[{group:"management",title:"Risk Portföyü Raporu",desc:"Açık riskleri önem seviyesine göre filtreleyerek izler.",color:"var(--chart-5)",action:()=>generateRiskPortfolioReport(state),label:"HTML / PDF"}]:[]),
   ];
+  const visibleCards=cards.filter(card=>card.group===group);
   return <div className="project-workspace theme-work-page reports-theme-page" style={{padding:"clamp(16px, 4vw, 28px)",flex:1,overflow:"auto"}}>
     <div className="unified-page-header reports-page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,marginBottom:20,flexWrap:"wrap"}}><div><h2 style={{margin:0,fontSize:21,display:"flex",alignItems:"center",gap:8}}><Icon name="reports" size={21}/>Raporlar</h2><p style={{margin:"4px 0 0",fontSize:12,color:"var(--muted)"}}>İç operasyon ve müşteri paylaşımı için güncel proje çıktıları.</p></div><div style={{minWidth:"min(240px,100%)",flex:"0 1 280px"}}><label style={lStyle}>Rapor Projesi</label><select style={iStyle} value={projectId} onChange={e=>setProjectId(e.target.value)}>{state.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:10,marginBottom:20}}>{[["Geciken Görev",delayed.length,"var(--danger)"],["Toplam Efor",`${hours} sa`,"var(--chart-2)"],["Makine",machines.length,"var(--chart-1)"],["Devrede",machines.filter(m=>m.commissioned).length,"var(--success)"]].map(([label,value,color])=><div key={label} className="soft-panel" style={{borderTop:`4px solid ${color}`,padding:14}}><div style={{fontSize:11,color:"var(--muted)"}}>{label}</div><div style={{fontSize:24,fontWeight:800,color,marginTop:3}}>{value}</div></div>)}</div>
-    <div className="theme-filter-strip reports-filter-row" style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>{[["operations","Operasyon"],["project","Proje ve Müşteri"],["technical","Teknik"],...(isAdmin?[["management","Yönetici"]]:[])].map(([id,label])=><button key={id} className={group===id?"is-active":""} onClick={()=>setGroup(id)} style={{border:"1px solid var(--glass-border)",borderRadius:999,padding:"7px 12px",background:group===id?"var(--accent)":"#fff",color:group===id?"#fff":"var(--text)",fontSize:11,fontWeight:800,cursor:"pointer"}}>{label}</button>)}</div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12}}>{cards.filter(card=>card.group===group).map(card=><div key={card.title} className="soft-panel" style={{borderRadius:14,padding:18,borderLeft:`4px solid ${card.color}`,minHeight:196}}><div style={{fontWeight:800,fontSize:14,marginBottom:6}}>{card.title}</div><div style={{fontSize:12,color:"var(--muted)",lineHeight:1.5,minHeight:54}}>{card.desc}</div><Btn style={{marginTop:12,background:card.color,borderRadius:999}} disabled={!project&&card.title.includes("Rapor")} onClick={card.action}>{card.label}</Btn></div>)}</div>
+    <div className="reports-toolbar-row">
+      <div className="theme-filter-strip reports-filter-row" style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:0}}>{[["operations","Operasyon"],["project","Proje ve Müşteri"],["technical","Teknik"],...(isAdmin?[["management","Yönetici"]]:[])].map(([id,label])=><button key={id} className={group===id?"is-active":""} onClick={()=>setGroup(id)} style={{border:"1px solid var(--glass-border)",borderRadius:999,padding:"7px 12px",background:group===id?"var(--accent)":"#fff",color:group===id?"#fff":"var(--text)",fontSize:11,fontWeight:800,cursor:"pointer"}}>{label}</button>)}</div>
+      <div className="view-switch reports-view-switch" aria-label="Rapor görünümü">
+        <button type="button" className={reportView==="cards"?"is-active":""} onClick={()=>setReportView("cards")} title="Kart görünümü" aria-label="Kart görünümü"><Icon name="grid" size={15}/></button>
+        <button type="button" className={reportView==="list"?"is-active":""} onClick={()=>setReportView("list")} title="Liste görünümü" aria-label="Liste görünümü"><Icon name="list" size={15}/></button>
+      </div>
+    </div>
+    {reportView==="cards"?<div className="reports-card-grid">{visibleCards.map(card=><div key={card.title} className="soft-panel report-card" style={{"--report-accent":card.color,borderRadius:14,padding:18,borderLeft:`4px solid ${card.color}`,minHeight:196}}><div style={{fontWeight:800,fontSize:14,marginBottom:6}}>{card.title}</div><div style={{fontSize:12,color:"var(--muted)",lineHeight:1.5,minHeight:54}}>{card.desc}</div><Btn className="report-download-button" style={{"--report-accent":card.color,marginTop:12}} disabled={!project&&card.title.includes("Rapor")} onClick={card.action}><Icon name="download" size={14}/>{card.label}</Btn></div>)}</div>:<div className="reports-list-view">{visibleCards.map(card=><div key={card.title} className="soft-panel report-list-row" style={{"--report-accent":card.color}}><span className="report-list-mark"/><div className="report-list-main"><b>{card.title}</b><span>{card.desc}</span></div><span className="report-format-pill">{card.label.includes("XLSX")?"XLSX":"HTML"}</span><Btn className="report-download-button" style={{"--report-accent":card.color}} disabled={!project&&card.title.includes("Rapor")} onClick={card.action}><Icon name="download" size={14}/>İndir</Btn></div>)}</div>}
   </div>;
 }
 
